@@ -1,6 +1,7 @@
 # Aocf_rollback
 Current Progress on adding rollback to touhou 15.5 Antinomy of common flowers
 
+**if you find any useful info please share it on the aocf discord server or put it on a file in this repo**
 
 # Currently Needed:
 ## Memory addresses

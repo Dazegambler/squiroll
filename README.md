@@ -3,7 +3,7 @@ Current Progress on adding rollback to touhou 15.5 Antinomy of common flowers
 
 
 # Currently Needed:
-## Memory addressses
+## Memory addresses
 - Player inputs
 - Opponent inputs
 - All things sync related

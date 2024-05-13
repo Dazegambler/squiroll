@@ -9,3 +9,5 @@ Current Progress on adding rollback to touhou 15.5 Antinomy of common flowers
 - All things sync related
 - Sockets
 ## New Netcode
+### Non priority
+- License

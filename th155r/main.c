@@ -41,7 +41,7 @@ BOOL InjectDLL(HANDLE hProcess, const char* dllPath, HMODULE* outhModule) {
         return FALSE;
     }
 
-    //THIS AINT WORKING FOR NO REASON...
+    //THIS AINT WORKING FOR NO REASON...Could not create remote thread...(87)
     fprintf(log,"Params:%p|%p|%p\n",hProcess,lb,remoteString);
     HANDLE hThread = CreateRemoteThread(hProcess,NULL,0,lb,remoteString,0, NULL);
     fprintf(log,"Thread:%p\n",hThread);

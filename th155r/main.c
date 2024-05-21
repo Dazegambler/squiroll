@@ -84,7 +84,7 @@ void* get_remote_function_address(HANDLE hProcess, HMODULE hModule/*Injected Lib
 
 BOOL patch_memory_with_jmp(HANDLE hProcess, void* targetAddress, void* jmpAddress){
     FILE* log = fopen("th155r.log","a");
-    BYTE jmpInstruction[5] = { 0xE9, 0, 0, 0, 0 }; // jmp instruction
+    BYTE jmpInstruction[5] = { 0xE9, 0, 0, 0, 0 };
     DWORD offset = (DWORD)((BYTE*)jmpAddress - (BYTE*)targetAddress - 5);
 
     memcpy(&jmpInstruction[1], &offset, 4);

@@ -114,7 +114,7 @@ InjectReturnCode inject(HANDLE process, const wchar_t* dll_str, const char* init
 	return (InjectReturnCode)exit_code;
 }
 
-BOOL execute_program_inject()
+bool execute_program_inject()
 {
     FILE *log = fopen("th155r.log", "a");
     STARTUPINFOW si = { sizeof(STARTUPINFOW) };
@@ -127,7 +127,7 @@ BOOL execute_program_inject()
             ResumeThread(pi.hThread);
             ret = true;
         } else {
-            fprintf(log,"Code Injection failed...(%d)\n",GetLastError());
+            fprintf(log,"Code Injection failed...(%d,%d)\n",inject_result,GetLastError());
         }
         CloseHandle(pi.hThread);
         CloseHandle(pi.hProcess);
@@ -144,4 +144,3 @@ int main()
     fclose(log);
     return 0;
 }
-

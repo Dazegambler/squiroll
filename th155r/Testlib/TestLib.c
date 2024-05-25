@@ -16,9 +16,5 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
 int __stdcall netcode_init(int32_t param);
 
 int __stdcall netcode_init(int32_t param){
-    MessageBox(NULL,"DLL Injected!","Success", MB_OK);
-}
-
-__declspec(dllexport) void HelloWorld() {
-    MessageBox(NULL,"Hello, World!","Message", MB_OK);
+    return 0;
 }

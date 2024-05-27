@@ -26,7 +26,7 @@ To build the project, follow these steps:
 
     ```sh
     git clone https://github.com/Dazegambler/Aocf_rollback
-    cd yourproject
+    cd Aocf_rollback
     ```
 
 2. Make sure you have `i686-w64-mingw32-gcc` installed. You can install it via your package manager:

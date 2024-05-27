@@ -68,6 +68,8 @@ This will compile the source code and produce the following output files:
 - `th155r.exe`
 - `Netcode.dll`
 2. Run `th155r.exe` with your preferred wine version/fork
+
 #### Steam/Proton
 - If you're running the game on steam via proton simply change the target executable in the properties for `/path/to/game/th155r.exe`
+
 - If you're running the steam version you're going to need to add `th155r.exe` as a non steam game and change its compatibility settings to force it to run via proton

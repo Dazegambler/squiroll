@@ -47,7 +47,7 @@ This will compile the source code and produce the following output files:
 
 ### Windows
 
-1. Ensure you have [MinGW-w64](https://mingw-w64.org/doku.php/download) installed.
+1. Ensure you have [MinGW-w64](https://www.mingw-w64.org/downloads/) installed.
 2. Open a terminal and navigate to the project directory.
 3. Run the `build.bat` script:
 

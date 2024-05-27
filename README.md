@@ -20,10 +20,10 @@ Aocf rollback aims to add rollback based netcode to touhou 15.5:Antinomy of Comm
 
 Clone the repository:
 
-    ```sh
-    git clone https://github.com/Dazegambler/Aocf_rollback
-    cd Aocf_rollback
-    ```
+```sh
+git clone https://github.com/Dazegambler/Aocf_rollback
+cd Aocf_rollback
+```
 
 
 ### Linux

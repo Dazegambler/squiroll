@@ -18,10 +18,6 @@ Aocf rollback aims to add rollback based netcode to touhou 15.5:Antinomy of Comm
 
 ## Build
 
-### Linux
-
-To build the project, follow these steps:
-
 1. Clone the repository:
 
     ```sh
@@ -29,13 +25,19 @@ To build the project, follow these steps:
     cd Aocf_rollback
     ```
 
-2. Make sure you have `i686-w64-mingw32-gcc` installed. You can install it via your package manager:
+
+### Linux
+
+To build the project, follow these steps:
+
+
+1. Make sure you have `i686-w64-mingw32-gcc` installed. You can install it via your package manager:
 
     ```sh
     sudo apt-get install mingw-w64
     ```
 
-3. Run the `build.sh` script:
+2. Run the `build.sh` script:
 
     ```sh
     ./build.sh

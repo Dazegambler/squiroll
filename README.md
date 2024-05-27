@@ -18,7 +18,7 @@ Aocf rollback aims to add rollback based netcode to touhou 15.5:Antinomy of Comm
 
 ## Build
 
-1. Clone the repository:
+Clone the repository:
 
     ```sh
     git clone https://github.com/Dazegambler/Aocf_rollback

@@ -194,7 +194,7 @@ void bootstrap_program(HANDLE process, HANDLE thread) {
 void anti_tamper_disable(HANDLE process){
 	//Rx12E820,Rx130630,Rx132AF0
 	//0xC3
-    uintptr_t base = 0x400000;
+    uintptr_t base = 0x00400000;
 	uintptr_t addrA = 0x12E820,addrB = 0x130630,addrC = 0x132AF0;
 	uint8_t value = 0xC3;
 	addrA=base+addrA;

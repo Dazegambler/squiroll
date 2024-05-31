@@ -10,14 +10,14 @@ void mem_write(LPVOID address, const BYTE* data, size_t size) {
     }
 }
 
-uint8_t* base_address() {
-  return (uint8_t*)GetModuleHandleA(NULL);
+uintptr_t base_address() {
+    return (uintptr_t)GetModuleHandleA(NULL);
 }
 
 void yes_tampering(){
     BYTE data[] = {0xC3};
-    uintptr_t base = *base_address();
-    uintptr_t addrA = 0x12E820,addrB = 0x130630,addrC = 0x132AF0;
+    uintptr_t base = base_address();
+    uintptr_t addrA = 0x0012E820,addrB = 0x00130630,addrC = 0x00132AF0;
     addrA +=base;
     addrB +=base;
     addrC +=base; 

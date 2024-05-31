@@ -191,33 +191,54 @@ void bootstrap_program(HANDLE process, HANDLE thread) {
     FlushInstructionCache(process, (LPCVOID)addr, sizeof(old_bytes));
 }
 
+bool mem_writeEx(HANDLE hProcess,LPVOID address, const BYTE* data, size_t size) {
+    DWORD oldProtect;
+    if (!VirtualProtectEx(hProcess,address, size, PAGE_EXECUTE_READWRITE, &oldProtect)){
+        log_print("Failed to set new protection levels for 0x%p(%X)",address,GetLastError());
+        return false;
+    }
+	if(!WriteProcessMemory(hProcess,address,data,sizeof(data),NULL)){
+		log_print("Failed to write in address:0x%p(%X)\n",address,GetLastError());
+        return false;
+	}
+    if(!VirtualProtectEx(hProcess,address, size, oldProtect, &oldProtect)){
+        log_print("Failed to restore protection levels for 0x%p(%X)",address,GetLastError());
+        return false;
+    }
+    return true;
+}
+
 void anti_tamper_disable(HANDLE process){
 	//Rx12E820,Rx130630,Rx132AF0
 	//0xC3
     uintptr_t base = 0x00400000;
 	uintptr_t addrA = 0x12E820,addrB = 0x130630,addrC = 0x132AF0;
-	uint8_t value = 0xC3;
+    BYTE data[] = {0xC3};
+	//uint8_t value = 0xC3;
 	addrA=base+addrA;
 	addrB=base+addrB;
 	addrC=base+addrC;
-	DWORD protA,protB,protC;
-	VirtualProtectEx(process,(LPVOID)addrA,sizeof(value), PAGE_READWRITE, &protA);
-	VirtualProtectEx(process,(LPVOID)addrB,sizeof(value), PAGE_READWRITE, &protB);
-	VirtualProtectEx(process,(LPVOID)addrC,sizeof(value), PAGE_READWRITE, &protC);
+    mem_writeEx(process,(LPVOID)addrA,data,sizeof(data));
+    mem_writeEx(process,(LPVOID)addrB,data,sizeof(data));
+    mem_writeEx(process,(LPVOID)addrC,data,sizeof(data));
+	// DWORD protA,protB,protC;
+	// VirtualProtectEx(process,(LPVOID)addrA,sizeof(value), PAGE_READWRITE, &protA);
+	// VirtualProtectEx(process,(LPVOID)addrB,sizeof(value), PAGE_READWRITE, &protB);
+	// VirtualProtectEx(process,(LPVOID)addrC,sizeof(value), PAGE_READWRITE, &protC);
 
-	if(!WriteProcessMemory(process,(LPVOID)addrA, &value,sizeof(value),NULL)){
-		log_print("Failed to write in address:0x%p(%X)\n",addrA,GetLastError());
-	}
-	if(!WriteProcessMemory(process,(LPVOID)addrB, &value,sizeof(value),NULL)){
-		log_print("Failed to write in address:0x%p(%X)\n",addrB,GetLastError());
-	}
-	if(!WriteProcessMemory(process,(LPVOID)addrC, &value,sizeof(value),NULL)){
-		log_print("Failed to write in address:0x%p(%X)\n",addrC,GetLastError());
-	}
+	// if(!WriteProcessMemory(process,(LPVOID)addrA, &value,sizeof(value),NULL)){
+	// 	log_print("Failed to write in address:0x%p(%X)\n",addrA,GetLastError());
+	// }
+	// if(!WriteProcessMemory(process,(LPVOID)addrB, &value,sizeof(value),NULL)){
+	// 	log_print("Failed to write in address:0x%p(%X)\n",addrB,GetLastError());
+	// }
+	// if(!WriteProcessMemory(process,(LPVOID)addrC, &value,sizeof(value),NULL)){
+	// 	log_print("Failed to write in address:0x%p(%X)\n",addrC,GetLastError());
+	// }
 
-	VirtualProtectEx(process,(LPVOID)addrA,sizeof(value), protA, &protA);
-	VirtualProtectEx(process,(LPVOID)addrB,sizeof(value), protB, &protB);
-	VirtualProtectEx(process,(LPVOID)addrC,sizeof(value), protC, &protC);
+	// VirtualProtectEx(process,(LPVOID)addrA,sizeof(value), protA, &protA);
+	// VirtualProtectEx(process,(LPVOID)addrB,sizeof(value), protB, &protB);
+	// VirtualProtectEx(process,(LPVOID)addrC,sizeof(value), protC, &protC);
 }
 
 bool execute_program_inject()

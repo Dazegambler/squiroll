@@ -3,8 +3,7 @@
 #include <winuser.h>
 #include <stdint.h>
 #include <stdio.h>
-
-typedef void (*func_ptr)(void);
+#include <assert.h>
 
 uintptr_t base_address() {
     return (uintptr_t)GetModuleHandleA(NULL);
@@ -18,22 +17,24 @@ void mem_write(LPVOID address, const BYTE* data, size_t size) {
     }
 }
 
+void hotpatch(void* target, void* replacement) {
+    assert(((uintptr_t)target & 0x07) == 0);
+    void* page = (void*)((uintptr_t)target & ~0xfff);
+    DWORD oldProtect;
+    if (VirtualProtect(page, 4096, PAGE_EXECUTE_READWRITE, &oldProtect)) {
+        int32_t rel = (int32_t)((char*)replacement - (char*)target - 5);
+        union {
+            uint8_t bytes[8];
+            uint64_t value;
+        } instruction = { {0xe9, rel >> 0, rel >> 8, rel >> 16, rel >> 24} };
+        *(uint64_t*)target = instruction.value;
+        VirtualProtect(page, 4096, oldProtect, &oldProtect);
+    }
 
-void inject_func(void* addr/*RVA*/, func_ptr local_func, size_t original_size) {
-    uintptr_t local_func_address = (uintptr_t)local_func;
-    uintptr_t addr_address = (uintptr_t)addr+base_address();
-    int32_t offset = (int32_t)(local_func_address - addr_address - 5);
-
-    uint8_t jump_instruction[5] = { 0xE9 };
-    memcpy(&jump_instruction[1], &offset, 4);
-
-    unsigned char nop[] = {0x90};
-    mem_write(addr,nop, original_size);
-    mem_write(addr,jump_instruction,sizeof(jump_instruction));
 }
 
 void yes_tampering(){
-    BYTE data[] = {0xC3};
+    static const BYTE data[] = {0xC3};
     uintptr_t base = base_address();
     uintptr_t addrA = 0x0012E820,addrB = 0x00130630,addrC = 0x00132AF0;
     addrA +=base;
@@ -45,25 +46,8 @@ void yes_tampering(){
 
 }
 
-void update_window_title(){
-    // Rx4DAD30
-}
-
-void testInjection(){
-    FILE *fp;
-    fp = fopen("TEST.txt","w");
-    fprintf(fp,"Successful test");
-    fclose(fp);
-    asm (
-        "call 0x0056fde0\n\t"
-    );
-}
-
 //FUNCTION REQUIRED FOR THE LIBRARY
 __declspec(dllexport) int __stdcall netcode_init(int32_t param) {
     yes_tampering();
-
-    uintptr_t addr = 0x00170e98; 
-    inject_func((LPVOID)addr,testInjection,5);
     return 0;
 }

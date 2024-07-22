@@ -4,14 +4,11 @@ Aocf rollback aims to add rollback based netcode to touhou 15.5:Antinomy of Comm
 
 ### As of now we only have a patcher working, we're currently working on making the netcode that is going to replace the currently existing one in the game
 
-# Currently Needed:
-## Memory addresses
-- Player inputs
-- Opponent inputs
-- All things sync related
-- Sockets
-### New Netcode(C/C++)
-
+# Progress Dashboard:
+## - Frame restoration/saving
+## - Input Management
+## - Memory Allocation hooking
+## - Frame stepping
 ## Prerequisites
 
 - [i686-w64-mingw32-gcc](https://www.mingw-w64.org/downloads/)

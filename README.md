@@ -9,6 +9,10 @@ Aocf rollback aims to add rollback based netcode to touhou 15.5:Antinomy of Comm
 ### Input Management
 ### ~~Memory Allocation hooking~~
 ### ~~Frame stepping~~
+
+# Work on later:
+### - Caster and matchmaking 
+
 ## Prerequisites
 
 - [i686-w64-mingw32-gcc](https://www.mingw-w64.org/downloads/)

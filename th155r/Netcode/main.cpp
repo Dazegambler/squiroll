@@ -5,9 +5,12 @@
 #include <stdio.h>
 #include <assert.h>
 #include "AllocMan.h"
+#include <squirrel.h>
 
 //SQVM Rx4DACE4
+HSQUIRRELVM VM;
 
+//Bool Manbow::SetWindowText(LPCSTR newname) Rx00EA50
 void *(*actual_malloc)(size_t size) = malloc;
 void (*actual_free)(void *ptr) = free;
 void *(*actual_realloc)(void *ptr, size_t new_size) = realloc;
@@ -58,6 +61,13 @@ void yes_tampering()
     mem_write((LPVOID)addrC, data, sizeof(data));
 }
 
+void GetSqVM(){
+    uintptr_t base = base_address();
+    uintptr_t addr = 0x4DACE4;
+    addr+=base;
+    VM = *(HSQUIRRELVM *)addr; 
+}
+
 void Cleanup()
 {
     hotpatch((void *)my_malloc, (void *)actual_malloc);
@@ -71,11 +81,12 @@ extern "C"
     __declspec(dllexport) int __stdcall netcode_init(int32_t param)
     {
         yes_tampering();
+        GetSqVM();
 
-        hotpatch((void *)actual_malloc, (void *)my_malloc);
+        hotpatch((void *)0x706fbc, (void *)my_malloc);
         hotpatch((void *)actual_free, (void *)my_free);
-        hotpatch((void *)actual_realloc, (void *)my_realloc);
-        
+        hotpatch((void *)0x706fc7, (void *)my_realloc);
+
         return 0;
     }
 }

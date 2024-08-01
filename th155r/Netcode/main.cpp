@@ -7,20 +7,16 @@
 #include "AllocMan.h"
 #include <squirrel.h>
 
+#include "util.h"
+
+const uintptr_t base_address = (uintptr_t)GetModuleHandleA(NULL);
+
 //SQVM Rx4DACE4
-HSQUIRRELVM VM;
+HSQUIRRELVM* VM;
 
 //Bool Manbow::SetWindowText(LPCSTR newname) Rx00EA50
-void *(*actual_malloc)(size_t size) = malloc;
-void (*actual_free)(void *ptr) = free;
-void *(*actual_realloc)(void *ptr, size_t new_size) = realloc;
 
-uintptr_t base_address()
-{
-    return (uintptr_t)GetModuleHandleA(NULL);
-}
-
-void mem_write(LPVOID address, const BYTE *data, size_t size)
+void mem_write(LPVOID address, const BYTE* data, size_t size)
 {
     DWORD oldProtect;
     if (VirtualProtect(address, size, PAGE_READWRITE, &oldProtect))
@@ -30,64 +26,80 @@ void mem_write(LPVOID address, const BYTE *data, size_t size)
     }
 }
 
-void hotpatch(void *target, void *replacement)
+void hotpatch_jump(void* target, void* replacement)
 {
-    assert(((uintptr_t)target & 0x07) == 0);
-    void *page = (void *)((uintptr_t)target & ~0xfff);
-    DWORD oldProtect;
-    if (VirtualProtect(page, 4096, PAGE_EXECUTE_READWRITE, &oldProtect))
-    {
-        int32_t rel = (int32_t)((char *)replacement - (char *)target - 5);
-        union
-        {
-            uint8_t bytes[8];
-            uint64_t value;
-        } instruction = {{0xe9, rel >> 0, rel >> 8, rel >> 16, rel >> 24}};
-        *(uint64_t *)target = instruction.value;
-        VirtualProtect(page, 4096, oldProtect, &oldProtect);
-    }
+    uint8_t bytes[6] = { 0xE9, 0, 0, 0, 0, 0xCC };
+    *(uint32_t*)&bytes[1] = (uintptr_t)replacement - (uintptr_t)target - 5;
+    mem_write(target, bytes, sizeof(bytes));
+}
+
+//NOT SURE IF ACTUALLY FIXED IT
+void hotpatch_rel32(void* target, void* replacement)
+{
+    uint8_t raw = (uintptr_t)replacement - (uintptr_t)target - 4;
+    mem_write(target, &raw, sizeof(raw));
+}
+
+void GetSqVM(){
+    VM = (HSQUIRRELVM*)0x4DACE4_R; 
+}
+
+#define sq_vm_malloc_call_addr (0x186745_R)
+#define sq_vm_realloc_call_addr (0x18675A_R)
+#define sq_vm_free_call_addr (0x186737_R)
+
+void Cleanup()
+{
+}
+
+// Initialization code shared by th155r and thcrap use
+void common_init() {
+    // Allocation Patches causing Crash on startup
+    // hotpatch_rel32((void*)sq_vm_malloc_call_addr, (void*)my_malloc);
+    // hotpatch_rel32((void*)sq_vm_realloc_call_addr, (void*)my_realloc_sq);
+    // hotpatch_rel32((void*)sq_vm_free_call_addr, (void*)my_free);
 }
 
 void yes_tampering()
 {
-    static const BYTE data[] = {0xC3};
-    uintptr_t base = base_address();
-    uintptr_t addrA = 0x0012E820, addrB = 0x00130630, addrC = 0x00132AF0;
-    addrA += base;
-    addrB += base;
-    addrC += base;
+    static constexpr BYTE data[] = {0xC3};
+    uintptr_t addrA = 0x12E820_R, addrB = 0x130630_R, addrC = 0x132AF0_R;
     mem_write((LPVOID)addrA, data, sizeof(data));
     mem_write((LPVOID)addrB, data, sizeof(data));
     mem_write((LPVOID)addrC, data, sizeof(data));
 }
 
-void GetSqVM(){
-    uintptr_t base = base_address();
-    uintptr_t addr = 0x4DACE4;
-    addr+=base;
-    VM = *(HSQUIRRELVM *)addr; 
-}
-
-void Cleanup()
-{
-    hotpatch((void *)my_malloc, (void *)actual_malloc);
-    hotpatch((void *)my_free, (void *)actual_free);
-    hotpatch((void *)my_realloc, (void *)actual_realloc);
-}
-
 extern "C"
 {
     // FUNCTION REQUIRED FOR THE LIBRARY
-    __declspec(dllexport) int __stdcall netcode_init(int32_t param)
+    // th155r init function
+    // Executes before the start of the process
+    __declspec(dllexport) int stdcall netcode_init(int32_t param)
     {
         yes_tampering();
-        GetSqVM();
-
-        hotpatch((void *)0x706fbc, (void *)my_malloc);
-        hotpatch((void *)actual_free, (void *)my_free);
-        hotpatch((void *)0x706fc7, (void *)my_realloc);
-
+        common_init();
         return 0;
+    }
+    
+    // thcrap init function
+    // Thcrap already removes the tamper protection,
+    // so that code is unnecessary to include here.
+    __declspec(dllexport) void cdecl netcode_mod_init(void* param) {
+        common_init();
+    }
+    
+    // thcrap plugin init
+    __declspec(dllexport) int stdcall thcrap_plugin_init()
+    {
+        if (HMODULE thcrap_handle = GetModuleHandleA("thcrap.dll")) {
+            if (auto runconfig_game_get = (const char*(*)())GetProcAddress(thcrap_handle, "runconfig_game_get")) {
+                const char* game_str = runconfig_game_get();
+                if (game_str && !strcmp(game_str, "th155")) {
+                    return 0;
+                }
+            }
+        }
+        return 1;
     }
 }
 

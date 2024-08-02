@@ -33,7 +33,6 @@ void hotpatch_jump(void* target, void* replacement)
     mem_write(target, bytes, sizeof(bytes));
 }
 
-//NOT SURE IF ACTUALLY FIXED IT
 void hotpatch_rel32(void* target, void* replacement)
 {
     uint8_t raw = (uintptr_t)replacement - (uintptr_t)target - 4;
@@ -44,9 +43,9 @@ void GetSqVM(){
     VM = (HSQUIRRELVM*)0x4DACE4_R; 
 }
 
-#define sq_vm_malloc_call_addr (0x186745_R)
-#define sq_vm_realloc_call_addr (0x18675A_R)
-#define sq_vm_free_call_addr (0x186737_R)
+#define sq_vm_malloc_call_addr (0x183755_R)//(0x186745_R)//
+#define sq_vm_realloc_call_addr (0x184C55_R)//(0x18675A_R)//
+#define sq_vm_free_call_addr (0x182381_R)//(0x186737_R)//
 
 void Cleanup()
 {
@@ -55,9 +54,9 @@ void Cleanup()
 // Initialization code shared by th155r and thcrap use
 void common_init() {
     // Allocation Patches causing Crash on startup
-    // hotpatch_rel32((void*)sq_vm_malloc_call_addr, (void*)my_malloc);
-    // hotpatch_rel32((void*)sq_vm_realloc_call_addr, (void*)my_realloc_sq);
-    // hotpatch_rel32((void*)sq_vm_free_call_addr, (void*)my_free);
+    hotpatch_rel32((void*)sq_vm_malloc_call_addr, (void*)my_malloc);
+    hotpatch_rel32((void*)sq_vm_realloc_call_addr, (void*)my_realloc_sq);
+    hotpatch_rel32((void*)sq_vm_free_call_addr, (void*)my_free);
 }
 
 void yes_tampering()

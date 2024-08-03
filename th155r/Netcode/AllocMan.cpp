@@ -18,11 +18,6 @@ void AllocNode::unlink() {
     prev_node->next = next_node;
 }
 
-void AllocNode::relink() {
-    this->next->prev = this;
-    this->prev->next = this;
-}
-
 // AllocData member functions
 void AllocData::init(size_t size) {
     this->size = size;
@@ -31,7 +26,6 @@ void AllocData::init(size_t size) {
 
 void AllocData::reinit(size_t size) {
     this->size = size;
-    this->node.relink();
 }
 
 void AllocData::start_free(int8_t time) {
@@ -39,7 +33,10 @@ void AllocData::start_free(int8_t time) {
 }
 
 AllocTickResult AllocData::tick() {
-    if (!(this->timer < 0) && --this->timer != 0) {
+    if (
+        !(this->timer < 0) &&
+        --this->timer != 0
+    ) {
         this->node.unlink();
         return FreeData;
     }
@@ -49,6 +46,9 @@ AllocTickResult AllocData::tick() {
 void AllocData::rollback(size_t frames) {
     if (!(this->timer < 0)) {
         this->timer += frames;
+        if (this->timer >= SAVED_FRAMES) {
+            this->timer = -1;
+        }
     }
 }
 
@@ -121,8 +121,10 @@ void AllocManager::tick() {
 
 void AllocManager::rollback(size_t frames) {
     size_t index = this->rollback_index(frames);
-    for_each_saved_alloc(index, [](Alloc* saved_data) {
-        memcpy(saved_data->ptr->data, saved_data->data, saved_data->size);
+    for_each_saved_alloc(index, [=](Alloc* saved_data) {
+        AllocData* real_alloc = saved_data->ptr;
+        real_alloc->rollback(frames);
+        memcpy(real_alloc->data, saved_data->data, saved_data->size);
     });
 }
 
@@ -158,18 +160,20 @@ void* cdecl my_realloc(void* ptr, size_t new_size) {
     if (ptr) {
         AllocData* real_alloc = get_alloc_data(ptr);
         if (new_size) {
-            AllocData* new_alloc = (AllocData*)realloc(real_alloc, new_size + sizeof(AllocData));
-            if (new_alloc) {
-                new_alloc->reinit(new_size);
+            if (new_size > real_alloc->size) {
+                AllocData* new_alloc = (AllocData*)_expand(real_alloc, new_size + sizeof(AllocData));
+                if (new_alloc) {
+                    new_alloc->reinit(new_size);
+                } else {
+                    ptr = my_malloc(new_size);
+                    memcpy(ptr, real_alloc->data, real_alloc->size);
+                    real_alloc->start_free(SAVED_FRAMES);
+                }
             }
-        } else {
-            real_alloc->start_free(SAVED_FRAMES);
+            return ptr;
         }
+        real_alloc->start_free(SAVED_FRAMES);
         return NULL;
     }
     return my_malloc(new_size);
-}
-
-void* cdecl my_realloc_sq(void* ptr, size_t old_size, size_t new_size) {
-    return my_realloc(ptr, new_size);
 }

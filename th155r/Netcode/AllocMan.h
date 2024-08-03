@@ -1,3 +1,4 @@
+#pragma once
 #ifndef ALLOCMAN_H
 #define ALLOCMAN_H
 
@@ -16,7 +17,6 @@ struct AllocNode {
     void prepend(AllocNode* new_node);
     void append(AllocNode* new_node);
     void unlink();
-    void relink();
 };
 
 enum AllocTickResult {
@@ -73,6 +73,5 @@ void rollback_allocs(size_t frames);
 void* cdecl my_malloc(size_t size);
 void cdecl my_free(void* ptr);
 void* cdecl my_realloc(void* ptr, size_t new_size);
-void* cdecl my_realloc_sq(void* ptr, size_t old_size, size_t new_size);
 
 #endif

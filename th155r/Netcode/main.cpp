@@ -65,7 +65,7 @@ void Cleanup()
 // Executes before the start of the process
 void common_init() {
     hotpatch_rel32((void*)sq_vm_malloc_call_addr, (void*)my_malloc);
-    hotpatch_rel32((void*)sq_vm_realloc_call_addr, (void*)my_realloc_sq);
+    hotpatch_rel32((void*)sq_vm_realloc_call_addr, (void*)my_realloc);
     hotpatch_rel32((void*)sq_vm_free_call_addr, (void*)my_free);
     //hotpatch_jump((void*)window_loop_call_addr, (void*)my_check_for_messages);
 }

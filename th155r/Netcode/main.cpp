@@ -14,11 +14,9 @@ const uintptr_t base_address = (uintptr_t)GetModuleHandleA(NULL);
 //SQVM Rx4DACE4 initialized at Rx124710
 HSQUIRRELVM* VM;
 
-//Window Loop Rx23DF0
-
 //Bool Manbow::SetWindowText(LPCSTR newname) Rx00EA50
 
-void mem_write(LPVOID address, const BYTE* data, size_t size)
+void mem_write(LPVOID address, const void* data, size_t size)
 {
     DWORD oldProtect;
     if (VirtualProtect(address, size, PAGE_READWRITE, &oldProtect))
@@ -37,7 +35,7 @@ void hotpatch_jump(void* target, void* replacement)
 
 void hotpatch_rel32(void* target, void* replacement)
 {
-    uint8_t raw = (uintptr_t)replacement - (uintptr_t)target - 4;
+    int32_t raw = (uintptr_t)replacement - (uintptr_t)target - 4;
     mem_write(target, &raw, sizeof(raw));
 }
 
@@ -45,23 +43,23 @@ void GetSqVM(){
     VM = (HSQUIRRELVM*)0x4DACE4_R; 
 }
 
-#define sq_vm_malloc_call_addr (0x183755_R)//(0x186745_R)//
-#define sq_vm_realloc_call_addr (0x184C55_R)//(0x18675A_R)//
-#define sq_vm_free_call_addr (0x182381_R)//(0x186737_R)//
-#define window_loop_call_addr (0x01df3a_R)
+#define sq_vm_malloc_call_addr (0x186745_R)//(0x183755_R)//
+#define sq_vm_realloc_call_addr (0x18675A_R)//(0x184C55_R)//
+#define sq_vm_free_call_addr (0x186737_R)//(0x182381_R)//
+//#define window_loop_call_addr (0x01df3a_R)
 
 void Cleanup()
 {
 }
 
-int my_check_for_messages(){
-    struct tagMSG msg;
-    while (GetMessageA(&msg,0,0,0)){
-        TranslateMessage(&msg);
-        DispatchMessageA(&msg);
-    }
-    return 0;
-}
+// int my_check_for_messages(){
+//     struct tagMSG msg;
+//     while (GetMessageA(&msg,0,0,0)){
+//         TranslateMessage(&msg);
+//         DispatchMessageA(&msg);
+//     }
+//     return 0;
+// }
 
 // Initialization code shared by th155r and thcrap use
 // Executes before the start of the process
@@ -69,7 +67,7 @@ void common_init() {
     hotpatch_rel32((void*)sq_vm_malloc_call_addr, (void*)my_malloc);
     hotpatch_rel32((void*)sq_vm_realloc_call_addr, (void*)my_realloc_sq);
     hotpatch_rel32((void*)sq_vm_free_call_addr, (void*)my_free);
-    hotpatch_jump((void*)window_loop_call_addr, (void*)my_check_for_messages);
+    //hotpatch_jump((void*)window_loop_call_addr, (void*)my_check_for_messages);
 }
 
 void yes_tampering()

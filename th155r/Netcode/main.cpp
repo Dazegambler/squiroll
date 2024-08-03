@@ -11,8 +11,10 @@
 
 const uintptr_t base_address = (uintptr_t)GetModuleHandleA(NULL);
 
-//SQVM Rx4DACE4
+//SQVM Rx4DACE4 initialized at Rx124710
 HSQUIRRELVM* VM;
+
+//Window Loop Rx23DF0
 
 //Bool Manbow::SetWindowText(LPCSTR newname) Rx00EA50
 
@@ -46,17 +48,28 @@ void GetSqVM(){
 #define sq_vm_malloc_call_addr (0x183755_R)//(0x186745_R)//
 #define sq_vm_realloc_call_addr (0x184C55_R)//(0x18675A_R)//
 #define sq_vm_free_call_addr (0x182381_R)//(0x186737_R)//
+#define window_loop_call_addr (0x01df3a_R)
 
 void Cleanup()
 {
 }
 
+int my_check_for_messages(){
+    struct tagMSG msg;
+    while (GetMessageA(&msg,0,0,0)){
+        TranslateMessage(&msg);
+        DispatchMessageA(&msg);
+    }
+    return 0;
+}
+
 // Initialization code shared by th155r and thcrap use
+// Executes before the start of the process
 void common_init() {
-    // Allocation Patches causing Crash on startup
     hotpatch_rel32((void*)sq_vm_malloc_call_addr, (void*)my_malloc);
     hotpatch_rel32((void*)sq_vm_realloc_call_addr, (void*)my_realloc_sq);
     hotpatch_rel32((void*)sq_vm_free_call_addr, (void*)my_free);
+    hotpatch_jump((void*)window_loop_call_addr, (void*)my_check_for_messages);
 }
 
 void yes_tampering()
@@ -72,7 +85,6 @@ extern "C"
 {
     // FUNCTION REQUIRED FOR THE LIBRARY
     // th155r init function
-    // Executes before the start of the process
     __declspec(dllexport) int stdcall netcode_init(int32_t param)
     {
         yes_tampering();

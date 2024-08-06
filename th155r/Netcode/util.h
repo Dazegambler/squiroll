@@ -35,4 +35,16 @@ inline uintptr_t operator ""_R(unsigned long long int addr) {
     return (uintptr_t)addr + base_address;
 }
 
+template<size_t bit_count>
+using SBitIntType = std::conditional_t<bit_count <= 8, int8_t,
+                                        std::conditional_t<bit_count <= 16,int16_t,
+                                        std::conditional_t<bit_count <= 32,int32_t,
+                                        std::conditional_t<bit_count <= 64,int64_t,
+                                        void>>>>;
+template<size_t bit_count>
+using UBitIntType = std::conditional_t<bit_count <= 8, int8_t,
+                                        std::conditional_t<bit_count <= 16,int16_t,
+                                        std::conditional_t<bit_count <= 32,int32_t,
+                                        std::conditional_t<bit_count <= 64,int64_t,
+                                        void>>>>;
 #endif

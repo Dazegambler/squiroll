@@ -1,4 +1,3 @@
-#include <winsock2.h>
 #include <windows.h>
 #include <winuser.h>
 #include <stdint.h>
@@ -43,31 +42,35 @@ void GetSqVM(){
     VM = (HSQUIRRELVM*)0x4DACE4_R; 
 }
 
-#define sq_vm_malloc_call_addr (0x186745_R)//(0x183755_R)//
-#define sq_vm_realloc_call_addr (0x18675A_R)//(0x184C55_R)//
-#define sq_vm_free_call_addr (0x186737_R)//(0x182381_R)//
-//#define window_loop_call_addr (0x01df3a_R)
+#define closesocketA_call_addr (0x170383_R)
+#define closesocketB_call_addr (0x1703ee_R)
+#define bind_call_addr (0x1702f4_R)
+#define sendto_call_addr (0x170502_R)
+#define recvfrom_call_addr (0x170e5b_R)
+#define sq_vm_malloc_call_addr (0x186745_R)
+#define sq_vm_realloc_call_addr (0x18675A_R)
+#define sq_vm_free_call_addr (0x186737_R)
 
 void Cleanup()
 {
 }
 
-// int my_check_for_messages(){
-//     struct tagMSG msg;
-//     while (GetMessageA(&msg,0,0,0)){
-//         TranslateMessage(&msg);
-//         DispatchMessageA(&msg);
-//     }
-//     return 0;
-// }
+void Debug(){
+    AllocConsole();
+    auto a = freopen("CONIN$","r",stdin);
+    a = freopen("CONOUT$","w",stdout);
+    a = freopen("CONOUT$","w",stderr);
+    SetConsoleTitleW(L"th155r debug");
+}
 
 // Initialization code shared by th155r and thcrap use
 // Executes before the start of the process
 void common_init() {
+    Debug();
+
     hotpatch_rel32((void*)sq_vm_malloc_call_addr, (void*)my_malloc);
     hotpatch_rel32((void*)sq_vm_realloc_call_addr, (void*)my_realloc);
     hotpatch_rel32((void*)sq_vm_free_call_addr, (void*)my_free);
-    //hotpatch_jump((void*)window_loop_call_addr, (void*)my_check_for_messages);
 }
 
 void yes_tampering()

@@ -4,12 +4,12 @@
 
 #include <winsock2.h>
 #include <windows.h>
-#include <shlobj.h>
-#include <shlwapi.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
+//#include <shlobj.h>
+//#include <shlwapi.h>
+//#include <stdbool.h>
+//#include <stdint.h>
+//#include <stdio.h>
+//#include <stdlib.h>
 #include <time.h>
 #include <ws2tcpip.h>
 

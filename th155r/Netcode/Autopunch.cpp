@@ -414,3 +414,82 @@ bool running() {
 	singleton_mutex = CreateMutexW(NULL, false, mutex_name);
 	return false;
 }
+
+// void load() {
+// 	if (DEBUG) {
+// 		srand(time(NULL));
+// 		wchar_t *desktop_path = malloc((MAX_PATH + 1) * 2);
+// 		SHGetSpecialFolderPathW(HWND_DESKTOP, desktop_path, CSIDL_DESKTOP, FALSE);
+// 		wchar_t *path = malloc((MAX_PATH + 1) * 2);
+// 		_snwprintf(path, MAX_PATH + 1, L"%ls\\inject.%d.log", desktop_path, rand() % 1000000);
+// 		free(desktop_path);
+// 		//WARN(L"Injected autopunch v" STR(AUTOPUNCH_VERSION) " with debug!\nPath to debug is: %ls", path)
+// 		debug = _wfopen(path, L"w");
+// 		//DEBUG_LOG("starting autopunch v" STR(AUTOPUNCH_VERSION))
+// 		free(path);
+// 	}
+
+// 	if (running()) {
+// 		//DEBUG_LOG("already running, quitting")
+// 		return;
+// 	}
+// 	started = true;
+
+// 	//DEBUG_LOG("load_start")
+
+//     hotpatch((void*)actual_recvfrom,(void*)my_recvfrom);
+//     hotpatch((void*)actual_sendto,(void*)my_sendto);
+//     hotpatch((void*)actual_bind,(void*)my_bind);
+//     hotpatch((void*)actual_closesocket,(void*)my_closesocket);
+// 	// DetourTransactionBegin();
+// 	// DetourUpdateThread(GetCurrentThread());
+// 	// DetourAttach((void **)&actual_recvfrom, my_recvfrom);
+// 	// DetourAttach((void **)&actual_sendto, my_sendto);
+// 	// DetourAttach((void **)&actual_bind, my_bind);
+// 	// DetourAttach((void **)&actual_closesocket, my_closesocket);
+// 	// DetourTransactionCommit();
+
+// 	u_long relay_ip_net = get_relay_ip();
+// 	u_short relay_port_net = htons(relay_port);
+// 	relay_addr = (struct sockaddr_in){.sin_family = AF_INET, .sin_port = relay_port_net, .sin_addr.s_addr = relay_ip_net};
+
+// 	sockets_mutex = CreateMutex(NULL, FALSE, NULL);
+// 	relay_thread = CreateThread(NULL, 0, relay, NULL, 0, NULL);
+
+// 	//DEBUG_ADDRDEBUG_LOG("load_end")
+// }
+
+// void unload() {
+// 	//DEBUG_ADDRDEBUG_LOG("unload_start")
+
+// 	if (started) {
+// 		started = false;
+// 		relay_close = true;
+// 		ReleaseMutex(singleton_mutex);
+// 		CloseHandle(singleton_mutex);
+// 		WaitForSingleObject(sockets_mutex, INFINITE);
+// 		CloseHandle(relay_thread);
+// 		CloseHandle(sockets_mutex);
+// 		//DEBUG_ADDRDEBUG_LOG("unload free sockets: %zu %zu %zu", sockets_len, sockets_cap, (size_t)sockets)
+// 		free(sockets);
+
+// 		//DEBUG_ADDRDEBUG_LOG("unload_detours")
+//         hotpatch((void*)my_recvfrom,(void*)actual_recvfrom);
+//         hotpatch((void*)my_sendto,(void*)actual_sendto);
+//         hotpatch((void*)my_bind,(void*)actual_bind);
+//         hotpatch((void*)my_closesocket,(void*)actual_closesocket);
+
+// 		// DetourTransactionBegin();
+// 		// DetourUpdateThread(GetCurrentThread());
+// 		// DetourDetach((void **)&actual_recvfrom, my_recvfrom);
+// 		// DetourDetach((void **)&actual_sendto, my_sendto);
+// 		// DetourDetach((void **)&actual_bind, my_bind);
+// 		// DetourDetach((void **)&actual_closesocket, my_closesocket);
+// 		// DetourTransactionCommit();
+// 	}
+
+// 	//DEBUG_LOG("unload_end")
+// 	if(debug) {
+// 		fclose(debug);
+// 	}
+// }

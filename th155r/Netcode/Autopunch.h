@@ -47,4 +47,6 @@ DWORD WINAPI relay(void *data);
 u_long get_relay_ip();
 struct socket_data *get_socket_data(SOCKET s);
 bool running();
+void load();
+void unload();
 #endif

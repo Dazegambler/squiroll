@@ -2,8 +2,8 @@
 //#include <winuser.h>
 //#include <stdint.h>
 #include "AllocMan.h"
-#include "PatchUtils.h"
 #include "Autopunch.h"
+#include "PatchUtils.h"
 #include <squirrel.h>
 
 #include "util.h"
@@ -30,6 +30,7 @@ void GetSqVM(){
 
 void Cleanup()
 {
+    autopunch_cleanup();
 }
 
 void Debug(){
@@ -46,6 +47,8 @@ void patch_autopunch(){
     hotpatch_rel32((void*)bind_call_addr,(void*)my_bind);
     hotpatch_rel32((void*)closesocketA_call_addr,(void*)my_closesocket);
     hotpatch_rel32((void*)closesocketB_call_addr,(void*)my_closesocket);
+
+    autopunch_init();
 }
 
 void patch_allocman(){
@@ -58,8 +61,8 @@ void patch_allocman(){
 // Executes before the start of the process
 void common_init() {
     Debug();
-    patch_allocman();
-    patch_autopunch();
+    //patch_allocman();
+    //patch_autopunch();
 
 }
 

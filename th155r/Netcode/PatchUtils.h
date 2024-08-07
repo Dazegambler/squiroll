@@ -3,7 +3,6 @@
 #define PatchUtils_H
 
 #include <windows.h>
-#include <winuser.h>
 #include <stdint.h>
 #include <stdio.h>
 

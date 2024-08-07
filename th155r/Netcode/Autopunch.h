@@ -4,12 +4,7 @@
 
 #include <winsock2.h>
 #include <windows.h>
-//#include <shlobj.h>
-//#include <shlwapi.h>
-//#include <stdbool.h>
-//#include <stdint.h>
-//#include <stdio.h>
-//#include <stdlib.h>
+#include <stdio.h>
 #include <time.h>
 #include <ws2tcpip.h>
 
@@ -47,6 +42,6 @@ DWORD WINAPI relay(void *data);
 u_long get_relay_ip();
 struct socket_data *get_socket_data(SOCKET s);
 bool running();
-void load();
-void unload();
+void autopunch_init();
+void autopunch_cleanup();
 #endif

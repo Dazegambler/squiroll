@@ -7,6 +7,7 @@
 #include <squirrel.h>
 
 #include "util.h"
+#include "log.h"
 
 const uintptr_t base_address = (uintptr_t)GetModuleHandleA(NULL);
 
@@ -21,12 +22,10 @@ void GetSqVM(){
 #define sq_vm_realloc_call_addr (0x18675A_R)
 #define sq_vm_free_call_addr (0x186737_R)
 
-#define closesocketA_call_addr (0x170383_R)
-#define closesocketB_call_addr (0x1703ee_R)
-#define bind_call_addr (0x1702f4_R)
-#define sendto_call_addr (0x170502_R)
-#define recvfrom_call_addr (0x170e5b_R)
-
+#define closesocket_addr (0x388514_R)//
+#define bind_addr (0x3884dc_R)
+#define sendto_addr (0x3884d4_R)
+#define recvfrom_addr (0x3884d8_R)
 
 void Cleanup()
 {
@@ -42,11 +41,10 @@ void Debug(){
 }
 
 void patch_autopunch(){
-    hotpatch_rel32((void*)recvfrom_call_addr,(void*)my_recvfrom);
-    hotpatch_rel32((void*)sendto_call_addr,(void*)my_sendto);
-    hotpatch_rel32((void*)bind_call_addr,(void*)my_bind);
-    hotpatch_rel32((void*)closesocketA_call_addr,(void*)my_closesocket);
-    hotpatch_rel32((void*)closesocketB_call_addr,(void*)my_closesocket);
+    hotpatch_import((void*)recvfrom_addr,(void*)my_recvfrom);
+    hotpatch_import((void*)sendto_addr,(void*)my_sendto);
+    hotpatch_import((void*)bind_addr,(void*)my_bind);
+    hotpatch_import((void*)closesocket_addr,(void*)my_closesocket);
 
     autopunch_init();
 }
@@ -60,9 +58,9 @@ void patch_allocman(){
 // Initialization code shared by th155r and thcrap use
 // Executes before the start of the process
 void common_init() {
-    Debug();
+    Debug();    
     //patch_allocman();
-    //patch_autopunch();
+    patch_autopunch();
 
 }
 
@@ -100,6 +98,9 @@ extern "C"
             if (auto runconfig_game_get = (const char*(*)())GetProcAddress(thcrap_handle, "runconfig_game_get")) {
                 const char* game_str = runconfig_game_get();
                 if (game_str && !strcmp(game_str, "th155")) {
+                    if (printf_t* log_func = (printf_t*)GetProcAddress(thcrap_handle, "log_printf")) {
+                        log_printf = log_func;
+                    }
                     return 0;
                 }
             }

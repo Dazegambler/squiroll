@@ -11,24 +11,6 @@
 #define ENABLE_DEBUG_LOGGING 0
 #endif
 
-// This macro still provides syntax checking compared to
-// just making the debug print an empty macro for release
-#if _MSC_VER
-#define EVAL_NOOP(...) __noop(__VA_ARGS__)
-#else
-#define EVAL_NOOP(...) (((void)sizeof printf("", __VA_ARGS__)), 0)
-#endif
-
-FILE* log_file = NULL;
-
-#define log_print(...) fprintf(log_file, __VA_ARGS__)
-
-#if ENABLE_DEBUG_LOGGING
-#define log_debug(...) log_print(__VA_ARGS__)
-#else
-#define log_debug(...) EVAL_NOOP(__VA_ARGS__)
-#endif
-
 //Code provided by zero318
 static uint8_t inject_func[] = {
     0x53,             //   PUSH EBX
@@ -139,7 +121,7 @@ InjectReturnCode inject(HANDLE process, const wchar_t* dll_str, const char* init
             GetExitCodeThread(thread, &exit_code);
             CloseHandle(thread);
         } else {
-            log_debug("Thread creation failed\n");
+            fprintf(stdout,"Thread creation failed\n");
         }
     }
 
@@ -209,8 +191,8 @@ bool execute_program_inject()
             ResumeThread(pi.hThread);
             ret = true;
         } else {
-            log_print("Code Injection failed...(%X,%X)\n", inject_result, GetLastError());
-            log_debug("%s\n", get_inject_func_message(inject_result));
+            fprintf(stderr,"Code Injection failed...(%X,%X)\n", inject_result, GetLastError());
+            fprintf(stderr,"%s\n", get_inject_func_message(inject_result));
         }
         CloseHandle(pi.hThread);
         CloseHandle(pi.hProcess);
@@ -218,17 +200,27 @@ bool execute_program_inject()
     return ret;
 }
 
+void Debug(){
+    AllocConsole();
+    freopen("CONIN$","r",stdin);
+    freopen("CONOUT$","w",stdout);
+    freopen("CONOUT$","w",stderr);
+    SetConsoleTitleW(L"th155r output");
+}
+
 int main(int argc, char* argv[])
-{
-    log_file = fopen("th155r.log", "a");
+{    
+    Debug();
     
     if (GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "wine_get_version")) {
         is_running_on_wine = true;
     }
     
-    log_print("Starting patcher\n");
-    log_debug("OS Type: %s\n", !is_running_on_wine ? "Windows" : "Wine");
-    execute_program_inject();
-    fclose(log_file);
+    fprintf(stdout,"Starting patcher\n");
+    fprintf(stdout,"OS Type: %s\n", !is_running_on_wine ? "Windows" : "Wine");
+    if(execute_program_inject()!= false){
+        fprintf(stdout,"Patch succesful, you can close this now");
+        return 0;
+    }
     return 0;
 }

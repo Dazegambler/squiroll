@@ -22,3 +22,7 @@ void hotpatch_rel32(void* target, void* replacement)
     int32_t raw = (uintptr_t)replacement - (uintptr_t)target - 4;
     mem_write(target, &raw, sizeof(raw));
 }
+
+void hotpatch_import(void* addr, void* replacement) {
+  mem_write(addr, &replacement, sizeof(replacement));
+}

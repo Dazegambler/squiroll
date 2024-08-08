@@ -9,5 +9,6 @@
 void mem_write(LPVOID address, const void* data, size_t size);
 void hotpatch_jump(void* target, void* replacement);
 void hotpatch_rel32(void* target, void* replacement);
+void hotpatch_import(void* addr, void* replacement);
 
 #endif

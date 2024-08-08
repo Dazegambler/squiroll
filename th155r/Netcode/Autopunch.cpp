@@ -165,8 +165,51 @@ int WINAPI my_recvfrom(SOCKET s, char *out_buf, int len, int flags, struct socka
 	}
 }
 
-int WINAPI my_sendto(SOCKET s, const char *buf, int len, int flags, const struct sockaddr *to_original, int tolen) {
-	if (to_original->sa_family != AF_INET) {
+// int WINAPI _my_sendto(
+// 	SOCKET s,
+// 	LPWSABUF lpBuffers,
+// 	DWORD dwBufferCount,
+// 	LPDWORD lpNumberOfBytesSent,
+// 	DWORD dwFlags,
+// 	struct sockaddr *lpTo,
+// 	int iTolen, 
+// 	LPWSAOVERLAPPED lpOverlapped,
+// 	LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine)
+// {
+// 	if (lpTo->sa_family != AF_INET){
+// 		return WSASendTo(s,lpBuffers,dwBufferCount,lpNumberOfBytesSent,dwFlags,lpTo,iTolen,lpOverlapped,lpCompletionRoutine);
+// 	}
+// 	struct socket_data *socket_data = get_socket_data(s);
+// 	if(!socket_data){
+// 		return WSASendTo(s,lpBuffers,dwBufferCount,lpNumberOfBytesSent,dwFlags,lpTo,iTolen,lpOverlapped,lpCompletionRoutine);
+// 	}
+// 	struct sockaddr_in *to = (struct sockaddr_in *)lpTo;
+// 	WaitForSingleObject(socket_data->mutex,INFINITE);
+// 	for (int i = 0; i < socket_data->mappings_len; ++i) {
+// 		struct mapping *mapping = &socket_data->mappings[i];
+// 		if (mapping->addr.sin_addr.s_addr != to->sin_addr.s_addr) {
+// 			continue;
+// 		}
+// 		if (mapping->port != to->sin_port) {
+// 			//DEBUG_ADDR("mapping port mismatch: mapping_internal_port=%d for ", to, ntohs(mapping->port))
+// 			continue;
+// 		}
+// 		clock_t now = clock();
+// 		mapping->last_refresh = now;
+// 		mapping->last_send = now;
+// 		//DEBUG_ADDR("matched mapping, injecting nat_port=%d for ", to, ntohs(mapping->addr.sin_port))
+// 		int r = sendto(s, buf, len, flags, (struct sockaddr *)mapping, tolen);
+// 		ReleaseMutex(socket_data->mutex);
+// 		return r;
+// 	}
+// 	return 0;
+// }
+
+int WINAPI my_sendto(SOCKET s,const char *buf,int len,int flags, int tolen, const struct sockaddr *to_original) {
+	if (!to_original || !to_original->sa_family){
+		return 0;
+	}
+	if (to_original->sa_family != AF_INET) {//either to_original or sa_family is fucked
 		//DEBUG_LOG("ignoring sendto with ignored family: socket=%zu family=%d", s, to_original->sa_family)
 		return sendto(s, buf, len, flags, to_original, tolen);
 	}
@@ -176,11 +219,6 @@ int WINAPI my_sendto(SOCKET s, const char *buf, int len, int flags, const struct
 		return sendto(s, buf, len, flags, to_original, tolen); // TODO error?
 	}
 	struct sockaddr_in *to = (struct sockaddr_in *)to_original;
-	if (len) {
-		//DEBUG_ADDR("starting send: socket=%zu len=%d flags=%d buf[0]=%d to ", to, s, len, flags, buf[0])
-	} else {
-		//DEBUG_ADDR("starting send (empty): socket=%zu flags=%d to ", to, s, flags)
-	}
 	WaitForSingleObject(socket_data->mutex, INFINITE);
 	for (int i = 0; i < socket_data->mappings_len; ++i) {
 		struct mapping *mapping = &socket_data->mappings[i];
@@ -252,37 +290,57 @@ int WINAPI my_sendto(SOCKET s, const char *buf, int len, int flags, const struct
 }
 
 int WINAPI my_bind(SOCKET s, const struct sockaddr *name, int namelen) {
-	if (name) {
+	if (!name || namelen <= 0) {
+		return SOCKET_ERROR;
 		//DEBUG_ADDR("starting bind: socket=%zu for ", (const struct sockaddr_in *)name, s)
-	} else {
-		//DEBUG_LOG("starting bind: socket=%zu without address", s)
 	}
 	int r = bind(s, name, namelen);
-	if (r) {
+	if (r != 0) {
 		//DEBUG_LOG("bind failed: r=%d", r)
 		return r;
 	}
 	struct sockaddr_in local_addr;
 	socklen_t local_addr_len = sizeof(local_addr);
-	if (getsockname(s, (struct sockaddr *)&local_addr, &local_addr_len)) {
+	if (getsockname(s, (struct sockaddr *)&local_addr, &local_addr_len)!=0) {
 		//DEBUG_LOG("getsockname failed: err=%d", WSAGetLastError())
-		return r;
+		return SOCKET_ERROR;
 	}
 	if (local_addr.sin_family != AF_INET) {
 		//DEBUG_LOG("ignoring socket with ignored family: family=%d", local_addr.sin_family)
 		return r;
 	}
 	//DEBUG_LOG("bound local port: socket=%zu local_port=%d", s, ntohs(local_addr.sin_port))
+	if (!sockets_mutex){
+		sockets_mutex = CreateMutex(NULL,FALSE,NULL);
+		if (!sockets_mutex){
+			return SOCKET_ERROR;
+		}
+	}
+
 	WaitForSingleObject(sockets_mutex, INFINITE);
 	if (sockets_len == sockets_cap) {
-		sockets_cap = sockets_cap ? sockets_cap * 2 : 8;
-		sockets = (socket_data*)realloc(sockets, sockets_cap * sizeof(sockets[0]));
+		size_t sock_cap = sockets_cap ? sockets_cap * 2 : 8;
+		socket_data* new_sock = (socket_data*)realloc(sockets, sockets_cap * sizeof(socket_data));
+		if (!new_sock){
+			ReleaseMutex(sockets_mutex);
+			return SOCKET_ERROR;
+		}
+		sockets_cap = sock_cap;
+		sockets = new_sock;
 	}
-	sockets[sockets_len++] = (struct socket_data){
-		.s = s,
-		.mutex = CreateMutex(NULL, FALSE, NULL),
-		.port = local_addr.sin_port,
-	};
+	sockets[sockets_len].s =s;
+	sockets[sockets_len].mutex = CreateMutex(NULL,FALSE,NULL);
+	if (!sockets[sockets_len].mutex) {
+		ReleaseMutex(sockets_mutex);
+		return SOCKET_ERROR;
+	}
+	sockets[sockets_len].port = local_addr.sin_port;
+	sockets_len++;
+	// sockets[sockets_len++] = (struct socket_data){
+	// 	.s = s,
+	// 	.mutex = CreateMutex(NULL, FALSE, NULL),
+	// 	.port = local_addr.sin_port,
+	// };
 	//DEBUG_LOG("adding socket: socket=%zu local_port=%d", s, ntohs(local_addr.sin_port))
 	ReleaseMutex(sockets_mutex);
 	return r;

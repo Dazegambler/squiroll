@@ -35,7 +35,7 @@ struct socket_data {
 };
 
 int WINAPI my_recvfrom(SOCKET s, char *out_buf, int len, int flags, struct sockaddr *from_original, int *fromlen_original);
-int WINAPI my_sendto(SOCKET s, const char *buf, int len, int flags, const struct sockaddr *to_original, int tolen);
+int WINAPI my_sendto(SOCKET s, const char *buf, int len, int flags, int tolen,const struct sockaddr *to_original);
 int WINAPI my_bind(SOCKET s, const struct sockaddr *name, int namelen);
 int WINAPI my_closesocket(SOCKET s);
 DWORD WINAPI relay(void *data);

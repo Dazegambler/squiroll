@@ -1,8 +1,8 @@
 
-#include <windows.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdarg.h>
+#include <windows.h>
 #include "log.h"
 
 typedef void vprintf_t(const char* format, va_list va);

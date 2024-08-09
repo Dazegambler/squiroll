@@ -16,7 +16,7 @@ HANDLE sockets_mutex;
 HANDLE relay_thread;
 bool relay_close;
 
-int WINAPI my_recvfrom(SOCKET s, char *out_buf, int len, int flags, struct sockaddr *from_original, int *fromlen_original) {
+int WSAAPI my_recvfrom(SOCKET s, char *out_buf, int len, int flags, struct sockaddr *from_original, int *fromlen_original) {
 	struct socket_data *socket_data = get_socket_data(s);
 	if (!socket_data) {
 		//DEBUG_LOG("ignoring unknown socket: socket=%zu", s)
@@ -165,79 +165,44 @@ int WINAPI my_recvfrom(SOCKET s, char *out_buf, int len, int flags, struct socka
 	}
 }
 
-// int WINAPI _my_sendto(
-// 	SOCKET s,
-// 	LPWSABUF lpBuffers,
-// 	DWORD dwBufferCount,
-// 	LPDWORD lpNumberOfBytesSent,
-// 	DWORD dwFlags,
-// 	struct sockaddr *lpTo,
-// 	int iTolen, 
-// 	LPWSAOVERLAPPED lpOverlapped,
-// 	LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine)
-// {
-// 	if (lpTo->sa_family != AF_INET){
-// 		return WSASendTo(s,lpBuffers,dwBufferCount,lpNumberOfBytesSent,dwFlags,lpTo,iTolen,lpOverlapped,lpCompletionRoutine);
-// 	}
-// 	struct socket_data *socket_data = get_socket_data(s);
-// 	if(!socket_data){
-// 		return WSASendTo(s,lpBuffers,dwBufferCount,lpNumberOfBytesSent,dwFlags,lpTo,iTolen,lpOverlapped,lpCompletionRoutine);
-// 	}
-// 	struct sockaddr_in *to = (struct sockaddr_in *)lpTo;
-// 	WaitForSingleObject(socket_data->mutex,INFINITE);
-// 	for (int i = 0; i < socket_data->mappings_len; ++i) {
-// 		struct mapping *mapping = &socket_data->mappings[i];
-// 		if (mapping->addr.sin_addr.s_addr != to->sin_addr.s_addr) {
-// 			continue;
-// 		}
-// 		if (mapping->port != to->sin_port) {
-// 			//DEBUG_ADDR("mapping port mismatch: mapping_internal_port=%d for ", to, ntohs(mapping->port))
-// 			continue;
-// 		}
-// 		clock_t now = clock();
-// 		mapping->last_refresh = now;
-// 		mapping->last_send = now;
-// 		//DEBUG_ADDR("matched mapping, injecting nat_port=%d for ", to, ntohs(mapping->addr.sin_port))
-// 		int r = sendto(s, buf, len, flags, (struct sockaddr *)mapping, tolen);
-// 		ReleaseMutex(socket_data->mutex);
-// 		return r;
-// 	}
-// 	return 0;
-// }
-
-int WINAPI my_sendto(SOCKET s,const char *buf,int len,int flags, int tolen, const struct sockaddr *to_original) {
-	if (!to_original || !to_original->sa_family){
-		return 0;
-	}
-	if (to_original->sa_family != AF_INET) {//either to_original or sa_family is fucked
-		//DEBUG_LOG("ignoring sendto with ignored family: socket=%zu family=%d", s, to_original->sa_family)
-		return sendto(s, buf, len, flags, to_original, tolen);
+int WSAAPI my_sendto(
+	SOCKET s,
+	LPWSABUF lpBuffers,
+	DWORD dwBufferCount,
+	LPDWORD lpNumberOfBytesSent,
+	DWORD dwFlags,
+	struct sockaddr *lpTo,
+	int iTolen, 
+	LPWSAOVERLAPPED lpOverlapped,
+	LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine)
+{
+	if (lpTo->sa_family != AF_INET){
+		return WSASendTo(s,lpBuffers,dwBufferCount,lpNumberOfBytesSent,dwFlags,lpTo,iTolen,lpOverlapped,lpCompletionRoutine);
 	}
 	struct socket_data *socket_data = get_socket_data(s);
-	if (!socket_data) {
-		//DEBUG_LOG("ignoring unknown socket: socket=%zu", s)
-		return sendto(s, buf, len, flags, to_original, tolen); // TODO error?
+	if(!socket_data){
+		return WSASendTo(s,lpBuffers,dwBufferCount,lpNumberOfBytesSent,dwFlags,lpTo,iTolen,lpOverlapped,lpCompletionRoutine);
 	}
-	struct sockaddr_in *to = (struct sockaddr_in *)to_original;
-	WaitForSingleObject(socket_data->mutex, INFINITE);
+	struct sockaddr_in *to = (struct sockaddr_in *)lpTo;
+	WaitForSingleObject(socket_data->mutex,INFINITE);
 	for (int i = 0; i < socket_data->mappings_len; ++i) {
-		struct mapping *mapping = &socket_data->mappings[i];
-		if (mapping->addr.sin_addr.s_addr != to->sin_addr.s_addr) {
+		struct mapping *_mapping = &socket_data->mappings[i];
+		if (_mapping->addr.sin_addr.s_addr != to->sin_addr.s_addr) {
 			continue;
 		}
-		if (mapping->port != to->sin_port) {
+		if (_mapping->port != to->sin_port) {
 			//DEBUG_ADDR("mapping port mismatch: mapping_internal_port=%d for ", to, ntohs(mapping->port))
 			continue;
 		}
 		clock_t now = clock();
-		mapping->last_refresh = now;
-		mapping->last_send = now;
+		_mapping->last_refresh = now;
+		_mapping->last_send = now;
 		//DEBUG_ADDR("matched mapping, injecting nat_port=%d for ", to, ntohs(mapping->addr.sin_port))
-		int r = sendto(s, buf, len, flags, (struct sockaddr *)mapping, tolen);
+		int r = WSASendTo(s,lpBuffers,dwBufferCount,lpNumberOfBytesSent,dwFlags,(struct sockaddr *)_mapping,iTolen,lpOverlapped,lpCompletionRoutine);
 		ReleaseMutex(socket_data->mutex);
 		return r;
 	}
-	int r = sendto(s, buf, len, flags, to_original, tolen);
+	int r = WSASendTo(s,lpBuffers,dwBufferCount,lpNumberOfBytesSent,dwFlags,lpTo,iTolen,lpOverlapped,lpCompletionRoutine);
 
 	int refresh = -1;
 	clock_t now = clock();
@@ -277,11 +242,14 @@ int WINAPI my_sendto(SOCKET s,const char *buf,int len,int flags, int tolen, cons
 		refresh = true;
 		//DEBUG_ADDR("adding transient: len=%zu cap=%zu for ", to, socket_data->transient_peers_len, socket_data->transient_peers_cap)
 	}
-
 	if (refresh) {
 		char relay_buf[] = {((char *)&(socket_data->port))[0], ((char *)&(socket_data->port))[1], to->sin_addr.S_un.S_un_b.s_b1, to->sin_addr.S_un.S_un_b.s_b2,
 			to->sin_addr.S_un.S_un_b.s_b3, to->sin_addr.S_un.S_un_b.s_b4, ((char *)&(to->sin_port))[0], ((char *)&(to->sin_port))[1]};
-		sendto(s, relay_buf, sizeof(relay_buf), 0, (struct sockaddr *)&relay_addr, sizeof(relay_addr));
+		WSABUF buf;
+		buf.buf = relay_buf;
+		buf.len = sizeof(relay_buf);
+		WSASendTo(s, &buf,sizeof(relay_buf),NULL,dwFlags, (struct sockaddr *)&relay_addr, sizeof(relay_addr),lpOverlapped,lpCompletionRoutine);
+		//WSASendTo(s,lpBuffers,dwBufferCount,lpNumberOfBytesSent,dwFlags,lpTo,iTolen,lpOverlapped,lpCompletionRoutine);
 		//DEBUG_ADDR("refreshing transient, send payload: socket=%zu len=%zu cap=%zu for ", to, socket_data->s, socket_data->transient_peers_len,
 			//socket_data->transient_peers_cap)
 	}
@@ -289,9 +257,73 @@ int WINAPI my_sendto(SOCKET s,const char *buf,int len,int flags, int tolen, cons
 	return r;
 }
 
-int WINAPI my_bind(SOCKET s, const struct sockaddr *name, int namelen) {
+int WSAAPI my_send(
+    SOCKET s,
+    LPWSABUF lpBuffers,
+    DWORD dwBufferCount,
+    LPDWORD lpNumberOfBytesSent,
+    DWORD dwFlags,
+    LPWSAOVERLAPPED lpOverlapped,
+    LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine)
+{
+    struct socket_data *socket_data = get_socket_data(s);
+    if (!socket_data) {
+        return WSASend(s, lpBuffers, dwBufferCount, lpNumberOfBytesSent, dwFlags, lpOverlapped, lpCompletionRoutine);
+    }
+
+    WaitForSingleObject(socket_data->mutex, INFINITE);
+    
+    clock_t now = clock();
+    for (int i = 0; i < socket_data->mappings_len; ++i) {
+        struct mapping *_mapping = &socket_data->mappings[i];
+        _mapping->last_refresh = now;
+        _mapping->last_send = now;
+    }
+
+    int r = WSASend(s, lpBuffers, dwBufferCount, lpNumberOfBytesSent, dwFlags, lpOverlapped, lpCompletionRoutine);
+
+    int refresh = -1;
+    now = clock();
+    for (int i = 0; i < socket_data->transient_peers_len; ++i) {
+        struct transient_peer *peer = &socket_data->transient_peers[i];
+        if ((now - peer->last) / CLOCKS_PER_SEC > 10) { // transient peer timeout
+            socket_data->transient_peers[i--] = socket_data->transient_peers[--socket_data->transient_peers_len];
+            continue;
+        }
+        refresh = (now - peer->last) * 1000 / CLOCKS_PER_SEC > 500;
+        if (refresh) {
+            peer->last = now;
+        }
+        break;
+    }
+    
+    if (refresh == -1) {
+        if (socket_data->transient_peers_len == socket_data->transient_peers_cap) {
+            socket_data->transient_peers_cap = socket_data->transient_peers_cap ? socket_data->transient_peers_cap * 2 : 8;
+            socket_data->transient_peers = (transient_peer*)realloc(socket_data->transient_peers, socket_data->transient_peers_cap * sizeof(socket_data->transient_peers[0]));
+        }
+        socket_data->transient_peers[socket_data->transient_peers_len++] = {
+            .last = now,
+        };
+        refresh = true;
+    }
+    
+    if (refresh) {
+        char relay_buf[] = {((char *)&(socket_data->port))[0], ((char *)&(socket_data->port))[1]};
+        WSABUF buf;
+        buf.buf = relay_buf;
+        buf.len = sizeof(relay_buf);
+        WSASend(s, &buf, sizeof(relay_buf), NULL, dwFlags, lpOverlapped, lpCompletionRoutine);
+    }
+
+    ReleaseMutex(socket_data->mutex);
+    return r;
+}
+
+
+int WSAAPI my_bind(SOCKET s, const struct sockaddr *name, int namelen) {
 	if (!name || namelen <= 0) {
-		return SOCKET_ERROR;
+		return 1;
 		//DEBUG_ADDR("starting bind: socket=%zu for ", (const struct sockaddr_in *)name, s)
 	}
 	int r = bind(s, name, namelen);
@@ -316,7 +348,6 @@ int WINAPI my_bind(SOCKET s, const struct sockaddr *name, int namelen) {
 			return SOCKET_ERROR;
 		}
 	}
-
 	WaitForSingleObject(sockets_mutex, INFINITE);
 	if (sockets_len == sockets_cap) {
 		size_t sock_cap = sockets_cap ? sockets_cap * 2 : 8;
@@ -336,11 +367,11 @@ int WINAPI my_bind(SOCKET s, const struct sockaddr *name, int namelen) {
 	}
 	sockets[sockets_len].port = local_addr.sin_port;
 	sockets_len++;
-	// sockets[sockets_len++] = (struct socket_data){
-	// 	.s = s,
-	// 	.mutex = CreateMutex(NULL, FALSE, NULL),
-	// 	.port = local_addr.sin_port,
-	// };
+	sockets[sockets_len++] = (struct socket_data){
+		.s = s,
+		.mutex = CreateMutex(NULL, FALSE, NULL),
+		.port = local_addr.sin_port,
+	};
 	//DEBUG_LOG("adding socket: socket=%zu local_port=%d", s, ntohs(local_addr.sin_port))
 	ReleaseMutex(sockets_mutex);
 	return r;
@@ -354,9 +385,6 @@ int WINAPI my_closesocket(SOCKET s) {
 	}
 	//DEBUG_LOG("starting close: socket=%zu", s)
 	int r = closesocket(s);
-	if (r) {
-		//DEBUG_LOG("close failed: err=%d", WSAGetLastError())
-	}
 	WaitForSingleObject(socket_data->mutex, INFINITE);
 	socket_data->closed = true;
 	ReleaseMutex(socket_data->mutex);

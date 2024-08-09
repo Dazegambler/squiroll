@@ -34,8 +34,9 @@ struct socket_data {
 	size_t transient_peers_cap;
 };
 
-int WINAPI my_recvfrom(SOCKET s, char *out_buf, int len, int flags, struct sockaddr *from_original, int *fromlen_original);
-int WINAPI my_sendto(SOCKET s, const char *buf, int len, int flags, int tolen,const struct sockaddr *to_original);
+int WSAAPI my_recvfrom(SOCKET s, char *out_buf, int len, int flags, struct sockaddr *from_original, int *fromlen_original);
+int WSAAPI my_sendto(SOCKET s,LPWSABUF lpBuffers,DWORD dwBufferCount,LPDWORD lpNumberOfBytesSent,DWORD dwFlags,struct sockaddr *lpTo,int iTolen, LPWSAOVERLAPPED lpOverlapped,LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine);
+int WSAAPI my_send(SOCKET s,LPWSABUF lpBuffers,DWORD dwBufferCount,LPDWORD lpNumberOfBytesSent,DWORD dwFlags, LPWSAOVERLAPPED lpOverlapped,LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine);
 int WINAPI my_bind(SOCKET s, const struct sockaddr *name, int namelen);
 int WINAPI my_closesocket(SOCKET s);
 DWORD WINAPI relay(void *data);

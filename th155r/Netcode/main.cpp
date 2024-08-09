@@ -35,6 +35,8 @@ void Debug() {
 #define calloc_base_addr (0x3122EA_R)
 #define realloc_base_addr (0x312DAF_R)
 #define free_base_addr (0x312347_R)
+#define recalloc_addr (0x3182D4_R)
+#define msize_addr (0x31ED30_R)
 
 #define WSASend_import_addr (0x3884D0_R)
 #define WSASendTo_import_addr (0x3884D4_R)
@@ -43,25 +45,27 @@ void Debug() {
 #define closesocket_import_addr (0x388514_R)
 
 void patch_autopunch() {
-    //hotpatch_import((void*)recvfrom_addr,(void*)my_recvfrom);
-    hotpatch_import((void*)WSASendTo_import_addr,(void*)my_sendto);
-    hotpatch_import((void*)WSASend_import_addr,(void*)my_send);
-    hotpatch_import((void*)bind_import_addr,(void*)my_bind);//crashing when connecting/spectating 
-    hotpatch_import((void*)closesocket_import_addr,(void*)my_closesocket);
+    //hotpatch_import(recvfrom_addr, my_recvfrom);
+    hotpatch_import(WSASendTo_import_addr, my_sendto);
+    hotpatch_import(WSASend_import_addr, my_send);
+    hotpatch_import(bind_import_addr, my_bind);//crashing when connecting/spectating 
+    hotpatch_import(closesocket_import_addr, my_closesocket);
 
     autopunch_init();
 }
 
 void patch_allocman() {
 #if ALLOCATION_PATCH_TYPE == PATCH_SQUIRREL_ALLOCS
-    hotpatch_rel32((void*)sq_vm_malloc_call_addr, (void*)my_malloc);
-    hotpatch_rel32((void*)sq_vm_realloc_call_addr, (void*)my_realloc);
-    hotpatch_rel32((void*)sq_vm_free_call_addr, (void*)my_free);
+    hotpatch_rel32(sq_vm_malloc_call_addr, my_malloc);
+    hotpatch_rel32(sq_vm_realloc_call_addr, my_realloc);
+    hotpatch_rel32(sq_vm_free_call_addr, my_free);
 #elif ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS
-    hotpatch_jump((void*)malloc_base_addr, (void*)my_malloc);
-    hotpatch_jump((void*)calloc_base_addr, (void*)my_calloc);
-    hotpatch_jump((void*)realloc_base_addr, (void*)my_realloc);
-    hotpatch_jump((void*)free_base_addr, (void*)my_free);
+    hotpatch_jump(malloc_base_addr, my_malloc);
+    hotpatch_jump(calloc_base_addr, my_calloc);
+    hotpatch_jump(realloc_base_addr, my_realloc);
+    hotpatch_jump(free_base_addr, my_free);
+    hotpatch_jump(recalloc_addr, my_recalloc);
+    hotpatch_jump(msize_addr, my_msize);
 #endif
 }
 
@@ -77,9 +81,9 @@ void common_init() {
 }
 
 void yes_tampering() {
-    hotpatch_ret((void*)0x12E820_R, 0);
-    hotpatch_ret((void*)0x130630_R, 0);
-    hotpatch_ret((void*)0x132AF0_R, 0);
+    hotpatch_ret(0x12E820_R, 0);
+    hotpatch_ret(0x130630_R, 0);
+    hotpatch_ret(0x132AF0_R, 0);
 }
 
 extern "C" {

@@ -55,11 +55,11 @@ struct AllocData {
     };
     alignas(__STDCPP_DEFAULT_NEW_ALIGNMENT__) unsigned char data[];
     
-    static inline AllocData* get_from_ptr(void* ptr) {
+    static forceinline AllocData* get_from_ptr(void* ptr) {
         return (AllocData*)((uintptr_t)ptr - offsetof(AllocData, data));
     }
     
-    static inline size_t buffer_size(size_t size) {
+    static forceinline size_t buffer_size(size_t size) {
         return sizeof(AllocData) + size;
     }
     
@@ -101,7 +101,7 @@ struct SavedAlloc {
     size_t size;
     alignas(4) unsigned char data[];
     
-    static inline size_t buffer_size(AllocData* alloc) {
+    static forceinline size_t buffer_size(AllocData* alloc) {
         return sizeof(SavedAlloc) + alloc->size;
     }
     
@@ -180,7 +180,7 @@ struct AllocManager {
     }
 
     template <typename L>
-    inline void for_each_alloc(const L& lambda) {
+    forceinline void for_each_alloc(const L& lambda) {
         AllocNode* node = this->dummy_node.next;
         for (AllocNode* next_node; node != &this->dummy_node; node = next_node) {
             next_node = node->next;
@@ -189,7 +189,7 @@ struct AllocManager {
     }
 
     template <typename L>
-    inline void for_each_saved_alloc(size_t index, const L& lambda) {
+    forceinline void for_each_saved_alloc(size_t index, const L& lambda) {
         uint8_t* buffer = this->saved_data[index];
         uint8_t* buffer_end = buffer + this->filled_sizes[index];
         while (buffer < buffer_end) {
@@ -256,7 +256,7 @@ struct AllocManager {
 
 static AllocManager alloc_man;
 
-void free_alloc(AllocData* alloc) {
+static void free_alloc(AllocData* alloc) {
     if (alloc->has_record) {
         alloc->start_free(SAVED_FRAMES);
     } else {
@@ -281,15 +281,23 @@ void reset_rollback_buffers() {
 
 void* cdecl my_malloc(size_t size) {
     AllocData* real_alloc = (AllocData*)malloc(AllocData::buffer_size(size));
-    real_alloc->init(size);
-    alloc_man.append(real_alloc);
-    return &real_alloc->data;
+    if (expect(real_alloc != NULL, true)) {
+        real_alloc->init(size);
+        alloc_man.append(real_alloc);
+        return &real_alloc->data;
+    }
+    // Out of memory
+    return NULL;
 }
 
 void* cdecl my_calloc(size_t num, size_t size) {
     size_t total_size = num * size;
     void* ret = my_malloc(total_size);
-    return memset(ret, 0, total_size);
+    if (expect(ret != NULL, true)) {
+        return memset(ret, 0, total_size);
+    }
+    // Out of memory
+    return NULL;
 }
 
 void cdecl my_free(void* ptr) {
@@ -299,18 +307,41 @@ void cdecl my_free(void* ptr) {
     }
 }
 
+size_t cdecl my_msize(void* ptr) {
+    AllocData* real_alloc = AllocData::get_from_ptr(ptr);
+    return real_alloc->size;
+}
+
+void* cdecl my_expand(void* ptr, size_t new_size) {
+    AllocData* real_alloc = AllocData::get_from_ptr(ptr);
+    if (
+        new_size <= real_alloc->size ||
+        _expand(real_alloc, AllocData::buffer_size(new_size))
+    ) {
+        return ptr;
+    }
+    return NULL;
+}
+
 void* cdecl my_realloc(void* ptr, size_t new_size) {
     if (ptr) {
         AllocData* real_alloc = AllocData::get_from_ptr(ptr);
         if (new_size) {
-            if (new_size > real_alloc->size) {
-                AllocData* new_alloc = (AllocData*)_expand(real_alloc, AllocData::buffer_size(new_size));
-                if (new_alloc) {
-                    new_alloc->reinit(new_size);
+            size_t current_size = real_alloc->size;
+            if (new_size > current_size) {
+                if (_expand(real_alloc, AllocData::buffer_size(new_size))) {
+                    // Block expanded in place
+                    real_alloc->reinit(new_size);
                 } else {
+                    // Block could not expand in place, allocate a new block
                     ptr = my_malloc(new_size);
-                    memcpy(ptr, real_alloc->data, real_alloc->size);
-                    free_alloc(real_alloc);
+                    if (expect(ptr != NULL, true)) {
+                        memcpy(ptr, real_alloc->data, current_size);
+                        free_alloc(real_alloc);
+                    } else {
+                        // Out of memory
+                        // ptr is NULL anyway, so don't do anything
+                    }
                 }
             }
             return ptr;
@@ -319,4 +350,35 @@ void* cdecl my_realloc(void* ptr, size_t new_size) {
         return NULL;
     }
     return my_malloc(new_size);
+}
+
+void* cdecl my_recalloc(void* ptr, size_t num, size_t size) {
+    if (ptr) {
+        size_t new_size = num * size;
+        AllocData* real_alloc = AllocData::get_from_ptr(ptr);
+        if (new_size) {
+            size_t current_size = real_alloc->size;
+            if (new_size > current_size) {
+                if (_expand(real_alloc, AllocData::buffer_size(new_size))) {
+                    // Block expanded in place
+                    real_alloc->reinit(new_size);
+                } else {
+                    // Block could not expand in place, allocate a new block
+                    ptr = my_malloc(new_size);
+                    if (expect(ptr != NULL, true)) {
+                        memcpy(ptr, real_alloc->data, current_size);
+                        free_alloc(real_alloc);
+                    } else {
+                        // Out of memory
+                        return NULL;
+                    }
+                }
+                memset(based_pointer(ptr, current_size), 0, new_size - current_size);
+            }
+            return ptr;
+        }
+        free_alloc(real_alloc);
+        return NULL;
+    }
+    return my_calloc(num, size);
 }

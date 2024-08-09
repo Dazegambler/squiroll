@@ -25,6 +25,9 @@ void reset_rollback_buffers();
 void* cdecl my_malloc(size_t size);
 void* cdecl my_calloc(size_t num, size_t size);
 void cdecl my_free(void* ptr);
+size_t cdecl my_msize(void* ptr);
+void* cdecl my_expand(void* ptr, size_t new_size);
 void* cdecl my_realloc(void* ptr, size_t new_size);
+void* cdecl my_recalloc(void* ptr, size_t num, size_t size);
 
 #endif

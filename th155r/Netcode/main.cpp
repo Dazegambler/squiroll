@@ -4,6 +4,7 @@
 #include "AllocMan.h"
 #include "Autopunch.h"
 #include "PatchUtils.h"
+#include "CrashHandler.h"
 #include "log.h"
 
 const uintptr_t base_address = (uintptr_t)GetModuleHandleA(NULL);
@@ -75,6 +76,11 @@ void common_init() {
 #ifndef NDEBUG
     Debug();
 #endif
+    signal(SIGSEGV, signalHandler);
+    signal(SIGABRT, signalHandler);
+    signal(SIGFPE, signalHandler);
+    signal(SIGILL, signalHandler);
+    signal(SIGTERM, signalHandler);
     //patch_allocman();
     patch_autopunch();
 

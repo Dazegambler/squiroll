@@ -1,43 +1,35 @@
 #include "CrashHandler.h"
 
-FILE *log;
+FILE *dump;
 
 void printStackTrace() {
     HANDLE process = GetCurrentProcess();
     
-    // Initialize symbol handler for current process
     SymInitialize(process, NULL, TRUE);
 
-    // Capture stack backtrace
     void *stack[64];
     DWORD frames = CaptureStackBackTrace(0, sizeof(stack) / sizeof(stack[0]), stack, NULL);
 
-    // Allocate memory for SYMBOL_INFO
     SYMBOL_INFO *symbol = (SYMBOL_INFO *)calloc(sizeof(SYMBOL_INFO) + 256 * sizeof(char), 1);
     symbol->MaxNameLen = 255;
     symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
 
-    fputs("Backtrace:\n",log);
+    log_fprintf(dump,"Backtrace:\n");
     for (DWORD i = 0; i < frames; i++) {
         SymFromAddr(process, (DWORD64)(stack[i]), 0, symbol);
-        log_fprintf(log,"%02ld: %s - 0x%llX\n", i, symbol->Name, symbol->Address);
+        log_fprintf(dump,"%02ld: %s - 0x%llX\n", i, symbol->Name, symbol->Address);
     }
 
-    // Cleanup
     free(symbol);
     SymCleanup(process);
 }
 
-// Function to handle signals and print information to stdout
 void signalHandler(int signum) {
-    log = fopen("crash_dump.log","a");
-    // Write signal information to stdout
-    fputs("Crash Detected",log);
+    dump = fopen("/crash_dump.dump","a");
+    log_fprintf(dump,"Crash Detected\n");
 
-    // Print stack trace
     printStackTrace();
-    log_fprintf("End of stacktrace");
-
-    // Exit the program
+    log_fprintf(dump,"End of stacktrace\n");
+    fclose(dump);
     exit(signum);
 }

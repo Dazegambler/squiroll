@@ -42,14 +42,14 @@ void Debug() {
 #define WSASend_import_addr (0x3884D0_R)
 #define WSASendTo_import_addr (0x3884D4_R)
 #define WSARecvFrom_import_addr (0x3884D8_R)
-#define bind_import_addr (0x3884DC_R)
+#define bind_import_addr (0x3884E0_R)
 #define closesocket_import_addr (0x388514_R)
 
 void patch_autopunch() {
-    //hotpatch_import(recvfrom_addr, my_recvfrom);
+    hotpatch_import(WSARecvFrom_import_addr, my_recvfrom);//new culprit
     hotpatch_import(WSASendTo_import_addr, my_sendto);
     hotpatch_import(WSASend_import_addr, my_send);
-    hotpatch_import(bind_import_addr, my_bind);//crashing when connecting/spectating 
+    hotpatch_import(bind_import_addr, my_bind);
     hotpatch_import(closesocket_import_addr, my_closesocket);
 
     autopunch_init();

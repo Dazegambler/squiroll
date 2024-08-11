@@ -16,51 +16,61 @@ HANDLE sockets_mutex;
 HANDLE relay_thread;
 bool relay_close;
 
-int WSAAPI my_recvfrom(SOCKET s, char *out_buf, int len, int flags, struct sockaddr *from_original, int *fromlen_original) {
+int WSAAPI my_recvfrom(
+  SOCKET s,
+  LPWSABUF lpBuffers,
+  DWORD dwBufferCount,
+  LPDWORD lpNumberOfBytesRecvd,
+  LPDWORD lpFlags,
+  sockaddr *lpFrom,
+  LPINT lpFromlen,
+  LPWSAOVERLAPPED lpOverlapped,
+  LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
+){
 	struct socket_data *socket_data = get_socket_data(s);
 	if (!socket_data) {
-		//DEBUG_LOG("ignoring unknown socket: socket=%zu", s)
-		return recvfrom(s, out_buf, len, flags, from_original, fromlen_original); // TODO error?
+		log_printf("ignoring unknown socket: socket=%zu\n", s);
+		return WSARecvFrom(s, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags,lpFrom,lpFromlen,lpOverlapped,lpCompletionRoutine); // TODO error?
 	}
 
 	struct sockaddr_in from_backing;
 	struct sockaddr_in *from;
-	if (!from_original) {
+	if (!lpFrom) {
 		from = &from_backing;
 	} else {
-		from = (struct sockaddr_in *)from_original;
+		from = (struct sockaddr_in *)lpFrom;
 	}
 	int fromlen_backing;
 	int *fromlen;
-	if (!fromlen_original) {
+	if (!lpFromlen) {
 		fromlen = &fromlen_backing;
 		fromlen_backing = sizeof(from_backing);
 	} else {
-		fromlen = fromlen_original;
+		fromlen = lpFromlen;
 	}
 	char buf_backing[8];
 	char *buf;
-	if (len < 8) {
+	if (*lpFromlen < 8) {
 		buf = buf_backing;
 	} else {
-		buf = out_buf;
+		buf = lpBuffers->buf;
 	}
-	//DEBUG_LOG("starting receive: socket=%zu len=%d flags=%d", s, len, flags)
-	while (true) {
-		int n = recvfrom(s, buf, len > 8 ? len : 8, flags, (struct sockaddr *)&from, fromlen);//problematic???
+	log_printf("starting receive: socket=%zu len=%d flags=%d\n", s, lpFromlen, lpFlags);
+	while (true){
+		int n = WSARecvFrom(s, lpBuffers,dwBufferCount, *lpNumberOfBytesRecvd > 8 ? lpNumberOfBytesRecvd : (DWORD *)8, lpFlags,(struct sockaddr *)&from,fromlen,lpOverlapped,lpCompletionRoutine); // TODO error?
 		if (n < 0) {
 			int err = WSAGetLastError();
 			if (err == WSAECONNRESET) { // ignore connection reset errors (can happen if relay is down)
-				//DEBUG_LOG("recvfrom returned WSAECONNRESET, skipping")
+				log_printf("recvfrom returned WSAECONNRESET, skipping\n");
 				continue;
 			}
-			//DEBUG_LOG("recvfrom returned error: err=%d", err)
+			log_printf("recvfrom returned error: err=%d\n", err);
 			return n;
 		}
-		//DEBUG_ADDR("recvfrom success: n=%d from=", from, n)
+		log_printf("recvfrom success: n=%d from=", from, n);
 		if (from->sin_addr.s_addr == relay_addr.sin_addr.s_addr && from->sin_port == relay_addr.sin_port) {
 			if (n != 8) {
-				//DEBUG_LOG("received invalid relay payload: invalid size n=%d", n)
+				log_printf("received invalid relay payload: invalid size n=%d\n", n);
 				continue;
 			}
 			WaitForSingleObject(socket_data->mutex, INFINITE);
@@ -68,7 +78,7 @@ int WSAAPI my_recvfrom(SOCKET s, char *out_buf, int len, int flags, struct socka
 			u_short port_internal = *((u_short *)(&buf[0]));
 			u_short port_nat = *((u_short *)(&buf[2]));
 			u_long addr = *(u_long *)(&buf[4]);
-			//DEBUG_LOG("received mapping from relay: socket=%zu internal_port=%d nat_port=%d", s, ntohs(port_internal), ntohs(port_nat))
+			log_printf("received mapping from relay: socket=%zu internal_port=%d nat_port=%d\n", s, ntohs(port_internal), ntohs(port_nat));
 			for (int j = 0; j < socket_data->mappings_len; ++j) {
 				struct mapping *mapping = &socket_data->mappings[j];
 				if (mapping->addr.sin_addr.s_addr != addr) {
@@ -77,7 +87,7 @@ int WSAAPI my_recvfrom(SOCKET s, char *out_buf, int len, int flags, struct socka
 				if (mapping->port != port_internal) {
 					continue;
 				}
-				//DEBUG_ADDR("updating mapping port: socket=%zu new_nat_port=%d internal_port=%d for ", &mapping->addr, s, ntohs(port_nat), ntohs(port_internal))
+				log_printf("updating mapping port: socket=%zu new_nat_port=%d internal_port=%d for \n", &mapping->addr, s, ntohs(port_nat), ntohs(port_internal));
 				mapping->addr.sin_port = port_nat;
 				mapping->last_refresh = now;
 				mapping->last_send = 0;
@@ -98,12 +108,11 @@ int WSAAPI my_recvfrom(SOCKET s, char *out_buf, int len, int flags, struct socka
 				.last_refresh = now,
 				.refresh = true,
 			};
-			//DEBUG_ADDR("adding mapping: socket=%zu mappings_len=%zu mappings_cap=%zu internal_port=%d for ",&socket_data->mappings[socket_data->mappings_len - 1].addr, s, socket_data->mappings_len, socket_data->mappings_cap, ntohs(port_internal))
+			log_printf("adding mapping: socket=%zu mappings_len=%zu mappings_cap=%zu internal_port=%d for \n",&socket_data->mappings[socket_data->mappings_len - 1].addr, s, socket_data->mappings_len, socket_data->mappings_cap, ntohs(port_internal));
 		outer:;
 			ReleaseMutex(socket_data->mutex);
 			continue;
 		}
-
 		WaitForSingleObject(socket_data->mutex, INFINITE);
 		for (int i = 0; i < socket_data->transient_peers_len; ++i) {
 			struct transient_peer *peer = &socket_data->transient_peers[i];
@@ -111,7 +120,7 @@ int WSAAPI my_recvfrom(SOCKET s, char *out_buf, int len, int flags, struct socka
 				continue;
 			}
 			if (peer->addr.sin_port != from->sin_port) {
-				//DEBUG_ADDR("transient port mismatch: received_from=%d for ", &peer->addr, ntohs(from->sin_port))
+				log_printf("transient port mismatch: received_from=%d for \n", &peer->addr, ntohs(from->sin_port));
 				continue;
 			}
 			socket_data->transient_peers[i--] = socket_data->transient_peers[--socket_data->transient_peers_len];
@@ -132,12 +141,12 @@ int WSAAPI my_recvfrom(SOCKET s, char *out_buf, int len, int flags, struct socka
 				.last_refresh = now,
 				.refresh = false,
 			};
-			//DEBUG_ADDR("received transient, adding as mapping: socket=%zu mappings_len=%zu mappings_cap=%zu for ", from, s, socket_data->mappings_len,socket_data->mappings_cap)
+			log_printf("received transient, adding as mapping: socket=%zu mappings_len=%zu mappings_cap=%zu for \n", from, s, socket_data->mappings_len,socket_data->mappings_cap);
 			break;
 		}
 
 		if (n == sizeof(punch_payload) && !memcmp(punch_payload, buf, n)) {
-			//DEBUG_LOG("skipping punch payload")
+			log_printf("skipping punch payload\n");
 			ReleaseMutex(socket_data->mutex);
 			continue;
 		}
@@ -148,18 +157,18 @@ int WSAAPI my_recvfrom(SOCKET s, char *out_buf, int len, int flags, struct socka
 				continue;
 			}
 			if (mapping->addr.sin_port != from->sin_port) {
-				//DEBUG_ADDR("mapping port mismatch: received_from=%d for ", &mapping->addr, ntohs(from->sin_port))
+				log_printf("mapping port mismatch: received_from=%d for \n", &mapping->addr, ntohs(from->sin_port));
 				continue;
 			}
-			//DEBUG_ADDR("matched mapping, injecting internal_port=%d for ", from, ntohs(mapping->port))
+			log_printf("matched mapping, injecting internal_port=%d for \n", from, ntohs(mapping->port));
 			from->sin_port = mapping->port;
 			break;
 		}
 		ReleaseMutex(socket_data->mutex);
 
-		//DEBUG_ADDR("received data: n=%d buf[0]=%d from ", from, n, buf[0])
-		if (out_buf != buf) {
-			memcpy(out_buf, buf, n);
+		log_printf("received data: n=%d buf[0]=%d from \n", from, n, buf[0]);
+		if (lpBuffers->buf != buf) {
+			memcpy(lpBuffers->buf, buf, n);
 		}
 		return n;
 	}
@@ -191,13 +200,13 @@ int WSAAPI my_sendto(
 			continue;
 		}
 		if (_mapping->port != to->sin_port) {
-			//DEBUG_ADDR("mapping port mismatch: mapping_internal_port=%d for ", to, ntohs(mapping->port))
+			log_printf("mapping port mismatch: mapping_internal_port=%d for \n", to, ntohs(_mapping->port));
 			continue;
 		}
 		clock_t now = clock();
 		_mapping->last_refresh = now;
 		_mapping->last_send = now;
-		//DEBUG_ADDR("matched mapping, injecting nat_port=%d for ", to, ntohs(mapping->addr.sin_port))
+		log_printf("matched mapping, injecting nat_port=%d for \n", to, ntohs(_mapping->addr.sin_port));
 		int r = WSASendTo(s,lpBuffers,dwBufferCount,lpNumberOfBytesSent,dwFlags,(struct sockaddr *)_mapping,iTolen,lpOverlapped,lpCompletionRoutine);
 		ReleaseMutex(socket_data->mutex);
 		return r;
@@ -216,14 +225,14 @@ int WSAAPI my_sendto(
 			continue;
 		}
 		if (peer->addr.sin_port != to->sin_port) {
-			//DEBUG_ADDR("transient port mismatch: send_to=%d for ", &peer->addr, ntohs(to->sin_port))
+			log_printf("transient port mismatch: send_to=%d for \n", &peer->addr, ntohs(to->sin_port));
 			continue;
 		}
 		refresh = (now - peer->last) * 1000 / CLOCKS_PER_SEC > 500;
 		if (refresh) {
 			peer->last = now;
 		}
-		//DEBUG_ADDR("transient found: refresh=%d now=%ld last=%ld for ", to, refresh, now, peer->last)
+		log_printf("transient found: refresh=%d now=%ld last=%ld for \n", to, refresh, now, peer->last);
 		break;
 	}
 	if (refresh == -1) {
@@ -240,7 +249,7 @@ int WSAAPI my_sendto(
 			.last = now,
 		};
 		refresh = true;
-		//DEBUG_ADDR("adding transient: len=%zu cap=%zu for ", to, socket_data->transient_peers_len, socket_data->transient_peers_cap)
+		log_printf("adding transient: len=%zu cap=%zu for \n", to, socket_data->transient_peers_len, socket_data->transient_peers_cap);
 	}
 	if (refresh) {
 		char relay_buf[] = {((char *)&(socket_data->port))[0], ((char *)&(socket_data->port))[1], to->sin_addr.S_un.S_un_b.s_b1, to->sin_addr.S_un.S_un_b.s_b2,
@@ -250,8 +259,8 @@ int WSAAPI my_sendto(
 		buf.len = sizeof(relay_buf);
 		WSASendTo(s, &buf,sizeof(relay_buf),NULL,dwFlags, (struct sockaddr *)&relay_addr, sizeof(relay_addr),lpOverlapped,lpCompletionRoutine);
 		//WSASendTo(s,lpBuffers,dwBufferCount,lpNumberOfBytesSent,dwFlags,lpTo,iTolen,lpOverlapped,lpCompletionRoutine);
-		//DEBUG_ADDR("refreshing transient, send payload: socket=%zu len=%zu cap=%zu for ", to, socket_data->s, socket_data->transient_peers_len,
-			//socket_data->transient_peers_cap)
+		log_printf("refreshing transient, send payload: socket=%zu len=%zu cap=%zu for \n", to, socket_data->s, socket_data->transient_peers_len,
+			socket_data->transient_peers_cap);
 	}
 	ReleaseMutex(socket_data->mutex);
 	return r;
@@ -320,59 +329,40 @@ int WSAAPI my_send(
     return r;
 }
 
-
 int WSAAPI my_bind(SOCKET s, const struct sockaddr *name, int namelen) {
-	if (!name || namelen <= 0) {
-		return 1;
-		//DEBUG_ADDR("starting bind: socket=%zu for ", (const struct sockaddr_in *)name, s)
+	if (name) {
+		log_printf("starting bind: socket=%zu, family=%d, address=%s\n", s, name->sa_family, inet_ntoa(((const struct sockaddr_in *)name)->sin_addr));
+	} else {
+		log_printf("starting bind: socket=%zu without address\n", s);
 	}
 	int r = bind(s, name, namelen);
-	if (r != 0) {
-		//DEBUG_LOG("bind failed: r=%d", r)
+	if (r) {
+		auto err = WSAGetLastError();
+		log_printf("bind failed: r=%d error=%d\n", r,err);
 		return r;
 	}
 	struct sockaddr_in local_addr;
 	socklen_t local_addr_len = sizeof(local_addr);
-	if (getsockname(s, (struct sockaddr *)&local_addr, &local_addr_len)!=0) {
-		//DEBUG_LOG("getsockname failed: err=%d", WSAGetLastError())
-		return SOCKET_ERROR;
-	}
-	if (local_addr.sin_family != AF_INET) {
-		//DEBUG_LOG("ignoring socket with ignored family: family=%d", local_addr.sin_family)
+	if (getsockname(s, (struct sockaddr *)&local_addr, &local_addr_len)) {
+		log_printf("getsockname failed: err=%d\n", WSAGetLastError());
 		return r;
 	}
-	//DEBUG_LOG("bound local port: socket=%zu local_port=%d", s, ntohs(local_addr.sin_port))
-	if (!sockets_mutex){
-		sockets_mutex = CreateMutex(NULL,FALSE,NULL);
-		if (!sockets_mutex){
-			return SOCKET_ERROR;
-		}
+	if (local_addr.sin_family != AF_INET) {
+		log_printf("ignoring socket with ignored family: family=%d\n", local_addr.sin_family);
+		return r;
 	}
+	log_printf("bound local port: socket=%zu local_port=%d\n", s, ntohs(local_addr.sin_port));
 	WaitForSingleObject(sockets_mutex, INFINITE);
 	if (sockets_len == sockets_cap) {
-		size_t sock_cap = sockets_cap ? sockets_cap * 2 : 8;
-		socket_data* new_sock = (socket_data*)realloc(sockets, sockets_cap * sizeof(socket_data));
-		if (!new_sock){
-			ReleaseMutex(sockets_mutex);
-			return SOCKET_ERROR;
-		}
-		sockets_cap = sock_cap;
-		sockets = new_sock;
+		sockets_cap = sockets_cap ? sockets_cap * 2 : 8;
+		sockets = (socket_data*)realloc(sockets, sockets_cap * sizeof(sockets[0]));
 	}
-	sockets[sockets_len].s =s;
-	sockets[sockets_len].mutex = CreateMutex(NULL,FALSE,NULL);
-	if (!sockets[sockets_len].mutex) {
-		ReleaseMutex(sockets_mutex);
-		return SOCKET_ERROR;
-	}
-	sockets[sockets_len].port = local_addr.sin_port;
-	sockets_len++;
 	sockets[sockets_len++] = (struct socket_data){
 		.s = s,
 		.mutex = CreateMutex(NULL, FALSE, NULL),
 		.port = local_addr.sin_port,
 	};
-	//DEBUG_LOG("adding socket: socket=%zu local_port=%d", s, ntohs(local_addr.sin_port))
+	log_printf("adding socket: socket=%zu local_port=%d\n", s, ntohs(local_addr.sin_port));
 	ReleaseMutex(sockets_mutex);
 	return r;
 }
@@ -380,10 +370,10 @@ int WSAAPI my_bind(SOCKET s, const struct sockaddr *name, int namelen) {
 int WINAPI my_closesocket(SOCKET s) {
 	struct socket_data *socket_data = get_socket_data(s);
 	if (!socket_data) {
-		//DEBUG_LOG("ignoring unknown socket: socket=%zu", s)
+		log_printf("ignoring unknown socket: socket=%zu\n", s);
 		return closesocket(s);
 	}
-	//DEBUG_LOG("starting close: socket=%zu", s)
+	log_printf("starting close: socket=%zu\n", s);
 	int r = closesocket(s);
 	WaitForSingleObject(socket_data->mutex, INFINITE);
 	socket_data->closed = true;
@@ -392,6 +382,7 @@ int WINAPI my_closesocket(SOCKET s) {
 }
 
 DWORD WINAPI relay(void *data) {
+	log_printf("relay start\n");
 	while (true) {
 		WaitForSingleObject(sockets_mutex, INFINITE);
 		if (relay_close) {
@@ -406,8 +397,8 @@ DWORD WINAPI relay(void *data) {
 			struct socket_data *socket_data = &sockets[i];
 			WaitForSingleObject(socket_data->mutex, INFINITE);
 			if (socket_data->closed) {
-				//DEBUG_LOG("removing closed socket: socket=%zu closed=%d mappings=%zu mappings_len=%zu mappings_cap=%zu sockets_len=%zu sockets_cap=%zu", socket_data->s,
-					//socket_data->closed, (size_t)socket_data->mappings, socket_data->mappings_len, socket_data->mappings_cap, sockets_len, sockets_cap)
+				log_printf("removing closed socket: socket=%zu closed=%d mappings=%zu mappings_len=%zu mappings_cap=%zu sockets_len=%zu sockets_cap=%zu\n", socket_data->s,
+					socket_data->closed, (size_t)socket_data->mappings, socket_data->mappings_len, socket_data->mappings_cap, sockets_len, sockets_cap);
 				ReleaseMutex(socket_data->mutex);
 				CloseHandle(socket_data->mutex);
 				free(socket_data->mappings);
@@ -416,20 +407,20 @@ DWORD WINAPI relay(void *data) {
 				continue;
 			}
 			char buf[] = {((char *)&(socket_data->port))[0], ((char *)&(socket_data->port))[1]};
-			//DEBUG_LOG("sending to relay bound socket: socket=%zu socket_i=%d local_port=%u", socket_data->s, i, ntohs(socket_data->port))
+			log_printf("sending to relay bound socket: socket=%zu socket_i=%d local_port=%u\n", socket_data->s, i, ntohs(socket_data->port));
 			sendto(socket_data->s, buf, sizeof(buf), 0, (struct sockaddr *)&relay_addr, sizeof(relay_addr));
 			for (int j = 0; j < socket_data->mappings_len; ++j) {
 				struct mapping *mapping = &socket_data->mappings[j];
-				//DEBUG_LOG("mapping process: socket=%zu socket_i=%d mapping_j=%d", socket_data->s, i, j)
+				log_printf("mapping process: socket=%zu socket_i=%d mapping_j=%d\n", socket_data->s, i, j);
 				clock_t wait_refresh = (now - mapping->last_refresh) / CLOCKS_PER_SEC;
 				if (wait_refresh > 10) { // drop old mapping
-					//DEBUG_LOG("mapping timeout: socket=%zu socket_i=%d mapping_j=%d wait_refresh=%ld", socket_data->s, i, j, wait_refresh)
+					log_printf("mapping timeout: socket=%zu socket_i=%d mapping_j=%d wait_refresh=%ld\n", socket_data->s, i, j, wait_refresh);
 					socket_data->mappings[j--] = socket_data->mappings[--socket_data->mappings_len];
 					continue;
 				}
 				clock_t wait_send = (now - mapping->last_send) / CLOCKS_PER_SEC;
 				if (mapping->refresh && (mapping->last_send == 0 || wait_send >= 1)) { // refresh mapping
-					//DEBUG_LOG("mapping refresh, send payload: socket=%zu socket_i=%d mapping_j=%d wait_send=%ld", socket_data->s, i, j, wait_send)
+					log_printf("mapping refresh, send payload: socket=%zu socket_i=%d mapping_j=%d wait_send=%ld\n", socket_data->s, i, j, wait_send);
 					sendto(socket_data->s, punch_payload, sizeof(punch_payload), 0, (struct sockaddr *)&mapping->addr, sizeof(mapping->addr));
 					mapping->last_send = clock();
 				}
@@ -453,19 +444,19 @@ u_long get_relay_ip() {
 	ADDRINFOW *result = NULL;
 	DWORD r = GetAddrInfoW(relay_host, NULL, &hints, &result);
 	if (r != 0) {
-		//DEBUG_LOG("getaddrinfow failed: %lu", r)
+		log_printf("getaddrinfow failed: %lu\n", r);
 		return 0;
 	}
 	for (ADDRINFOW *ptr = result; ptr != NULL; ptr = ptr->ai_next) {
 		if (ptr->ai_family == AF_INET) {
 			u_long address = ((struct sockaddr_in *)ptr->ai_addr)->sin_addr.s_addr;
-			//DEBUG_ADDR("getaddrinfow success: ", ((struct sockaddr_in *)ptr->ai_addr))
+			log_printf("getaddrinfow success: \n", ((struct sockaddr_in *)ptr->ai_addr));
 			FreeAddrInfoW(result);
 			return address;
 		}
 	}
 	FreeAddrInfoW(result);
-	//DEBUG_LOG("getaddrinfow no dns results")
+	log_printf("getaddrinfow no dns results\n");
 	return 0;
 }
 
@@ -498,12 +489,12 @@ bool running() {
 
 void autopunch_init() {
 	if (running()) {
-		//DEBUG_LOG("already running, quitting")
+		log_printf("already running, quitting\n");
 		return;
 	}
 	started = true;
 
-	//DEBUG_LOG("load_start")
+	log_printf("load_start\n");
 
 	u_long relay_ip_net = get_relay_ip();
 	u_short relay_port_net = htons(relay_port);
@@ -512,11 +503,11 @@ void autopunch_init() {
 	sockets_mutex = CreateMutex(NULL, FALSE, NULL);
 	relay_thread = CreateThread(NULL, 0, relay, NULL, 0, NULL);
 
-	//DEBUG_ADDRDEBUG_LOG("load_end")
+	log_printf("load_end relay=%d\n",relay_thread);
 }
 
 void autopunch_cleanup() {
-	//DEBUG_ADDRDEBUG_LOG("unload_start")
+	log_printf("unload_start\n");
 
 	if (started) {
 		started = false;
@@ -526,9 +517,9 @@ void autopunch_cleanup() {
 		WaitForSingleObject(sockets_mutex, INFINITE);
 		CloseHandle(relay_thread);
 		CloseHandle(sockets_mutex);
-		//DEBUG_ADDRDEBUG_LOG("unload free sockets: %zu %zu %zu", sockets_len, sockets_cap, (size_t)sockets)
+		log_printf("unload free sockets: %zu %zu %zu\n", sockets_len, sockets_cap, (size_t)sockets);
 		free(sockets);
 	}
 
-	//DEBUG_LOG("unload_end")
+	log_printf("unload_end\n");
 }

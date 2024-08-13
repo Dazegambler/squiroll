@@ -1,0 +1,1 @@
+g++ -std=c++20 -o ToByteData_linux ToByteData.cpp

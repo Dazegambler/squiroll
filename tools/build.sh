@@ -1,1 +1,1 @@
-g++ -std=c++20 -o ToByteData_linux.run ToByteData.cpp
+g++ -std=c++20 -o make_embed_linux.run make_embed.cpp

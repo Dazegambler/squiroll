@@ -45,6 +45,26 @@ void Debug() {
 #define bind_import_addr (0x3884E0_R)
 #define closesocket_import_addr (0x388514_R)
 
+#define ReadFile_import_addr (0x38814C_R)
+#define ReadFile_call_addrA (0x02DFA1_R)
+#define ReadFile_call_addrB (0x02DFED_R)
+
+BOOL my_readfile(
+    HANDLE hFile,             
+    LPVOID lpBuffer,
+    DWORD nNumberOfBytesToRead,
+    LPDWORD lpNumberOfBytesRead,
+    LPOVERLAPPED lpOverlapped
+) {
+    return ReadFile(
+        hFile,
+        lpBuffer,
+        nNumberOfBytesToRead,
+        lpNumberOfBytesRead,
+        lpOverlapped
+    );
+}
+
 void patch_autopunch() {
     hotpatch_import(WSARecvFrom_import_addr, my_recvfrom);//new culprit
     hotpatch_import(WSASendTo_import_addr, my_sendto);
@@ -81,8 +101,12 @@ void common_init() {
     signal(SIGFPE, signalHandler);
     signal(SIGILL, signalHandler);
     signal(SIGTERM, signalHandler);
+
+    hotpatch_import(ReadFile_import_addr,my_readfile);
+    //hotpatch_call(ReadFile_call_addrA,my_readfile);
+    //hotpatch_call(ReadFile_call_addrB,my_readfile);
     //patch_allocman();
-    patch_autopunch();
+    //patch_autopunch();
 
 }
 

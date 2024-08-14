@@ -11,13 +11,13 @@ void mem_write(void* address, const void* data, size_t size) {
     }
 }
 
-/*
+
 void hotpatch_call(void* target, void* replacement) {
     uint8_t bytes[] = { 0xE8, 0, 0, 0, 0, 0xCC };
     *(uint32_t*)&bytes[1] = (uintptr_t)replacement - (uintptr_t)target - 5;
     mem_write(target, bytes, sizeof(bytes));
 }
-*/
+
 
 void hotpatch_jump(void* target, void* replacement) {
     uint8_t bytes[] = { 0xE9, 0, 0, 0, 0, 0xCC };

@@ -25,7 +25,7 @@ void printStackTrace() {
 }
 
 void signalHandler(int signum) {
-    dump = fopen("/crash_dump.dump","a");
+    dump = fopen("crash_dump.dump","a");
     log_fprintf(dump,"Crash Detected\n");
 
     printStackTrace();

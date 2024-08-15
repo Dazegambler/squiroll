@@ -28,19 +28,33 @@
 #ifdef fastcall
 #undef fastcall
 #endif
+#ifdef thiscall
+#undef thiscall
+#endif
 
 #if GCC_COMPAT
 #define cdecl __attribute__((cdecl))
 #define stdcall __attribute__((stdcall))
 #define fastcall __attribute__((fastcall))
+#define thiscall __attribute__((thiscall))
 #elif MSVC_COMPAT || CLANG_COMPAT
 #define cdecl __cdecl
 #define stdcall __stdcall
 #define fastcall __fastcall
+#define thiscall __thiscall
 #else
 #define cdecl
 #define stdcall 
 #define fastcall
+#define thiscall
+#endif
+
+#if GCC_COMPAT || CLANG_COMPAT
+#define thisfastcall thiscall
+#define thisfastcall_edx(...)
+#else
+#define thisfastcall fastcall
+#define thisfastcall_edx(...) __VA_ARGS__
 #endif
 
 #ifdef forceinline
@@ -74,6 +88,18 @@
 #else
 #define expect(...) MACRO_FIRST(__VA_ARGS__)
 #endif
+
+#if GCC_COMPAT || CLANG_COMPAT
+#define stack_return_offset ((uintptr_t*)__builtin_return_address(0))
+#elif MSVC_COMPAT
+#include <intrin.h>
+#define stack_return_offset ((uintptr_t*)_AddressOfReturnAddress())
+#else
+#error "Unknown stack offset format"
+#endif
+
+#define countof(array_type) \
+(sizeof(array_type) / sizeof(array_type[0]))
 
 extern const uintptr_t base_address;
 

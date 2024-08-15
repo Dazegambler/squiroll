@@ -13,7 +13,7 @@
 #define PATCH_SQUIRREL_ALLOCS 1
 #define PATCH_ALL_ALLOCS 2
 
-#define ALLOCATION_PATCH_TYPE PATCH_SQUIRREL_ALLOCS
+#define ALLOCATION_PATCH_TYPE PATCH_SQUIRREL_NO_ALLOCS
 
 static inline constexpr size_t SAVED_FRAMES = 8;
 static_assert(std::has_single_bit(SAVED_FRAMES));

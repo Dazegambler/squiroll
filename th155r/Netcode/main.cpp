@@ -185,29 +185,6 @@ void patch_allocman() {
     hotpatch_jump(msize_base_addr, my_msize);
 #endif
 }
-
-#pragma region squirrel patching test
-#define ReadFile_import_addr (0x38814C_R)
-#define asm_patch_addr (0x023FAA_R)
-#define CompileFile_callA_addr (0x00DAA_R)
-#define CompileFile_callB_addr (0x0568CC_R)
-
-BOOL stdcall my_readfile(
-  HANDLE hFile,
-  LPVOID lpBuffer,
-  DWORD nNumberOfBytesToRead,
-  LPDWORD lpNumberOfBytesRead,
-  LPOVERLAPPED lpOverlapped
-){
-    return ReadFile(
-        hFile,
-        lpBuffer,
-        nNumberOfBytesToRead,
-        lpNumberOfBytesRead,
-        lpOverlapped
-    );
-}
-#pragma endregion
 #pragma region netplay patch
 
 bool Received;
@@ -223,8 +200,8 @@ int WSAAPI my_WSARecvFrom(
   LPWSAOVERLAPPED                    lpOverlapped,
   LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
 ){
-    auto first_byte = lpBuffers->buf[0];
-    if (first_byte == '\t'){
+    char buf = *(char *)lpBuffers->buf;
+    if (buf == '\t'){
         if (Received == false){
             if (lpNumberOfBytesRecvd != 0){
                 lpNumberOfBytesRecvd = (LPDWORD)1;
@@ -232,13 +209,13 @@ int WSAAPI my_WSARecvFrom(
             return 0;
         }
         Received = true;
-    }else if (first_byte == '\v'){
+    }else if (buf == '\v'){
         Received = false;
     }else{
-        if (first_byte == '\x12'){
+        if (buf == '\x12'){
             if (lpBuffers->len < 25){
                 return WSARecvFrom(s,lpBuffers,dwBufferCount,lpNumberOfBytesRecvd,lpFlags,lpFrom,lpFromlen,lpOverlapped,lpCompletionRoutine);
-            }else if (first_byte != '\x13' || lpBuffers->len < 26){
+            }else if (buf != '\x13' || lpBuffers->len < 26){
                 return WSARecvFrom(s,lpBuffers,dwBufferCount,lpNumberOfBytesRecvd,lpFlags,lpFrom,lpFromlen,lpOverlapped,lpCompletionRoutine);
             }
             //Resync Code
@@ -247,6 +224,24 @@ int WSAAPI my_WSARecvFrom(
     return WSARecvFrom(s,lpBuffers,dwBufferCount,lpNumberOfBytesRecvd,lpFlags,lpFrom,lpFromlen,lpOverlapped,lpCompletionRoutine);
 }
 
+int WSAAPI my_WSASendTo(
+SOCKET                             s,
+LPWSABUF                           lpBuffers,
+DWORD                              dwBufferCount,
+LPDWORD                            lpNumberOfBytesSent,
+DWORD                              dwFlags,
+const sockaddr                     *lpTo,
+int                                iTolen,
+LPWSAOVERLAPPED                    lpOverlapped,
+LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
+){
+    WSASendTo(s,lpBuffers,dwBufferCount,lpNumberOfBytesSent,dwFlags,lpTo,iTolen,lpOverlapped,lpCompletionRoutine);
+    char buf = *(char *)lpBuffers->buf;
+    if (buf != '\0' && (buf < '\x01' || ('\n' < buf && buf != '\v'))){
+        Received = false;
+    }
+    return 0;
+}
 
 #pragma endregion
 

@@ -4,6 +4,8 @@
 #include <string.h>
 #include <algorithm>
 #include <bit>
+//#include <unordered_set>
+//#include <unordered_map>
 #include "AllocMan.h"
 #include "log.h"
 
@@ -11,11 +13,17 @@
 
 // Internal definitions
 
-using rollback_timer_t = UBitIntType<std::bit_width(SAVED_FRAMES)>;
+static inline constexpr size_t MAX_ROLLBACK_TIMER = SAVED_FRAMES * 2;
 
+static inline constexpr size_t ROLLBACK_TIMER_RECORD_THRESHOLD = SAVED_FRAMES;
+
+using rollback_timer_t = UBitIntType<std::bit_width(MAX_ROLLBACK_TIMER)>;
+
+// size: 0x8
 struct AllocNode {
-    AllocNode* next;
-    AllocNode* prev;
+    AllocNode* next; // 0x0
+    AllocNode* prev; // 0x4
+    // 0x8
 
     void prepend(AllocNode* new_node) {
         new_node->next = this;
@@ -37,23 +45,26 @@ struct AllocNode {
 
 enum AllocTickResult {
     SaveData,
+    PreserveData,
     FreeData
 };
 
 struct SavedAlloc;
 
+// size: 0x10+
 struct AllocData {
-    AllocNode node;
-    size_t size;
-    rollback_timer_t free_timer;
+    AllocNode node; // 0x0
+    size_t size; // 0x8
+    rollback_timer_t free_timer; // 0xC
     union {
-        uint8_t flags;
+        uint8_t flags; // 0xD
         struct {
             bool rollback_tag : 1;
             bool has_record : 1;
         };
     };
-    alignas(__STDCPP_DEFAULT_NEW_ALIGNMENT__) unsigned char data[];
+    // two bytes of padding
+    alignas(__STDCPP_DEFAULT_NEW_ALIGNMENT__) unsigned char data[]; // 0x10
     
     static forceinline AllocData* get_from_ptr(void* ptr) {
         return (AllocData*)((uintptr_t)ptr - offsetof(AllocData, data));
@@ -76,19 +87,30 @@ struct AllocData {
     
     void cleanup() {
         this->node.unlink();
+#if MEMORY_DEBUG_LEVEL >= MEMORY_DEBUG_LIGHT
+        // Write dummy values in to make it obvious
+        // if a node is getting freed twice
+        this->node.next = (AllocNode*)0x00000318;
+        this->node.prev = (AllocNode*)0x00000318;
+#endif
     }
     
-    void start_free(rollback_timer_t time) {
-        this->free_timer = time;
+    void free() {
+        this->cleanup();
+        ::free(this);
+    }
+    
+    void start_free() {
+        this->free_timer = (rollback_timer_t)MAX_ROLLBACK_TIMER;
     }
     
     AllocTickResult tick() {
         this->has_record = true;
-        if (
-            this->free_timer == 0 ||
-            --this->free_timer != 0
-        ) {
+        if (this->free_timer == 0) {
             return SaveData;
+        }
+        if (--this->free_timer != 0) {
+            return PreserveData;
         }
         return FreeData;
     }
@@ -96,44 +118,63 @@ struct AllocData {
     inline void rollback(size_t frames, SavedAlloc* saved_alloc);
 };
 
+// size: 0x8+
 struct SavedAlloc {
-    AllocData* ptr;
-    size_t size;
-    alignas(4) unsigned char data[];
+    AllocData* ptr; // 0x0
+    size_t size; // 0x4
+    alignas(4) unsigned char data[]; // 0x8
     
-    static forceinline size_t buffer_size(AllocData* alloc) {
+    static forceinline size_t save_buffer_size(AllocData* alloc) {
         return sizeof(SavedAlloc) + alloc->size;
+    }
+    static forceinline size_t preserve_buffer_size(AllocData* alloc) {
+        return sizeof(SavedAlloc);
     }
     
     size_t total_size() const {
         return sizeof(SavedAlloc) + this->size;
     }
     
-    void record(AllocData* alloc) {
+    size_t record(AllocData* alloc) {
         this->ptr = alloc;
-        size_t size = this->size = alloc->size;
-        memcpy(this->data, alloc->data, size);
+        size_t size = 0;
+        if (alloc->free_timer == 0) {
+            size = alloc->size;
+            memcpy(this->data, alloc->data, size);
+        }
+        return this->size = size;
     }
 };
 
 inline void AllocData::rollback(size_t frames, SavedAlloc* saved_alloc) {
-    if (
-        this->free_timer != 0 &&
-        (this->free_timer += frames) > SAVED_FRAMES
-    ) {
-        this->free_timer = 0;
-    }
     this->rollback_tag = true;
+    size_t current_free_timer = this->free_timer;
+    if (current_free_timer != 0) {
+        if (current_free_timer <= ROLLBACK_TIMER_RECORD_THRESHOLD) {
+            // This node can't possibly re-stabilize, so do nothing
+            return;
+        }
+        if ((current_free_timer += frames) > MAX_ROLLBACK_TIMER) {
+            // This node has re-stabilized, so copy the data back
+            this->free_timer = 0;
+        } else {
+            // This node could re-stabilize, but the data
+            // doesn't need to be copied back yet
+            this->free_timer = (rollback_timer_t)current_free_timer;
+            return;
+        }
+    }
     memcpy(this->data, saved_alloc->data, saved_alloc->size);
 }
 
+// size: 0x10 + 0xC * SAVED_FRAMES
 struct AllocManager {
     static inline constexpr size_t FRAME_WRAP_MASK = SAVED_FRAMES - 1;
     
-    AllocNode dummy_node;
-    size_t saved_data_index;
-    size_t available_frames;
-    uint8_t* saved_data[SAVED_FRAMES];
+    AllocNode dummy_node; // 0x0
+    size_t saved_data_index; // 0x8
+    size_t available_frames; // 0xC
+    uint8_t* saved_data[SAVED_FRAMES]; // 0x10
     size_t filled_sizes[SAVED_FRAMES];
     size_t buffer_sizes[SAVED_FRAMES];
 
@@ -203,12 +244,16 @@ struct AllocManager {
         size_t total_size = 0;
         this->for_each_alloc([&](AllocData* alloc) {
             switch (alloc->tick()) {
+                default:
+                    unreachable;
                 case SaveData:
-                    total_size += SavedAlloc::buffer_size(alloc);
+                    total_size += SavedAlloc::save_buffer_size(alloc);
+                    break;
+                case PreserveData:
+                    total_size += SavedAlloc::preserve_buffer_size(alloc);
                     break;
                 case FreeData:
-                    alloc->cleanup();
-                    free(alloc);
+                    alloc->free();
                     break;
             }
         });
@@ -225,8 +270,7 @@ struct AllocManager {
         uint8_t* buffer_write = current_buffer;
         this->for_each_alloc([&](AllocData* alloc) {
             SavedAlloc* saved_data = (SavedAlloc*)buffer_write;
-            buffer_write += SavedAlloc::buffer_size(alloc);
-            saved_data->record(alloc);
+            buffer_write += saved_data->record(alloc);
         });
     }
     
@@ -245,8 +289,7 @@ struct AllocManager {
                 if (alloc->rollback_tag) {
                     alloc->rollback_tag = false;
                 } else {
-                    alloc->cleanup();
-                    free(alloc);
+                    alloc->free();
                 }
             });
         }
@@ -258,10 +301,9 @@ static AllocManager alloc_man;
 
 static void free_alloc(AllocData* alloc) {
     if (alloc->has_record) {
-        alloc->start_free(SAVED_FRAMES);
+        alloc->start_free();
     } else {
-        alloc->cleanup();
-        free(alloc);
+        alloc->free();
     }
 }
 

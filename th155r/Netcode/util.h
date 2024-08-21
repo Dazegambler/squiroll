@@ -89,6 +89,19 @@
 #define expect(...) MACRO_FIRST(__VA_ARGS__)
 #endif
 
+#ifdef unreachable
+#undef unreachable
+#endif
+
+#if GCC_COMPAT || CLANG_COMPAT
+#define unreachable __builtin_unreachable()
+#elif MSVC_COMPAT
+#define unreachable __assume(0)
+#else
+#define unreachable do; while(0)
+#endif
+
+/*
 #if GCC_COMPAT || CLANG_COMPAT
 #define stack_return_offset ((uintptr_t*)__builtin_return_address(0))
 #elif MSVC_COMPAT
@@ -97,6 +110,7 @@
 #else
 #error "Unknown stack offset format"
 #endif
+*/
 
 #define countof(array_type) \
 (sizeof(array_type) / sizeof(array_type[0]))
@@ -128,6 +142,16 @@ static forceinline R* based_pointer(B* base, O offset) {
 template <typename P, typename O>
 static forceinline P* based_pointer(P* base, O offset) {
     return (P*)((uintptr_t)base + (uintptr_t)offset);
+}
+
+template <typename R, typename B, typename O> requires(!std::is_pointer_v<B>)
+static forceinline R* based_pointer(B base, O offset) {
+    return (R*)((uintptr_t)base + (uintptr_t)offset);
+}
+
+template <typename B, typename O> requires(!std::is_pointer_v<B>)
+static forceinline B based_pointer(B base, O offset) {
+    return (B)((uintptr_t)base + (uintptr_t)offset);
 }
 
 #endif

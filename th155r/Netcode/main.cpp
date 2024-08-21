@@ -1,5 +1,4 @@
 #include <string.h>
-
 #include <squirrel.h>
 
 #include "util.h"
@@ -9,7 +8,9 @@
 #include "CrashHandler.h"
 #include "log.h"
 
+
 const uintptr_t base_address = (uintptr_t)GetModuleHandleA(NULL);
+uintptr_t libact_base_address = 0;
 
 //SQVM Rx4DACE4 initialized at Rx124710
 HSQUIRRELVM* VM;
@@ -30,15 +31,68 @@ void Debug() {
     SetConsoleTitleW(L"th155r debug");
 }
 
+typedef void* thisfastcall act_script_plugin_load_t(
+    void* self,
+    thisfastcall_edx(int dummy_edx,)
+    const char* plugin_path
+);
+
+void patch_se_libact(void* base_address);
+void patch_se_lobby(void* base_address);
+void patch_se_upnp(void* base_address);
+void patch_se_information(void* base_address);
+void patch_se_trust(void* base_address);
+
+template <const uintptr_t& base, uintptr_t offset>
+void* thisfastcall patch_act_script_plugin(
+    void* self,
+    thisfastcall_edx(int dummy_edx,)
+    const char* plugin_path
+) {
+    void* base_address = based_pointer<act_script_plugin_load_t>(base, offset)(
+        self,
+        thisfastcall_edx(dummy_edx,)
+        plugin_path
+    );
+    
+    if (base_address) {
+        if (!strcmp(plugin_path, "data/plugin/se_libact.dll")) {
+            patch_se_libact(base_address);
+        }
+        else if (!strcmp(plugin_path, "data/plugin/se_lobby.dll")) {
+            patch_se_lobby(base_address);
+        }
+        else if (!strcmp(plugin_path, "data/plugin/se_upnp.dll")) {
+            patch_se_upnp(base_address);
+        }
+        else if (!strcmp(plugin_path, "data/plugin/se_information.dll")) {
+            patch_se_information(base_address);
+        }
+        else if (!strcmp(plugin_path, "data/plugin/se_trust.dll")) {
+            patch_se_trust(base_address);
+        }
+    }
+    
+    return base_address;
+}
+
 void patch_se_libact(void* base_address) {
-#if ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS
+    libact_base_address = (uintptr_t)base_address;
+    
+#if ALLOCATION_PATCH_TYPE == PATCH_SQUIRREL_ALLOCS
+    //hotpatch_rel32(based_pointer(base_address, 0xC4BE5), my_malloc);
+    //hotpatch_rel32(based_pointer(base_address, 0xC4C89), my_realloc);
+    //hotpatch_rel32(based_pointer(base_address, 0xC4C75), my_free);
+#elif ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS
     hotpatch_jump(based_pointer(base_address, 0x134632), my_malloc);
     hotpatch_jump(based_pointer(base_address, 0x12C67B), my_calloc);
     hotpatch_jump(based_pointer(base_address, 0x13BD53), my_realloc);
     hotpatch_jump(based_pointer(base_address, 0x12C6D8), my_free);
-    hotpatch_jump(based_pointer(base_address, 0x12C67B), my_recalloc);
+    hotpatch_jump(based_pointer(base_address, 0x138F44), my_recalloc);
     hotpatch_jump(based_pointer(base_address, 0x141C26), my_msize);
 #endif
+
+    hotpatch_rel32(based_pointer(base_address, 0x15F7C), &patch_act_script_plugin<libact_base_address, 0x1CC60>);
 }
 
 void patch_se_lobby(void* base_address) {
@@ -47,7 +101,7 @@ void patch_se_lobby(void* base_address) {
     hotpatch_jump(based_pointer(base_address, 0x402F8), my_calloc);
     hotpatch_jump(based_pointer(base_address, 0x41055), my_realloc);
     hotpatch_jump(based_pointer(base_address, 0x40355), my_free);
-    hotpatch_jump(based_pointer(base_address, 0x4DCE6), my_recalloc);
+    hotpatch_jump(based_pointer(base_address, 0x4DCF1), my_recalloc);
     hotpatch_jump(based_pointer(base_address, 0x53F76), my_msize);
 #endif
 }
@@ -58,7 +112,7 @@ void patch_se_upnp(void* base_address) {
     hotpatch_jump(based_pointer(base_address, 0x21229), my_calloc);
     hotpatch_jump(based_pointer(base_address, 0x1C509), my_realloc);
     hotpatch_jump(based_pointer(base_address, 0x215AD), my_free);
-    hotpatch_jump(based_pointer(base_address, 0x2D3B4), my_recalloc);
+    hotpatch_jump(based_pointer(base_address, 0x2D3BF), my_recalloc);
     hotpatch_jump(based_pointer(base_address, 0x32413), my_msize);
 #endif
 }
@@ -69,7 +123,7 @@ void patch_se_information(void* base_address) {
     hotpatch_jump(based_pointer(base_address, 0x1BBE9), my_calloc);
     hotpatch_jump(based_pointer(base_address, 0x1B8A1), my_realloc);
     hotpatch_jump(based_pointer(base_address, 0x1BFAE), my_free);
-    hotpatch_jump(based_pointer(base_address, 0x25FE5), my_recalloc);
+    hotpatch_jump(based_pointer(base_address, 0x25FF0), my_recalloc);
     hotpatch_jump(based_pointer(base_address, 0x2B406), my_msize);
 #endif
 }
@@ -80,9 +134,12 @@ void patch_se_trust(void* base_address) {
     hotpatch_jump(based_pointer(base_address, 0x5C92), my_calloc);
     hotpatch_jump(based_pointer(base_address, 0x936E), my_realloc);
     hotpatch_jump(based_pointer(base_address, 0x5B6D), my_free);
-    hotpatch_jump(based_pointer(base_address, 0x78A0), my_recalloc);
+    hotpatch_jump(based_pointer(base_address, 0x78AB), my_recalloc);
     hotpatch_jump(based_pointer(base_address, 0x933B), my_msize);
 #endif
+
+    static constexpr const uint8_t data[] = { 0x31, 0xC0 };
+    mem_write(based_pointer(base_address, 0x15CC), data, sizeof(data));
 }
 
 #define sq_vm_malloc_call_addr (0x186745_R)
@@ -93,14 +150,16 @@ void patch_se_trust(void* base_address) {
 #define calloc_base_addr (0x3122EA_R)
 #define realloc_base_addr (0x312DAF_R)
 #define free_base_addr (0x312347_R)
-#define recalloc_addr (0x3182D4_R)
-#define msize_addr (0x31ED30_R)
+#define recalloc_base_addr (0x3182DF_R)
+#define msize_base_addr (0x31ED30_R)
 
 #define WSASend_import_addr (0x3884D0_R)
 #define WSASendTo_import_addr (0x3884D4_R)
 #define WSARecvFrom_import_addr (0x3884D8_R)
 #define bind_import_addr (0x3884E0_R)
 #define closesocket_import_addr (0x388514_R)
+
+#define patch_act_script_plugin_hook_addr (0x127ADC_R)
 
 void patch_autopunch() {
     //hotpatch_import(WSARecvFrom_import_addr, my_WSARecvFrom);
@@ -122,53 +181,74 @@ void patch_allocman() {
     hotpatch_jump(calloc_base_addr, my_calloc);
     hotpatch_jump(realloc_base_addr, my_realloc);
     hotpatch_jump(free_base_addr, my_free);
-    hotpatch_jump(recalloc_addr, my_recalloc);
-    hotpatch_jump(msize_addr, my_msize);
+    hotpatch_jump(recalloc_base_addr, my_recalloc);
+    hotpatch_jump(msize_base_addr, my_msize);
 #endif
 }
 
-typedef void* thisfastcall act_script_plugin_GetProcAddress_t(
-    void* self,
-    thisfastcall_edx(int dummy_edx,)
-    void* base_address,
-    const char* func_name
-);
+#pragma region squirrel patching test
+#define ReadFile_import_addr (0x38814C_R)
+#define asm_patch_addr (0x023FAA_R)
+#define CompileFile_callA_addr (0x00DAA_R)
+#define CompileFile_callB_addr (0x0568CC_R)
 
-#define act_script_plugin_GetProcAddress_addr (0x12E4F0_R)
-
-#define patch_act_script_plugin_hook_addr (0x127AF9_R)
-
-void* thisfastcall patch_act_script_plugin(
-    void* self,
-    thisfastcall_edx(int dummy_edx,)
-    void* base_address,
-    const char* func_name
-) {
-    const char* plugin_name = (const char*)stack_return_offset[8]; // SUPER JANK HACK
-    
-    if (!strcmp(plugin_name, "data/plugin/se_libact.dll")) {
-        patch_se_libact(base_address);
-    }
-    else if (!strcmp(plugin_name, "data/plugin/se_lobby.dll")) {
-        patch_se_lobby(base_address);
-    }
-    else if (!strcmp(plugin_name, "data/plugin/se_upnp.dll")) {
-        patch_se_upnp(base_address);
-    }
-    else if (!strcmp(plugin_name, "data/plugin/se_information.dll")) {
-        patch_se_information(base_address);
-    }
-    else if (!strcmp(plugin_name, "data/plugin/se_trust.dll")) {
-        patch_se_trust(base_address);
-    }
-    
-    return ((act_script_plugin_GetProcAddress_t*)act_script_plugin_GetProcAddress_addr)(
-        self,
-        thisfastcall_edx(dummy_edx,)
-        base_address,
-        func_name
+BOOL stdcall my_readfile(
+  HANDLE hFile,
+  LPVOID lpBuffer,
+  DWORD nNumberOfBytesToRead,
+  LPDWORD lpNumberOfBytesRead,
+  LPOVERLAPPED lpOverlapped
+){
+    return ReadFile(
+        hFile,
+        lpBuffer,
+        nNumberOfBytesToRead,
+        lpNumberOfBytesRead,
+        lpOverlapped
     );
 }
+#pragma endregion
+#pragma region netplay patch
+
+bool Received;
+
+int WSAAPI my_WSARecvFrom(
+  SOCKET                             s,
+  LPWSABUF                           lpBuffers,
+  DWORD                              dwBufferCount,
+  LPDWORD                            lpNumberOfBytesRecvd,
+  LPDWORD                            lpFlags,
+  sockaddr                           *lpFrom,
+  LPINT                              lpFromlen,
+  LPWSAOVERLAPPED                    lpOverlapped,
+  LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
+){
+    auto first_byte = lpBuffers->buf[0];
+    if (first_byte == '\t'){
+        if (Received == false){
+            if (lpNumberOfBytesRecvd != 0){
+                lpNumberOfBytesRecvd = (LPDWORD)1;
+            }
+            return 0;
+        }
+        Received = true;
+    }else if (first_byte == '\v'){
+        Received = false;
+    }else{
+        if (first_byte == '\x12'){
+            if (lpBuffers->len < 25){
+                return WSARecvFrom(s,lpBuffers,dwBufferCount,lpNumberOfBytesRecvd,lpFlags,lpFrom,lpFromlen,lpOverlapped,lpCompletionRoutine);
+            }else if (first_byte != '\x13' || lpBuffers->len < 26){
+                return WSARecvFrom(s,lpBuffers,dwBufferCount,lpNumberOfBytesRecvd,lpFlags,lpFrom,lpFromlen,lpOverlapped,lpCompletionRoutine);
+            }
+            //Resync Code
+        }
+    }
+    return WSARecvFrom(s,lpBuffers,dwBufferCount,lpNumberOfBytesRecvd,lpFlags,lpFrom,lpFromlen,lpOverlapped,lpCompletionRoutine);
+}
+
+
+#pragma endregion
 
 // Initialization code shared by th155r and thcrap use
 // Executes before the start of the process
@@ -184,7 +264,11 @@ void common_init() {
     patch_allocman();
     //patch_autopunch();
     
-    hotpatch_rel32(patch_act_script_plugin_hook_addr, patch_act_script_plugin);
+    //hotpatch_import(CreateFileA_import_addr,my_createfileA);
+
+    //hotpatch_import(ReadFile_import_addr,my_readfile);
+
+    //hotpatch_rel32(patch_act_script_plugin_hook_addr, &patch_act_script_plugin<base_address, 0x12DDD0>);
 
 }
 

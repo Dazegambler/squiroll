@@ -5,10 +5,13 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <windows.h>
 
 #include "util.h"
 
 void mem_write(void* address, const void* data, size_t size);
+int mem_prot_overwrite(void* address,int size,DWORD prot);
+
 
 void hotpatch_call(void* target, void* replacement);
 void hotpatch_jump(void* target, void* replacement);

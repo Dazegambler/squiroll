@@ -189,6 +189,9 @@ void patch_allocman() {
 
 bool Received;
 
+#define eax_patch (0x0E3578_R)
+#define edi_patch (0x0E364A_R)
+
 int WSAAPI my_WSARecvFrom(
   SOCKET                             s,
   LPWSABUF                           lpBuffers,
@@ -241,6 +244,13 @@ LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
         Received = false;
     }
     return 0;
+}
+
+void netplay_patch(){
+    uint8_t eax_bytes[] = { 0x83, 0xC0, 0x07 };//83c005
+    uint8_t edi_bytes[] = {0x83, 0xC7, 0x07};//83c705
+    mem_write((void *)eax_patch,eax_bytes,sizeof(eax_bytes));
+    mem_write((void *)edi_patch,edi_bytes,sizeof(edi_bytes));
 }
 
 #pragma endregion

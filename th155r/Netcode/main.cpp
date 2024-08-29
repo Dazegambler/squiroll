@@ -13,11 +13,7 @@ const uintptr_t base_address = (uintptr_t)GetModuleHandleA(NULL);
 uintptr_t libact_base_address = 0;
 
 //SQVM Rx4DACE4 initialized at Rx124710
-HSQUIRRELVM* VM;
-
-void GetSqVM(){
-    VM = (HSQUIRRELVM*)0x4DACE4_R; 
-}
+HSQUIRRELVM VM;
 
 void Cleanup() {
     autopunch_cleanup();
@@ -159,6 +155,10 @@ void patch_se_trust(void* base_address) {
 #define bind_import_addr (0x3884E0_R)
 #define closesocket_import_addr (0x388514_R)
 
+#define sq_vm_init_call_addrA (0x00D6AD_R)
+#define sq_vm_init_call_addrB (0x055EFA_R)
+#define sq_vm_init_addr (0x024710_R)
+
 #define patch_act_script_plugin_hook_addr (0x127ADC_R)
 
 void patch_autopunch() {
@@ -187,10 +187,17 @@ void patch_allocman() {
 }
 #pragma region netplay patch
 
-bool Received;
+bool VarA,VarB;
+//unknown VarC;
 
 #define eax_patch (0x0E3578_R)
 #define edi_patch (0x0E364A_R)
+
+// void Resync(){
+//     if (varB == false){
+//         if ()
+//     }
+// }
 
 int WSAAPI my_WSARecvFrom(
   SOCKET                             s,
@@ -205,15 +212,15 @@ int WSAAPI my_WSARecvFrom(
 ){
     char buf = *(char *)lpBuffers->buf;
     if (buf == '\t'){
-        if (Received == false){
+        if (VarA == false){
             if (lpNumberOfBytesRecvd != 0){
                 lpNumberOfBytesRecvd = (LPDWORD)1;
             }
             return 0;
         }
-        Received = true;
+        VarA = true;
     }else if (buf == '\v'){
-        Received = false;
+        VarA = false;
     }else{
         if (buf == '\x12'){
             if (lpBuffers->len < 25){
@@ -221,7 +228,7 @@ int WSAAPI my_WSARecvFrom(
             }else if (buf != '\x13' || lpBuffers->len < 26){
                 return WSARecvFrom(s,lpBuffers,dwBufferCount,lpNumberOfBytesRecvd,lpFlags,lpFrom,lpFromlen,lpOverlapped,lpCompletionRoutine);
             }
-            //Resync Code
+            //Resync();
         }
     }
     return WSARecvFrom(s,lpBuffers,dwBufferCount,lpNumberOfBytesRecvd,lpFlags,lpFrom,lpFromlen,lpOverlapped,lpCompletionRoutine);
@@ -241,7 +248,7 @@ LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
     WSASendTo(s,lpBuffers,dwBufferCount,lpNumberOfBytesSent,dwFlags,lpTo,iTolen,lpOverlapped,lpCompletionRoutine);
     char buf = *(char *)lpBuffers->buf;
     if (buf != '\0' && (buf < '\x01' || ('\n' < buf && buf != '\v'))){
-        Received = false;
+        VarA = false;
     }
     return 0;
 }
@@ -255,6 +262,29 @@ void netplay_patch(){
 
 #pragma endregion
 
+BOOL my_ReadFile(
+HANDLE       hFile,
+LPVOID       lpBuffer,
+DWORD        nNumberOfBytesToRead,
+LPDWORD     lpNumberOfBytesRead,
+LPOVERLAPPED lpOverlapped
+){
+    BOOL original = ReadFile(hFile,lpBuffer,nNumberOfBytesToRead,lpNumberOfBytesRead,lpOverlapped);
+    if (!original){
+        return FALSE;
+    }
+    
+    return TRUE;
+}
+
+typedef HSQUIRRELVM (*sq_vm_init)(void);
+sq_vm_init sq_vm_init_ptr = (sq_vm_init)sq_vm_init_addr;
+
+HSQUIRRELVM my_sq_vm_init(){
+    VM = sq_vm_init_ptr();
+    return VM;
+}
+
 // Initialization code shared by th155r and thcrap use
 // Executes before the start of the process
 void common_init() {
@@ -267,6 +297,10 @@ void common_init() {
     signal(SIGILL, signalHandler);
     signal(SIGTERM, signalHandler);
     patch_allocman();
+
+    hotpatch_rel32(sq_vm_init_call_addrA,my_sq_vm_init);
+    //hotpatch_rel32(sq_vm_init_call_addrB,my_sq_vm_init); //not sure why its called twice but pretty sure the first call is enough
+
     //patch_autopunch();
     
     //hotpatch_import(CreateFileA_import_addr,my_createfileA);

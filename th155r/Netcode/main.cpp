@@ -280,6 +280,10 @@ LPOVERLAPPED lpOverlapped
 typedef HSQUIRRELVM (*sq_vm_init)(void);
 sq_vm_init sq_vm_init_ptr = (sq_vm_init)sq_vm_init_addr;
 
+#define update_addr (0x008F50_R)
+typedef void (*update_test)(void);
+update_test update_ptr = (update_test)update_addr;
+
 HSQUIRRELVM my_sq_vm_init(){
     VM = sq_vm_init_ptr();
     return VM;

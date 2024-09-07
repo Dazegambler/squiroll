@@ -7,7 +7,7 @@
 #include "Autopunch.h"
 #include "PatchUtils.h"
 #include "log.h"
-
+//#include "fake_lag.h"
 
 const uintptr_t base_address = (uintptr_t)GetModuleHandleA(NULL);
 uintptr_t libact_base_address = 0;
@@ -194,121 +194,115 @@ void patch_allocman() {
 #define createmutex_patch_addr (0x01DC61_R)
 
 struct PacketLayout {
-	int8_t type;
-	unsigned char data[];
+    int8_t type;
+    unsigned char data[];
 };
 
-static bool not_in_match = false
-            ,resyncing = false;
+static bool not_in_match = true;
+static bool resyncing = false;
 static uint8_t lag_packets = 0;
-static ULARGE_INTEGER prev_timestamp = {};
+static uint64_t prev_timestamp = 0;
 
 //resync_logic
 //start
 void resync_patch(uint8_t value){
     DWORD old_protect;
     uint8_t* patch_addr = (uint8_t*)resync_patch_addr;
-	if (VirtualProtect(patch_addr, 1, PAGE_READWRITE, &old_protect)) {
+    if (VirtualProtect(patch_addr, 1, PAGE_READWRITE, &old_protect)) {
 
-		static constexpr uint8_t value_table[] = {
-			5, 10, 15, INT8_MAX
-		};
+        static constexpr uint8_t value_table[] = {
+            5, 10, 15, INT8_MAX, INT8_MAX, INT8_MAX, INT8_MAX, INT8_MAX
+        };
 
-		*patch_addr = value_table[value / 32];
+        *patch_addr = value_table[value / 32];
 
-		VirtualProtect(patch_addr, 1, old_protect, &old_protect);
-		FlushInstructionCache(GetCurrentProcess(), patch_addr, 1);
-	}
+        VirtualProtect(patch_addr, 1, old_protect, &old_protect);
+    }
 }
 
-void __fastcall run_resync_logic(ULARGE_INTEGER new_timestamp) {
-	if (!resyncing) {
-		if (
-			// BUG (that probably isn't important):
-			// Timestamp comparison should be checking QuadPart.
-			// If the LowPart happens to be the same but not HighPart
-			// then this will be detected as a duplicate timestamp
-			prev_timestamp.LowPart != new_timestamp.LowPart &&
-			prev_timestamp.HighPart != new_timestamp.HighPart
-		) {
-			lag_packets = 0;
-		}
-		else {
-			if (++lag_packets >= UINT8_MAX) {
-				resyncing = true;
-				lag_packets = 0;
+void run_resync_logic(uint64_t new_timestamp) {
+    if (!resyncing) {
+        if (prev_timestamp != new_timestamp) {
+            lag_packets = 0;
+        }
+        else {
+            if (++lag_packets >= INT8_MAX) {
+                resyncing = true;
+                lag_packets = 0;
                 //show message window displaying "resyncing" or something like it
-			}
-		}
-		prev_timestamp = new_timestamp;
-	} else {
-		if (lag_packets > INT8_MAX) {
-			resyncing = false;
-			lag_packets = 0;
+            }
+        }
+        prev_timestamp = new_timestamp;
+    } else {
+        if (lag_packets > INT8_MAX) {
+            resyncing = false;
+            lag_packets = 0;
             //kill message window?
-		}
-		else {
+        }
+        else {
             resync_patch(lag_packets);
-			++lag_packets;
-		}
-	}
+            ++lag_packets;
+        }
+    }
 }
 
 
 int WSAAPI my_WSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWORD lpNumberOfBytesSent, DWORD dwFlags, const sockaddr* lpTo, int iTolen, LPWSAOVERLAPPED lpOverlapped, LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine) {
-	PacketLayout* packet = (PacketLayout*)lpBuffers[0].buf;
+    PacketLayout* packet = (PacketLayout*)lpBuffers[0].buf;
 
-	switch (packet->type) {
-		case 9:
-			if (not_in_match) {
-				if (lpNumberOfBytesSent) {
-					*lpNumberOfBytesSent = 1;
-				}
-				return 0;
-			}
-			not_in_match = true;
-			break;
-		case 11:
-			not_in_match = false;
-			break;
-		case 18:
-			if (lpBuffers[0].len >= 25) {
-				run_resync_logic(*(ULARGE_INTEGER*)&packet->data[16]);
-			}
-			break;
-		case 19:
-			if (lpBuffers[0].len >= 26) {
-				run_resync_logic(*(ULARGE_INTEGER*)&packet->data[17]);
-			}
-			break;
-	}
+    switch (packet->type) {
+        case 9:
+            if (not_in_match) {
+                if (lpNumberOfBytesSent) {
+                    *lpNumberOfBytesSent = 1;
+                }
+                return 0;
+            }
+            not_in_match = true;
+            break;
+        case 11:
+            not_in_match = false;
+            break;
+        case 18:
+            if (lpBuffers[0].len >= 25) {
+                run_resync_logic(*(uint64_t*)&packet->data[16]);
+            }
+            break;
+        case 19:
+            if (lpBuffers[0].len >= 26) {
+                run_resync_logic(*(uint64_t*)&packet->data[17]);
+            }
+            break;
+    }
 
-	return WSASendTo(s, lpBuffers, dwBufferCount, lpNumberOfBytesSent, dwFlags, lpTo, iTolen, lpOverlapped, lpCompletionRoutine);
+    return WSASendTo(s, lpBuffers, dwBufferCount, lpNumberOfBytesSent, dwFlags, lpTo, iTolen, lpOverlapped, lpCompletionRoutine);
 }
 
 int WSAAPI my_WSARecvFrom(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWORD lpNumberOfBytesRecvd, LPDWORD lpFlags, sockaddr* lpFrom, LPINT lpFromLen, LPWSAOVERLAPPED lpOverlapped, LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine) {
-	int ret = WSARecvFrom(s, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromLen, lpOverlapped, lpCompletionRoutine);
+    int ret = WSARecvFrom(s, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromLen, lpOverlapped, lpCompletionRoutine);
 
-	PacketLayout* packet = (PacketLayout*)lpBuffers[0].buf;
+    PacketLayout* packet = (PacketLayout*)lpBuffers[0].buf;
 
-	switch (packet->type) {
-		case 1: case 2: case 3: case 4: case 5:
-		case 6: case 7: case 8: case 9: case 10:
-		case 11:
-			not_in_match = false;
-	}
+    switch (packet->type) {
+        case 0: default:
+            not_in_match = false;
+        case 1: case 2: case 3: case 4: case 5:
+        case 6: case 7: case 8: case 9: case 10:
+        case 11:
+            break;
+    }
 
-	return ret;
+    return ret;
 }
 
-void netplay_patch(){
-    uint8_t data[] = {0x7F};
-    mem_write((void*)patchA_addr,data,sizeof(data));//first netcode patch
-    uint8_t data_mutexa[] = {0x6A,0x00,0x90,0x90,0x90};
-    mem_write((void*)createmutex_patch_addr,data_mutexa,sizeof(data_mutexa));//mutex patch
-    resync_patch(UINT8_MAX);
-    hotpatch_import(wsarecvfrom_import_addr,my_WSARecvFrom);
-    hotpatch_import(wsasendto_import_addr,my_WSASendTo);
+void netplay_patch() {
+    static constexpr uint8_t data[] = { INT8_MAX };
+    mem_write(patchA_addr, data, sizeof(data)); //first netcode patch
+    static constexpr uint8_t data_mutexa[] = { 0x68, 0x00, 0x00, 0x00, 0x00 };
+    mem_write(createmutex_patch_addr, data_mutexa, sizeof(data_mutexa)); //mutex patch
+    resync_patch(INT8_MAX);
+    hotpatch_import(wsarecvfrom_import_addr, my_WSARecvFrom);
+    hotpatch_import(wsasendto_import_addr, my_WSASendTo);
 }
 
 #pragma endregion
@@ -349,8 +343,8 @@ void common_init() {
     patch_allocman();
 
     netplay_patch();
-    hotpatch_rel32(sq_vm_init_call_addrA,my_sq_vm_init);
-    //hotpatch_rel32(sq_vm_init_call_addrB,my_sq_vm_init); //not sure why its called twice but pretty sure the first call is enough
+    hotpatch_rel32(sq_vm_init_call_addrA, my_sq_vm_init);
+    //hotpatch_rel32(sq_vm_init_call_addrB, my_sq_vm_init); //not sure why its called twice but pretty sure the first call is enough
 
     //patch_autopunch();
     

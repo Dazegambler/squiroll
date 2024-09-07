@@ -7,7 +7,7 @@
 #include "Autopunch.h"
 #include "PatchUtils.h"
 #include "log.h"
-//#include "fake_lag.h"
+#include "fake_lag.h"
 
 const uintptr_t base_address = (uintptr_t)GetModuleHandleA(NULL);
 uintptr_t libact_base_address = 0;

@@ -4,14 +4,15 @@
 #define FAKE_LAG_H 1
 
 #include <stdlib.h>
-#include <thread>
+#include <stdint.h>
+#include <string.h>
+#include <windows.h>
 
-#define FAKE_SEND_LAG_AMOUNT 10000
+#define FAKE_SEND_LAG_AMOUNT 0
 
 #if FAKE_SEND_LAG_AMOUNT > 0
 static inline DWORD idc_about_sent_bytes;
 static int WSAAPI WSASendTo_fake_lag(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWORD lpNumberOfBytesSent, DWORD dwFlags, const sockaddr* lpTo, int iTolen, LPWSAOVERLAPPED lpOverlapped, LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine) {
-    __asm__("int 3");
     size_t data_size = 0;
     for (size_t i = 0; i < dwBufferCount; ++i) {
         data_size += lpBuffers[i].len;
@@ -21,7 +22,22 @@ static int WSAAPI WSASendTo_fake_lag(SOCKET s, LPWSABUF lpBuffers, DWORD dwBuffe
         lpNumberOfBytesSent = &idc_about_sent_bytes;
     }
     size_t wsabuf_size = sizeof(WSABUF) * dwBufferCount;
-    uint8_t* send_data = (uint8_t*)malloc(wsabuf_size + iTolen + data_size);
+    
+    struct MinGWIsStupidWithThreads {
+        SOCKET s;
+        DWORD dwBufferCount;
+        LPDWORD lpNumberOfBytesSent;
+        DWORD dwFlags;
+        const sockaddr* lpTo;
+        int iTolen;
+        LPWSAOVERLAPPED lpOverlapped;
+        LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine;
+        unsigned char data[];
+    };
+    
+    MinGWIsStupidWithThreads* args = (MinGWIsStupidWithThreads*)malloc(sizeof(MinGWIsStupidWithThreads) + wsabuf_size + iTolen + data_size);
+    
+    uint8_t* send_data = args->data;
     uint8_t* data_write = send_data + wsabuf_size;
     
     memcpy(data_write, lpTo, iTolen);
@@ -36,13 +52,22 @@ static int WSAAPI WSASendTo_fake_lag(SOCKET s, LPWSABUF lpBuffers, DWORD dwBuffe
         data_write += length;
     }
     
-    std::thread([=](){
+    args->s = s;
+    args->dwBufferCount = dwBufferCount;
+    args->lpNumberOfBytesSent = lpNumberOfBytesSent;
+    args->dwFlags = dwFlags;
+    args->lpTo = lpTo;
+    args->iTolen = iTolen;
+    args->lpOverlapped = lpOverlapped;
+    args->lpCompletionRoutine = lpCompletionRoutine;
+    
+    CreateThread(NULL, 0, [](void* thread_args) WINAPI -> DWORD {
         Sleep(FAKE_SEND_LAG_AMOUNT);
-        DWORD idc_about_sent_bytes;
-        
-        WSASendTo(s, (LPWSABUF)send_data, dwBufferCount, lpNumberOfBytesSent, dwFlags, lpTo, iTolen, lpOverlapped, lpCompletionRoutine);
-        free(send_data);
-    }).detach();
+        MinGWIsStupidWithThreads* args = (MinGWIsStupidWithThreads*)thread_args;
+        WSASendTo(args->s, (LPWSABUF)args->data, args->dwBufferCount, args->lpNumberOfBytesSent, args->dwFlags, args->lpTo, args->iTolen, args->lpOverlapped, args->lpCompletionRoutine);
+        free(thread_args);
+        return 0;
+    }, (void*)args, 0, NULL);
     
     return !lpOverlapped ? 0 : 997;
 }

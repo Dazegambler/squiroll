@@ -6,7 +6,6 @@
 #include "AllocMan.h"
 #include "Autopunch.h"
 #include "PatchUtils.h"
-#include "CrashHandler.h"
 #include "log.h"
 
 
@@ -192,6 +191,7 @@ void patch_allocman() {
 #define patchA_addr (0x0E357A_R)
 #define wsasendto_import_addr (0x3884D4_R)
 #define wsarecvfrom_import_addr (0x3884D8_R)
+#define createmutex_patch_addr (0x01DC61_R)
 
 struct PacketLayout {
 	int8_t type;
@@ -202,19 +202,6 @@ static bool not_in_match = false
             ,resyncing = false;
 static uint8_t lag_packets = 0;
 static ULARGE_INTEGER prev_timestamp = {};
-
-//start
-void __fastcall __apply_patch_A(uint8_t value) {
-	uint8_t* patch_addr = (uint8_t*)patchA_addr;
-	DWORD old_protect;
-	if (VirtualProtect(patch_addr, 1, PAGE_READWRITE, &old_protect)) {
-
-		*patch_addr = 0x7F;
-
-		VirtualProtect(patch_addr, 1, old_protect, &old_protect);
-		FlushInstructionCache(GetCurrentProcess(), patch_addr, 1);
-	}
-}
 
 //resync_logic
 //start
@@ -314,10 +301,11 @@ int WSAAPI my_WSARecvFrom(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPD
 	return ret;
 }
 
-//this is wrong 
 void netplay_patch(){
     uint8_t data[] = {0x7F};
-    mem_write((void*)patchA_addr,data,sizeof(data));
+    mem_write((void*)patchA_addr,data,sizeof(data));//first netcode patch
+    uint8_t data_mutexa[] = {0x6A,0x00,0x90,0x90,0x90};
+    mem_write((void*)createmutex_patch_addr,data_mutexa,sizeof(data_mutexa));//mutex patch
     resync_patch(UINT8_MAX);
     hotpatch_import(wsarecvfrom_import_addr,my_WSARecvFrom);
     hotpatch_import(wsasendto_import_addr,my_WSASendTo);
@@ -358,15 +346,10 @@ void common_init() {
 #ifndef NDEBUG
     Debug();
 #endif
-    signal(SIGSEGV, signalHandler);
-    signal(SIGABRT, signalHandler);
-    signal(SIGFPE, signalHandler);
-    signal(SIGILL, signalHandler);
-    signal(SIGTERM, signalHandler);
     patch_allocman();
 
-    hotpatch_rel32(sq_vm_init_call_addrA,my_sq_vm_init);
     netplay_patch();
+    hotpatch_rel32(sq_vm_init_call_addrA,my_sq_vm_init);
     //hotpatch_rel32(sq_vm_init_call_addrB,my_sq_vm_init); //not sure why its called twice but pretty sure the first call is enough
 
     //patch_autopunch();

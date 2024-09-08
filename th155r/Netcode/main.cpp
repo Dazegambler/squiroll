@@ -7,7 +7,12 @@
 #include "Autopunch.h"
 #include "PatchUtils.h"
 #include "log.h"
+#include "file_replacement.h"
 #include "fake_lag.h"
+
+#if !MINGW_COMPAT
+#pragma comment (lib, "Ws2_32.lib")
+#endif
 
 const uintptr_t base_address = (uintptr_t)GetModuleHandleA(NULL);
 uintptr_t libact_base_address = 0;
@@ -21,9 +26,9 @@ void Cleanup() {
 
 void Debug() {
     AllocConsole();
-    (void)freopen("CONIN$","r",stdin);
-    (void)freopen("CONOUT$","w",stdout);
-    (void)freopen("CONOUT$","w",stderr);
+    (void)freopen("CONIN$", "r", stdin);
+    (void)freopen("CONOUT$", "w", stdout);
+    (void)freopen("CONOUT$", "w", stderr);
     SetConsoleTitleW(L"th155r debug");
 }
 
@@ -57,7 +62,7 @@ void* thisfastcall patch_act_script_plugin(
     );
     
     if (base_address) {
-        log_printf("Applying patches for \"%s\"\n", plugin_path);
+        debug_printf("Applying patches for \"%s\" at %p\n", plugin_path, base_address);
         if (!strcmp(plugin_path, "data/plugin/se_libact.dll")) {
             patch_se_libact(base_address);
         }
@@ -169,6 +174,11 @@ void patch_se_trust(void* base_address) {
 
 #define patch_act_script_plugin_hook_addr (0x127ADC_R)
 
+#define file_replacement_hook_addr (0x23FAA_R)
+#define file_replacement_read_addrA (0x2DFA1_R)
+#define file_replacement_read_addrB (0x2DFED_R)
+#define CloseHandle_import_addr (0x3881DC_R)
+
 void patch_autopunch() {
     //hotpatch_import(WSARecvFrom_import_addr, my_WSARecvFrom);
     //hotpatch_import(WSASendTo_import_addr, my_WSASendTo);
@@ -193,6 +203,18 @@ void patch_allocman() {
     hotpatch_jump(msize_base_addr, my_msize);
 #endif
 }
+
+void patch_file_loading() {
+    hotpatch_call(file_replacement_hook_addr, file_replacement_hook);
+    static constexpr uint8_t patch[] = { 0xE9, 0x8C, 0x00, 0x00, 0x00, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC };
+    mem_write(file_replacement_hook_addr + 5, patch, sizeof(patch));
+
+    hotpatch_icall(file_replacement_read_addrA, file_replacement_read);
+    hotpatch_icall(file_replacement_read_addrB, file_replacement_read);
+
+    hotpatch_import(CloseHandle_import_addr, close_handle_hook);
+}
+
 #pragma region netplay patch
 
 #define resync_patch_addr (0x0E364C_R)
@@ -315,21 +337,6 @@ void netplay_patch() {
 
 #pragma endregion
 
-BOOL my_ReadFile(
-HANDLE       hFile,
-LPVOID       lpBuffer,
-DWORD        nNumberOfBytesToRead,
-LPDWORD     lpNumberOfBytesRead,
-LPOVERLAPPED lpOverlapped
-){
-    BOOL original = ReadFile(hFile,lpBuffer,nNumberOfBytesToRead,lpNumberOfBytesRead,lpOverlapped);
-    if (!original){
-        return FALSE;
-    }
-    
-    return TRUE;
-}
-
 typedef HSQUIRRELVM (*sq_vm_init)(void);
 sq_vm_init sq_vm_init_ptr = (sq_vm_init)sq_vm_init_addr;
 
@@ -365,7 +372,6 @@ void common_init() {
     //hotpatch_import(ReadFile_import_addr,my_readfile);
 
     hotpatch_rel32(patch_act_script_plugin_hook_addr, &patch_act_script_plugin<base_address, 0x12DDD0>);
-
 }
 
 void yes_tampering() {
@@ -380,6 +386,7 @@ extern "C" {
     dll_export int stdcall netcode_init(int32_t param) {
         yes_tampering();
         common_init();
+        patch_file_loading();
         return 0;
     }
     
@@ -399,6 +406,9 @@ extern "C" {
                     if (printf_t* log_func = (printf_t*)GetProcAddress(thcrap_handle, "log_printf")) {
                         log_printf = log_func;
                     }
+                    //if (patchhook_register_t* patchhook_register_func = (patchhook_register_t*)GetProcAddress(thcrap_handle, "patchhook_register")) {
+                        //patchhook_register = patchhook_register_func;
+                    //}
                     return 0;
                 }
             }

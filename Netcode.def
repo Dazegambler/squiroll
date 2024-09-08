@@ -1,0 +1,5 @@
+LIBRARY Netcode
+EXPORTS
+    netcode_init
+    netcode_mod_init
+    thcrap_plugin_init

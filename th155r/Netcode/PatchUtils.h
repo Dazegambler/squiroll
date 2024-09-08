@@ -20,6 +20,7 @@ int mem_prot_overwrite(void* address, size_t size, DWORD prot);
 
 
 void hotpatch_call(void* target, void* replacement);
+void hotpatch_icall(void* target, void* replacement);
 void hotpatch_jump(void* target, void* replacement);
 void hotpatch_ret(void* target, uint16_t pop_bytes);
 void hotpatch_rel32(void* target, void* replacement);
@@ -28,6 +29,11 @@ void hotpatch_import(void* addr, void* replacement);
 template <typename T, typename R>
 static forceinline void hotpatch_call(T target, R replacement) {
     return hotpatch_call((void*)target, (void*)replacement);
+}
+
+template <typename T, typename R>
+static forceinline void hotpatch_icall(T target, R replacement) {
+    return hotpatch_icall((void*)target, (void*)replacement);
 }
 
 template <typename T, typename R>

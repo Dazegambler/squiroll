@@ -2,3 +2,5 @@
 *.dll
 /tools/*.exe
 /tools/*.run
+.vs*
+out/

@@ -9,6 +9,13 @@
 typedef void cdecl vprintf_t(const char* format, va_list va);
 typedef void cdecl vfprintf_t(FILE* stream, const char* format, va_list va);
 
+#if !MINGW_COMPAT
+
+printf_t* log_printf = (printf_t*)&printf;
+fprintf_t* log_fprintf = (fprintf_t*)&fprintf;
+
+#else
+
 static void cdecl printf_dummy(const char* format, ...) {
 }
 static void cdecl fprintf_dummy(FILE* stream, const char* format, va_list va) {
@@ -48,3 +55,4 @@ void cdecl fprintf_lookup(FILE* stream, const char* format, ...) {
 
 printf_t* log_printf = (printf_t*)&printf_lookup;
 fprintf_t* log_fprintf = (fprintf_t*)&fprintf_lookup;
+#endif

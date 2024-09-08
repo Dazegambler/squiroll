@@ -4,6 +4,7 @@
 #define LOG_H 1
 
 #include <stdio.h>
+#include "util.h"
 
 typedef void cdecl printf_t(const char* format, ...);
 typedef void cdecl fprintf_t(FILE* stream, const char* format, ...);

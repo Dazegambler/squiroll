@@ -7,6 +7,12 @@
 #include <stdint.h>
 #include <type_traits>
 
+#define _MACRO_CAT(arg1, arg2) arg1 ## arg2
+#define MACRO_CAT(arg1, arg2) _MACRO_CAT(arg1, arg2)
+#define _MACRO_STR(arg) #arg
+#define MACRO_STR(arg) _MACRO_STR(arg)
+#define MACRO_EVAL(...) __VA_ARGS__
+
 #define MACRO_FIRST(arg1, ...) arg1
 
 #if defined(_MSC_VER) && !defined(MSVC_COMPAT)
@@ -17,6 +23,23 @@
 #endif
 #if defined(__clang__) && !defined(CLANG_COMPAT)
 #define CLANG_COMPAT 1
+#endif
+#ifdef __MINGW32__
+#define MINGW_COMPAT 1
+#endif
+
+#if GCC_COMPAT || CLANG_COMPAT
+#define USE_MSVC_ASM 0
+#elif MSVC_COMPAT
+#define USE_MSVC_ASM 1
+#endif
+
+#define MACRO_VOID(...)
+
+#if __INTELLISENSE__
+#define requires(...) MACRO_EVAL(MACRO_VOID(__VA_ARGS__))
+#else
+
 #endif
 
 #ifdef cdecl
@@ -61,10 +84,22 @@
 #undef forceinline
 #endif
 
+#ifdef neverinline
+#undef neverinline
+#endif
+
+#ifdef naked
+#undef naked
+#endif
+
 #if MSVC_COMPAT || CLANG_COMPAT
 #define forceinline __forceinline
+#define neverinline __declspec(noinline)
+#define naked __declspec(naked)
 #else
 #define forceinline __attribute__((always_inline)) inline
+#define neverinline __attribute__((noinline))
+#define naked __attribute__((naked))
 #endif
 
 #ifdef EVAL_NOOP

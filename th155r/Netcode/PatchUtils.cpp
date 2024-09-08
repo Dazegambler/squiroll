@@ -21,11 +21,16 @@ int mem_prot_overwrite(void* address,size_t size,DWORD prot) {
 }
 
 void hotpatch_call(void* target, void* replacement) {
-    uint8_t bytes[] = { 0xE8, 0, 0, 0, 0, 0xCC };
+    uint8_t bytes[] = { 0xE8, 0, 0, 0, 0 };
     *(uint32_t*)&bytes[1] = (uintptr_t)replacement - (uintptr_t)target - 5;
     mem_write(target, bytes, sizeof(bytes));
 }
 
+void hotpatch_icall(void* target, void* replacement) {
+    uint8_t bytes[] = { 0xE8, 0, 0, 0, 0, 0x90 };
+    *(uint32_t*)&bytes[1] = (uintptr_t)replacement - (uintptr_t)target - 5;
+    mem_write(target, bytes, sizeof(bytes));
+}
 
 void hotpatch_jump(void* target, void* replacement) {
     uint8_t bytes[] = { 0xE9, 0, 0, 0, 0, 0xCC };

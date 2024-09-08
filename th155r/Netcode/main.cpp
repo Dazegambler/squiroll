@@ -33,6 +33,11 @@ typedef void* thisfastcall act_script_plugin_load_t(
     const char* plugin_path
 );
 
+hostent* WSAAPI my_gethostbyname(const char* name) {
+    log_printf("LOBBY HOST: %s\n", name);
+    return gethostbyname(name);
+}
+
 void patch_se_libact(void* base_address);
 void patch_se_lobby(void* base_address);
 void patch_se_upnp(void* base_address);
@@ -100,6 +105,8 @@ void patch_se_lobby(void* base_address) {
     hotpatch_jump(based_pointer(base_address, 0x4DCF1), my_recalloc);
     hotpatch_jump(based_pointer(base_address, 0x53F76), my_msize);
 #endif
+
+    hotpatch_import(based_pointer(base_address, 0x1292AC), my_gethostbyname);
 }
 
 void patch_se_upnp(void* base_address) {
@@ -352,7 +359,7 @@ void common_init() {
 
     //hotpatch_import(ReadFile_import_addr,my_readfile);
 
-    //hotpatch_rel32(patch_act_script_plugin_hook_addr, &patch_act_script_plugin<base_address, 0x12DDD0>);
+    hotpatch_rel32(patch_act_script_plugin_hook_addr, &patch_act_script_plugin<base_address, 0x12DDD0>);
 
 }
 

@@ -57,6 +57,7 @@ void* thisfastcall patch_act_script_plugin(
     );
     
     if (base_address) {
+        log_printf("Applying patches for \"%s\"\n", plugin_path);
         if (!strcmp(plugin_path, "data/plugin/se_libact.dll")) {
             patch_se_libact(base_address);
         }
@@ -341,6 +342,9 @@ HSQUIRRELVM my_sq_vm_init(){
     return VM;
 }
 
+#define resolution_width_push_addr (0x01DE98_R)
+#define resolution_height_push_addr (0x01DE93_R)
+
 // Initialization code shared by th155r and thcrap use
 // Executes before the start of the process
 void common_init() {
@@ -351,6 +355,7 @@ void common_init() {
 
     netplay_patch();
     hotpatch_rel32(sq_vm_init_call_addrA, my_sq_vm_init);
+
     //hotpatch_rel32(sq_vm_init_call_addrB, my_sq_vm_init); //not sure why its called twice but pretty sure the first call is enough
 
     //patch_autopunch();

@@ -1,9 +1,32 @@
+
+
+#include <winsock2.h>
+#include <windows.h>
+
+#include "util.h"
+#include "PatchUtils.h"
+#include "fake_lag.h"
 #include "netcode.h"
+
+
+#define resync_patch_addr (0x0E364C_R)
+#define patchA_addr (0x0E357A_R)
+#define wsasendto_import_addr (0x3884D4_R)
+#define wsarecvfrom_import_addr (0x3884D8_R)
+#define createmutex_patch_addr (0x01DC61_R)
+
+struct PacketLayout {
+    int8_t type;
+    unsigned char data[];
+};
 
 static bool not_in_match = true;
 static bool resyncing = false;
 static uint8_t lag_packets = 0;
 static uint64_t prev_timestamp = 0;
+
+static inline constexpr uint8_t RESYNC_THRESHOLD = INT8_MAX;
+static inline constexpr uint8_t RESYNC_DURATION = UINT8_MAX;
 
 /*
 TO FIX:
@@ -13,7 +36,7 @@ after connection loss due to really bad connection
 
 //resync_logic
 //start
-void resync_patch(uint8_t value){
+void resync_patch(uint8_t value) {
     DWORD old_protect;
     uint8_t* patch_addr = (uint8_t*)resync_patch_addr;
     if (VirtualProtect(patch_addr, 1, PAGE_READWRITE, &old_protect)) {
@@ -28,21 +51,24 @@ void resync_patch(uint8_t value){
     }
 }
 
+#define USE_ORIGINAL_RESYNC 1
+
 void run_resync_logic(uint64_t new_timestamp) {
+#if USE_ORIGINAL_RESYNC
     if (!resyncing) {
         if (prev_timestamp != new_timestamp) {
+            prev_timestamp = new_timestamp;
             lag_packets = 0;
         }
         else {
-            if (++lag_packets >= UINT8_MAX) {
+            if (++lag_packets >= RESYNC_THRESHOLD) {
                 resyncing = true;
                 lag_packets = 0;
                 //show message window displaying "resyncing" or something like it
             }
         }
-        prev_timestamp = new_timestamp;
     } else {
-        if (lag_packets > UINT8_MAX) {
+        if (lag_packets >= RESYNC_DURATION) {
             resyncing = false;
             lag_packets = 0;
             //kill message window?
@@ -52,6 +78,20 @@ void run_resync_logic(uint64_t new_timestamp) {
             ++lag_packets;
         }
     }
+#else
+    uint8_t prev_lag_packets = lag_packets;
+    if (prev_timestamp != new_timestamp) {
+        prev_timestamp = new_timestamp;
+
+        lag_packets = saturate_sub<uint8_t>(prev_lag_packets, 32u);
+    }
+    else {
+        lag_packets = saturate_add<uint8_t>(prev_lag_packets, 1u);
+    }
+    if (lag_packets != prev_lag_packets) {
+        resync_patch(lag_packets);
+    }
+#endif
 }
 
 

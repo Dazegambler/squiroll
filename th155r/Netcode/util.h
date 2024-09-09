@@ -6,6 +6,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <type_traits>
+#include <limits.h>
+#include <limits>
+
+#include <winsock2.h>
+#include <windows.h>
 
 #define _MACRO_CAT(arg1, arg2) arg1 ## arg2
 #define MACRO_CAT(arg1, arg2) _MACRO_CAT(arg1, arg2)
@@ -53,6 +58,10 @@
 #endif
 #ifdef thiscall
 #undef thiscall
+#endif
+
+#ifndef __has_builtin
+#define __has_builtin(name) 0
 #endif
 
 #if GCC_COMPAT
@@ -147,8 +156,80 @@
 #endif
 */
 
+#if !__has_builtin(__builtin_add_overflow)
+#define __builtin_add_overflow __builtin_add_overflow_impl
+template<typename T>
+static inline bool __builtin_add_overflow(T a, T b, T * res) {
+    if constexpr (std::is_signed_v<T>) {
+        using U = std::make_unsigned_t<T>;
+        U result = (U)a + (U)b;
+        *res = (T)result;
+        if (a > 0) {
+            return b <= std::numeric_limits<T>::max() - a;
+        } else {
+            return b >= std::numeric_limits<T>::min() - a;
+        }
+    } else {
+        return (*res = a + b) >= a;
+    }
+}
+#endif
+
+#if !__has_builtin(__builtin_sub_overflow)
+#define __builtin_sub_overflow __builtin_sub_overflow_impl
+template<typename T>
+static inline bool __builtin_sub_overflow(T a, T b, T * res) {
+    if constexpr (std::is_signed_v<T>) {
+        using U = std::make_unsigned_t<T>;
+        U result = (U)a - (U)b;
+        *res = (T)result;
+        if (a > 0) {
+            return b >= std::numeric_limits<T>::max() - a;
+        } else {
+            return b <= std::numeric_limits<T>::min() - a;
+        }
+    } else {
+        return (*res = a - b) <= a;
+    }
+}
+#endif
+
 #define countof(array_type) \
 (sizeof(array_type) / sizeof(array_type[0]))
+
+#define bitsof(type) (sizeof(type) * CHAR_BIT)
+
+
+template<typename T>
+static inline T saturate_add(T lhs, T rhs) {
+    if constexpr (std::is_signed_v<T>) {
+        using U = std::make_unsigned_t<T>;
+        T ret;
+        if (!__builtin_add_overflow(lhs, rhs, &ret)) {
+            return ret;
+        }
+        return ((U)rhs >> bitsof(T) - 1) + (U)std::numeric_limits<T>::max();
+    } else {
+        T ret = lhs + rhs;
+        return ret >= lhs ? ret : std::numeric_limits<T>::max();
+    }
+}
+
+template<typename T>
+static inline T saturate_sub(T lhs, T rhs) {
+    if constexpr (std::is_signed_v<T>) {
+        using U = std::make_unsigned_t<T>;
+        T ret;
+        if (!__builtin_sub_overflow(lhs, rhs, &ret)) {
+            return ret;
+        }
+        return (U)std::numeric_limits<T>::min() - ((U)rhs >> bitsof(T) - 1);
+    } else {
+        T ret = lhs - rhs;
+        return ret <= lhs ? ret : std::numeric_limits<T>::min();
+    }
+}
+
 
 extern const uintptr_t base_address;
 
@@ -187,6 +268,14 @@ static forceinline R* based_pointer(B base, O offset) {
 template <typename B, typename O> requires(!std::is_pointer_v<B>)
 static forceinline B based_pointer(B base, O offset) {
     return (B)((uintptr_t)base + (uintptr_t)offset);
+}
+
+static inline unsigned int get_random(unsigned int max_value) {
+    return (unsigned int)rand() % max_value;
+}
+
+static inline bool ScrollLockOn() {
+    return GetKeyState(VK_SCROLL) & 1;
 }
 
 #endif

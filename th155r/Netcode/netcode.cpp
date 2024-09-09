@@ -11,9 +11,9 @@ void resync_patch(uint8_t value){
     DWORD old_protect;
     uint8_t* patch_addr = (uint8_t*)resync_patch_addr;
     if (VirtualProtect(patch_addr, 1, PAGE_READWRITE, &old_protect)) {
-
-        static constexpr uint8_t value_table[] = {
-            5, 10, 15, INT8_MAX, INT8_MAX, INT8_MAX, INT8_MAX, INT8_MAX
+        
+        static constexpr int8_t value_table[] = {
+            5, 10, 15, 30, 45, 90, INT8_MAX, INT8_MAX, INT8_MAX, INT8_MAX
         };
 
         *patch_addr = value_table[value / 32];
@@ -28,7 +28,7 @@ void run_resync_logic(uint64_t new_timestamp) {
             lag_packets = 0;
         }
         else {
-            if (++lag_packets >= INT8_MAX) {
+            if (++lag_packets >= UINT8_MAX) {
                 resyncing = true;
                 lag_packets = 0;
                 //show message window displaying "resyncing" or something like it
@@ -36,7 +36,7 @@ void run_resync_logic(uint64_t new_timestamp) {
         }
         prev_timestamp = new_timestamp;
     } else {
-        if (lag_packets > INT8_MAX) {
+        if (lag_packets > UINT8_MAX) {
             resyncing = false;
             lag_packets = 0;
             //kill message window?

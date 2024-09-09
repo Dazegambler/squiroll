@@ -205,7 +205,10 @@ void patch_allocman() {
 }
 
 void patch_file_loading() {
+#if FILE_REPLACEMENT_TYPE != FILE_REPLACEMENT_NONE
     hotpatch_call(file_replacement_hook_addr, file_replacement_hook);
+
+#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
     static constexpr uint8_t patch[] = { 0xE9, 0x8C, 0x00, 0x00, 0x00, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC };
     mem_write(file_replacement_hook_addr + 5, patch, sizeof(patch));
 
@@ -213,6 +216,15 @@ void patch_file_loading() {
     hotpatch_icall(file_replacement_read_addrB, file_replacement_read);
 
     hotpatch_import(CloseHandle_import_addr, close_handle_hook);
+
+#elif FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+
+    static constexpr uint8_t patch[] = { 0xE9, 0xB0, 0x00, 0x00, 0x00, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC };
+    mem_write(file_replacement_hook_addr + 5, patch, sizeof(patch));
+
+#endif
+
+#endif
 }
 
 typedef HSQUIRRELVM (*sq_vm_init)(void);

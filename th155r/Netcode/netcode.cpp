@@ -5,6 +5,12 @@ static bool resyncing = false;
 static uint8_t lag_packets = 0;
 static uint64_t prev_timestamp = 0;
 
+/*
+TO FIX:
+1.crash after attempting to host/connect
+after connection loss due to really bad connection
+*/
+
 //resync_logic
 //start
 void resync_patch(uint8_t value){

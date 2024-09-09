@@ -2,13 +2,13 @@
 #include <limits.h>
 #include <squirrel.h>
 
+#include "netcode.h"
 #include "util.h"
 #include "AllocMan.h"
 #include "Autopunch.h"
 #include "PatchUtils.h"
 #include "log.h"
 #include "file_replacement.h"
-#include "fake_lag.h"
 
 #if !MINGW_COMPAT
 #pragma comment (lib, "Ws2_32.lib")
@@ -215,128 +215,6 @@ void patch_file_loading() {
     hotpatch_import(CloseHandle_import_addr, close_handle_hook);
 }
 
-#pragma region netplay patch
-
-#define resync_patch_addr (0x0E364C_R)
-#define patchA_addr (0x0E357A_R)
-#define wsasendto_import_addr (0x3884D4_R)
-#define wsarecvfrom_import_addr (0x3884D8_R)
-#define createmutex_patch_addr (0x01DC61_R)
-
-struct PacketLayout {
-    int8_t type;
-    unsigned char data[];
-};
-
-static bool not_in_match = true;
-static bool resyncing = false;
-static uint8_t lag_packets = 0;
-static uint64_t prev_timestamp = 0;
-
-//resync_logic
-//start
-void resync_patch(uint8_t value){
-    DWORD old_protect;
-    uint8_t* patch_addr = (uint8_t*)resync_patch_addr;
-    if (VirtualProtect(patch_addr, 1, PAGE_READWRITE, &old_protect)) {
-
-        static constexpr uint8_t value_table[] = {
-            5, 10, 15, INT8_MAX, INT8_MAX, INT8_MAX, INT8_MAX, INT8_MAX
-        };
-
-        *patch_addr = value_table[value / 32];
-
-        VirtualProtect(patch_addr, 1, old_protect, &old_protect);
-    }
-}
-
-void run_resync_logic(uint64_t new_timestamp) {
-    if (!resyncing) {
-        if (prev_timestamp != new_timestamp) {
-            lag_packets = 0;
-        }
-        else {
-            if (++lag_packets >= INT8_MAX) {
-                resyncing = true;
-                lag_packets = 0;
-                //show message window displaying "resyncing" or something like it
-            }
-        }
-        prev_timestamp = new_timestamp;
-    } else {
-        if (lag_packets > INT8_MAX) {
-            resyncing = false;
-            lag_packets = 0;
-            //kill message window?
-        }
-        else {
-            resync_patch(lag_packets);
-            ++lag_packets;
-        }
-    }
-}
-
-
-int WSAAPI my_WSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWORD lpNumberOfBytesSent, DWORD dwFlags, const sockaddr* lpTo, int iTolen, LPWSAOVERLAPPED lpOverlapped, LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine) {
-    PacketLayout* packet = (PacketLayout*)lpBuffers[0].buf;
-
-    switch (packet->type) {
-        case 9:
-            if (not_in_match) {
-                if (lpNumberOfBytesSent) {
-                    *lpNumberOfBytesSent = 1;
-                }
-                return 0;
-            }
-            not_in_match = true;
-            break;
-        case 11:
-            not_in_match = false;
-            break;
-        case 18:
-            if (lpBuffers[0].len >= 25) {
-                run_resync_logic(*(uint64_t*)&packet->data[16]);
-            }
-            break;
-        case 19:
-            if (lpBuffers[0].len >= 26) {
-                run_resync_logic(*(uint64_t*)&packet->data[17]);
-            }
-            break;
-    }
-
-    return WSASendTo(s, lpBuffers, dwBufferCount, lpNumberOfBytesSent, dwFlags, lpTo, iTolen, lpOverlapped, lpCompletionRoutine);
-}
-
-int WSAAPI my_WSARecvFrom(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWORD lpNumberOfBytesRecvd, LPDWORD lpFlags, sockaddr* lpFrom, LPINT lpFromLen, LPWSAOVERLAPPED lpOverlapped, LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine) {
-    int ret = WSARecvFrom(s, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromLen, lpOverlapped, lpCompletionRoutine);
-
-    PacketLayout* packet = (PacketLayout*)lpBuffers[0].buf;
-
-    switch (packet->type) {
-        case 0: default:
-            not_in_match = false;
-        case 1: case 2: case 3: case 4: case 5:
-        case 6: case 7: case 8: case 9: case 10:
-        case 11:
-            break;
-    }
-
-    return ret;
-}
-
-void netplay_patch() {
-    static constexpr uint8_t data[] = { INT8_MAX };
-    mem_write(patchA_addr, data, sizeof(data)); //first netcode patch
-    static constexpr uint8_t data_mutexa[] = { 0x68, 0x00, 0x00, 0x00, 0x00 };
-    mem_write(createmutex_patch_addr, data_mutexa, sizeof(data_mutexa)); //mutex patch
-    resync_patch(INT8_MAX);
-    hotpatch_import(wsarecvfrom_import_addr, my_WSARecvFrom);
-    hotpatch_import(wsasendto_import_addr, my_WSASendTo);
-}
-
-#pragma endregion
-
 typedef HSQUIRRELVM (*sq_vm_init)(void);
 sq_vm_init sq_vm_init_ptr = (sq_vm_init)sq_vm_init_addr;
 
@@ -349,8 +227,40 @@ HSQUIRRELVM my_sq_vm_init(){
     return VM;
 }
 
-#define resolution_width_push_addr (0x01DE98_R)
-#define resolution_height_push_addr (0x01DE93_R)
+#define loadplugin_addr (0x12B6F0_R)
+#define init_addr (0x00D530_R)
+#define init_call_addr (0x01DEF2_R)
+
+typedef void (*init)(void);
+init init_ptr = (init)init_addr;
+
+typedef void* (*loadplugin)(const char*);
+loadplugin loadplugin_ptr = (loadplugin)loadplugin_addr;
+
+void init_instance(){
+    log_printf("Hello from init!");
+}
+
+void release_instance(){
+    log_printf("Hello from release!");
+}
+
+void update_frame(){
+    log_printf("Hello from update!");
+}
+
+void render_preproc(){
+    log_printf("Hello from preproc");
+}
+
+void render(){
+    log_printf("Hello from render");
+}
+
+void my_init(){
+    init_ptr();
+    loadplugin_ptr("test");
+}
 
 // Initialization code shared by th155r and thcrap use
 // Executes before the start of the process
@@ -360,8 +270,9 @@ void common_init() {
 #endif
     patch_allocman();
 
-    netplay_patch();
+    patch_netplay();
     hotpatch_rel32(sq_vm_init_call_addrA, my_sq_vm_init);
+    //hotpatch_rel32(init_call_addr,my_init);
 
     //hotpatch_rel32(sq_vm_init_call_addrB, my_sq_vm_init); //not sure why its called twice but pretty sure the first call is enough
 

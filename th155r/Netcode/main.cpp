@@ -47,9 +47,9 @@ struct ScriptAPI {
     bool load_plugins_from_pak;
 };
 
-typedef void* fastcall act_script_plugin_load_t(
+typedef void* thisfastcall act_script_plugin_load_t(
     void* self,
-    ScriptAPI* script_api,
+    thisfastcall_edx(int dummy_edx,)
     const char* plugin_path
 );
 
@@ -65,14 +65,14 @@ void patch_se_information(void* base_address);
 void patch_se_trust(void* base_address);
 
 template <const uintptr_t& base, uintptr_t offset, bool is_main_exe = false>
-inline void* fastcall patch_act_script_plugin(
+inline void* thisfastcall patch_act_script_plugin(
     void* self,
-    ScriptAPI* script_api,
+    thisfastcall_edx(int dummy_edx,)
     const char* plugin_path
 ) {
     void* base_address = based_pointer<act_script_plugin_load_t>(base, offset)(
         self,
-        script_api,
+        thisfastcall_edx(dummy_edx,)
         plugin_path
     );
     
@@ -96,51 +96,12 @@ inline void* fastcall patch_act_script_plugin(
     } else {
         if constexpr (is_main_exe) {
             if (!strcmp(plugin_path, "data/plugin\\data/plugin/se_libact.dll.dll")) {
-                script_api->load_plugins_from_pak = false;
+                base_address = (void*)GetModuleHandleW(L"Netcode.dll");
             }
         }
     }
     
     return base_address;
-}
-
-extern "C" {
-    void* fastcall base_exe_plugin_load_impl(void* self, ScriptAPI* script_api, const char* plugin_path) {
-        return patch_act_script_plugin<base_address, 0x12DDD0, true>(self, script_api, plugin_path);
-    }
-
-    HMODULE fastcall script_plugin_load_impl(ScriptAPI* script_api, int dummy_edx, const char* plugin_path) {
-        script_api->load_plugins_from_pak = true;
-        return GetModuleHandleW(L"Netcode.dll");
-    }
-}
-
-naked void base_exe_plugin_load_hook() {
-#if !USE_MSVC_ASM
-    __asm__(
-        "movl 0x10(%EBP), %EDX \n"
-        "jmp @base_exe_plugin_load_impl@12 \n"
-    );
-#else
-    __asm {
-        MOV EDX, DWORD PTR [EBP+0x10]
-        JMP base_exe_plugin_load_impl
-    }
-#endif
-}
-
-naked void script_plugin_load_hook() {
-#if !USE_MSVC_ASM
-    __asm__(
-        "movl 0x10(%EBP), %ECX \n"
-        "jmp @script_plugin_load_impl@12 \n"
-    );
-#else
-    __asm {
-        MOV ECX, DWORD PTR[EBP + 0x10]
-        JMP script_plugin_load_impl
-    }
-#endif
 }
 
 void patch_se_libact(void* base_address) {
@@ -325,15 +286,6 @@ void my_init(){
     loadplugin_ptr("test");
 }
 
-void thisfastcall patch_plugin_path_append(
-    std::vector<std::string>* self,
-    thisfastcall_edx(int dummy_edx, )
-    const std::string& plugin_path
-) {
-    self->push_back(plugin_path);
-    self->push_back("Netcode.dll\0"s); // MEGA HACK, do not touch
-}
-
 // Initialization code shared by th155r and thcrap use
 // Executes before the start of the process
 void common_init() {
@@ -345,15 +297,13 @@ void common_init() {
     patch_netplay();
     hotpatch_rel32(sq_vm_init_call_addrA, my_sq_vm_init);
 
-    hotpatch_rel32(0xD8DA_R, patch_plugin_path_append);
-
     //hotpatch_rel32(init_call_addr,my_init);
 
     //hotpatch_rel32(sq_vm_init_call_addrB, my_sq_vm_init); //not sure why its called twice but pretty sure the first call is enough
 
     //patch_autopunch();
 
-    hotpatch_rel32(patch_act_script_plugin_hook_addr, base_exe_plugin_load_hook);
+    hotpatch_rel32(patch_act_script_plugin_hook_addr, patch_act_script_plugin<base_address, 0x12DDD0, true>);
 
     //static constexpr uint8_t infinite_loop[] = { 0xEB, 0xFE };
     //mem_write(0x1DEAD_R, infinite_loop); // Replaces a TEST ECX, ECX
@@ -361,8 +311,6 @@ void common_init() {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
     patch_file_loading();
 #endif
-
-    hotpatch_icall(0x127B62_R, script_plugin_load_hook);
 }
 
 void yes_tampering() {

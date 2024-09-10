@@ -16,6 +16,11 @@ static forceinline void mem_write(T address, const void* data, size_t size) {
     return mem_write((void*)address, data, size);
 }
 
+template <typename T, typename D>
+static forceinline void mem_write(T address, const D& data) {
+    return mem_write((void*)address, (const void*)&data, sizeof(D));
+}
+
 int mem_prot_overwrite(void* address, size_t size, DWORD prot);
 
 

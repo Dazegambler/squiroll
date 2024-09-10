@@ -148,7 +148,7 @@ void patch_se_trust(void* base_address) {
 #endif
 
     static constexpr const uint8_t data[] = { 0x31, 0xC0 };
-    mem_write(based_pointer(base_address, 0x15CC), data, sizeof(data));
+    mem_write(based_pointer(base_address, 0x15CC), data);
 }
 
 #define sq_vm_malloc_call_addr (0x186745_R)
@@ -174,10 +174,14 @@ void patch_se_trust(void* base_address) {
 
 #define patch_act_script_plugin_hook_addr (0x127ADC_R)
 
-#define file_replacement_hook_addr (0x23FAA_R)
+// Basic thcrap style replacement mode
+#define file_replacement_hook_addrA (0x23FAA_R)
 #define file_replacement_read_addrA (0x2DFA1_R)
 #define file_replacement_read_addrB (0x2DFED_R)
 #define CloseHandle_import_addr (0x3881DC_R)
+
+// No encryption replacement mode
+#define file_replacement_hook_addrB (0x23F98_R)
 
 void patch_autopunch() {
     //hotpatch_import(WSARecvFrom_import_addr, my_WSARecvFrom);
@@ -204,13 +208,14 @@ void patch_allocman() {
 #endif
 }
 
-void patch_file_loading() {
 #if FILE_REPLACEMENT_TYPE != FILE_REPLACEMENT_NONE
-    hotpatch_call(file_replacement_hook_addr, file_replacement_hook);
+void patch_file_loading() {
 
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
+    hotpatch_call(file_replacement_hook_addrA, file_replacement_hook);
+
     static constexpr uint8_t patch[] = { 0xE9, 0x8C, 0x00, 0x00, 0x00, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC };
-    mem_write(file_replacement_hook_addr + 5, patch, sizeof(patch));
+    mem_write(file_replacement_hook_addrA + 5, patch);
 
     hotpatch_icall(file_replacement_read_addrA, file_replacement_read);
     hotpatch_icall(file_replacement_read_addrB, file_replacement_read);
@@ -219,13 +224,19 @@ void patch_file_loading() {
 
 #elif FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
 
-    static constexpr uint8_t patch[] = { 0xE9, 0xB0, 0x00, 0x00, 0x00, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC };
-    mem_write(file_replacement_hook_addr + 5, patch, sizeof(patch));
+    hotpatch_call(file_replacement_hook_addrB, file_replacement_hook);
+
+    static constexpr uint8_t patch[] = {
+        0x85, 0xD2,                         // TEST EDX, EDX
+        0x0F, 0x85, 0xBF, 0x00, 0x00, 0x00, // JNZ Rx24064
+        0x0F, 0x1F, 0x44, 0x00, 0x00        // NOP
+    };
+    mem_write(file_replacement_hook_addrB + 5, patch);
 
 #endif
 
-#endif
 }
+#endif
 
 typedef HSQUIRRELVM (*sq_vm_init)(void);
 sq_vm_init sq_vm_init_ptr = (sq_vm_init)sq_vm_init_addr;
@@ -295,6 +306,13 @@ void common_init() {
     //hotpatch_import(ReadFile_import_addr,my_readfile);
 
     hotpatch_rel32(patch_act_script_plugin_hook_addr, &patch_act_script_plugin<base_address, 0x12DDD0>);
+
+    //static constexpr uint8_t infinite_loop[] = { 0xEB, 0xFE };
+    //mem_write(0x1DEAD_R, infinite_loop); // Replaces a TEST ECX, ECX
+
+#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+    patch_file_loading();
+#endif
 }
 
 void yes_tampering() {
@@ -309,7 +327,9 @@ extern "C" {
     dll_export int stdcall netcode_init(int32_t param) {
         yes_tampering();
         common_init();
+#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
         patch_file_loading();
+#endif
         return 0;
     }
     

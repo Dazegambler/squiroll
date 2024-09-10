@@ -47,9 +47,10 @@ struct PackageReader : FileReader {
 struct ReplacementData {
 	const uint8_t* data;
 	size_t length;
+
+	template<size_t N>
+	constexpr ReplacementData(const uint8_t(&data)[N]) : data(data), length(N) {}
 };
-
-
 
 static constexpr uint8_t network_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
@@ -60,7 +61,7 @@ static constexpr uint8_t network_nut[] = {
 };
 
 static std::unordered_map<std::string_view, ReplacementData> replacements = {
-	{ "data/system/network/network.nut"sv, { network_nut, sizeof(network_nut) } }
+	{ "data/system/network/network.nut"sv, network_nut }
 };
 
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
@@ -95,20 +96,24 @@ BOOL WINAPI close_handle_hook(HANDLE handle) {
 #elif FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
 
 extern "C" {
-	uint32_t fastcall file_replacement_impl(PackageReader* file_reader, const char* file_name) {
-		file_reader->aux_mask = (uint32_t)-1;
+	uint64_t fastcall file_replacement_impl(PackageReader* file_reader, const char* file_name) {
+		//file_reader->buffer_filled = 0;
 		auto replacement = replacements.find(file_name);
-		if (replacement != replacements.end()) {
+		bool replaced;
+		if ((replaced = replacement != replacements.end())) {
+			file_reader->buffer_offset = 0;
 			file_reader->__int_10014 = 0;
 			file_reader->__file_hash = 0;
 			file_reader->offset = 0;
 			memset(file_reader->key, 0, sizeof(file_reader->key));
 			file_reader->aux = 0;
 			file_reader->aux_mask = 0;
-			file_reader->buffer_offset = 0;
 			memcpy(file_reader->buffer, replacement->second.data, file_reader->buffer_filled = file_reader->file_size = replacement->second.length);
+		} else {
+			file_reader->aux = file_reader->key[4] = file_reader->key[0];
+			//file_reader->aux_mask = (uint32_t)-1;
 		}
-		return file_reader->__int_10014;
+		return (uint64_t)file_reader->__int_10014 | ((uint64_t)replaced << bitsof(file_reader->__int_10014));
 	}
 }
 
@@ -118,13 +123,13 @@ naked void file_replacement_hook() {
 #if !USE_MSVC_ASM
 	__asm__(
 		"movl %ESI, %ECX \n"
-		"movl 8(%EBP), %EDX \n"
+		"movl %EDI, %EDX \n"
 		"jmp @file_replacement_impl@8 \n"
 	);
 #else
 	__asm {
 		MOV ECX, ESI
-		MOV EDX, DWORD PTR [EBP+8]
+		MOV EDX, EDI
 		JMP file_replacement_impl
 	}
 #endif

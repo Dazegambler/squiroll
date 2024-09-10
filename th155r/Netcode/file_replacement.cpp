@@ -60,8 +60,17 @@ static constexpr uint8_t network_nut[] = {
 #endif
 };
 
+static constexpr uint8_t version_nut[] = {
+#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
+#include "replacement_files/network_encrypted.nut.h"
+#elif FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+#include "replacement_files/version.nut.h"
+#endif
+};
+
 static std::unordered_map<std::string_view, ReplacementData> replacements = {
-	{ "data/system/network/network.nut"sv, network_nut }
+	{ "data/system/network/network.nut"sv, network_nut },
+	{ "data/script/version.nut"sv, version_nut }
 };
 
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP

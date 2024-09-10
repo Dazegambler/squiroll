@@ -262,30 +262,10 @@ void patch_file_loading() {
 typedef HSQUIRRELVM (*sq_vm_init)(void);
 sq_vm_init sq_vm_init_ptr = (sq_vm_init)sq_vm_init_addr;
 
-#define update_addr (0x008F50_R)
-typedef void (*update_test)(void);
-update_test update_ptr = (update_test)update_addr;
-
 HSQUIRRELVM my_sq_vm_init(){
     VM = sq_vm_init_ptr();
     return VM;
 }
-
-#define loadplugin_addr (0x12B6F0_R)
-#define init_addr (0x00D530_R)
-#define init_call_addr (0x01DEF2_R)
-
-typedef void (*init)(void);
-init init_ptr = (init)init_addr;
-
-typedef void* (*loadplugin)(const char*);
-loadplugin loadplugin_ptr = (loadplugin)loadplugin_addr;
-
-void my_init(){
-    init_ptr();
-    loadplugin_ptr("test");
-}
-
 // Initialization code shared by th155r and thcrap use
 // Executes before the start of the process
 void common_init() {

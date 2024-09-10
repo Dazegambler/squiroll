@@ -64,12 +64,12 @@
 #define __has_builtin(name) 0
 #endif
 
-#if GCC_COMPAT
+#if GCC_COMPAT || CLANG_COMPAT
 #define cdecl __attribute__((cdecl))
 #define stdcall __attribute__((stdcall))
 #define fastcall __attribute__((fastcall))
 #define thiscall __attribute__((thiscall))
-#elif MSVC_COMPAT || CLANG_COMPAT
+#elif MSVC_COMPAT
 #define cdecl __cdecl
 #define stdcall __stdcall
 #define fastcall __fastcall

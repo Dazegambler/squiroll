@@ -26,6 +26,7 @@ using namespace std::literals::string_view_literals;
 
 const uintptr_t base_address = (uintptr_t)GetModuleHandleA(NULL);
 uintptr_t libact_base_address = 0;
+uintptr_t lobby_base_address = 0;
 
 //SQVM Rx4DACE4 initialized at Rx124710
 HSQUIRRELVM VM;
@@ -64,20 +65,21 @@ void patch_se_upnp(void* base_address);
 void patch_se_information(void* base_address);
 void patch_se_trust(void* base_address);
 
-template <const uintptr_t& base, uintptr_t offset, bool is_main_exe = false>
-inline void* thisfastcall patch_act_script_plugin(
+#define load_plugin_from_pak_addr (0x12DDD0_R)
+
+void* thisfastcall patch_exe_script_plugin(
     void* self,
     thisfastcall_edx(int dummy_edx,)
     const char* plugin_path
 ) {
-    void* base_address = based_pointer<act_script_plugin_load_t>(base, offset)(
+    void* base_address = ((act_script_plugin_load_t*)load_plugin_from_pak_addr)(
         self,
         thisfastcall_edx(dummy_edx,)
         plugin_path
     );
-    
+
     if (base_address) {
-        debug_printf("Applying patches for \"%s\" at %p\n", plugin_path, base_address);
+        log_printf("Applying patches for \"%s\" at %p from EXE\n", plugin_path, base_address);
         if (!strcmp(plugin_path, "data/plugin/se_libact.dll")) {
             patch_se_libact(base_address);
         }
@@ -93,14 +95,43 @@ inline void* thisfastcall patch_act_script_plugin(
         else if (!strcmp(plugin_path, "data/plugin/se_trust.dll")) {
             patch_se_trust(base_address);
         }
-    } else {
-        if constexpr (is_main_exe) {
-            if (!strcmp(plugin_path, "data/plugin\\data/plugin/se_libact.dll.dll")) {
-                base_address = (void*)GetModuleHandleW(L"Netcode.dll");
-            }
+    }
+    else {
+        if (!strcmp(plugin_path, "data/plugin\\data/plugin/se_libact.dll.dll")) {
+            base_address = (void*)GetModuleHandleW(L"Netcode.dll");
         }
     }
-    
+
+    return base_address;
+}
+
+void* thisfastcall patch_act_script_plugin(
+    void* self,
+    thisfastcall_edx(int dummy_edx,)
+    const char* plugin_path
+) {
+    void* base_address = based_pointer<act_script_plugin_load_t>(libact_base_address, 0x1CC60)(
+        self,
+        thisfastcall_edx(dummy_edx,)
+        plugin_path
+    );
+
+    if (base_address) {
+        log_printf("Applying patches for \"%s\" at %p from ACT\n", plugin_path, base_address);
+        if (!strcmp(plugin_path, "data/plugin/se_lobby.dll")) {
+            patch_se_lobby(base_address);
+        }
+        else if (!strcmp(plugin_path, "data/plugin/se_upnp.dll")) {
+            patch_se_upnp(base_address);
+        }
+        else if (!strcmp(plugin_path, "data/plugin/se_information.dll")) {
+            patch_se_information(base_address);
+        }
+        else if (!strcmp(plugin_path, "data/plugin/se_trust.dll")) {
+            patch_se_trust(base_address);
+        }
+    }
+
     return base_address;
 }
 
@@ -120,10 +151,33 @@ void patch_se_libact(void* base_address) {
     hotpatch_jump(based_pointer(base_address, 0x141C26), my_msize);
 #endif
 
-    hotpatch_rel32(based_pointer(base_address, 0x15F7C), &patch_act_script_plugin<libact_base_address, 0x1CC60>);
+    hotpatch_rel32(based_pointer(base_address, 0x15F7C), patch_act_script_plugin);
 }
 
+/*
+typedef int thisfastcall send_text_t(
+    void* self,
+    thisfastcall_edx(int dummy_edx, )
+    const char* str
+);
+
+int thisfastcall log_sent_text(
+    void* self,
+    thisfastcall_edx(int dummy_edx,)
+    const char* str
+) {
+    log_printf("Sending:%s", str);
+    return based_pointer<send_text_t>(lobby_base_address, 0x20820)(
+        self,
+        thisfastcall_edx(dummy_edx,)
+        str
+    );
+}
+*/
+
 void patch_se_lobby(void* base_address) {
+    lobby_base_address = (uintptr_t)base_address;
+
 #if ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS
     hotpatch_jump(based_pointer(base_address, 0x41007), my_malloc);
     hotpatch_jump(based_pointer(base_address, 0x402F8), my_calloc);
@@ -132,8 +186,26 @@ void patch_se_lobby(void* base_address) {
     hotpatch_jump(based_pointer(base_address, 0x4DCF1), my_recalloc);
     hotpatch_jump(based_pointer(base_address, 0x53F76), my_msize);
 #endif
+    //hotpatch_import(based_pointer(base_address, 0x1292AC), my_gethostbyname);
 
-    hotpatch_import(based_pointer(base_address, 0x1292AC), my_gethostbyname);
+    //mem_write(based_pointer(base_address, 0x206F8), NOP_BYTES<2>);
+    //mem_write(based_pointer(base_address, 0x20872), NOP_BYTES<2>);
+
+    mem_write(based_pointer(base_address, 0x203AA), NOP_BYTES<55>);
+
+    //hotpatch_rel32(based_pointer(base_address, 0x4C6F), log_sent_text);
+    //hotpatch_rel32(based_pointer(base_address, 0x4D33), log_sent_text);
+    //hotpatch_rel32(based_pointer(base_address, 0x52C7), log_sent_text);
+    //hotpatch_rel32(based_pointer(base_address, 0x62C7), log_sent_text);
+    //hotpatch_rel32(based_pointer(base_address, 0x6902), log_sent_text);
+    //hotpatch_rel32(based_pointer(base_address, 0x6E50), log_sent_text);
+    //hotpatch_rel32(based_pointer(base_address, 0x6F4D), log_sent_text);
+    //hotpatch_rel32(based_pointer(base_address, 0x7084), log_sent_text);
+    //hotpatch_rel32(based_pointer(base_address, 0x7436), log_sent_text);
+    //hotpatch_rel32(based_pointer(base_address, 0x7643), log_sent_text);
+    //hotpatch_rel32(based_pointer(base_address, 0x7C67), log_sent_text);
+    //hotpatch_rel32(based_pointer(base_address, 0x7D2D), log_sent_text);
+    //hotpatch_rel32(based_pointer(base_address, 0x84E6), log_sent_text);
 }
 
 void patch_se_upnp(void* base_address) {
@@ -283,10 +355,9 @@ void common_init() {
 
     //patch_autopunch();
 
-    hotpatch_rel32(patch_act_script_plugin_hook_addr, patch_act_script_plugin<base_address, 0x12DDD0, true>);
+    hotpatch_rel32(patch_act_script_plugin_hook_addr, patch_exe_script_plugin);
 
-    //static constexpr uint8_t infinite_loop[] = { 0xEB, 0xFE };
-    //mem_write(0x1DEAD_R, infinite_loop); // Replaces a TEST ECX, ECX
+    //mem_write(0x1DEAD_R, INFINITE_LOOP_BYTES); // Replaces a TEST ECX, ECX
 
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
     patch_file_loading();

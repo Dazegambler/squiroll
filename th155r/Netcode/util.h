@@ -278,4 +278,12 @@ static inline bool ScrollLockOn() {
     return GetKeyState(VK_SCROLL) & 1;
 }
 
+#if !USE_MSVC_ASM
+#define infinite_loop() __asm__(".byte 0xEB, 0xFE")
+#define halt_and_catch_fire() __asm__("int3")
+#else
+#define infinite_loop() __asm { __asm _emit 0xEB __asm _emit 0xFE }
+#define halt_and_catch_fire() __asm { __asm INT3 }
+#endif
+
 #endif

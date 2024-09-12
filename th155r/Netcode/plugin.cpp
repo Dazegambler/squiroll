@@ -9,7 +9,6 @@
 #include <squirrel.h>
 
 #include "util.h"
-#include "AllocMan.h"
 #include "log.h"
 
 extern "C" {

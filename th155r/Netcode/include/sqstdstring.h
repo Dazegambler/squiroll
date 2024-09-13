@@ -1,4 +1,4 @@
-/*  see copyright notice in squirrel.h */
+/*	see copyright notice in squirrel.h */
 #ifndef _SQSTD_STRING_H_
 #define _SQSTD_STRING_H_
 
@@ -10,8 +10,8 @@ typedef unsigned int SQRexBool;
 typedef struct SQRex SQRex;
 
 typedef struct {
-    const SQChar *begin;
-    SQInteger len;
+	const SQChar *begin;
+	SQInteger len;
 } SQRexMatch;
 
 SQUIRREL_API SQRex *sqstd_rex_compile(const SQChar *pattern,const SQChar **error);
@@ -23,8 +23,6 @@ SQUIRREL_API SQInteger sqstd_rex_getsubexpcount(SQRex* exp);
 SQUIRREL_API SQBool sqstd_rex_getsubexp(SQRex* exp, SQInteger n, SQRexMatch *subexp);
 
 SQUIRREL_API SQRESULT sqstd_format(HSQUIRRELVM v,SQInteger nformatstringidx,SQInteger *outlen,SQChar **output);
-
-SQUIRREL_API void sqstd_pushstringf(HSQUIRRELVM v,const SQChar *s,...);
 
 SQUIRREL_API SQRESULT sqstd_register_stringlib(HSQUIRRELVM v);
 

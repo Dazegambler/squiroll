@@ -38,16 +38,8 @@
 
 namespace Sqrat {
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// The base class for classes that represent Squirrel objects
-///
-/// \remarks
-/// All Object and derived classes MUST be destroyed before calling sq_close or your application will crash when exiting.
-///
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 class Object {
 protected:
-/// @cond DEV
     HSQUIRRELVM vm;
     HSQOBJECT obj;
     bool release;
@@ -55,47 +47,20 @@ protected:
     Object(HSQUIRRELVM v, bool releaseOnDestroy = true) : vm(v), release(releaseOnDestroy) {
         sq_resetobject(&obj);
     }
-/// @endcond
 
 public:
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Default constructor (null)
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     Object() : vm(0), release(true) {
         sq_resetobject(&obj);
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Copy constructor
-    ///
-    /// \param so Object to copy
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     Object(const Object& so) : vm(so.vm), obj(so.obj), release(so.release) {
         sq_addref(vm, &obj);
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Constructs an Object from a Squirrel object
-    ///
-    /// \param o Squirrel object
-    /// \param v VM that the object will exist in
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     Object(HSQOBJECT o, HSQUIRRELVM v = DefaultVM::Get()) : vm(v), obj(o), release(true) {
         sq_addref(vm, &obj);
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Constructs an Object from a C++ instance
-    ///
-    /// \param instance Pointer to a C++ class instance that has been bound already
-    /// \param v        VM that the object will exist in
-    ///
-    /// \tparam T Type of instance
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template<class T>
     Object(T* instance, HSQUIRRELVM v = DefaultVM::Get()) : vm(v), release(true) {
         ClassType<T>::PushInstance(vm, instance);
@@ -103,25 +68,12 @@ public:
         sq_addref(vm, &obj);
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Destructor
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     virtual ~Object() {
         if(release) {
             Release();
-            release = false;
         }
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Assignment operator
-    ///
-    /// \param so Object to copy
-    ///
-    /// \return The Object itself
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     Object& operator=(const Object& so) {
         if(release) {
             Release();
@@ -133,97 +85,50 @@ public:
         return *this;
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Gets the Squirrel VM for this Object (reference)
-    ///
-    /// \return Squirrel VM associated with the Object
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     HSQUIRRELVM& GetVM() {
         return vm;
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Gets the Squirrel VM for this Object (copy)
-    ///
-    /// \return Squirrel VM associated with the Object
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     HSQUIRRELVM GetVM() const {
         return vm;
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Gets the type of the Object as defined by the Squirrel API
-    ///
-    /// \return SQObjectType for the Object
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     SQObjectType GetType() const {
         return GetObject()._type;
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Checks whether the Object is null
-    ///
-    /// \return True if the Object currently has a null value, otherwise false
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     bool IsNull() const {
         return sq_isnull(GetObject());
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Gets the Squirrel object for this Object (copy)
-    ///
-    /// \return Squirrel object
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     virtual HSQOBJECT GetObject() const {
         return obj;
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Gets the Squirrel object for this Object (reference)
-    ///
-    /// \return Squirrel object
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     virtual HSQOBJECT& GetObject() {
         return obj;
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Allows the Object to be inputted directly into places that expect a HSQOBJECT
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     operator HSQOBJECT&() {
         return GetObject();
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Sets the Object to null (removing its references to underlying Squirrel objects)
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     void Release() {
         sq_release(vm, &obj);
-        sq_resetobject(&obj);
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Attempts to get the value of a slot from the object
-    ///
-    /// \param slot Name of the slot
-    ///
-    /// \return An Object representing the value of the slot (can be a null object if nothing was found)
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    SQUserPointer GetInstanceUP(SQUserPointer tag = NULL) const {
+        SQUserPointer up;
+        sq_pushobject(vm, GetObject());
+        sq_getinstanceup(vm, -1, &up, tag);
+        sq_pop(vm, 1);
+        return up;
+    }
+
     Object GetSlot(const SQChar* slot) const {
         HSQOBJECT slotObj;
         sq_pushobject(vm, GetObject());
         sq_pushstring(vm, slot, -1);
-
-#if !defined (SCRAT_NO_ERROR_CHECKING)
         if(SQ_FAILED(sq_get(vm, -2))) {
             sq_pop(vm, 1);
             return Object(vm); // Return a NULL object
@@ -233,58 +138,8 @@ public:
             sq_pop(vm, 2);
             return ret;
         }
-#else
-        sq_get(vm, -2);
-        sq_getstackobj(vm, -1, &slotObj);
-        Object ret(slotObj, vm); // must addref before the pop!
-        sq_pop(vm, 2);
-        return ret;
-#endif
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Attempts to get the value of an index from the object
-    ///
-    /// \param index Index of the slot
-    ///
-    /// \return An Object representing the value of the slot (can be a null object if nothing was found)
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    Object GetSlot(SQInteger index) const {
-        HSQOBJECT slotObj;
-        sq_pushobject(vm, GetObject());
-        sq_pushinteger(vm, index);
-
-#if !defined (SCRAT_NO_ERROR_CHECKING)
-        if(SQ_FAILED(sq_get(vm, -2))) {
-            sq_pop(vm, 1);
-            return Object(vm); // Return a NULL object
-        } else {
-            sq_getstackobj(vm, -1, &slotObj);
-            Object ret(slotObj, vm); // must addref before the pop!
-            sq_pop(vm, 2);
-            return ret;
-        }
-#else
-        sq_get(vm, -2);
-        sq_getstackobj(vm, -1, &slotObj);
-        Object ret(slotObj, vm); // must addref before the pop!
-        sq_pop(vm, 2);
-        return ret;
-#endif
-    }
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Casts the object to a certain C++ type
-    ///
-    /// \tparam T Type to cast to
-    ///
-    /// \return A copy of the value of the Object with the given type
-    ///
-    /// \remarks
-    /// This function MUST have its Error handled if it occurred.
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template <class T>
     T Cast() const {
         sq_pushobject(vm, GetObject());
@@ -293,48 +148,46 @@ public:
         return ret;
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Allows Object to be used like C++ arrays with the [] operator
-    ///
-    /// \param slot The slot key
-    ///
-    /// \tparam T Type of the slot key (usually doesnt need to be defined explicitly)
-    ///
-    /// \return An Object representing the value of the slot (can be a null object if nothing was found)
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    Object GetSlot(SQInteger index) const {
+        HSQOBJECT slotObj;
+        sq_pushobject(vm, GetObject());
+        sq_pushinteger(vm, index);
+        if(SQ_FAILED(sq_get(vm, -2))) {
+            sq_pop(vm, 1);
+            return Object(vm); // Return a NULL object
+        } else {
+            sq_getstackobj(vm, -1, &slotObj);
+            Object ret(slotObj, vm); // must addref before the pop!
+            sq_pop(vm, 2);
+            return ret;
+        }
+    }
+
     template <class T>
     inline Object operator[](T slot)
     {
         return GetSlot(slot);
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Returns the size of the Object
-    ///
-    /// \return Size of Object
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     SQInteger GetSize() const {
         sq_pushobject(vm, GetObject());
         SQInteger ret = sq_getsize(vm, -1);
         sq_pop(vm, 1);
         return ret;
     }
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Iterator for going over the slots in the object using Object::Next
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    template <class C>
+    Object& SetReleaseHook(){
+        sq_pushobject(vm, GetObject());
+        sq_setreleasehook(vm, -1, &DefaultAllocator<C>::Delete);
+        sq_pop(vm, 1);
+        return *this;
+    }
+       
     struct iterator
     {
-        /// @cond DEV
         friend class Object;
-        /// @endcond
-
-        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        /// Default constructor (null)
-        ///
-        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         iterator()
         {
             Index = 0;
@@ -343,45 +196,15 @@ public:
             Key._type = OT_NULL;
             Value._type = OT_NULL;
         }
-
-        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        /// Returns the string value of the key the iterator is on if possible
-        ///
-        /// \return String or NULL
-        ///
-        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        const SQChar* getName() { return sq_objtostring(&Key); }
-
-        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        /// Gets the Squirrel object for the key the iterator is on
-        ///
-        /// \return HSQOBJECT representing a key
-        ///
-        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         HSQOBJECT getKey() { return Key; }
-
-        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        /// Gets the Squirrel object for the value the iterator is on
-        ///
-        /// \return HSQOBJECT representing a value
-        ///
-        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         HSQOBJECT getValue() { return Value; }
     private:
-
+        
         HSQOBJECT Key;
         HSQOBJECT Value;
         SQInteger Index;
     };
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Used to go through all the slots in an Object (same limitations as sq_next)
-    ///
-    /// \param iter An iterator being used for going through the slots
-    ///
-    /// \return Whether there is a next slot
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     bool Next(iterator& iter) const
     {
         sq_pushobject(vm,obj);
@@ -399,11 +222,9 @@ public:
             sq_pop(vm,2);
             return false;
         }
-    }
-
+    }    
+    
 protected:
-/// @cond DEV
-
     // Bind a function and it's associated Squirrel closure to the object
     inline void BindFunc(const SQChar* name, void* method, size_t methodSize, SQFUNCTION func, bool staticVar = false) {
         sq_pushobject(vm, GetObject());
@@ -487,11 +308,9 @@ protected:
         sq_newslot(vm, -3, staticVar);
         sq_pop(vm,1); // pop table
     }
-
-/// @endcond
 };
 
-/// @cond DEV
+
 template<>
 inline void Object::BindValue<int>(const SQChar* name, const int & val, bool staticVar /* = false */) {
     sq_pushobject(vm, GetObject());
@@ -500,55 +319,50 @@ inline void Object::BindValue<int>(const SQChar* name, const int & val, bool sta
     sq_newslot(vm, -3, staticVar);
     sq_pop(vm,1); // pop table
 }
-/// @endcond
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// Used to get and push Object instances to and from the stack as references (Object is always a reference)
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Overridden Getter/Setter
+//
+
 template<>
 struct Var<Object> {
-
-    Object value; ///< The actual value of get operations
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Attempts to get the value off the stack at idx as an Object
-    ///
-    /// \param vm  Target VM
-    /// \param idx Index trying to be read
-    ///
-    /// \remarks
-    /// This function MUST have its Error handled if it occurred.
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    Object value;
     Var(HSQUIRRELVM vm, SQInteger idx) {
         HSQOBJECT sqValue;
         sq_getstackobj(vm, idx, &sqValue);
         value = Object(sqValue, vm);
     }
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Called by Sqrat::PushVar to put an Object on the stack
-    ///
-    /// \param vm    Target VM
-    /// \param value Value to push on to the VM's stack
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     static void push(HSQUIRRELVM vm, Object& value) {
         sq_pushobject(vm, value.GetObject());
     }
 };
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// Used to get and push Object instances to and from the stack as references (Object is always a reference)
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<>
-struct Var<Object&> : Var<Object> {Var(HSQUIRRELVM vm, SQInteger idx) : Var<Object>(vm, idx) {}};
+struct Var<Object&> {
+    Object value;
+    Var(HSQUIRRELVM vm, SQInteger idx) {
+        HSQOBJECT sqValue;
+        sq_getstackobj(vm, idx, &sqValue);
+        value = Object(sqValue, vm);
+    }
+    static void push(HSQUIRRELVM vm, Object& value) {
+        sq_pushobject(vm, value.GetObject());
+    }
+};
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// Used to get and push Object instances to and from the stack as references (Object is always a reference)
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<>
-struct Var<const Object&> : Var<Object> {Var(HSQUIRRELVM vm, SQInteger idx) : Var<Object>(vm, idx) {}};
+struct Var<const Object&> {
+    Object value;
+    Var(HSQUIRRELVM vm, SQInteger idx) {
+        HSQOBJECT sqValue;
+        sq_getstackobj(vm, idx, &sqValue);
+        value = Object(sqValue, vm);
+    }
+    static void push(HSQUIRRELVM vm, Object& value) {
+        sq_pushobject(vm, value.GetObject());
+    }
+};
+
 
 }
 

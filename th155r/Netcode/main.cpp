@@ -7,8 +7,6 @@
 #include <limits.h>
 #include <string>
 #include <vector>
-#include <squirrel.h>
-
 
 #include "netcode.h"
 #include "util.h"
@@ -17,6 +15,7 @@
 #include "PatchUtils.h"
 #include "log.h"
 #include "file_replacement.h"
+#include "config.h"
 
 using namespace std::literals::string_literals;
 using namespace std::literals::string_view_literals;
@@ -30,7 +29,6 @@ uintptr_t libact_base_address = 0;
 uintptr_t lobby_base_address = 0;
 
 //SQVM Rx4DACE4 initialized at Rx124710
-HSQUIRRELVM VM;
 
 void Cleanup() {
     autopunch_cleanup();
@@ -158,7 +156,7 @@ void patch_se_libact(void* base_address) {
 /*
 typedef int thisfastcall send_text_t(
     void* self,
-    thisfastcall_edx(int dummy_edx, )
+    thisfastcall_edx(int dummy_edx,)
     const char* str
 );
 
@@ -175,6 +173,36 @@ int thisfastcall log_sent_text(
     );
 }
 */
+
+typedef int thisfastcall lobby_connect_t(
+    void* self,
+    thisfastcall_edx(int dummy_edx,)
+    const char* server,
+    const char* port,
+    const char* password,
+    const char* lobby_nameA,
+    const char* lobby_nameB
+);
+
+int thisfastcall lobby_connect_hook(
+    void* self,
+    thisfastcall_edx(int dummy_edx,)
+    const char* server,
+    const char* port,
+    const char* password,
+    const char* lobby_nameA,
+    const char* lobby_nameB
+) {
+    return based_pointer<lobby_connect_t>(lobby_base_address, 0x53B0)(
+        self,
+        thisfastcall_edx(dummy_edx,)
+        get_lobby_host(server),
+        get_lobby_port(port),
+        get_lobby_pass(password),
+        lobby_nameA,
+        lobby_nameB
+    );
+}
 
 void patch_se_lobby(void* base_address) {
     lobby_base_address = (uintptr_t)base_address;
@@ -193,6 +221,8 @@ void patch_se_lobby(void* base_address) {
     //mem_write(based_pointer(base_address, 0x20872), NOP_BYTES<2>);
 
     mem_write(based_pointer(base_address, 0x203AA), NOP_BYTES<55>);
+
+    hotpatch_rel32(based_pointer(base_address, 0x8C4C), lobby_connect_hook);
 
     //hotpatch_rel32(based_pointer(base_address, 0x4C6F), log_sent_text);
     //hotpatch_rel32(based_pointer(base_address, 0x4D33), log_sent_text);
@@ -333,6 +363,8 @@ void common_init() {
 //#ifndef NDEBUG
     Debug();
 //#endif
+    init_config_file();
+
     patch_allocman();
 
     patch_netplay();

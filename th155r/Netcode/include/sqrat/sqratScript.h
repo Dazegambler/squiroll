@@ -36,141 +36,70 @@
 
 namespace Sqrat {
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// Helper class for managing Squirrel scripts
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 class Script : public Object {
 public:
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Default constructor
-    ///
-    /// \param v VM that the Script will be associated with
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    Script(HSQUIRRELVM v = DefaultVM::Get()) : Object(v, true) {
+    Script(HSQUIRRELVM v = DefaultVM::Get()) : Object(v, false) {
     }
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Sets up the Script using a string containing a Squirrel script
-    ///
-    /// \param script String containing a file path to a Squirrel script
-    /// \param name   Optional string containing the script's name (for errors)
-    ///
-    /// \remarks
-    /// This function MUST have its Error handled if it occurred.
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    void CompileString(const string& script, const string& name = _SC("")) {
+ 
+    ~Script()
+    {
         if(!sq_isnull(obj)) {
             sq_release(vm, &obj);
-            sq_resetobject(&obj);
         }
-
-#if !defined (SCRAT_NO_ERROR_CHECKING)
-        if(SQ_FAILED(sq_compilebuffer(vm, script.c_str(), static_cast<SQInteger>(script.size() /** sizeof(SQChar)*/), name.c_str(), true))) {
-            Error::Instance().Throw(vm, LastErrorString(vm));
-            return;
+    }
+    void CompileString(const string& script) {
+        if(!sq_isnull(obj)) {
+            sq_release(vm, &obj);
         }
-#else
-        sq_compilebuffer(vm, script.c_str(), static_cast<SQInteger>(script.size() /** sizeof(SQChar)*/), name.c_str(), true);
-#endif
+        if(SQ_FAILED(sq_compilebuffer(vm, script.c_str(), static_cast<SQInteger>(script.size() * sizeof(SQChar)), _SC(""), true))) {
+            throw Exception(LastErrorString(vm));
+        }
         sq_getstackobj(vm,-1,&obj);
         sq_addref(vm, &obj);
         sq_pop(vm, 1);
     }
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Sets up the Script using a string containing a Squirrel script
-    ///
-    /// \param script String containing a file path to a Squirrel script
-    /// \param errMsg String that is filled with any errors that may occur
-    /// \param name   Optional string containing the script's name (for errors)
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    bool CompileString(const string& script, string& errMsg, const string& name = _SC("")) {
+    
+    bool CompileString(const string& script, string& errMsg) {
         if(!sq_isnull(obj)) {
             sq_release(vm, &obj);
-            sq_resetobject(&obj);
         }
-
-#if !defined (SCRAT_NO_ERROR_CHECKING)
-        if(SQ_FAILED(sq_compilebuffer(vm, script.c_str(), static_cast<SQInteger>(script.size() /** sizeof(SQChar)*/), name.c_str(), true))) {
+        if(SQ_FAILED(sq_compilebuffer(vm, script.c_str(), static_cast<SQInteger>(script.size() * sizeof(SQChar)), _SC(""), true))) {
             errMsg = LastErrorString(vm);
             return false;
         }
-#else
-        sq_compilebuffer(vm, script.c_str(), static_cast<SQInteger>(script.size() /** sizeof(SQChar)*/), name.c_str(), true);
-#endif
         sq_getstackobj(vm,-1,&obj);
         sq_addref(vm, &obj);
         sq_pop(vm, 1);
         return true;
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Sets up the Script using a file containing a Squirrel script
-    ///
-    /// \param path File path containing a Squirrel script
-    ///
-    /// \remarks
-    /// This function MUST have its Error handled if it occurred.
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     void CompileFile(const string& path) {
         if(!sq_isnull(obj)) {
             sq_release(vm, &obj);
-            sq_resetobject(&obj);
         }
-
-#if !defined (SCRAT_NO_ERROR_CHECKING)
         if(SQ_FAILED(sqstd_loadfile(vm, path.c_str(), true))) {
-            Error::Instance().Throw(vm, LastErrorString(vm));
-            return;
+            throw Exception(LastErrorString(vm));
         }
-#else
-        sqstd_loadfile(vm, path.c_str(), true);
-#endif
         sq_getstackobj(vm,-1,&obj);
         sq_addref(vm, &obj);
         sq_pop(vm, 1);
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Sets up the Script using a file containing a Squirrel script
-    ///
-    /// \param path   File path containing a Squirrel script
-    /// \param errMsg String that is filled with any errors that may occur
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     bool CompileFile(const string& path, string& errMsg) {
         if(!sq_isnull(obj)) {
             sq_release(vm, &obj);
-            sq_resetobject(&obj);
         }
-
-#if !defined (SCRAT_NO_ERROR_CHECKING)
         if(SQ_FAILED(sqstd_loadfile(vm, path.c_str(), true))) {
             errMsg = LastErrorString(vm);
             return false;
         }
-#else
-        sqstd_loadfile(vm, path.c_str(), true);
-#endif
         sq_getstackobj(vm,-1,&obj);
         sq_addref(vm, &obj);
         sq_pop(vm, 1);
         return true;
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Runs the script
-    ///
-    /// \remarks
-    /// This function MUST have its Error handled if it occurred.
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     void Run() {
-#if !defined (SCRAT_NO_ERROR_CHECKING)
         if(!sq_isnull(obj)) {
             SQRESULT result;
             sq_pushobject(vm, obj);
@@ -178,25 +107,11 @@ public:
             result = sq_call(vm, 1, false, true);
             sq_pop(vm, 1);
             if(SQ_FAILED(result)) {
-                Error::Instance().Throw(vm, LastErrorString(vm));
-                return;
+                throw Exception(LastErrorString(vm));
             }
         }
-#else
-        sq_pushobject(vm, obj);
-        sq_pushroottable(vm);
-        sq_call(vm, 1, false, true);
-        sq_pop(vm, 1);
-#endif
     }
 
-#if !defined (SCRAT_NO_ERROR_CHECKING)
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Runs the script
-    ///
-    /// \param errMsg String that is filled with any errors that may occur
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     bool Run(string& errMsg) {
         if(!sq_isnull(obj)) {
             SQRESULT result;
@@ -208,32 +123,19 @@ public:
                 errMsg = LastErrorString(vm);
                 return false;
             }
-            return true;
         }
-        return false;
+        return true;
     }
-#endif
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// Writes the byte code of the Script to a file
-    ///
-    /// \param path File path to write to
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     void WriteCompiledFile(const string& path) {
-#if !defined (SCRAT_NO_ERROR_CHECKING)
         if(!sq_isnull(obj)) {
             sq_pushobject(vm, obj);
             sqstd_writeclosuretofile(vm, path.c_str());
+            //sq_pop(vm, 1);  // needed?
         }
-#else
-        sq_pushobject(vm, obj);
-        sqstd_writeclosuretofile(vm, path.c_str());
-#endif
-        sq_pop(vm, 1); // needed?
     }
 };
-
 }
 
 #endif

@@ -6,15 +6,15 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <squirrel.h>
+
+#include "kite_api.h"
 #include <sqrat.h>
 
 #include "util.h"
 #include "log.h"
-#include "kite_api.h"
 #include "netcode.h"
 
-KiteSquirrelAPI* KITE;
+const KiteSquirrelAPI* KITE;
 
 struct HostEnvironment;
 
@@ -68,7 +68,7 @@ public:
         return this->get_value("HSQUIRRELVM", &out);
     }
 
-    inline bool get_kite_api(KiteSquirrelAPI*& out) const {
+    inline bool get_kite_api(const KiteSquirrelAPI*& out) const {
         return this->get_value("Kite_SquirrelAPI", &out);
     }
 
@@ -101,8 +101,8 @@ extern "C" {
             // like adding squirrel globals/funcs/etc.
             Sqrat::RootTable rtable(squirrel_vm);
             Sqrat::Table rollback_table(squirrel_vm);
-            rtable.Bind(_SC("rollback"),rollback_table);
-            rollback_table.SetValue("resyncing",&resyncing);
+            rtable.Bind(_SC("rollback"), rollback_table);
+            rollback_table.SetValue(_SC("resyncing"), &resyncing);
             return 1;
         }
         return -1;

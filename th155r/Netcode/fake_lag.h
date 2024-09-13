@@ -15,12 +15,21 @@
 #define FAKE_SEND_LAG_AMOUNT 0       // Base lag miliseconds
 #define FAKE_SEND_JITTER_AMOUNT 0     // miliseconds
 #define FAKE_PACKET_LOSS_PERCENTAGE 0  // 0-100
+#define FAKE_SPIKE_PERCENTAGE 0 //0-100
 
-#if FAKE_SEND_LAG_AMOUNT > 0 || FAKE_SEND_JITTER_AMOUNT > 0 || FAKE_PACKET_LOSS_PERCENTAGE > 0
+#if FAKE_SEND_LAG_AMOUNT > 0 || FAKE_SEND_JITTER_AMOUNT > 0 || FAKE_PACKET_LOSS_PERCENTAGE > 0 || FAKE_SPIKE_PERCENTAGE > 0
 
 static inline bool should_drop_packet() {
 #if FAKE_PACKET_LOSS_PERCENTAGE
     return get_random(100) < FAKE_PACKET_LOSS_PERCENTAGE;
+#else
+    return false;
+#endif
+}
+
+static inline bool should_spike(){
+#if FAKE_SPIKE_PERCENTAGE
+    return get_random(100) < FAKE_SPIKE_PERCENTAGE;
 #else
     return false;
 #endif
@@ -77,7 +86,7 @@ static int WSAAPI WSASendTo_fake_lag(SOCKET s, LPWSABUF lpBuffers, DWORD dwBuffe
     args->lpCompletionRoutine = lpCompletionRoutine;
 
     CreateThread(NULL, 0, [](void* thread_args) WINAPI -> DWORD {
-#if FAKE_PACKET_LOSS_PERCENTAGE || FAKE_SEND_JITTER_AMOUNT
+#if FAKE_PACKET_LOSS_PERCENTAGE || FAKE_SEND_JITTER_AMOUNT || FAKE_SPIKE_PERCENTAGE
         srand((unsigned int)time(NULL));
 #endif
         
@@ -86,7 +95,15 @@ static int WSAAPI WSASendTo_fake_lag(SOCKET s, LPWSABUF lpBuffers, DWORD dwBuffe
         if (!should_drop_packet()) {
 #if FAKE_SEND_JITTER_AMOUNT
             int jitter = (int)get_random(FAKE_SEND_JITTER_AMOUNT) - FAKE_SEND_JITTER_AMOUNT / 2;
+            #if FAKE_SPIKE_PERCENTAGE
+            if (should_spike()){
+                Sleep((FAKE_SEND_LAG_AMOUNT*3) + jitter);
+            }else{
+                Sleep(FAKE_SEND_LAG_AMOUNT + jitter);
+            }
+            #elif
             Sleep(FAKE_SEND_LAG_AMOUNT + jitter);
+            #endif
 #elif FAKE_SEND_LAG_AMOUNT
             Sleep(FAKE_SEND_LAG_AMOUNT);
 #endif

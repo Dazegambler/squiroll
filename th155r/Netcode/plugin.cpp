@@ -7,10 +7,12 @@
 #include <stdint.h>
 #include <string.h>
 #include <squirrel.h>
+#include <sqrat.h>
 
 #include "util.h"
 #include "log.h"
 #include "kite_api.h"
+#include "netcode.h"
 
 KiteSquirrelAPI* KITE;
 
@@ -97,6 +99,10 @@ extern "C" {
         ) {
             // put any important initialization stuff here,
             // like adding squirrel globals/funcs/etc.
+            Sqrat::RootTable rtable(squirrel_vm);
+            Sqrat::Table rollback_table(squirrel_vm);
+            rtable.Bind(_SC("rollback"),rollback_table);
+            rollback_table.SetValue("resyncing",&resyncing);
             return 1;
         }
         return -1;

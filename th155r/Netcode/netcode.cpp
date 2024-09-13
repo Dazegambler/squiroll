@@ -7,6 +7,7 @@
 #include "PatchUtils.h"
 #include "fake_lag.h"
 #include "netcode.h"
+#include "log.h"
 
 
 #define resync_patch_addr (0x0E364C_R)
@@ -21,11 +22,11 @@ struct PacketLayout {
 };
 
 static bool not_in_match = true;
-static bool resyncing = false;
+bool resyncing = false;
 static uint8_t lag_packets = 0;
 static uint64_t prev_timestamp = 0;
 
-static inline constexpr uint8_t RESYNC_THRESHOLD = INT8_MAX;
+static inline constexpr uint8_t RESYNC_THRESHOLD = UINT8_MAX;
 static inline constexpr uint8_t RESYNC_DURATION = UINT8_MAX;
 
 /*
@@ -42,10 +43,10 @@ void resync_patch(uint8_t value) {
     if (VirtualProtect(patch_addr, 1, PAGE_READWRITE, &old_protect)) {
         
         static constexpr int8_t value_table[] = {
-            5, 10, 15, 30, 45, 90, INT8_MAX, INT8_MAX, INT8_MAX, INT8_MAX
+            5, 10, 15, 30, 45, 90, INT8_MAX, INT8_MAX
         };
-
-        *patch_addr = value_table[value / 32];
+        int8_t new_value = value_table[value / 32];
+        *patch_addr = new_value;//value_table[value / 16];
 
         VirtualProtect(patch_addr, 1, old_protect, &old_protect);
     }
@@ -148,7 +149,7 @@ void patch_netplay() {
     mem_write(patchA_addr, data, sizeof(data)); //first netcode patch
     static constexpr uint8_t data_mutexa[] = { 0x68, 0x00, 0x00, 0x00, 0x00 };
     mem_write(createmutex_patch_addr, data_mutexa, sizeof(data_mutexa)); //mutex patch
-    resync_patch(INT8_MAX);
+    resync_patch(160);
     hotpatch_import(wsarecvfrom_import_addr, my_WSARecvFrom);
     hotpatch_import(wsasendto_import_addr, my_WSASendTo);
 }

@@ -9,6 +9,7 @@
 #include <vector>
 #include <squirrel.h>
 
+
 #include "netcode.h"
 #include "util.h"
 #include "AllocMan.h"
@@ -261,10 +262,6 @@ void patch_se_trust(void* base_address) {
 #define bind_import_addr (0x3884E0_R)
 #define closesocket_import_addr (0x388514_R)
 
-#define sq_vm_init_call_addrA (0x00D6AD_R)
-#define sq_vm_init_call_addrB (0x055EFA_R)
-#define sq_vm_init_addr (0x024710_R)
-
 #define patch_act_script_plugin_hook_addr (0x127ADC_R)
 
 // Basic thcrap style replacement mode
@@ -330,14 +327,6 @@ void patch_file_loading() {
 
 }
 #endif
-
-typedef HSQUIRRELVM (*sq_vm_init)(void);
-sq_vm_init sq_vm_init_ptr = (sq_vm_init)sq_vm_init_addr;
-
-HSQUIRRELVM my_sq_vm_init(){
-    VM = sq_vm_init_ptr();
-    return VM;
-}
 // Initialization code shared by th155r and thcrap use
 // Executes before the start of the process
 void common_init() {
@@ -347,8 +336,6 @@ void common_init() {
     patch_allocman();
 
     patch_netplay();
-    hotpatch_rel32(sq_vm_init_call_addrA, my_sq_vm_init);
-
     //hotpatch_rel32(init_call_addr,my_init);
 
     //hotpatch_rel32(sq_vm_init_call_addrB, my_sq_vm_init); //not sure why its called twice but pretty sure the first call is enough

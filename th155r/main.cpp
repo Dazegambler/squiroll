@@ -210,7 +210,7 @@ void Debug(){
 
 int main(int argc, char* argv[])
 {    
-    Debug();
+    //Debug();
     
     if (GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "wine_get_version")) {
         is_running_on_wine = true;

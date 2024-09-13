@@ -12,10 +12,11 @@
 
 #include "util.h"
 
-#define FAKE_SEND_LAG_AMOUNT 0       // Base lag miliseconds
-#define FAKE_SEND_JITTER_AMOUNT 0     // miliseconds
-#define FAKE_PACKET_LOSS_PERCENTAGE 0  // 0-100
-#define FAKE_SPIKE_PERCENTAGE 0 //0-100
+#define FAKE_SEND_LAG_AMOUNT 0          // Base lag miliseconds
+#define FAKE_SEND_JITTER_AMOUNT 0       // miliseconds
+#define FAKE_PACKET_LOSS_PERCENTAGE 0   // 0-100
+#define FAKE_SPIKE_PERCENTAGE 0         // 0-100
+#define FAKE_SPIKE_MULTIPLIER 3
 
 #if FAKE_SEND_LAG_AMOUNT > 0 || FAKE_SEND_JITTER_AMOUNT > 0 || FAKE_PACKET_LOSS_PERCENTAGE > 0 || FAKE_SPIKE_PERCENTAGE > 0
 
@@ -27,7 +28,7 @@ static inline bool should_drop_packet() {
 #endif
 }
 
-static inline bool should_spike(){
+static inline bool should_spike() {
 #if FAKE_SPIKE_PERCENTAGE
     return get_random(100) < FAKE_SPIKE_PERCENTAGE;
 #else
@@ -93,19 +94,25 @@ static int WSAAPI WSASendTo_fake_lag(SOCKET s, LPWSABUF lpBuffers, DWORD dwBuffe
         MinGWIsStupidWithThreads* args = (MinGWIsStupidWithThreads*)thread_args;
 
         if (!should_drop_packet()) {
+
+#if FAKE_SEND_LAG_AMOUNT > 0 || FAKE_SEND_JITTER_AMOUNT || FAKE_SPIKE_PERCENTAGE
+
+#if FAKE_SEND_LAG_AMOUNT > 0
+            size_t lag_ms = 0;
+#else
+            size_t lag_ms = FAKE_SEND_LAG_AMOUNT;
+#endif
+
 #if FAKE_SEND_JITTER_AMOUNT
-            int jitter = (int)get_random(FAKE_SEND_JITTER_AMOUNT) - FAKE_SEND_JITTER_AMOUNT / 2;
-            #if FAKE_SPIKE_PERCENTAGE
-            if (should_spike()){
-                Sleep((FAKE_SEND_LAG_AMOUNT*3) + jitter);
-            }else{
-                Sleep(FAKE_SEND_LAG_AMOUNT + jitter);
+            lag_ms += (int)get_random(FAKE_SEND_JITTER_AMOUNT) - FAKE_SEND_JITTER_AMOUNT / 2;
+#endif
+
+#if FAKE_SPIKE_PERCENTAGE
+            if (should_spike()) {
+                lag_ms *= FAKE_SPIKE_MULTIPLIER;
             }
-            #elif
-            Sleep(FAKE_SEND_LAG_AMOUNT + jitter);
-            #endif
-#elif FAKE_SEND_LAG_AMOUNT
-            Sleep(FAKE_SEND_LAG_AMOUNT);
+#endif
+            Sleep(lag_ms);
 #endif
         
             WSASendTo(args->s, (LPWSABUF)args->data, args->dwBufferCount, args->lpNumberOfBytesSent, args->dwFlags, args->lpTo, args->iTolen, args->lpOverlapped, args->lpCompletionRoutine);

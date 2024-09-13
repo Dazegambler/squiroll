@@ -8,7 +8,7 @@
 #include <string.h>
 
 #include "kite_api.h"
-#include <sqrat.h>
+//#include <sqrat.h>
 
 #include "util.h"
 #include "log.h"

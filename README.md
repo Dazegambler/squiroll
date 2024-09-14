@@ -5,13 +5,11 @@ Aocf rollback aims to add rollback based netcode to touhou 15.5:Antinomy of Comm
 ### As of now we only have a patcher working, we're currently working on making the netcode that is going to replace the currently existing one in the game
 
 # Progress Dashboard:
-### ~~Frame restoration/saving~~
+### ~~Frame restoration/saving~~(WIP)
 ### Input Management
-### ~~Memory Allocation hooking~~
-### ~~Frame stepping~~
-
-# Work on later:
-### - Caster and matchmaking 
+### ~~Memory Allocation hooking~~(WIP)
+### ~~Frame stepping~~(WIP)
+### ~~lobby~~(WIP)
 
 ## Prerequisites
 

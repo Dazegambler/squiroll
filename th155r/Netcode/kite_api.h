@@ -312,8 +312,4 @@ extern const KiteSquirrelAPI* KITE;
 #define sq_setdebughook(...) KITE->sq_setdebughook(__VA_ARGS__)
 #define sq_setnativedebughook(...) KITE->sq_setnativedebughook(__VA_ARGS__)
 
-#ifdef __int64
-#undef __int64
-#endif
-
 #endif

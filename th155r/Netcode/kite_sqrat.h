@@ -5,6 +5,8 @@
 
 #include "kite_api.h"
 
+#include <string>
+
 #ifdef __int64
 #pragma push_macro("__int64")
 #undef __int64

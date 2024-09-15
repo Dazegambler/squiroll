@@ -68,6 +68,7 @@ struct AsyncLobbyClient {
 };
 
 static_assert(sizeof(AsyncLobbyClient) == 0x400);
+static_assert(__builtin_offsetof(AsyncLobbyClient, current_nickname) == 0x308);
 
 
 uintptr_t lobby_base_address = 0;
@@ -163,6 +164,7 @@ int thisfastcall log_sent_text(
 }
 */
 
+
 typedef int thisfastcall lobby_send_string_t(
     AsyncLobbyClient* self,
     thisfastcall_edx(int dummy_edx,)
@@ -176,10 +178,10 @@ int thisfastcall lobby_send_string_udp_send_hook(
 ) {
     if (initialize_punch_socket(self->local_port)) {
         char* nickname = self->current_nickname.data();
-        int success = sendto(punch_socket, nickname, self->current_nickname.length(), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
-        if (success != SOCKET_ERROR) {
-            log_printf("Sending nick:%s\n", nickname);
-        } else {
+        size_t length = self->current_nickname.length();
+        log_printf("Sending nick (%zu):%s\n", length, nickname);
+        int success = sendto(punch_socket, nickname, length, 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
+        if (success == SOCKET_ERROR) {
             log_printf("FAILED nick:%u\n", WSAGetLastError());
         }
     }

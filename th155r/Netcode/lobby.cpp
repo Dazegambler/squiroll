@@ -161,6 +161,7 @@ SOCKET get_punch_socket(uint16_t port) {
                         };
                         bind_addr_length = sizeof(sockaddr_in6);
                     }
+                    //log_printf("BNDA:%u\n", port);
                     if (!bind(sock, (const sockaddr*)&bind_addr, bind_addr_length)) {
                         punch_socket = sock;
                         return sock;
@@ -203,6 +204,18 @@ int WSAAPI confirm_inherited_socket(SOCKET s, const sockaddr* name, int namelen)
             return 0;
         }
     }
+    /*
+    uint16_t port = 0;
+    switch (name->sa_family) {
+        case AF_INET:
+            port = ((const sockaddr_in*)name)->sin_port;
+            break;
+        case AF_INET6:
+            port = ((const sockaddr_in6*)name)->sin6_port;
+            break;
+    }
+    log_printf("BNDB:%u\n", __builtin_bswap16(port));
+    */
     return bind(s, name, namelen);
 }
 
@@ -254,6 +267,16 @@ int thisfastcall lobby_send_string_udp_send_hook(
         thisfastcall_edx(int dummy_edx,)
         str
     );
+}
+
+typedef int WSAAPI lobby_recv_hook_t(SOCKET s, char* buf, int len, int flags);
+
+int WSAAPI lobby_recv_hook(SOCKET s, char* buf, int len, int flags) {
+    int ret = recv(s, buf, len, flags);
+    if (ret != SOCKET_ERROR) {
+        log_printf("RECV:%s", buf);
+    }
+    return ret;
 }
 
 typedef int thisfastcall lobby_connect_t(
@@ -334,7 +357,11 @@ int WSAAPI WSASendTo_log(
     if (lpTo->sa_family == AF_INET) {
         char ip_buffer[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &((sockaddr_in*)lpTo)->sin_addr, ip_buffer, countof(ip_buffer));
-        log_printf("Sending data to %s:%u\n", ip_buffer, ((sockaddr_in*)lpTo)->sin_port);
+        uint16_t port = ((sockaddr_in*)lpTo)->sin_port;
+        log_printf("Sending data to %s:%u\n", ip_buffer, port);
+        //if (port == 42068) {
+            //halt_and_catch_fire();
+        //}
     }
     return WSASendTo(s, lpBuffers, dwBufferCount, lpNumberOfBytesSent, dwFlags, lpTo, iTolen, lpOverlapped, lpCompletionRoutine);
 }
@@ -373,6 +400,8 @@ void patch_se_lobby(void* base_address) {
 
     hotpatch_rel32(based_pointer(base_address, 0x6902), lobby_send_string_udp_send_hook);
     hotpatch_rel32(based_pointer(base_address, 0x84E6), lobby_send_string_udp_send_hook);
+
+    hotpatch_icall(based_pointer(base_address, 0x2070B), lobby_recv_hook);
 
     static constexpr uint8_t remove_dupe_host_check[] = { 0xEB, 0x3A };
     mem_write(based_pointer(base_address, 0x6610), remove_dupe_host_check);

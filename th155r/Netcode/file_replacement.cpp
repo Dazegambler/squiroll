@@ -66,9 +66,16 @@ static constexpr uint8_t version_nut[] = {
 #endif
 };
 
+static constexpr uint8_t loop_nut[] = {
+#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+#include "replacement_files/loop.nut.h"
+#endif
+};
+
 static std::unordered_map<std::string_view, ReplacementData> replacements = {
 	{ "data/system/network/network.nut"sv, network_nut },
-	{ "data/script/version.nut"sv, version_nut }
+	{ "data/script/version.nut"sv, version_nut },
+	{ "data/script/loop.nut"sv, loop_nut }
 };
 
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP

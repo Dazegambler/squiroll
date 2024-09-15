@@ -8,7 +8,7 @@
 #include <string.h>
 
 #include "kite_api.h"
-//#include <sqrat.h>
+//#include "kite_sqrat.h"
 
 #include "util.h"
 #include "log.h"
@@ -89,20 +89,47 @@ public:
     }
 };
 
+SQInteger example_function(HSQUIRRELVM v) {
+    SQBool arg;
+    if (SQ_SUCCEEDED(sq_getbool(v, 2, &arg))) {
+        log_printf("function called from Squirrel with argument: %d\n", arg);
+        sq_pushbool(v, arg); // Return the argument
+    } else {
+        log_printf("function called from Squirrel with no arguments.\n");
+    }
+    return 1; // Number of return values
+}
+
 extern "C" {
     dll_export int stdcall init_instance_v2(HostEnvironment* environment) {
-        HSQUIRRELVM squirrel_vm;
+        HSQUIRRELVM v;
         if (
             environment &&
-            environment->get_squirrel_vm(squirrel_vm) &&
+            environment->get_squirrel_vm(v) &&
             environment->get_kite_api(KITE)
         ) {
             // put any important initialization stuff here,
             // like adding squirrel globals/funcs/etc.
-            Sqrat::RootTable rtable(squirrel_vm);
-            Sqrat::Table rollback_table(squirrel_vm);
-            rtable.Bind(_SC("rollback"), rollback_table);
-            rollback_table.SetValue(_SC("resyncing"), &resyncing);
+            sq_pushroottable(v);
+
+            //rollback table setup
+            sq_pushstring(v,"rollback",-1);
+            sq_newtable(v);
+
+            //variables setup
+            sq_pushstring(v,"resyncing",-1);
+            sq_pushbool(v,resyncing);
+            sq_newslot(v,-3,SQFalse);
+
+            //function setup
+            sq_pushstring(v, "example_function", -1);
+            sq_newclosure(v, example_function, 0);
+            sq_newslot(v, -3, SQFalse);
+
+            //adding the rollback table to global scope
+            sq_newslot(v,-3,SQFalse);
+
+            sq_pop(v,1);
             return 1;
         }
         return -1;

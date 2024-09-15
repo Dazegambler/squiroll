@@ -89,9 +89,15 @@ bool initialize_punch_socket(uint16_t port) {
                     if (0) {
                 case AF_INET:
                         *(sockaddr_in*)&bind_addr = (sockaddr_in){
+#if !MINGW_COMPAT
+                            .sin_family = AF_INET,
+                            .sin_port = __builtin_bswap16(port),
+                            .sin_addr = INADDR_ANY
+#else
                             AF_INET,
                             __builtin_bswap16(port),
                             INADDR_ANY
+#endif
                         };
                         bind_addr_length = sizeof(sockaddr_in);
                     }
@@ -109,12 +115,11 @@ bool initialize_punch_socket(uint16_t port) {
                         return true;
                     }
             }
-            error = WSAGetLastError();
+            log_printf("UDP bind fail (%u):%u\n", port, WSAGetLastError());
             closesocket(sock);
         } else {
-            error = WSAGetLastError();
+            log_printf("UDP socket fail:%u\n", WSAGetLastError());
         }
-        log_printf("UDP socket fail:%u\n", error);
         return false;
     }
     return true;
@@ -224,6 +229,7 @@ int WSAAPI lobby_socket_connect_hook(SOCKET s, const sockaddr* name, int namelen
 }
 
 int WSAAPI lobby_socket_close_hook(SOCKET s) {
+    //memset(&lobby_addr, 0, sizeof(lobby_addr));
     int ret = closesocket(s);
     if (ret == 0) {
         if (punch_socket != INVALID_SOCKET) {

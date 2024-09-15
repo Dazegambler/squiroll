@@ -37,7 +37,8 @@ void Cleanup() {
 void Debug() {
     AllocConsole();
     (void)freopen("CONIN$", "r", stdin);
-    (void)freopen("CONOUT$", "w", stdout);
+    (void)freopen("CONOUT$", "w+b", stdout);
+    setvbuf(stdout, NULL, _IONBF, 0);
     (void)freopen("CONOUT$", "w", stderr);
     SetConsoleTitleW(L"th155r debug");
 }

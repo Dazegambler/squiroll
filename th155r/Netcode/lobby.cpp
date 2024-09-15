@@ -306,6 +306,7 @@ int WSAAPI lobby_socket_close_hook(SOCKET s) {
             sock != INVALID_SOCKET &&
             !punch_socket_is_inherited
         ) {
+            log_printf("Closing the punch socket. Bad?\n");
             closesocket(sock);
         }
         punch_socket_is_loaned = false;
@@ -317,6 +318,25 @@ int WSAAPI lobby_socket_close_hook(SOCKET s) {
 hostent* WSAAPI my_gethostbyname(const char* name) {
     log_printf("LOBBY HOST: %s\n", name);
     return gethostbyname(name);
+}
+
+int WSAAPI WSASendTo_log(
+    SOCKET s,
+    LPWSABUF lpBuffers,
+    DWORD dwBufferCount,
+    LPDWORD lpNumberOfBytesSent,
+    DWORD dwFlags,
+    struct sockaddr *lpTo,
+    int iTolen,
+    LPWSAOVERLAPPED lpOverlapped,
+    LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
+) {
+    if (lpTo->sa_family == AF_INET) {
+        char ip_buffer[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &((sockaddr_in*)lpTo)->sin_addr, ip_buffer, countof(ip_buffer));
+        log_printf("Sending data to %s:%u\n", ip_buffer, ((sockaddr_in*)lpTo)->sin_port);
+    }
+    return WSASendTo(s, lpBuffers, dwBufferCount, lpNumberOfBytesSent, dwFlags, lpTo, iTolen, lpOverlapped, lpCompletionRoutine);
 }
 
 void patch_se_lobby(void* base_address) {

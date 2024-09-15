@@ -16,4 +16,16 @@ SOCKET WSAAPI inherit_punch_socket(int af, int type, int protocol, LPWSAPROTOCOL
 int WSAAPI confirm_inherited_socket(SOCKET s, const sockaddr* name, int namelen);
 int WSAAPI close_punch_socket(SOCKET s);
 
+int WSAAPI WSASendTo_log(
+    SOCKET s,
+    LPWSABUF lpBuffers,
+    DWORD dwBufferCount,
+    LPDWORD lpNumberOfBytesSent,
+    DWORD dwFlags,
+    struct sockaddr *lpTo,
+    int iTolen,
+    LPWSAOVERLAPPED lpOverlapped,
+    LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
+);
+
 #endif

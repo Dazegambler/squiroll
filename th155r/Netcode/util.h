@@ -29,7 +29,7 @@
 #if defined(__clang__) && !defined(CLANG_COMPAT)
 #define CLANG_COMPAT 1
 #endif
-#ifdef __MINGW32__
+#if defined(__MINGW32__) || defined(__MINGW64__)
 #define MINGW_COMPAT 1
 #endif
 

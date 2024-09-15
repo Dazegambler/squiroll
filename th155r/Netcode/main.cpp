@@ -16,6 +16,7 @@
 #include "log.h"
 #include "file_replacement.h"
 #include "config.h"
+#include "lobby.h"
 
 using namespace std::literals::string_literals;
 using namespace std::literals::string_view_literals;
@@ -26,7 +27,6 @@ using namespace std::literals::string_view_literals;
 
 const uintptr_t base_address = (uintptr_t)GetModuleHandleA(NULL);
 uintptr_t libact_base_address = 0;
-uintptr_t lobby_base_address = 0;
 
 //SQVM Rx4DACE4 initialized at Rx124710
 
@@ -53,13 +53,7 @@ typedef void* thisfastcall act_script_plugin_load_t(
     const char* plugin_path
 );
 
-hostent* WSAAPI my_gethostbyname(const char* name) {
-    log_printf("LOBBY HOST: %s\n", name);
-    return gethostbyname(name);
-}
-
 void patch_se_libact(void* base_address);
-void patch_se_lobby(void* base_address);
 void patch_se_upnp(void* base_address);
 void patch_se_information(void* base_address);
 void patch_se_trust(void* base_address);
@@ -153,92 +147,6 @@ void patch_se_libact(void* base_address) {
     hotpatch_rel32(based_pointer(base_address, 0x15F7C), patch_act_script_plugin);
 }
 
-/*
-typedef int thisfastcall send_text_t(
-    void* self,
-    thisfastcall_edx(int dummy_edx,)
-    const char* str
-);
-
-int thisfastcall log_sent_text(
-    void* self,
-    thisfastcall_edx(int dummy_edx,)
-    const char* str
-) {
-    log_printf("Sending:%s", str);
-    return based_pointer<send_text_t>(lobby_base_address, 0x20820)(
-        self,
-        thisfastcall_edx(dummy_edx,)
-        str
-    );
-}
-*/
-
-typedef int thisfastcall lobby_connect_t(
-    void* self,
-    thisfastcall_edx(int dummy_edx,)
-    const char* server,
-    const char* port,
-    const char* password,
-    const char* lobby_nameA,
-    const char* lobby_nameB
-);
-
-int thisfastcall lobby_connect_hook(
-    void* self,
-    thisfastcall_edx(int dummy_edx,)
-    const char* server,
-    const char* port,
-    const char* password,
-    const char* lobby_nameA,
-    const char* lobby_nameB
-) {
-    return based_pointer<lobby_connect_t>(lobby_base_address, 0x53B0)(
-        self,
-        thisfastcall_edx(dummy_edx,)
-        get_lobby_host(server),
-        get_lobby_port(port),
-        get_lobby_pass(password),
-        lobby_nameA,
-        lobby_nameB
-    );
-}
-
-void patch_se_lobby(void* base_address) {
-    lobby_base_address = (uintptr_t)base_address;
-
-#if ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS
-    hotpatch_jump(based_pointer(base_address, 0x41007), my_malloc);
-    hotpatch_jump(based_pointer(base_address, 0x402F8), my_calloc);
-    hotpatch_jump(based_pointer(base_address, 0x41055), my_realloc);
-    hotpatch_jump(based_pointer(base_address, 0x40355), my_free);
-    hotpatch_jump(based_pointer(base_address, 0x4DCF1), my_recalloc);
-    hotpatch_jump(based_pointer(base_address, 0x53F76), my_msize);
-#endif
-    //hotpatch_import(based_pointer(base_address, 0x1292AC), my_gethostbyname);
-
-    //mem_write(based_pointer(base_address, 0x206F8), NOP_BYTES<2>);
-    //mem_write(based_pointer(base_address, 0x20872), NOP_BYTES<2>);
-
-    mem_write(based_pointer(base_address, 0x203AA), NOP_BYTES<55>);
-
-    hotpatch_rel32(based_pointer(base_address, 0x8C4C), lobby_connect_hook);
-
-    //hotpatch_rel32(based_pointer(base_address, 0x4C6F), log_sent_text);
-    //hotpatch_rel32(based_pointer(base_address, 0x4D33), log_sent_text);
-    //hotpatch_rel32(based_pointer(base_address, 0x52C7), log_sent_text);
-    //hotpatch_rel32(based_pointer(base_address, 0x62C7), log_sent_text);
-    //hotpatch_rel32(based_pointer(base_address, 0x6902), log_sent_text);
-    //hotpatch_rel32(based_pointer(base_address, 0x6E50), log_sent_text);
-    //hotpatch_rel32(based_pointer(base_address, 0x6F4D), log_sent_text);
-    //hotpatch_rel32(based_pointer(base_address, 0x7084), log_sent_text);
-    //hotpatch_rel32(based_pointer(base_address, 0x7436), log_sent_text);
-    //hotpatch_rel32(based_pointer(base_address, 0x7643), log_sent_text);
-    //hotpatch_rel32(based_pointer(base_address, 0x7C67), log_sent_text);
-    //hotpatch_rel32(based_pointer(base_address, 0x7D2D), log_sent_text);
-    //hotpatch_rel32(based_pointer(base_address, 0x84E6), log_sent_text);
-}
-
 void patch_se_upnp(void* base_address) {
 #if ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS
     hotpatch_jump(based_pointer(base_address, 0x1C4BB), my_malloc);
@@ -311,6 +219,10 @@ void patch_autopunch() {
     //hotpatch_import(closesocket_import_addr, my_closesocket);
 
     //autopunch_init();
+
+    hotpatch_icall(0x1702F3_R, confirm_inherited_socket);
+    hotpatch_icall(0x170641_R, inherit_punch_socket);
+
 }
 
 void patch_allocman() {
@@ -372,7 +284,7 @@ void common_init() {
 
     //hotpatch_rel32(sq_vm_init_call_addrB, my_sq_vm_init); //not sure why its called twice but pretty sure the first call is enough
 
-    //patch_autopunch();
+    patch_autopunch();
 
     hotpatch_rel32(patch_act_script_plugin_hook_addr, patch_exe_script_plugin);
 

@@ -7,10 +7,10 @@
 #include <stdint.h>
 #include <string.h>
 #include <string>
-#include <mutex>
+//#include <mutex>
 
 #include <winsock2.h>
-#include <WS2tcpip.h>
+#include <ws2tcpip.h>
 //#include <MSWSock.h>
 
 #include "util.h"
@@ -45,8 +45,8 @@ struct AsyncLobbyClient {
     long long __longlong_230; // 0x230
     std::string server_string; // 0x238
     std::string port_string; // 0x250
-    std::mutex __mutex_268; // 0x268
-
+    //std::mutex __mutex_268; // 0x268
+    unsigned char __mutex_dummy_268[0x30]; // 0x268
 
     unsigned char __dummy_A[0x40]; // 0x298
 
@@ -89,9 +89,9 @@ bool initialize_punch_socket(uint16_t port) {
                     if (0) {
                 case AF_INET:
                         *(sockaddr_in*)&bind_addr = (sockaddr_in){
-                            .sin_family = AF_INET,
-                            .sin_port = __builtin_bswap16(port),
-                            .sin_addr = INADDR_ANY
+                            AF_INET,
+                            __builtin_bswap16(port),
+                            INADDR_ANY
                         };
                         bind_addr_length = sizeof(sockaddr_in);
                     }

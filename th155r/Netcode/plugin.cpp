@@ -114,23 +114,23 @@ extern "C" {
             sq_pushroottable(v);
 
             //rollback table setup
-            sq_pushstring(v,"rollback",-1);
+            sq_pushstring(v, _SC("rollback"), -1);
             sq_newtable(v);
 
             //variables setup
-            sq_pushstring(v,"resyncing",-1);
-            sq_pushbool(v,resyncing);
-            sq_newslot(v,-3,SQFalse);
+            sq_pushstring(v, _SC("resyncing"), -1);
+            sq_pushbool(v, resyncing);
+            sq_newslot(v, -3, SQFalse);
 
             //function setup
-            // sq_pushstring(v, "example_function", -1);
+            // sq_pushstring(v, _SC("example_function"), -1);
             // sq_newclosure(v, example_function, 0);
             // sq_newslot(v, -3, SQFalse);
 
             //adding the rollback table to global scope
-            sq_newslot(v,-3,SQFalse);
+            sq_newslot(v, -3, SQFalse);
 
-            sq_pop(v,1);
+            sq_pop(v, 1);
             return 1;
         }
         return -1;

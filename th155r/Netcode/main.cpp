@@ -223,7 +223,8 @@ void patch_autopunch() {
 
     hotpatch_icall(0x1702F3_R, confirm_inherited_socket);
     hotpatch_icall(0x170641_R, inherit_punch_socket);
-
+    hotpatch_icall(0x170382_R, close_punch_socket);
+    hotpatch_icall(0x1703ED_R, close_punch_socket);
 }
 
 void patch_allocman() {

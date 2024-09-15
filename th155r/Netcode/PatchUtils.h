@@ -135,5 +135,6 @@ template<> inline constexpr uint8_t NOP_BYTES<59>[59] = { BASE_NOP9, BASE_NOP10,
 template<> inline constexpr uint8_t NOP_BYTES<60>[60] = { BASE_NOP10, BASE_NOP10, BASE_NOP10, BASE_NOP10, BASE_NOP10, BASE_NOP10 };
 
 static inline constexpr uint8_t INFINITE_LOOP_BYTES[] = { 0xEB, 0xFE };
+static inline constexpr uint8_t INT3_BYTES[] = { 0xCC };
 
 #endif

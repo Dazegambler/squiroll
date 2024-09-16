@@ -24,6 +24,7 @@ struct PacketLayout {
 
 static bool not_in_match = true;
 SQBool resyncing = SQFalse;
+SQBool isplaying = SQFalse;
 static uint8_t lag_packets = 0;
 static uint64_t prev_timestamp = 0;
 

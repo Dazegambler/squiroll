@@ -102,22 +102,6 @@ public:
 
 HSQUIRRELVM v;
 
-void Get_IsPlaying(HSQUIRRELVM v){
-    sq_pushroottable(v);
-    sq_pushstring(v,_SC("network"),-1);
-    if (SQ_SUCCEEDED(sq_get(v,-2))){
-        sq_pushstring(v,_SC("IsPlaying"),-1);
-        if (SQ_SUCCEEDED(sq_get(v,-2))){
-            if (sq_gettype(v,-1) == OT_BOOL){
-                sq_getbool(v,-1,&isplaying);
-            }
-            sq_pop(v,1);
-        }
-        sq_pop(v,1);
-    }
-    sq_pop(v,1);
-}
-
 extern "C" {
     dll_export int stdcall init_instance_v2(HostEnvironment* environment) {
         if (
@@ -156,7 +140,28 @@ extern "C" {
     }
 
     dll_export int stdcall update_frame() {
-        Get_IsPlaying(v);
+    
+        sq_pushroottable(v);
+
+        //saving ::network.IsPlaying to a variable
+        //getting the network table
+        sq_pushstring(v,_SC("network"),-1);
+        if (SQ_SUCCEEDED(sq_get(v,-2))){
+            //Getting the variable
+            sq_pushstring(v,_SC("IsPlaying"),-1);
+            if (SQ_SUCCEEDED(sq_get(v,-2))){
+                if (sq_gettype(v,-1) == OT_BOOL){
+                    sq_getbool(v,-1,&isplaying);
+                }
+                //pop the variable
+                sq_pop(v,1);
+            }
+            //pop the network table
+            sq_pop(v,1);
+        }
+
+        //pop the roottable
+        sq_pop(v,1);        
         return 1;
     }
 

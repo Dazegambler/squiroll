@@ -4,3 +4,4 @@
 /tools/*.run
 .vs*
 out/
+*.lib

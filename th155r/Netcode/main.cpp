@@ -287,7 +287,7 @@ void common_init() {
 
     //hotpatch_rel32(sq_vm_init_call_addrB, my_sq_vm_init); //not sure why its called twice but pretty sure the first call is enough
 
-    patch_autopunch();
+    //patch_autopunch();
 
     hotpatch_rel32(patch_act_script_plugin_hook_addr, patch_exe_script_plugin);
 

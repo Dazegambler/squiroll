@@ -3,7 +3,11 @@
 #ifndef NETCODE_H
 #define NETCODE_H 1
 
-extern bool resyncing;
+#include <squirrel.h>
+
+extern SQBool resyncing;
+
+extern SQBool isplaying;
 
 void patch_netplay();
 

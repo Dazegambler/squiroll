@@ -8,7 +8,6 @@
 #include <string.h>
 
 #include "kite_api.h"
-//#include "kite_sqrat.h"
 
 #include "util.h"
 #include "log.h"
@@ -101,9 +100,26 @@ public:
 //     return 1; // Number of return values
 // }
 
+HSQUIRRELVM v;
+
+void Get_IsPlaying(HSQUIRRELVM v){
+    sq_pushroottable(v);
+    sq_pushstring(v,_SC("network"),-1);
+    if (SQ_SUCCEEDED(sq_get(v,-2))){
+        sq_pushstring(v,_SC("IsPlaying"),-1);
+        if (SQ_SUCCEEDED(sq_get(v,-2))){
+            if (sq_gettype(v,-1) == OT_BOOL){
+                sq_getbool(v,-1,&isplaying);
+            }
+            sq_pop(v,1);
+        }
+        sq_pop(v,1);
+    }
+    sq_pop(v,1);
+}
+
 extern "C" {
     dll_export int stdcall init_instance_v2(HostEnvironment* environment) {
-        HSQUIRRELVM v;
         if (
             environment &&
             environment->get_squirrel_vm(v) &&
@@ -129,7 +145,6 @@ extern "C" {
 
             //adding the rollback table to global scope
             sq_newslot(v, -3, SQFalse);
-
             sq_pop(v, 1);
             return 1;
         }
@@ -141,6 +156,7 @@ extern "C" {
     }
 
     dll_export int stdcall update_frame() {
+        Get_IsPlaying(v);
         return 1;
     }
 

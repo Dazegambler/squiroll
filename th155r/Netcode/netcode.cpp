@@ -2,6 +2,7 @@
 
 #include <winsock2.h>
 #include <windows.h>
+#include <squirrel.h>
 
 #include "util.h"
 #include "PatchUtils.h"
@@ -22,7 +23,7 @@ struct PacketLayout {
 };
 
 static bool not_in_match = true;
-bool resyncing = false;
+SQBool resyncing = SQFalse;
 static uint8_t lag_packets = 0;
 static uint64_t prev_timestamp = 0;
 
@@ -63,14 +64,14 @@ void run_resync_logic(uint64_t new_timestamp) {
         }
         else {
             if (++lag_packets >= RESYNC_THRESHOLD) {
-                resyncing = true;
+                resyncing = SQTrue;
                 lag_packets = 0;
                 //show message window displaying "resyncing" or something like it
             }
         }
     } else {
         if (lag_packets >= RESYNC_DURATION) {
-            resyncing = false;
+            resyncing = SQFalse;
             lag_packets = 0;
             //kill message window?
         }

@@ -191,7 +191,7 @@ bool execute_program_inject()
             ResumeThread(pi.hThread);
             ret = true;
         } else {
-            fprintf(stderr,"Code Injection failed...(%X,%X)\n", inject_result, GetLastError());
+            fprintf(stderr,"Code Injection failed...(%X,%lX)\n", inject_result, GetLastError());
             fprintf(stderr,"%s\n", get_inject_func_message(inject_result));
         }
         CloseHandle(pi.hThread);

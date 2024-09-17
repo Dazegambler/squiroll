@@ -208,7 +208,7 @@ static inline T saturate_add(T lhs, T rhs) {
         if (!__builtin_add_overflow(lhs, rhs, &ret)) {
             return ret;
         }
-        return ((U)rhs >> bitsof(T) - 1) + (U)std::numeric_limits<T>::max();
+        return ((U)rhs >> (bitsof(T) - 1)) + (U)std::numeric_limits<T>::max();
     } else {
         T ret = lhs + rhs;
         return ret >= lhs ? ret : std::numeric_limits<T>::max();
@@ -223,7 +223,7 @@ static inline T saturate_sub(T lhs, T rhs) {
         if (!__builtin_sub_overflow(lhs, rhs, &ret)) {
             return ret;
         }
-        return (U)std::numeric_limits<T>::min() - ((U)rhs >> bitsof(T) - 1);
+        return (U)std::numeric_limits<T>::min() - ((U)rhs >> (bitsof(T) - 1));
     } else {
         T ret = lhs - rhs;
         return ret <= lhs ? ret : std::numeric_limits<T>::min();

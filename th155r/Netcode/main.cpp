@@ -215,10 +215,12 @@ void patch_se_trust(void* base_address) {
 void patch_autopunch() {
     //hotpatch_import(WSARecvFrom_import_addr, my_WSARecvFrom);
     //hotpatch_import(WSASendTo_import_addr, my_WSASendTo);
-    hotpatch_icall(0x170501_R, WSASendTo_log);
     //hotpatch_import(WSASend_import_addr, my_WSASend);
     //hotpatch_import(bind_import_addr, my_bind);
     //hotpatch_import(closesocket_import_addr, my_closesocket);
+
+    hotpatch_icall(0x170E5A_R, WSARecvFrom_log);
+    hotpatch_icall(0x170501_R, WSASendTo_log);
 
     //autopunch_init();
 

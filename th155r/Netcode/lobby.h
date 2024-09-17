@@ -28,4 +28,16 @@ int WSAAPI WSASendTo_log(
     LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
 );
 
+int WSAAPI WSARecvFrom_log(
+    SOCKET s,
+    LPWSABUF lpBuffers,
+    DWORD dwBufferCount,
+    LPDWORD lpNumberOfBytesRecvd,
+    LPDWORD lpFlags,
+    sockaddr *lpFrom,
+    LPINT lpFromlen,
+    LPWSAOVERLAPPED lpOverlapped,
+    LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
+);
+
 #endif

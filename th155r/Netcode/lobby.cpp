@@ -20,13 +20,14 @@
 #include "AllocMan.h"
 #include "log.h"
 
+// size: 0x4F4
 struct AsyncLobbyClient {
 
     void* vftable; // 0x0
 
     unsigned char __unknown_A[0x4]; // 0x4
 
-    int __lobby_state; // 0x8
+    int __socket_state; // 0x8
     SOCKET lobby_tcp_socket; // 0xC
 
     unsigned char __unknown_B[0x104]; // 0x10
@@ -65,10 +66,36 @@ struct AsyncLobbyClient {
     std::string __match_user_data_str; // 0x3E0 opponent port?
     uint32_t local_port; // 0x3F8
     int __dword_3FC; // 0x3FC
-    // 0x400
+    int __int_400; // 0x400
+    int __int_404; // 0x404
+    int __dword_408; // 0x408
+
+    unsigned char __innerB_40C[0x8]; // 0x40C
+
+    int __dword_414; // 0x414
+    uint32_t __time_418; // 0x418
+    int __dword_41C; // 0x41C
+    bool __bool_420; // 0x420
+
+    unsigned char __padding_B[0x3];// 0x421
+
+    std::string __opponent_nickname; // 0x424
+    bool __bool_43C; // 0x43C
+
+    unsigned char __padding_C[0x3]; // 0x43D
+
+    std::string __recv_str; // 0x440
+
+    unsigned char __queue_458[0x18]; // 0x458
+
+    unsigned char __unknown_D[0x7C]; // 0x470
+
+    int __lobby_state; // 0x4EC
+    int32_t max_nickname_length; // 0x4F0
+    // 0x4F4
 };
 
-static_assert(sizeof(AsyncLobbyClient) == 0x400);
+static_assert(sizeof(AsyncLobbyClient) == 0x4F8);
 static_assert(__builtin_offsetof(AsyncLobbyClient, current_nickname) == 0x308);
 
 
@@ -102,31 +129,38 @@ static SOCKET punch_socket = INVALID_SOCKET;
 static bool punch_socket_is_loaned = false;
 static bool punch_socket_is_inherited = false;
 
-//static std::atomic<SOCKET> punch_socket = { INVALID_SOCKET };
-
 static sockaddr_storage lobby_addr = {};
 static size_t lobby_addr_length = 0;
 
+static char SENDTO_STR[256];
+static char RECVFROM_STR[256];
+
 // EXE hook, overrides ref count
 int WSAAPI close_punch_socket(SOCKET s) {
-    {
+    if (s != INVALID_SOCKET) {
         std::lock_guard<SpinLock> lock(punch_lock);
 
         if (s == punch_socket) {
+            log_printf("Closing the punch socket. Bad? A\n");
+            memset(SENDTO_STR, 0, sizeof(SENDTO_STR));
+            memset(RECVFROM_STR, 0, sizeof(RECVFROM_STR));
+            //halt_and_catch_fire();
             punch_socket = INVALID_SOCKET;
             punch_socket_is_loaned = false;
             punch_socket_is_inherited = false;
         }
     }
-    
-    //SOCKET expected = s;
-    //punch_socket.compare_exchange_strong(expected, INVALID_SOCKET);
-
 
     return closesocket(s);
 }
 
-SOCKET get_punch_socket(uint16_t port) {
+SOCKET get_punch_socket() {
+    std::lock_guard<SpinLock> lock(punch_lock);
+
+    return punch_socket;
+}
+
+SOCKET get_or_create_punch_socket(uint16_t port) {
     std::lock_guard<SpinLock> lock(punch_lock);
 
     SOCKET sock = punch_socket;
@@ -180,20 +214,27 @@ SOCKET WSAAPI inherit_punch_socket(int af, int type, int protocol, LPWSAPROTOCOL
 
     std::lock_guard<SpinLock> lock(punch_lock);
 
-    SOCKET sock_ret = punch_socket;
-    if (sock_ret == INVALID_SOCKET) {
-        sock_ret = WSASocketW(af, type, protocol, lpProtocolInfo, g, dwFlags);
-        if (
-            sock_ret != INVALID_SOCKET &&
-            type == SOCK_DGRAM &&
-            protocol == IPPROTO_UDP
-        ) {
-            punch_socket_is_loaned = true;
-            punch_socket = sock_ret;
+    if (!punch_socket_is_inherited) {
+        SOCKET sock_ret = punch_socket;
+        if (sock_ret == INVALID_SOCKET) {
+            sock_ret = WSASocketW(af, type, protocol, lpProtocolInfo, g, dwFlags);
+            if (
+                sock_ret != INVALID_SOCKET &&
+                type == SOCK_DGRAM &&
+                protocol == IPPROTO_UDP
+            ) {
+                punch_socket_is_loaned = true;
+                punch_socket = sock_ret;
+            }
         }
+        punch_socket_is_inherited = sock_ret != INVALID_SOCKET;
+        return sock_ret;
     }
-    punch_socket_is_inherited = sock_ret != INVALID_SOCKET;
-    return sock_ret;
+    else {
+        // For some reason the client tries
+        // to open the socket twice
+        return INVALID_SOCKET;
+    }
 }
 
 int WSAAPI confirm_inherited_socket(SOCKET s, const sockaddr* name, int namelen) {
@@ -247,12 +288,40 @@ typedef int thisfastcall lobby_send_string_t(
     const char* str
 );
 
-int thisfastcall lobby_send_string_udp_send_hook(
+int thisfastcall lobby_send_string_udp_send_hook_REQUEST(
     AsyncLobbyClient* self,
     thisfastcall_edx(int dummy_edx,)
     const char* str
 ) {
-    SOCKET sock = get_punch_socket(self->local_port);
+    SOCKET sock = INVALID_SOCKET;
+    //if (!ScrollLockOn()) {
+        sock = get_or_create_punch_socket(self->local_port);
+    //}
+    //else {
+        //sock = get_punch_socket();
+    //}
+    if (sock != INVALID_SOCKET) {
+        char* nickname = self->current_nickname.data();
+        size_t length = self->current_nickname.length();
+        int success = sendto(sock, nickname, length, 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
+        log_printf("Sending nick (%zu):%s\n", length, nickname);
+        if (success == SOCKET_ERROR) {
+            log_printf("FAILED nick:%u\n", WSAGetLastError());
+        }
+    }
+    return based_pointer<lobby_send_string_t>(lobby_base_address, 0x20820)(
+        self,
+        thisfastcall_edx(int dummy_edx,)
+        str
+    );
+}
+
+int thisfastcall lobby_send_string_udp_send_hook_WELCOME(
+    AsyncLobbyClient* self,
+    thisfastcall_edx(int dummy_edx,)
+    const char* str
+) {
+    SOCKET sock = get_or_create_punch_socket(self->local_port);
     if (sock != INVALID_SOCKET) {
         char* nickname = self->current_nickname.data();
         size_t length = self->current_nickname.length();
@@ -329,8 +398,10 @@ int WSAAPI lobby_socket_close_hook(SOCKET s) {
             sock != INVALID_SOCKET &&
             !punch_socket_is_inherited
         ) {
-            log_printf("Closing the punch socket. Bad?\n");
+            log_printf("Closing the punch socket. Bad? B\n");
             closesocket(sock);
+            memset(SENDTO_STR, 0, sizeof(SENDTO_STR));
+            memset(RECVFROM_STR, 0, sizeof(RECVFROM_STR));
         }
         punch_socket_is_loaned = false;
         punch_socket_is_inherited = false;
@@ -357,13 +428,61 @@ int WSAAPI WSASendTo_log(
     if (lpTo->sa_family == AF_INET) {
         char ip_buffer[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &((sockaddr_in*)lpTo)->sin_addr, ip_buffer, countof(ip_buffer));
-        uint16_t port = ((sockaddr_in*)lpTo)->sin_port;
-        log_printf("Sending data to %s:%u\n", ip_buffer, port);
-        //if (port == 42068) {
-            //halt_and_catch_fire();
-        //}
+        uint16_t port = __builtin_bswap16(((sockaddr_in*)lpTo)->sin_port);
+
+        char sendto_buff[countof(SENDTO_STR)];
+        snprintf(sendto_buff, countof(sendto_buff), "SENDTO: %s:%u\n", ip_buffer, port);
+        if (strcmp(sendto_buff, SENDTO_STR)) {
+            memcpy(SENDTO_STR, sendto_buff, sizeof(SENDTO_STR));
+            log_printf("%s", SENDTO_STR);
+        }
+
+        //log_printf("SENDTO: %s:%u\n", ip_buffer, port);
     }
-    return WSASendTo(s, lpBuffers, dwBufferCount, lpNumberOfBytesSent, dwFlags, lpTo, iTolen, lpOverlapped, lpCompletionRoutine);
+    int ret = WSASendTo(s, lpBuffers, dwBufferCount, lpNumberOfBytesSent, dwFlags, lpTo, iTolen, lpOverlapped, lpCompletionRoutine);
+    if (ret == SOCKET_ERROR) {
+        int error = WSAGetLastError();
+        if (error != WSA_IO_PENDING) {
+            log_printf("SENDTO: FAIL %u\n", error);
+        }
+    }
+    return ret;
+}
+
+int WSAAPI WSARecvFrom_log(
+    SOCKET s,
+    LPWSABUF lpBuffers,
+    DWORD dwBufferCount,
+    LPDWORD lpNumberOfBytesRecvd,
+    LPDWORD lpFlags,
+    sockaddr *lpFrom,
+    LPINT lpFromlen,
+    LPWSAOVERLAPPED lpOverlapped,
+    LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
+) {
+    int ret = WSARecvFrom(s, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromlen, lpOverlapped, lpCompletionRoutine);
+    if (ret != SOCKET_ERROR) {
+        if (lpFrom->sa_family == AF_INET) {
+            char ip_buffer[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &((sockaddr_in*)lpFrom)->sin_addr, ip_buffer, countof(ip_buffer));
+            uint16_t port = __builtin_bswap16(((sockaddr_in*)lpFrom)->sin_port);
+            
+            char recvfrom_buff[countof(RECVFROM_STR)];
+            snprintf(recvfrom_buff, countof(recvfrom_buff), "RECVFROM: %s:%u\n", ip_buffer, port);
+            if (strcmp(recvfrom_buff, RECVFROM_STR)) {
+                memcpy(RECVFROM_STR, recvfrom_buff, sizeof(RECVFROM_STR));
+                log_printf("%s", RECVFROM_STR);
+            }
+            
+            //log_printf("RECVFROM: %s:%u\n", ip_buffer, port);
+        }
+    } else {
+        int error = WSAGetLastError();
+        if (error != WSA_IO_PENDING) {
+            log_printf("RECVFROM: FAIL %u\n", error);
+        }
+    }
+    return ret;
 }
 
 void patch_se_lobby(void* base_address) {
@@ -398,8 +517,8 @@ void patch_se_lobby(void* base_address) {
     */
     hotpatch_icall(based_pointer(base_address, 0x20045), lobby_socket_close_hook);
 
-    hotpatch_rel32(based_pointer(base_address, 0x6902), lobby_send_string_udp_send_hook);
-    hotpatch_rel32(based_pointer(base_address, 0x84E6), lobby_send_string_udp_send_hook);
+    hotpatch_rel32(based_pointer(base_address, 0x6902), lobby_send_string_udp_send_hook_REQUEST);
+    hotpatch_rel32(based_pointer(base_address, 0x84E6), lobby_send_string_udp_send_hook_WELCOME);
 
     hotpatch_icall(based_pointer(base_address, 0x2070B), lobby_recv_hook);
 

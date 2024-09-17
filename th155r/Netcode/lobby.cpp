@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 #include <string>
 #include <atomic>
 #include <mutex>
@@ -132,8 +133,13 @@ static bool punch_socket_is_inherited = false;
 static sockaddr_storage lobby_addr = {};
 static size_t lobby_addr_length = 0;
 
-static char SENDTO_STR[256];
-static char RECVFROM_STR[256];
+//static char SENDTO_STR[256];
+//static char RECVFROM_STR[256];
+
+static sockaddr_storage SENDTO_ADDR = {};
+static sockaddr_storage RECVFROM_ADDR = {};
+static int SENDTO_ADDR_LEN = 0;
+static int RECVFROM_ADDR_LEN = 0;
 
 // EXE hook, overrides ref count
 int WSAAPI close_punch_socket(SOCKET s) {
@@ -142,8 +148,12 @@ int WSAAPI close_punch_socket(SOCKET s) {
 
         if (s == punch_socket) {
             log_printf("Closing the punch socket. Bad? A\n");
-            memset(SENDTO_STR, 0, sizeof(SENDTO_STR));
-            memset(RECVFROM_STR, 0, sizeof(RECVFROM_STR));
+            //memset(SENDTO_STR, 0, sizeof(SENDTO_STR));
+            //memset(RECVFROM_STR, 0, sizeof(RECVFROM_STR));
+            SENDTO_ADDR = {};
+            RECVFROM_ADDR = {};
+            SENDTO_ADDR_LEN = 0;
+            RECVFROM_ADDR_LEN = 0;
             //halt_and_catch_fire();
             punch_socket = INVALID_SOCKET;
             punch_socket_is_loaned = false;
@@ -311,7 +321,7 @@ int thisfastcall lobby_send_string_udp_send_hook_REQUEST(
     }
     return based_pointer<lobby_send_string_t>(lobby_base_address, 0x20820)(
         self,
-        thisfastcall_edx(int dummy_edx,)
+        thisfastcall_edx(dummy_edx,)
         str
     );
 }
@@ -333,10 +343,106 @@ int thisfastcall lobby_send_string_udp_send_hook_WELCOME(
     }
     return based_pointer<lobby_send_string_t>(lobby_base_address, 0x20820)(
         self,
-        thisfastcall_edx(int dummy_edx,)
+        thisfastcall_edx(dummy_edx,)
         str
     );
 }
+
+static constexpr char DUMMY_SEND[1]{};
+
+int fastcall lobby_send_string_udp_send_hook_WELCOME2(
+    AsyncLobbyClient* self,
+    size_t current_nickname_length,
+    const char* str,
+    const char* host,
+    const char* current_nickname,
+    uint16_t port
+) {
+    SOCKET sock = get_or_create_punch_socket(self->local_port);
+    if (sock != INVALID_SOCKET) {
+        int success = sendto(sock, current_nickname, current_nickname_length, 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
+        log_printf("Sending nick (%zu):%s\n", current_nickname_length, current_nickname);
+        if (success == SOCKET_ERROR) {
+            log_printf("FAILED nick:%u\n", WSAGetLastError());
+        }
+    }
+    int ret = based_pointer<lobby_send_string_t>(lobby_base_address, 0x20820)(
+        self,
+        thisfastcall_edx(0,)
+        str
+    );
+
+    if (sock != INVALID_SOCKET) {
+        sockaddr_storage client_addr;
+        client_addr.ss_family = AF_INET;
+        ((sockaddr_in*)&client_addr)->sin_port = __builtin_bswap16(port);
+        inet_pton(AF_INET, host, &((sockaddr_in*)&client_addr)->sin_addr);
+        for (size_t i = 0; i < 30; ++i) {
+            sendto(sock, DUMMY_SEND, sizeof(DUMMY_SEND), 0, (const sockaddr*)&client_addr, sizeof(sockaddr));
+        }
+    }
+    return ret;
+}
+
+static constexpr uint8_t lobby_send_welcome_patchA[] = {
+    0x56,                                       // PUSH ESI
+    0x57,                                       // PUSH EDI
+    0x8B, 0xB5, 0xCC, 0xF6, 0xFF, 0xFF,         // MOV ESI, DWORD PTR [EBP-934]
+    0xFF, 0x75, 0x08,                           // PUSH DWORD PTR [EBP+8]
+    0x8D, 0x8E, 0x24, 0x04, 0x00, 0x00,         // LEA ECX, [ESI+424]
+    0xE8, 0xFD, 0x2B, 0x00, 0x00,               // CALL std::string::operator=(const char*)
+    0x6A, 0x02,                                 // PUSH 2
+    0x8D, 0x8D, 0xC0, 0xF6, 0xFF, 0xFF,         // LEA ECX, [EBP-940]
+    0xE8, 0x10, 0x25, 0x00, 0x00,               // CALL std::vector<std::string>::operator[]
+    0x89, 0xC7,                                 // MOV EDI, EAX
+    0x50,                                       // PUSH EAX
+    0x8D, 0x8E, 0xE0, 0x03, 0x00, 0x00,         // LEA ECX, [ESI+3E0]
+    0xE8, 0x02, 0x2C, 0x00, 0x00,               // CALL std::string::operator=(const std::string&)
+    0x89, 0xF9,                                 // MOV ECX, EDI
+    0xE8, 0xDB, 0x2A, 0x00, 0x00,               // CALL std::string::c_str
+    0x50,                                       // PUSH EAX
+    0xE8, 0xC8, 0x7B, 0x03, 0x00,               // CALL _atoi
+    0x59,                                       // POP ECX
+    0x89, 0xC7,                                 // MOV EDI, EAX
+    0x8D, 0x8E, 0xB0, 0x03, 0x00, 0x00,         // LEA ECX, [ESI+3B0]
+    0xE8, 0xC7, 0x2A, 0x00, 0x00,               // CALL std::string::c_str
+    0x50,                                       // PUSH EAX
+    0xFF, 0xB6, 0xF8, 0x03, 0x00, 0x00,         // PUSH DWORD PTR [ESI+3F8]
+    0xFF, 0x75, 0x08,                           // PUSH DWORD PTR [EBP+8]
+    0x8D, 0x8E, 0x38, 0x03, 0x00, 0x00,         // LEA ECX, [ESI+338]
+    0xE8, 0xB2, 0x2A, 0x00, 0x00,               // CALL std::string::c_str
+    0x50,                                       // PUSH EAX
+    0x68                                        // PUSH imm32
+};
+
+static constexpr uint8_t lobby_send_welcome_patchB[] = {
+    0x8D, 0x8D, 0xF0, 0xF7, 0xFF, 0xFF,         // LEA ECX, [EBP-810]
+    0x51,                                       // PUSH ECX
+    0xE8, 0x50, 0x8E, 0xFF, 0xFF,               // CALL _sprintf
+    0x83, 0xC4, 0x18,                           // ADD ESP, 18
+    0x57,                                       // PUSH EDI
+    0x8D, 0xBE, 0x08, 0x03, 0x00, 0x00,         // LEA EDI, [ESI+308]
+    0x89, 0xF9,                                 // MOV ECX, EDI
+    0xE8, 0x8F, 0x2A, 0x00, 0x00,               // CALL std::string::c_str
+    0x50,                                       // PUSH EAX
+    0xFF, 0x75, 0x0C,                           // PUSH DWORD PTR [EBP+C]
+    0x8D, 0x95, 0xF0, 0xF7, 0xFF, 0xFF,         // LEA EDX, [EBP-810]
+    0x52,                                       // PUSH EDX
+    0x89, 0xF9,                                 // MOV ECX, EDI
+    0xE8, 0x5D, 0x2A, 0x00, 0x00,               // CALL std::string::length
+    0x89, 0xC2,                                 // MOV EDX, EAX
+    0x89, 0xF1,                                 // MOV ECX, ESI
+    0xE8                                        // CALL rel32
+};
+
+static constexpr uint8_t lobby_send_welcome_patchC[] = {
+    0x8B, 0x8D, 0xB8, 0xF6, 0xFF, 0xFF,         // MOV ECX, DWORD PTR [EBP-948]
+    0x89, 0x8E, 0x18, 0x04, 0x00, 0x00,         // MOV DWORD PTR [ESI+418], ECX
+    0xC6, 0x86, 0x20, 0x04, 0x00, 0x00, 0x01,   // MOV BYTE PTR [ESI+420], 1
+    0x5F,                                       // POP EDI
+    0x5E,                                       // POP ESI
+    BASE_NOP(28)
+};
 
 typedef int WSAAPI lobby_recv_hook_t(SOCKET s, char* buf, int len, int flags);
 
@@ -400,8 +506,12 @@ int WSAAPI lobby_socket_close_hook(SOCKET s) {
         ) {
             log_printf("Closing the punch socket. Bad? B\n");
             closesocket(sock);
-            memset(SENDTO_STR, 0, sizeof(SENDTO_STR));
-            memset(RECVFROM_STR, 0, sizeof(RECVFROM_STR));
+            //memset(SENDTO_STR, 0, sizeof(SENDTO_STR));
+            //memset(RECVFROM_STR, 0, sizeof(RECVFROM_STR));
+            SENDTO_ADDR = {};
+            RECVFROM_ADDR = {};
+            SENDTO_ADDR_LEN = 0;
+            RECVFROM_ADDR_LEN = 0;
         }
         punch_socket_is_loaned = false;
         punch_socket_is_inherited = false;
@@ -426,15 +536,27 @@ int WSAAPI WSASendTo_log(
     LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
 ) {
     if (lpTo->sa_family == AF_INET) {
-        char ip_buffer[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &((sockaddr_in*)lpTo)->sin_addr, ip_buffer, countof(ip_buffer));
-        uint16_t port = __builtin_bswap16(((sockaddr_in*)lpTo)->sin_port);
 
+        /*
         char sendto_buff[countof(SENDTO_STR)];
         snprintf(sendto_buff, countof(sendto_buff), "SENDTO: %s:%u\n", ip_buffer, port);
         if (strcmp(sendto_buff, SENDTO_STR)) {
             memcpy(SENDTO_STR, sendto_buff, sizeof(SENDTO_STR));
             log_printf("%s", SENDTO_STR);
+        }
+        */
+
+        if (
+            iTolen != SENDTO_ADDR_LEN ||
+            memcmp(lpTo, &SENDTO_ADDR, iTolen)
+        ) {
+            SENDTO_ADDR_LEN = iTolen;
+            memcpy(&SENDTO_ADDR, lpTo, iTolen);
+
+            char ip_buffer[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &((sockaddr_in*)lpTo)->sin_addr, ip_buffer, countof(ip_buffer));
+            uint16_t port = __builtin_bswap16(((sockaddr_in*)lpTo)->sin_port);
+            log_printf("SENDTO: %s:%u\n", ip_buffer, port);
         }
 
         //log_printf("SENDTO: %s:%u\n", ip_buffer, port);
@@ -463,15 +585,29 @@ int WSAAPI WSARecvFrom_log(
     int ret = WSARecvFrom(s, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromlen, lpOverlapped, lpCompletionRoutine);
     if (ret != SOCKET_ERROR) {
         if (lpFrom->sa_family == AF_INET) {
-            char ip_buffer[INET_ADDRSTRLEN];
-            inet_ntop(AF_INET, &((sockaddr_in*)lpFrom)->sin_addr, ip_buffer, countof(ip_buffer));
-            uint16_t port = __builtin_bswap16(((sockaddr_in*)lpFrom)->sin_port);
             
+            /*
             char recvfrom_buff[countof(RECVFROM_STR)];
             snprintf(recvfrom_buff, countof(recvfrom_buff), "RECVFROM: %s:%u\n", ip_buffer, port);
             if (strcmp(recvfrom_buff, RECVFROM_STR)) {
                 memcpy(RECVFROM_STR, recvfrom_buff, sizeof(RECVFROM_STR));
                 log_printf("%s", RECVFROM_STR);
+            }
+            */
+
+            int from_length = *lpFromlen;
+
+            if (
+                from_length != RECVFROM_ADDR_LEN ||
+                memcmp(lpFrom, &RECVFROM_ADDR, from_length)
+            ) {
+                RECVFROM_ADDR_LEN = from_length;
+                memcpy(&RECVFROM_ADDR, lpFrom, from_length);
+
+                char ip_buffer[INET_ADDRSTRLEN];
+                inet_ntop(AF_INET, &((sockaddr_in*)lpFrom)->sin_addr, ip_buffer, countof(ip_buffer));
+                uint16_t port = __builtin_bswap16(((sockaddr_in*)lpFrom)->sin_port);
+                log_printf("RECVFROM: %s:%u\n", ip_buffer, port);
             }
             
             //log_printf("RECVFROM: %s:%u\n", ip_buffer, port);
@@ -519,6 +655,14 @@ void patch_se_lobby(void* base_address) {
 
     hotpatch_rel32(based_pointer(base_address, 0x6902), lobby_send_string_udp_send_hook_REQUEST);
     hotpatch_rel32(based_pointer(base_address, 0x84E6), lobby_send_string_udp_send_hook_WELCOME);
+
+    /*
+    mem_write(based_pointer(base_address, 0x846D), lobby_send_welcome_patchA);
+    mem_write(based_pointer(base_address, 0x84D0), based_pointer(base_address, 0x182A98));
+    mem_write(based_pointer(base_address, 0x84D4), lobby_send_welcome_patchB);
+    hotpatch_rel32(based_pointer(base_address, 0x8508), lobby_send_string_udp_send_hook_WELCOME2);
+    mem_write(based_pointer(base_address, 0x850C), lobby_send_welcome_patchC);
+    */
 
     hotpatch_icall(based_pointer(base_address, 0x2070B), lobby_recv_hook);
 

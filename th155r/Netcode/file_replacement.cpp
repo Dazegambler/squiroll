@@ -75,7 +75,7 @@ static constexpr uint8_t gauge_vs_nut[] = {
 static std::unordered_map<std::string_view, ReplacementData> replacements = {
 	{ "data/system/network/network.nut"sv, network_nut },
 	{ "data/script/version.nut"sv, version_nut },
-	{ "data/script/gauge_vs.nut"sv, gauge_vs_nut },
+	{ "data/actor/status/gauge_vs.nut"sv, gauge_vs_nut },
 };
 
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP

@@ -78,15 +78,6 @@ function Initialize()
 	this.fps.y = 1;
 	this.fps.ConnectRenderSlot(::graphics.slot.status, 1000);
 	this.fps.visible = ::config.graphics.fps;
-
-	this.ping <- ::manbow.Number();
-	this.ping.Initialize(this.texture, 0, 575, 16, 18, 2, -5, true);
-	this.ping.SetValue(0);
-	this.ping.x = 640;
-	this.ping.y = 5;
-	this.ping.ConnectRenderSlot(::graphics.slot.status, 1000);
-	this.ping.visible = true;
-
 	local bottom = [
 		this.CreateStaticParts(10, this.mat_left_bottom),
 		this.CreateStaticParts(11, this.mat_right_bottom)
@@ -183,10 +174,6 @@ function Update()
 	}
 
 	this.fps.visible = ::config.graphics.fps;
-
-	if (::network.inst){
-		this.ping.SetValue(::network.GetDelay());
-	}
 
 	if (::config.graphics.fps)
 	{

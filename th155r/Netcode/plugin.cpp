@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "kite_api.h"
+#include "PatchUtils.h"
 
 #include "util.h"
 #include "log.h"
@@ -102,6 +103,40 @@ public:
 
 HSQUIRRELVM v;
 
+#define sq_setprintfunc_call_addr (0x024769_R)
+#define Sq_setcompilererrorhandler_call_addr (0x024757_R)
+
+
+void sq_print(HSQUIRRELVM v, const SQChar* s, ...) {
+    va_list args;
+    va_start(args, s);
+    log_printf(s, args);
+    va_end(args);
+}
+
+void sq_printerr(HSQUIRRELVM v, const SQChar* s, ...) {
+    va_list args;
+    va_start(args, s);
+    log_fprintf(stderr,s,args);
+    va_end(args);
+}
+
+void sq_CompilerErrorHandler(HSQUIRRELVM v, const SQChar* desc, const SQChar* source, SQInteger line, SQInteger column) {
+    //FILE* out = fopen("compile_error.txt","a");
+    log_printf( "Compilation Error in %s at line %d, column %d: %s\n", source, (int)line, (int)column, desc);
+    //fclose(out);
+}
+
+void my_sq_setprintfunc(HSQUIRRELVM v, SQPRINTFUNCTION printfunc,SQPRINTFUNCTION errfunc)
+{
+    sq_setprintfunc(v,sq_print,sq_printerr);
+}
+
+void my_sq_setcompilererrorhandler(HSQUIRRELVM v,SQCOMPILERERROR f)
+{
+    sq_setcompilererrorhandler(v,sq_CompilerErrorHandler);
+}
+
 extern "C" {
     dll_export int stdcall init_instance_v2(HostEnvironment* environment) {
         if (
@@ -109,6 +144,9 @@ extern "C" {
             environment->get_squirrel_vm(v) &&
             environment->get_kite_api(KITE)
         ) {
+            
+            hotpatch_rel32(sq_setprintfunc_call_addr,my_sq_setprintfunc);
+            hotpatch_rel32(Sq_setcompilererrorhandler_call_addr,my_sq_setcompilererrorhandler);
             // put any important initialization stuff here,
             // like adding squirrel globals/funcs/etc.
             sq_pushroottable(v);

@@ -122,6 +122,8 @@ void sq_printerr(HSQUIRRELVM v, const SQChar* s, ...) {
 }
 
 void sq_CompilerErrorHandler(HSQUIRRELVM v, const SQChar* desc, const SQChar* source, SQInteger line, SQInteger column) {
+    HANDLE h = GetCurrentThread();
+    SuspendThread(h);
     //FILE* out = fopen("compile_error.txt","a");
     log_printf( "Compilation Error in %s at line %d, column %d: %s\n", source, (int)line, (int)column, desc);
     //fclose(out);
@@ -135,6 +137,10 @@ void my_sq_setprintfunc(HSQUIRRELVM v, SQPRINTFUNCTION printfunc,SQPRINTFUNCTION
 void my_sq_setcompilererrorhandler(HSQUIRRELVM v,SQCOMPILERERROR f)
 {
     sq_setcompilererrorhandler(v,sq_CompilerErrorHandler);
+}
+
+SQInteger patch_test(HSQUIRRELVM v){
+    return 0;
 }
 
 extern "C" {
@@ -160,6 +166,7 @@ extern "C" {
             sq_pushbool(v, resyncing);
             sq_newslot(v, -3, SQFalse);
 
+
             //function setup
             // sq_pushstring(v, _SC("example_function"), -1);
             // sq_newclosure(v, example_function, 0);
@@ -167,6 +174,7 @@ extern "C" {
 
             //adding the rollback table to global scope
             sq_newslot(v, -3, SQFalse);
+
             sq_pop(v, 1);
             return 1;
         }
@@ -197,7 +205,7 @@ extern "C" {
             //pop the network table
             sq_pop(v,1);
         }
-
+        
         //pop the roottable
         sq_pop(v,1);        
         return 1;

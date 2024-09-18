@@ -33,7 +33,7 @@ function Initialize()
 			icon.ConnectRenderSlot(::graphics.slot.status, 3000);
 			this.AddParts(icon, i == 0 ? this.mat_left_top : this.mat_right_top);
 			local name = ::font.CreateSystemString(::network.player_name[i]);
-			name.sx = name.sy = 2,00000000.0 / 3,00000000.0;
+			name.sx = name.sy = 2.00000000 / 3.00000000;
 			name.x = i == 0 ? icon.x + 32 : icon.x - name.width * name.sx;
 			name.y = icon.y + 2;
 			name.ConnectRenderSlot(::graphics.slot.status, 4000);
@@ -80,6 +80,16 @@ function Initialize()
 	this.fps.y = 1;
 	this.fps.ConnectRenderSlot(::graphics.slot.status, 1000);
 	this.fps.visible = ::config.graphics.fps;
+
+	this.ping = ::manbow.Number();
+	this.ping.Initialize(this.texture, 0, 575, 16, 18, 2, -5, true);
+	this.ping.SetValue(9999);
+	this.ping.x = 640;
+	this.ping.y = 4;
+	this.ping.ConnectRenderSlot(::graphics.slot.status, 1000);
+	this.ping.visible = true;
+
+	
 	local bottom = [
 		this.CreateStaticParts(10, this.mat_left_bottom),
 		this.CreateStaticParts(11, this.mat_right_bottom)
@@ -93,7 +103,7 @@ function Initialize()
 	{
 		local t = ::battle.team[i];
 		local offset = i * 10;
-		local dir = i == 0 ? 1,00000000.0 : -1,00000000.0;
+		local dir = i == 0 ? 1.00000000 : -1.00000000;
 		local mat_top = i == 0 ? this.mat_left_top : this.mat_right_top;
 		local mat_bottom = i == 0 ? this.mat_left_bottom : this.mat_right_bottom;
 		local mat = ::manbow.Matrix();
@@ -163,7 +173,7 @@ function Initialize()
 
 function Update()
 {
-	this.alpha -= 0,05000000.0;
+	this.alpha -= 0.05000000;
 
 	if (this.alpha < -1)
 	{
@@ -176,6 +186,9 @@ function Update()
 	}
 
 	this.fps.visible = ::config.graphics.fps;
+
+	if (::network.IsActive()){
+	}
 
 	if (::config.graphics.fps)
 	{

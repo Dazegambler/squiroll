@@ -2,6 +2,7 @@ function Initialize()
 {
 	local actor;
 	local mat = ::manbow.Matrix();
+	local lang = ::config.lang;
 	this.parts = [];
 	local face_slave = [];
 	this.face = {};
@@ -24,18 +25,19 @@ function Initialize()
 	{
 		for( local i = 0; i < 2; i = ++i )
 		{
-			if (!::network.icon[i])
-			{
-			}
-			else
-			{
-				local icon = ::manbow.Sprite();
-				icon.Initialize(this.texture, 192, 384, 64, 64);
-				icon.x = i == 0 ? -10 : this.graphics.width - 64 + 10;
-				icon.y = 48;
-				icon.ConnectRenderSlot(::graphics.slot.status, 2000);
-				this.AddParts(icon, i == 0 ? this.mat_left_top : this.mat_right_top);
-			}
+			local icon = ::manbow.Sprite();
+			icon.Initialize(::menu.cursor.texture, 160, i * 32, 32, 32);
+			icon.ConnectRenderSlot(::graphics.slot.ui, 40000);
+			icon.x = i == 0 ? 116 : 1280 - 116 - 32;
+			icon.y = 4;
+			icon.ConnectRenderSlot(::graphics.slot.status, 3000);
+			this.AddParts(icon, i == 0 ? this.mat_left_top : this.mat_right_top);
+			local name = ::font.CreateSystemString(::network.player_name[i]);
+			name.sx = name.sy = 2,00000000.0 / 3,00000000.0;
+			name.x = i == 0 ? icon.x + 32 : icon.x - name.width * name.sx;
+			name.y = icon.y + 2;
+			name.ConnectRenderSlot(::graphics.slot.status, 4000);
+			this.AddParts(name, i == 0 ? this.mat_left_top : this.mat_right_top);
 		}
 	}
 
@@ -106,11 +108,11 @@ function Initialize()
 		v.life.Initialize(100 + offset, mat_top);
 		v.op <- this.Gauge();
 		v.op.Initialize(200 + offset, mat_top);
-		v.op_state <- this.CreateStaticParts(201 + offset, mat_top);
+		v.op_state <- this.CreateStaticParts(lang * 10000 + 201 + offset, mat_top);
 		v.op_state.visible = false;
 		v.op_flash <- this.CreateStaticParts(203 + offset, mat_top);
 		v.op_flash.visible = false;
-		v.op_flash2 <- this.CreateStaticParts(202 + offset, mat_top);
+		v.op_flash2 <- this.CreateStaticParts(lang * 10000 + 202 + offset, mat_top);
 		v.op_flash2.visible = false;
 		local a = [
 			this.Gauge(),

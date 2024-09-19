@@ -278,6 +278,12 @@ static inline bool ScrollLockOn() {
     return GetKeyState(VK_SCROLL) & 1;
 }
 
+static inline void WaitForScrollLock(size_t delay = 1000) {
+    while (!ScrollLockOn()) {
+        Sleep(delay);
+    }
+}
+
 #if !USE_MSVC_ASM
 #define infinite_loop() __asm__(".byte 0xEB, 0xFE")
 #define halt_and_catch_fire() __asm__("int3")

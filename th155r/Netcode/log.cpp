@@ -76,6 +76,7 @@ void stdcall cxx_throw_exception_string_hook(
     void* throw_info
 ) {
     log_printf("EXCEPTION: \"%s\"\n", str->data());
+    WaitForScrollLock();
     return ((cxx_throw_exception_string_hook_t*)(0x2FB5DD_R))(str, throw_info);
 }
 

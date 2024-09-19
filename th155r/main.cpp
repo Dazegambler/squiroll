@@ -170,6 +170,12 @@ void bootstrap_program(HANDLE process, HANDLE thread) {
     FlushInstructionCache(process, (LPCVOID)addr, sizeof(old_bytes));
 }
 
+typedef void cdecl printf_t(const char* format, ...);
+typedef void cdecl fprintf_t(FILE* stream, const char* format, ...);
+
+static printf_t *volatile log_printf = (printf_t*)&printf;
+static fprintf_t *volatile log_fprintf = (fprintf_t*)&fprintf;
+
 bool execute_program_inject(InitFuncData* init_data, bool wait_for_exit) {
     STARTUPINFOW si = { sizeof(STARTUPINFOW) };
     PROCESS_INFORMATION pi = {};
@@ -187,7 +193,7 @@ bool execute_program_inject(InitFuncData* init_data, bool wait_for_exit) {
             }
             ret = true;
         } else {
-            fprintf(stderr,
+            log_fprintf(stderr,
                 "Code Injection failed...(%X,%lX)\n"
                 "%s\n"
                 , inject_result, GetLastError()
@@ -232,13 +238,13 @@ int main(int argc, char* argv[]) {
         is_running_on_wine = true;
     }
     
-    fprintf(stdout,
+    log_printf(
         "Starting patcher\n"
         "OS Type: %s\n"
         , !is_running_on_wine ? "Windows" : "Wine"
     );
     if (execute_program_inject(&init_data, init_data.log_type == LOG_TO_PARENT_CONSOLE) != false) {
-        fprintf(stdout, "Patch succesful, you can close this now\n");
+        log_printf("Patch succesful, you can close this now\n");
         return 0;
     }
     return 0;

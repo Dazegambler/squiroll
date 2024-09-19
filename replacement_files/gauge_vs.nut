@@ -81,15 +81,19 @@ function Initialize()
 	this.fps.ConnectRenderSlot(::graphics.slot.status, 1000);
 	this.fps.visible = ::config.graphics.fps;
 
-	this.ping = ::manbow.Number();
-	this.ping.Initialize(this.texture, 0, 575, 16, 18, 2, -5, true);
-	this.ping.SetValue(9999);
-	this.ping.x = 640;
-	this.ping.y = 4;
-	this.ping.ConnectRenderSlot(::graphics.slot.status, 1000);
-	this.ping.visible = true;
+	this.ping <- null;
+	this.ping = ::font.CreateSystemString("placeholder");
+	this.ping.sx = this.ping.sy = 2.00000000 / 3.00000000;
+	this.ping.x = (::graphics.width / 2) - (this.ping.width / 2);
+	this.ping.y = 5;
+	this.ping.Update <- function (){
+		this.Set("ping:" + ::network.GetDelay());
+		this.x = (::graphics.width / 2) - (this.width / 2);
+		this.y = 5;
+	};
+	this.ping.ConnectRenderSlot(::graphics.slot.status, 60000);
+	this.AddParts(this.ping,this.mat_center);
 
-	
 	local bottom = [
 		this.CreateStaticParts(10, this.mat_left_bottom),
 		this.CreateStaticParts(11, this.mat_right_bottom)
@@ -187,7 +191,8 @@ function Update()
 
 	this.fps.visible = ::config.graphics.fps;
 
-	if (::network.IsActive()){
+	if (::network.inst){
+		
 	}
 
 	if (::config.graphics.fps)

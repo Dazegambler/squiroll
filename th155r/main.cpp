@@ -10,11 +10,8 @@
 typedef int cdecl printf_t(const char* format, ...);
 typedef int cdecl fprintf_t(FILE* stream, const char* format, ...);
 
-//static printf_t *const volatile log_printf = (printf_t*)&printf;
-//static fprintf_t *const volatile log_fprintf = (fprintf_t*)&fprintf;
-
-#define log_printf(...) (((printf_t*)&printf)(__VA_ARGS__))
-#define log_fprintf(...) (((fprintf_t*)&fprintf)(__VA_ARGS__))
+static printf_t *const volatile log_printf = (printf_t*)&printf;
+static fprintf_t *const volatile log_fprintf = (fprintf_t*)&fprintf;
 
 //Code provided by zero318
 static uint8_t inject_func[] = {

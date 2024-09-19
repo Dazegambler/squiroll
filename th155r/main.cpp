@@ -7,6 +7,15 @@
 
 #include <shared.h>
 
+typedef int cdecl printf_t(const char* format, ...);
+typedef int cdecl fprintf_t(FILE* stream, const char* format, ...);
+
+//static printf_t *const volatile log_printf = (printf_t*)&printf;
+//static fprintf_t *const volatile log_fprintf = (fprintf_t*)&fprintf;
+
+#define log_printf(...) (((printf_t*)&printf)(__VA_ARGS__))
+#define log_fprintf(...) (((fprintf_t*)&fprintf)(__VA_ARGS__))
+
 //Code provided by zero318
 static uint8_t inject_func[] = {
     0x53,             //   PUSH EBX
@@ -141,14 +150,17 @@ void bootstrap_program(HANDLE process, HANDLE thread) {
         addr = context.Eax;
     } else {
         LDT_ENTRY entry;
-        GetThreadSelectorEntry(thread, context.SegFs, &entry);
-        addr = entry.BaseLow | entry.HighWord.Bits.BaseMid << 16 | entry.HighWord.Bits.BaseHi << 24;
-        ReadProcessMemory(process, (LPCVOID)(addr + 0x30), &addr, sizeof(uintptr_t), NULL);
-        ReadProcessMemory(process, (LPCVOID)(addr + 0x8), &addr, sizeof(uintptr_t), NULL);
-        DWORD offset;
-        ReadProcessMemory(process, (LPCVOID)(addr + 0x3C), &offset, sizeof(DWORD), NULL);
-        ReadProcessMemory(process, (LPCVOID)(addr + offset + 0x28), &offset, sizeof(DWORD), NULL);
-        addr += offset;
+        if (GetThreadSelectorEntry(thread, context.SegFs, &entry)) {
+            addr = entry.BaseLow | entry.HighWord.Bits.BaseMid << 16 | entry.HighWord.Bits.BaseHi << 24;
+            ReadProcessMemory(process, (LPCVOID)(addr + 0x30), &addr, sizeof(uintptr_t), NULL);
+            ReadProcessMemory(process, (LPCVOID)(addr + 0x8), &addr, sizeof(uintptr_t), NULL);
+            DWORD offset;
+            ReadProcessMemory(process, (LPCVOID)(addr + 0x3C), &offset, sizeof(DWORD), NULL);
+            ReadProcessMemory(process, (LPCVOID)(addr + offset + 0x28), &offset, sizeof(DWORD), NULL);
+            addr += offset;
+        } else {
+            log_printf("GetThreadSelectorEntry failed\n");
+        }
     }
     DWORD protection;
     VirtualProtectEx(process, (LPVOID)addr, sizeof(infinite_loop), PAGE_EXECUTE_READWRITE, &protection);
@@ -169,12 +181,6 @@ void bootstrap_program(HANDLE process, HANDLE thread) {
     VirtualProtectEx(process, (LPVOID)addr, sizeof(old_bytes), protection, &protection);
     FlushInstructionCache(process, (LPCVOID)addr, sizeof(old_bytes));
 }
-
-typedef void cdecl printf_t(const char* format, ...);
-typedef void cdecl fprintf_t(FILE* stream, const char* format, ...);
-
-static printf_t *volatile log_printf = (printf_t*)&printf;
-static fprintf_t *volatile log_fprintf = (fprintf_t*)&fprintf;
 
 bool execute_program_inject(InitFuncData* init_data, bool wait_for_exit) {
     STARTUPINFOW si = { sizeof(STARTUPINFOW) };

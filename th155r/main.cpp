@@ -5,11 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#ifndef NDEBUG
-#define ENABLE_DEBUG_LOGGING 1
-#else
-#define ENABLE_DEBUG_LOGGING 0
-#endif
+#include <shared.h>
 
 //Code provided by zero318
 static uint8_t inject_func[] = {
@@ -55,14 +51,15 @@ static uint8_t inject_func[] = {
     0xCC
 };
 
-const size_t inject_func_length = sizeof(inject_func);
-const size_t dll_name = 6;
-const size_t load_library = 11;
-const size_t init_func_name = 22;
-const size_t get_proc_address = 28;
-const size_t init_func_param = 37;
-const size_t free_library = 56;
-const size_t exit_thread = 62;
+static constexpr size_t inject_func_length = sizeof(inject_func);
+static constexpr size_t init_data_length = inject_func_length + sizeof(InitFuncData);
+static constexpr size_t dll_name = 6;
+static constexpr size_t load_library = 11;
+static constexpr size_t init_func_name = 22;
+static constexpr size_t get_proc_address = 28;
+static constexpr size_t init_func_param = 37;
+static constexpr size_t free_library = 56;
+static constexpr size_t exit_thread = 62;
 
 typedef enum {
     INJECT_INIT_FALSE = -1, // Initialization function did not succeed
@@ -89,29 +86,30 @@ static inline const char* get_inject_func_message(InjectReturnCode code) {
 
 static bool is_running_on_wine = false;
 
-InjectReturnCode inject(HANDLE process, const wchar_t* dll_str, const char* init_func, int32_t param) {
+InjectReturnCode inject(HANDLE process, const wchar_t* dll_str, const char* init_func, InitFuncData* init_data) {
     size_t dll_name_bytes = (wcslen(dll_str) + 1) * sizeof(wchar_t);
     size_t init_func_bytes = strlen(init_func) + 1;
 
-    uint8_t* inject_buffer = (uint8_t*)VirtualAllocEx(process, NULL, inject_func_length + dll_name_bytes + init_func_bytes, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    uint8_t* inject_buffer = (uint8_t*)VirtualAllocEx(process, NULL, init_data_length + dll_name_bytes + init_func_bytes, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
     if (!inject_buffer) {
         return INJECT_ALLOC_FAIL;
     }
 
     // Don't question this part
-    *(uint8_t**)&inject_func[dll_name] = &inject_buffer[inject_func_length];
+    *(uint8_t**)&inject_func[dll_name] = &inject_buffer[init_data_length];
     *(int32_t*)&inject_func[load_library] = (uint8_t*)&LoadLibraryExW - &inject_buffer[load_library + sizeof(int32_t)];
-    *(uint8_t**)&inject_func[init_func_name] = &inject_buffer[inject_func_length + dll_name_bytes];
+    *(uint8_t**)&inject_func[init_func_name] = &inject_buffer[init_data_length + dll_name_bytes];
     *(int32_t*)&inject_func[get_proc_address] = (uint8_t*)&GetProcAddress - &inject_buffer[get_proc_address + sizeof(int32_t)];
-    *(int32_t*)&inject_func[init_func_param] = param;
+    *(uint8_t**)&inject_func[init_func_param] = &inject_buffer[inject_func_length];
     *(int32_t*)&inject_func[free_library] = (uint8_t*)&FreeLibrary - &inject_buffer[free_library + sizeof(int32_t)];
     *(int32_t*)&inject_func[exit_thread] = (uint8_t*)&ExitThread - &inject_buffer[exit_thread + sizeof(int32_t)];
 
     DWORD exit_code = INJECT_ALLOC_FAIL;
     if (
         WriteProcessMemory(process, inject_buffer, inject_func, inject_func_length, NULL) &&
-        WriteProcessMemory(process, inject_buffer + inject_func_length, dll_str, dll_name_bytes, NULL) &&
-        WriteProcessMemory(process, inject_buffer + inject_func_length + dll_name_bytes, init_func, init_func_bytes, NULL) &&
+        (sizeof(InitFuncData) ? WriteProcessMemory(process, inject_buffer + inject_func_length, init_data, sizeof(InitFuncData), NULL) : true) &&
+        WriteProcessMemory(process, inject_buffer + init_data_length, dll_str, dll_name_bytes, NULL) &&
+        WriteProcessMemory(process, inject_buffer + init_data_length + dll_name_bytes, init_func, init_func_bytes, NULL) &&
         FlushInstructionCache(process, inject_buffer, inject_func_length)
     ) {
         exit_code = INJECT_THREAD_FAIL;
@@ -120,8 +118,6 @@ InjectReturnCode inject(HANDLE process, const wchar_t* dll_str, const char* init
             WaitForSingleObject(thread, INFINITE);
             GetExitCodeThread(thread, &exit_code);
             CloseHandle(thread);
-        } else {
-            fprintf(stdout,"Thread creation failed\n");
         }
     }
 
@@ -174,25 +170,29 @@ void bootstrap_program(HANDLE process, HANDLE thread) {
     FlushInstructionCache(process, (LPCVOID)addr, sizeof(old_bytes));
 }
 
-bool execute_program_inject()
-{
+bool execute_program_inject(InitFuncData* init_data, bool wait_for_exit) {
     STARTUPINFOW si = { sizeof(STARTUPINFOW) };
     PROCESS_INFORMATION pi = {};
     
     bool ret = false;
     if (CreateProcessW(L"th155.exe", NULL, NULL, NULL, TRUE, CREATE_SUSPENDED, NULL, NULL, &si, &pi)) {
         
-        //anti_tamper_disable(pi.hProcess);
         bootstrap_program(pi.hProcess, pi.hThread);
-
         
-		InjectReturnCode inject_result = inject(pi.hProcess, L"Netcode.dll", "netcode_init", 0);
+		InjectReturnCode inject_result = inject(pi.hProcess, L"Netcode.dll", "netcode_init", init_data);
         if (inject_result == INJECT_SUCCESS) {
             ResumeThread(pi.hThread);
+            if (wait_for_exit) {
+                WaitForSingleObject(pi.hProcess, INFINITE);
+            }
             ret = true;
         } else {
-            fprintf(stderr,"Code Injection failed...(%X,%lX)\n", inject_result, GetLastError());
-            fprintf(stderr,"%s\n", get_inject_func_message(inject_result));
+            fprintf(stderr,
+                "Code Injection failed...(%X,%lX)\n"
+                "%s\n"
+                , inject_result, GetLastError()
+                , get_inject_func_message(inject_result)
+            );
         }
         CloseHandle(pi.hThread);
         CloseHandle(pi.hProcess);
@@ -200,26 +200,45 @@ bool execute_program_inject()
     return ret;
 }
 
-void Debug(){
-    AllocConsole();
-    freopen("CONIN$","r",stdin);
-    freopen("CONOUT$","w",stdout);
-    freopen("CONOUT$","w",stderr);
-    SetConsoleTitleW(L"th155r output");
-}
+int main(int argc, char* argv[]) {
 
-int main(int argc, char* argv[])
-{    
-    //Debug();
+    InitFuncData init_data;
+    init_data.log_type = LOG_TO_PARENT_CONSOLE;
+
+    if (argc > 1) {
+        char* arg = argv[1];
+        char* arg_end = arg;
+        unsigned long value = strtoul(arg, &arg_end, 10);
+        if (arg_end != arg) {
+            switch (value) {
+                case 0l:
+                    init_data.log_type = NO_LOGGING;
+                    break;
+                case 1l:
+                    init_data.log_type = LOG_TO_SEPARATE_CONSOLES;
+                    break;
+                case 2l:
+                    init_data.log_type = LOG_TO_PARENT_CONSOLE;
+                    break;
+            }
+        }
+    }
+
+    if (init_data.log_type != NO_LOGGING) {
+        enable_debug_console(init_data.log_type == LOG_TO_PARENT_CONSOLE);
+    }
     
     if (GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "wine_get_version")) {
         is_running_on_wine = true;
     }
     
-    fprintf(stdout,"Starting patcher\n");
-    fprintf(stdout,"OS Type: %s\n", !is_running_on_wine ? "Windows" : "Wine");
-    if(execute_program_inject()!= false){
-        fprintf(stdout,"Patch succesful, you can close this now");
+    fprintf(stdout,
+        "Starting patcher\n"
+        "OS Type: %s\n"
+        , !is_running_on_wine ? "Windows" : "Wine"
+    );
+    if (execute_program_inject(&init_data, init_data.log_type == LOG_TO_PARENT_CONSOLE) != false) {
+        fprintf(stdout, "Patch succesful, you can close this now\n");
         return 0;
     }
     return 0;

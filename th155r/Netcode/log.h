@@ -20,4 +20,6 @@ extern fprintf_t* log_fprintf;
 #define debug_fprintf(...) (log_fprintf(__VA_ARGS__))
 #endif
 
+void patch_throw_logs();
+
 #endif

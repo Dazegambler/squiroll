@@ -286,4 +286,21 @@ static inline bool ScrollLockOn() {
 #define halt_and_catch_fire() __asm { __asm INT3 }
 #endif
 
+struct msvc_string {
+    union {
+        char short_buffer[16];
+        char* long_buffer;
+    };
+    size_t current_length;
+    size_t buffer_length;
+
+    inline char* thiscall data() {
+        return this->buffer_length < 16 ? this->short_buffer : this->long_buffer;
+    }
+
+    inline size_t thiscall length() const {
+        return this->current_length;
+    }
+};
+
 #endif

@@ -18,6 +18,8 @@
 #include "config.h"
 #include "lobby.h"
 
+#include <shared.h>
+
 using namespace std::literals::string_literals;
 using namespace std::literals::string_view_literals;
 
@@ -32,15 +34,6 @@ uintptr_t libact_base_address = 0;
 
 void Cleanup() {
     autopunch_cleanup();
-}
-
-void Debug() {
-    AllocConsole();
-    (void)freopen("CONIN$", "r", stdin);
-    (void)freopen("CONOUT$", "w+b", stdout);
-    setvbuf(stdout, NULL, _IONBF, 0);
-    (void)freopen("CONOUT$", "w", stderr);
-    SetConsoleTitleW(L"th155r debug");
 }
 
 struct ScriptAPI {
@@ -276,9 +269,12 @@ void patch_file_loading() {
 #endif
 // Initialization code shared by th155r and thcrap use
 // Executes before the start of the process
-void common_init() {
+void common_init(LogType log_type) {
 //#ifndef NDEBUG
-    Debug();
+    if (log_type != NO_LOGGING) {
+        enable_debug_console(log_type == LOG_TO_PARENT_CONSOLE);
+        patch_throw_logs();
+    }
 //#endif
     init_config_file();
 
@@ -306,12 +302,16 @@ void yes_tampering() {
     hotpatch_ret(0x132AF0_R, 0);
 }
 
+typedef BOOL cdecl globalconfig_get_boolean_t(const char* key, const BOOL default_value);
+
+static bool enable_thcrap_console = false;
+
 extern "C" {
     // FUNCTION REQUIRED FOR THE LIBRARY
     // th155r init function
-    dll_export int stdcall netcode_init(int32_t param) {
+    dll_export int stdcall netcode_init(InitFuncData* init_data) {
         yes_tampering();
-        common_init();
+        common_init(init_data->log_type);
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
         patch_file_loading();
 #endif
@@ -322,7 +322,7 @@ extern "C" {
     // Thcrap already removes the tamper protection,
     // so that code is unnecessary to include here.
     dll_export void cdecl netcode_mod_init(void* param) {
-        common_init();
+        common_init(enable_thcrap_console ? LOG_TO_PARENT_CONSOLE : NO_LOGGING);
     }
     
     // thcrap plugin init
@@ -337,6 +337,9 @@ extern "C" {
                     //if (patchhook_register_t* patchhook_register_func = (patchhook_register_t*)GetProcAddress(thcrap_handle, "patchhook_register")) {
                         //patchhook_register = patchhook_register_func;
                     //}
+                    if (globalconfig_get_boolean_t* globalconfig_get_boolean = (globalconfig_get_boolean_t*)GetProcAddress(thcrap_handle, "globalconfig_get_boolean")) {
+                        enable_thcrap_console = globalconfig_get_boolean("console", false);
+                    }
                     return 0;
                 }
             }

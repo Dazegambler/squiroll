@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <windows.h>
 #include "log.h"
+#include "util.h"
+#include "PatchUtils.h"
 
 typedef void cdecl vprintf_t(const char* format, va_list va);
 typedef void cdecl vfprintf_t(FILE* stream, const char* format, va_list va);
@@ -56,3 +58,30 @@ void cdecl fprintf_lookup(FILE* stream, const char* format, ...) {
 printf_t* log_printf = (printf_t*)&printf_lookup;
 fprintf_t* log_fprintf = (fprintf_t*)&fprintf_lookup;
 #endif
+
+#include <exception>
+
+static constexpr uintptr_t cxx_string_exception_throws[] = {
+    0xB910, 0xB977, 0x52993, 0x52A04, 0x83280, 0x832F3, 0x9CD3A, 0x9CEFA, 0x9D0A6,
+    0x9D141, 0xC194A, 0xC1B67, 0xE40B0, 0xE4124, 0xE4200, 0xE427E, 0x1233D6, 0x123495
+};
+
+typedef void stdcall cxx_throw_exception_string_hook_t(
+    msvc_string* str,
+    void* throw_info
+);
+
+void stdcall cxx_throw_exception_string_hook(
+    msvc_string* str,
+    void* throw_info
+) {
+    log_printf("EXCEPTION: \"%s\"\n", str->data());
+    return ((cxx_throw_exception_string_hook_t*)(0x2FB5DD_R))(str, throw_info);
+}
+
+void patch_throw_logs() {
+    uintptr_t base = base_address;
+    for (size_t i = 0; i < countof(cxx_string_exception_throws); ++i) {
+        hotpatch_rel32(based_pointer(base, cxx_string_exception_throws[i]), cxx_throw_exception_string_hook);
+    }
+}

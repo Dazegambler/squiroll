@@ -274,6 +274,13 @@ static inline unsigned int get_random(unsigned int max_value) {
     return (unsigned int)rand() % max_value;
 }
 
+static inline void SetScrollLockState(bool state) {
+    BYTE keys[256];
+    GetKeyboardState(keys);
+    keys[VK_SCROLL] = state;
+    SetKeyboardState(keys);
+}
+
 static inline bool ScrollLockOn() {
     return GetKeyState(VK_SCROLL) & 1;
 }

@@ -75,7 +75,12 @@ void stdcall cxx_throw_exception_string_hook(
     msvc_string* str,
     void* throw_info
 ) {
-    log_printf("EXCEPTION: \"%s\"\n", str->data());
+    log_printf(
+        "EXCEPTION: \"%s\"\n"
+        "Turn on ScrollLock to continue...\n"
+        , str->data()
+    );
+    SetScrollLockState(false);
     WaitForScrollLock();
     return ((cxx_throw_exception_string_hook_t*)(0x2FB5DD_R))(str, throw_info);
 }

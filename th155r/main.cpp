@@ -234,7 +234,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (init_data.log_type != NO_LOGGING) {
-        enable_debug_console(init_data.log_type == LOG_TO_PARENT_CONSOLE);
+        enable_debug_console(false);
     }
     
     if (GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "wine_get_version")) {

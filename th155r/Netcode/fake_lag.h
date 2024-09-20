@@ -86,7 +86,7 @@ static int WSAAPI WSASendTo_fake_lag(SOCKET s, LPWSABUF lpBuffers, DWORD dwBuffe
     args->lpOverlapped = lpOverlapped;
     args->lpCompletionRoutine = lpCompletionRoutine;
 
-    CreateThread(NULL, 0, [](void* thread_args) WINAPI -> DWORD {
+    CreateThread(NULL, 0, [](void* thread_args) -> DWORD {
 #if FAKE_PACKET_LOSS_PERCENTAGE || FAKE_SEND_JITTER_AMOUNT || FAKE_SPIKE_PERCENTAGE
         srand((unsigned int)time(NULL));
 #endif
@@ -98,9 +98,9 @@ static int WSAAPI WSASendTo_fake_lag(SOCKET s, LPWSABUF lpBuffers, DWORD dwBuffe
 #if FAKE_SEND_LAG_AMOUNT > 0 || FAKE_SEND_JITTER_AMOUNT || FAKE_SPIKE_PERCENTAGE
 
 #if FAKE_SEND_LAG_AMOUNT > 0
-            size_t lag_ms = 0;
-#else
             size_t lag_ms = FAKE_SEND_LAG_AMOUNT;
+#else
+            size_t lag_ms = 0;
 #endif
 
 #if FAKE_SEND_JITTER_AMOUNT

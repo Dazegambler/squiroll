@@ -205,6 +205,14 @@ extern "C" {
             //pop the network table
             sq_pop(v,1);
         }
+
+        sq_pushstring(v,_SC("rollback"),-1);
+        if (SQ_SUCCEEDED(sq_get(v,-2))){
+            sq_pushstring(v,_SC("resyncing"),-1);
+            sq_pushbool(v,resyncing);
+            sq_newslot(v,-3,SQFalse);
+            sq_pop(v,1);
+        }
         
         //pop the roottable
         sq_pop(v,1);        

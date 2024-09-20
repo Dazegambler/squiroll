@@ -86,7 +86,6 @@ function Initialize()
 	this.ping.sx = this.ping.sy = 1.0;
 	this.ping.x = (::graphics.width / 2) - (this.ping.width / 2);
 	this.ping.y = (::graphics.height - this.ping.height) - 15;
-	
 	this.ping.ConnectRenderSlot(::graphics.slot.status, 60000);
 	this.AddParts(this.ping,this.mat_center);
 
@@ -188,7 +187,11 @@ function Update()
 	this.fps.visible = ::config.graphics.fps;
 
 	if (::network.inst){
-		this.ping.Set("ping:" + ::network.GetDelay());
+		if (::rollback.resyncing){
+			this.ping.Set("ping:" + ::network.GetDelay() + "(resyncing)");
+		}else {
+			this.ping.Set("ping:" + ::network.GetDelay());
+		}
 		this.ping.x = (::graphics.width / 2) - (this.ping.width / 2);
 		this.ping.y = (::graphics.height - this.ping.height) - 15;
 	}

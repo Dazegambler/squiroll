@@ -20,9 +20,17 @@ function Initialize()
 	actor.SetMotion(8011, 1);
 	face_slave.append(actor);
 	this.face.slave1 <- actor;
+	this.ping <- null;
 
 	if (::network.inst)
 	{
+		this.ping = ::font.CreateSystemString("");
+		this.ping.sx = this.ping.sy = 1.0;
+		this.ping.x = (::graphics.width / 2) - (this.ping.width / 2);
+		this.ping.y = (::graphics.height - this.ping.height) - 15;
+		this.ping.ConnectRenderSlot(::graphics.slot.status, 60000);
+		this.AddParts(this.ping,this.mat_center);
+		
 		for( local i = 0; i < 2; i = ++i )
 		{
 			local icon = ::manbow.Sprite();
@@ -81,13 +89,6 @@ function Initialize()
 	this.fps.ConnectRenderSlot(::graphics.slot.status, 1000);
 	this.fps.visible = ::config.graphics.fps;
 
-	this.ping <- null;
-	this.ping = ::font.CreateSystemString("");
-	this.ping.sx = this.ping.sy = 1.0;
-	this.ping.x = (::graphics.width / 2) - (this.ping.width / 2);
-	this.ping.y = (::graphics.height - this.ping.height) - 15;
-	this.ping.ConnectRenderSlot(::graphics.slot.status, 60000);
-	this.AddParts(this.ping,this.mat_center);
 
 	local bottom = [
 		this.CreateStaticParts(10, this.mat_left_bottom),

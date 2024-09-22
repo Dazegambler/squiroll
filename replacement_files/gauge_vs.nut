@@ -25,9 +25,10 @@ function Initialize()
 	if (::network.inst)
 	{
 		this.ping = ::font.CreateSystemString("");
-		this.ping.sx = this.ping.sy = 1.0;
-		this.ping.x = (::graphics.width / 2) - (this.ping.width / 2);
-		this.ping.y = (::graphics.height - this.ping.height) - 15;
+		this.ping.sx = ::setting.ping.SX;
+		this.ping.sy = ::setting.ping.SY;
+		this.ping.x = ::setting.ping.X - (this.ping.width / 2);
+		this.ping.y = (::setting.ping.Y - this.ping.height);
 		this.ping.ConnectRenderSlot(::graphics.slot.status, 60000);
 		this.AddParts(this.ping,this.mat_center);
 		
@@ -193,8 +194,8 @@ function Update()
 		}else {
 			this.ping.Set("ping:" + ::network.GetDelay());
 		}
-		this.ping.x = (::graphics.width / 2) - (this.ping.width / 2);
-		this.ping.y = (::graphics.height - this.ping.height) - 15;
+		this.ping.x = ::setting.ping.X - (this.ping.width / 2);
+		this.ping.y = (::setting.ping.Y - this.ping.height);
 	}
 
 	if (::config.graphics.fps)

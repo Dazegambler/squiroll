@@ -103,44 +103,43 @@ public:
 
 HSQUIRRELVM v;
 
-#define sq_setprintfunc_call_addr (0x024769_R)
-#define Sq_setcompilererrorhandler_call_addr (0x024757_R)
-
-
-void sq_print(HSQUIRRELVM v, const SQChar* s, ...) {
-    va_list args;
-    va_start(args, s);
-    log_printf(s, args);
-    va_end(args);
+SQInteger ping_get(HSQUIRRELVM v) {
+    const SQChar* key;
+    sq_getstring(v, 2, &key);
+    if (strcmp(key, "X") == 0) {
+        sq_pushinteger(v, 640);
+    } else if (strcmp(key, "Y") == 0) {
+        sq_pushinteger(v, 360);
+    } else if (strcmp(key, "SY") == 0) {
+        sq_pushfloat(v, 1.0);
+    } else if (strcmp(key, "SX") == 0){
+        sq_pushfloat(v, 1.0);
+    } else {
+        return sq_throwerror(v, "Unknown member variable");
+    }
+    return 1;
 }
 
-void sq_printerr(HSQUIRRELVM v, const SQChar* s, ...) {
-    va_list args;
-    va_start(args, s);
-    log_fprintf(stderr,s,args);
-    va_end(args);
+SQInteger setting_get(HSQUIRRELVM v) {
+    const SQChar* key;
+    sq_getstring(v, 2, &key);
+    if (strcmp(key, "version") == 0) {
+        sq_pushinteger(v, 69420);
+    } else {
+        return sq_throwerror(v, "Unknown member variable");
+    }
+    return 1;
 }
 
-void sq_CompilerErrorHandler(HSQUIRRELVM v, const SQChar* desc, const SQChar* source, SQInteger line, SQInteger column) {
-    HANDLE h = GetCurrentThread();
-    SuspendThread(h);
-    //FILE* out = fopen("compile_error.txt","a");
-    log_printf( "Compilation Error in %s at line %d, column %d: %s\n", source, (int)line, (int)column, desc);
-    //fclose(out);
-}
-
-void my_sq_setprintfunc(HSQUIRRELVM v, SQPRINTFUNCTION printfunc,SQPRINTFUNCTION errfunc)
-{
-    sq_setprintfunc(v,sq_print,sq_printerr);
-}
-
-void my_sq_setcompilererrorhandler(HSQUIRRELVM v,SQCOMPILERERROR f)
-{
-    sq_setcompilererrorhandler(v,sq_CompilerErrorHandler);
-}
-
-SQInteger patch_test(HSQUIRRELVM v){
-    return 0;
+SQInteger rollback_get(HSQUIRRELVM v) {
+    const SQChar* key;
+    sq_getstring(v, 2, &key);
+    if (strcmp(key, "resyncing") == 0) {
+        sq_pushbool(v, resyncing);
+    } else {
+        return sq_throwerror(v, "Unknown member variable");
+    }
+    return 1;
 }
 
 extern "C" {
@@ -150,30 +149,31 @@ extern "C" {
             environment->get_squirrel_vm(v) &&
             environment->get_kite_api(KITE)
         ) {
-            
-            hotpatch_rel32(sq_setprintfunc_call_addr,my_sq_setprintfunc);
-            hotpatch_rel32(Sq_setcompilererrorhandler_call_addr,my_sq_setcompilererrorhandler);
             // put any important initialization stuff here,
             // like adding squirrel globals/funcs/etc.
             sq_pushroottable(v);
 
+            //config table setup
+            sq_pushstring(v,_SC("setting"),-1);
+                sq_newtable(v); 
+                sq_pushstring(v,_SC("_get"),-1);
+                    sq_newclosure(v,setting_get,0);
+                sq_newslot(v,-3,SQFalse);
+                sq_pushstring(v,_SC("ping"),-1);
+                    sq_newclass(v,SQFalse);
+                    sq_pushstring(v,_SC("_get"),-1);
+                        sq_newclosure(v,ping_get,0);
+                    sq_newslot(v,-3,SQFalse);
+                sq_newslot(v,-3,SQFalse);
+            sq_newslot(v,-3,SQFalse);
+
             //rollback table setup
-            sq_pushstring(v, _SC("rollback"), -1);
-            sq_newtable(v);
-
-            //variables setup
-            sq_pushstring(v, _SC("resyncing"), -1);
-            sq_pushbool(v, resyncing);
-            sq_newslot(v, -3, SQFalse);
-
-
-            //function setup
-            // sq_pushstring(v, _SC("example_function"), -1);
-            // sq_newclosure(v, example_function, 0);
-            // sq_newslot(v, -3, SQFalse);
-
-            //adding the rollback table to global scope
-            sq_newslot(v, -3, SQFalse);
+            sq_pushstring(v,_SC("rollback"),-1);
+                sq_newtable(v);
+                sq_pushstring(v,_SC("_get"),-1);
+                    sq_newclosure(v,rollback_get,0);
+                sq_newslot(v,-3,SQFalse);
+            sq_newslot(v,-3,SQFalse);
 
             sq_pop(v, 1);
             return 1;
@@ -205,15 +205,6 @@ extern "C" {
             //pop the network table
             sq_pop(v,1);
         }
-
-        sq_pushstring(v,_SC("rollback"),-1);
-        if (SQ_SUCCEEDED(sq_get(v,-2))){
-            sq_pushstring(v,_SC("resyncing"),-1);
-            sq_pushbool(v,resyncing);
-            sq_newslot(v,-3,SQFalse);
-            sq_pop(v,1);
-        }
-        
         //pop the roottable
         sq_pop(v,1);        
         return 1;

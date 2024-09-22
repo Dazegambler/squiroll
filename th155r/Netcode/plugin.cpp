@@ -103,42 +103,8 @@ public:
 
 HSQUIRRELVM v;
 
-SQInteger ping_get(HSQUIRRELVM v) {
-    const SQChar* key;
-    sq_getstring(v, 2, &key);
-    if (strcmp(key, "X") == 0) {
-        sq_pushinteger(v, 640);
-    } else if (strcmp(key, "Y") == 0) {
-        sq_pushinteger(v, 360);
-    } else if (strcmp(key, "SY") == 0) {
-        sq_pushfloat(v, 1.0);
-    } else if (strcmp(key, "SX") == 0){
-        sq_pushfloat(v, 1.0);
-    } else {
-        return sq_throwerror(v, "Unknown member variable");
-    }
-    return 1;
-}
-
-SQInteger setting_get(HSQUIRRELVM v) {
-    const SQChar* key;
-    sq_getstring(v, 2, &key);
-    if (strcmp(key, "version") == 0) {
-        sq_pushinteger(v, 69420);
-    } else {
-        return sq_throwerror(v, "Unknown member variable");
-    }
-    return 1;
-}
-
-SQInteger rollback_get(HSQUIRRELVM v) {
-    const SQChar* key;
-    sq_getstring(v, 2, &key);
-    if (strcmp(key, "resyncing") == 0) {
-        sq_pushbool(v, resyncing);
-    } else {
-        return sq_throwerror(v, "Unknown member variable");
-    }
+SQInteger r_resync_get(HSQUIRRELVM v) {
+    sq_pushbool(v,resyncing);
     return 1;
 }
 
@@ -156,13 +122,22 @@ extern "C" {
             //config table setup
             sq_pushstring(v,_SC("setting"),-1);
                 sq_newtable(v); 
-                sq_pushstring(v,_SC("_get"),-1);
-                    sq_newclosure(v,setting_get,0);
+                sq_pushstring(v,_SC("version"),-1);
+                    sq_pushinteger(v,69420);//PLACEHOLDER
                 sq_newslot(v,-3,SQFalse);
                 sq_pushstring(v,_SC("ping"),-1);
                     sq_newclass(v,SQFalse);
-                    sq_pushstring(v,_SC("_get"),-1);
-                        sq_newclosure(v,ping_get,0);
+                    sq_pushstring(v,_SC("X"),-1);
+                        sq_pushinteger(v,640);//PLACEHOLDER
+                    sq_newslot(v,-3,SQFalse);
+                    sq_pushstring(v,_SC("Y"),-1);
+                        sq_pushinteger(v,705);//PLACEHOLDER
+                    sq_newslot(v,-3,SQFalse);
+                    sq_pushstring(v,_SC("SY"),-1);
+                        sq_pushfloat(v,1.0);//PLACEHOLDER
+                    sq_newslot(v,-3,SQFalse);
+                    sq_pushstring(v,_SC("SX"),-1);
+                        sq_pushfloat(v,1.0);//PLACEHOLDER
                     sq_newslot(v,-3,SQFalse);
                 sq_newslot(v,-3,SQFalse);
             sq_newslot(v,-3,SQFalse);
@@ -170,8 +145,8 @@ extern "C" {
             //rollback table setup
             sq_pushstring(v,_SC("rollback"),-1);
                 sq_newtable(v);
-                sq_pushstring(v,_SC("_get"),-1);
-                    sq_newclosure(v,rollback_get,0);
+                sq_pushstring(v,_SC("resyncing"),-1);
+                    sq_newclosure(v,r_resync_get,0);
                 sq_newslot(v,-3,SQFalse);
             sq_newslot(v,-3,SQFalse);
 

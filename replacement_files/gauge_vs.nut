@@ -189,7 +189,7 @@ function Update()
 	this.fps.visible = ::config.graphics.fps;
 
 	if (::network.inst){
-		if (::rollback.resyncing){
+		if (::rollback.resyncing() != false){
 			this.ping.Set("ping:" + ::network.GetDelay() + "(resyncing)");
 		}else {
 			this.ping.Set("ping:" + ::network.GetDelay());

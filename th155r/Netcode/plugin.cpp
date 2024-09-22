@@ -102,7 +102,43 @@ public:
 //     return 1; // Number of return values
 // }
 
+static constexpr uint8_t misc_nut[] = {
+#include "new_files/misc_config.nut.h"
+};
+
 HSQUIRRELVM v;
+
+SQInteger CompileBuffer(HSQUIRRELVM v) {
+    const SQChar *buf;
+    SQInteger size;
+    SQObject *pObject;
+
+    if (sq_gettop(v) != 3) {
+        return sq_throwerror(v, "Invalid number of arguments, expected <buf> <*pObject>.");
+    }
+
+    if (SQ_FAILED(sq_getstring(v, 2, &buf))) {
+        return sq_throwerror(v, "Expected a string for the buffer.");
+    }
+
+    if (SQ_FAILED(sq_getuserdata(v, 3, (SQUserPointer*)&pObject, NULL))) {
+        return sq_throwerror(v, "Expected a pointer to SQObject.");
+    }
+
+    size = (SQInteger)sq_getsize(v, 2);
+
+    if (SQ_FAILED(sq_compilebuffer(v, buf, size, "compiled from buffer", SQFalse))) {
+        return sq_throwerror(v, "Failed to compile script from buffer.");
+    }
+
+    sq_getstackobj(v, -1, pObject);
+
+    sq_pop(v, 1);  
+
+    log_printf("new file succesfully loaded!\n");
+
+    return SQ_OK;
+}
 
 SQInteger r_resync_get(HSQUIRRELVM v) {
     sq_pushbool(v, resyncing);
@@ -146,6 +182,14 @@ extern "C" {
             // like adding squirrel globals/funcs/etc.
             sq_pushroottable(v);
 
+            //embeds
+            sq_pushstring(v, _SC("embed"),-1);
+                sq_newtable(v);
+                sq_pushstring(v,_SC("misc_menu"),-1);
+                    sq_pushstring(v,(SQChar*)misc_nut,-1);
+                sq_newslot(v, -3, SQFalse);
+            sq_newslot(v, -3, SQFalse);
+
             //config table setup
             sq_pushstring(v, _SC("setting"), -1);
                 sq_newtable(v);
@@ -153,21 +197,58 @@ extern "C" {
                     sq_pushinteger(v, 69420); //PLACEHOLDER
                 sq_newslot(v, -3, SQFalse);
                 sq_pushstring(v, _SC("ping"), -1);
+                    sq_newclass(v,SQFalse);
+                    sq_pushstring(v,_SC("X"),-1);
+                        sq_pushinteger(v,get_ping_x());
+                    sq_newslot(v, -3, SQFalse);
+                    sq_pushstring(v, _SC("Y"), -1);
+                        sq_pushinteger(v, get_ping_y());
+                    sq_newslot(v, -3, SQFalse);
+                    sq_pushstring(v, _SC("SX"), -1);
+                        sq_pushfloat(v, get_ping_scale_x());
+                    sq_newslot(v, -3, SQFalse);
+                    sq_pushstring(v, _SC("SY"), -1);
+                        sq_pushfloat(v, get_ping_scale_y());
+                    sq_newslot(v, -3, SQFalse);
                     sq_pushstring(v, _SC("update_consts"), -1);
                         sq_newclosure(v, update_ping_constants, 0);
                     sq_newslot(v, -3, SQFalse);
                 sq_newslot(v, -3, SQFalse);
-            sq_newslot(v, -3, SQFalse);
+            sq_newslot(v,-3, SQFalse);
 
-            update_ping_constants(v);
+                // sq_pushstring(v, _SC("ping"), -1);
+                //     sq_newclass(v, SQFalse);
+                //         sq_pushstring(v, _SC("X"), -1);
+                //             sq_pushinteger(v, 640); // PLACEHOLDER
+                //         sq_newslot(v, -3, SQFalse);
+                //         sq_pushstring(v, _SC("Y"), -1);
+                //             sq_pushinteger(v, 705); // PLACEHOLDER
+                //         sq_newslot(v, -3, SQFalse);
+                //         sq_pushstring(v, _SC("SY"), -1);
+                //             sq_pushfloat(v, 1.0); // PLACEHOLDER
+                //         sq_newslot(v, -3, SQFalse);
+                //         sq_pushstring(v, _SC("SX"), -1);
+                //             sq_pushfloat(v, 1.0); // PLACEHOLDER
+                //         sq_newslot(v, -3, SQFalse);
+                //     sq_newslot(v, -3, SQFalse);
+                //sq_newslot(v, -3, SQFalse);
 
-            //rollback table setup
-            sq_pushstring(v, _SC("rollback"), -1);
+                // rollback table setup
+                sq_pushstring(v, _SC("rollback"), -1);
                 sq_newtable(v);
                 sq_pushstring(v, _SC("resyncing"), -1);
                     sq_newclosure(v, r_resync_get, 0);
                 sq_newslot(v, -3, SQFalse);
             sq_newslot(v, -3, SQFalse);
+
+            //modifications to the manbow table
+            sq_pushstring(v, _SC("manbow"), -1);
+            if (SQ_SUCCEEDED(sq_get(v,-2))){
+                sq_pushstring(v, _SC("CompileBuffer"), -1);
+                    sq_newclosure(v, CompileBuffer, 0);
+                sq_newslot(v, -3, SQFalse);
+                sq_pop(v, 1);
+            }
 
             sq_pop(v, 1);
             return 1;

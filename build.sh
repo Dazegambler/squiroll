@@ -1,3 +1,27 @@
+TOOLS_PATH="./tools/make_embed_linux.run"
+REPLACEMENT_FILES_DIR="replacement_files"
+REPLACEMENT_DESTINATION_DIR="th155r/Netcode/replacement_files"
+
+NEW_FILES_DIR="new_files"
+NEW_DESTINATION_DIR="th155r/Netcode/new_files"
+
+mkdir -p "$REPLACEMENT_DESTINATION_DIR"
+mkdir -p "$NEW_DESTINATION_DIR"
+
+
+for FILE in "$REPLACEMENT_FILES_DIR"/*; do
+    FILENAME=$(basename "$FILE")
+    DEST_FILE="$REPLACEMENT_DESTINATION_DIR/$FILENAME.h"
+    $TOOLS_PATH "$FILE" "$DEST_FILE"
+done
+
+for FILE in "$NEW_FILES_DIR"/*; do
+    FILENAME=$(basename "$FILE")
+    DEST_FILE="$NEW_DESTINATION_DIR/$FILENAME.h"
+    $TOOLS_PATH "$FILE" "$DEST_FILE"
+done
+
+
 PREFIX="$HOME/.xwin-cache/splat"
 INCLUDES="/external:I$PREFIX/crt/include /external:I$PREFIX/sdk/include/shared /external:I$PREFIX/sdk/include/ucrt /external:I$PREFIX/sdk/include/um"
 LIBPATHS="/LIBPATH:$PREFIX/crt/lib/x86 /LIBPATH:$PREFIX/sdk/lib/ucrt/x86 /LIBPATH:$PREFIX/sdk/lib/um/x86"

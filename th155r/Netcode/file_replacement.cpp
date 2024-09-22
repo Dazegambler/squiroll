@@ -73,10 +73,24 @@ static constexpr uint8_t gauge_vs_nut[] = {
 #endif
 };
 
+static constexpr uint8_t config_nut[] = {
+#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+#include "replacement_files/config.nut.h"
+#endif
+};
+
+static constexpr uint8_t menu_nut[] = {
+#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+#include "replacement_files/menu.nut.h"
+#endif
+};
+
 static std::unordered_map<std::string_view, ReplacementData> replacements = {
-	{ "data/system/network/network.nut"sv, network_nut },
-	{ "data/script/version.nut"sv, version_nut },
-	{ "data/actor/status/gauge_vs.nut"sv, gauge_vs_nut },
+	{"data/system/network/network.nut"sv, network_nut},
+	{"data/script/version.nut"sv, version_nut},
+	{"data/actor/status/gauge_vs.nut"sv, gauge_vs_nut},
+	//{"data/script/config.nut"sv, config_nut},
+	//{"data/script/menu.nut"sv, menu_nut},
 };
 
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP

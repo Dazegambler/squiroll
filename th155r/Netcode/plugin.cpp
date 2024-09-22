@@ -216,25 +216,8 @@ extern "C" {
                 sq_newslot(v, -3, SQFalse);
             sq_newslot(v,-3, SQFalse);
 
-                // sq_pushstring(v, _SC("ping"), -1);
-                //     sq_newclass(v, SQFalse);
-                //         sq_pushstring(v, _SC("X"), -1);
-                //             sq_pushinteger(v, 640); // PLACEHOLDER
-                //         sq_newslot(v, -3, SQFalse);
-                //         sq_pushstring(v, _SC("Y"), -1);
-                //             sq_pushinteger(v, 705); // PLACEHOLDER
-                //         sq_newslot(v, -3, SQFalse);
-                //         sq_pushstring(v, _SC("SY"), -1);
-                //             sq_pushfloat(v, 1.0); // PLACEHOLDER
-                //         sq_newslot(v, -3, SQFalse);
-                //         sq_pushstring(v, _SC("SX"), -1);
-                //             sq_pushfloat(v, 1.0); // PLACEHOLDER
-                //         sq_newslot(v, -3, SQFalse);
-                //     sq_newslot(v, -3, SQFalse);
-                //sq_newslot(v, -3, SQFalse);
-
-                // rollback table setup
-                sq_pushstring(v, _SC("rollback"), -1);
+            // rollback table setup
+            sq_pushstring(v, _SC("rollback"), -1);
                 sq_newtable(v);
                 sq_pushstring(v, _SC("resyncing"), -1);
                     sq_newclosure(v, r_resync_get, 0);

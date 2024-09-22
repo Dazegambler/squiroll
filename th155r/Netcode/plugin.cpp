@@ -13,6 +13,7 @@
 #include "util.h"
 #include "log.h"
 #include "netcode.h"
+#include "config.h"
 
 const KiteSquirrelAPI* KITE;
 
@@ -104,7 +105,33 @@ public:
 HSQUIRRELVM v;
 
 SQInteger r_resync_get(HSQUIRRELVM v) {
-    sq_pushbool(v,resyncing);
+    sq_pushbool(v, resyncing);
+    return 1;
+}
+
+SQInteger update_ping_constants(HSQUIRRELVM v) {
+    sq_pushroottable(v);
+
+    sq_pushstring(v, _SC("setting"), -1);
+        sq_newtable(v);
+        sq_pushstring(v, _SC("ping"), -1);
+            sq_newclass(v, SQFalse);
+            sq_pushstring(v, _SC("X"), -1);
+                sq_pushinteger(v, get_ping_x());
+            sq_newslot(v, -3, SQFalse);
+            sq_pushstring(v, _SC("Y"), -1);
+                sq_pushinteger(v, get_ping_y());
+            sq_newslot(v, -3, SQFalse);
+            sq_pushstring(v, _SC("SX"), -1);
+                sq_pushfloat(v, get_ping_scale_x());
+            sq_newslot(v, -3, SQFalse);
+            sq_pushstring(v, _SC("SY"), -1);
+                sq_pushfloat(v, get_ping_scale_y());
+            sq_newslot(v, -3, SQFalse);
+        sq_newslot(v, -3, SQFalse);
+    sq_newslot(v, -3, SQFalse);
+
+    sq_pop(v, 1);
     return 1;
 }
 
@@ -120,35 +147,27 @@ extern "C" {
             sq_pushroottable(v);
 
             //config table setup
-            sq_pushstring(v,_SC("setting"),-1);
-                sq_newtable(v); 
-                sq_pushstring(v,_SC("version"),-1);
-                    sq_pushinteger(v,69420);//PLACEHOLDER
-                sq_newslot(v,-3,SQFalse);
-                sq_pushstring(v,_SC("ping"),-1);
-                    sq_newclass(v,SQFalse);
-                    sq_pushstring(v,_SC("X"),-1);
-                        sq_pushinteger(v,640);//PLACEHOLDER
-                    sq_newslot(v,-3,SQFalse);
-                    sq_pushstring(v,_SC("Y"),-1);
-                        sq_pushinteger(v,705);//PLACEHOLDER
-                    sq_newslot(v,-3,SQFalse);
-                    sq_pushstring(v,_SC("SY"),-1);
-                        sq_pushfloat(v,1.0);//PLACEHOLDER
-                    sq_newslot(v,-3,SQFalse);
-                    sq_pushstring(v,_SC("SX"),-1);
-                        sq_pushfloat(v,1.0);//PLACEHOLDER
-                    sq_newslot(v,-3,SQFalse);
-                sq_newslot(v,-3,SQFalse);
-            sq_newslot(v,-3,SQFalse);
+            sq_pushstring(v, _SC("setting"), -1);
+                sq_newtable(v);
+                sq_pushstring(v, _SC("version"), -1);
+                    sq_pushinteger(v, 69420); //PLACEHOLDER
+                sq_newslot(v, -3, SQFalse);
+                sq_pushstring(v, _SC("ping"), -1);
+                    sq_pushstring(v, _SC("update_consts"), -1);
+                        sq_newclosure(v, update_ping_constants, 0);
+                    sq_newslot(v, -3, SQFalse);
+                sq_newslot(v, -3, SQFalse);
+            sq_newslot(v, -3, SQFalse);
+
+            update_ping_constants(v);
 
             //rollback table setup
-            sq_pushstring(v,_SC("rollback"),-1);
+            sq_pushstring(v, _SC("rollback"), -1);
                 sq_newtable(v);
-                sq_pushstring(v,_SC("resyncing"),-1);
-                    sq_newclosure(v,r_resync_get,0);
-                sq_newslot(v,-3,SQFalse);
-            sq_newslot(v,-3,SQFalse);
+                sq_pushstring(v, _SC("resyncing"), -1);
+                    sq_newclosure(v, r_resync_get, 0);
+                sq_newslot(v, -3, SQFalse);
+            sq_newslot(v, -3, SQFalse);
 
             sq_pop(v, 1);
             return 1;

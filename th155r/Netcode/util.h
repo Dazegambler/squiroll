@@ -59,6 +59,9 @@
 #ifdef thiscall
 #undef thiscall
 #endif
+#ifdef vectorcall
+#undef vectorcall
+#endif
 
 #ifndef __has_builtin
 #define __has_builtin(name) 0
@@ -79,6 +82,16 @@
 #define stdcall 
 #define fastcall
 #define thiscall
+#endif
+
+#if CLANG_COMPAT
+#define vectorcall __attribute__((vectorcall))
+#elif MSVC_COMPAT
+#define vectorcall __vectorcall
+#elif GCC_COMPAT
+#define vectorcall __attribute__((sseregparm))
+#else
+#define vectorcall
 #endif
 
 #if GCC_COMPAT || CLANG_COMPAT
@@ -291,6 +304,22 @@ static inline void WaitForScrollLock(size_t delay = 1000) {
     }
 }
 
+// This is intentionally not marked static
+inline bool HasScrollLockChanged() {
+    static bool prev_scroll_state = false;
+
+    if (ScrollLockOn() != prev_scroll_state) {
+        prev_scroll_state ^= true;
+        return true;
+    }
+    return false;
+}
+
+static inline bool file_exists(const char* path) {
+    DWORD attr = GetFileAttributesA(path);
+    return attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY);
+}
+
 #if !USE_MSVC_ASM
 #define infinite_loop() __asm__(".byte 0xEB, 0xFE")
 #define halt_and_catch_fire() __asm__("int3")
@@ -315,5 +344,13 @@ struct msvc_string {
         return this->current_length;
     }
 };
+
+template <typename T>
+static inline constexpr size_t INTEGER_BUFFER_SIZE = std::numeric_limits<T>::digits10 + 2 + std::is_signed_v<T>;
+
+// IDK what the exact right value would be here to cover all
+// text based float formats, so just add 24 for some padding.
+template <typename T>
+static inline constexpr size_t FLOAT_BUFFER_SIZE = std::numeric_limits<T>::max_digits10 + 3 + 24;
 
 #endif

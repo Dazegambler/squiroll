@@ -276,6 +276,10 @@ void common_init(LogType log_type) {
         patch_throw_logs();
     }
 //#endif
+
+    // Turn off scroll lock to simplify static management for the toggle func
+    SetScrollLockState(false);
+
     init_config_file();
 
     patch_allocman();

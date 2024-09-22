@@ -14,6 +14,7 @@
 #include "log.h"
 #include "netcode.h"
 #include "config.h"
+#include "file_replacement.h"
 
 const KiteSquirrelAPI* KITE;
 
@@ -109,33 +110,30 @@ static constexpr uint8_t misc_nut[] = {
 HSQUIRRELVM v;
 
 SQInteger CompileBuffer(HSQUIRRELVM v) {
-    const SQChar *buf;
-    SQInteger size;
-    SQObject *pObject;
+    const SQChar* filename;
+    SQObject* pObject;
 
     if (sq_gettop(v) != 3) {
-        return sq_throwerror(v, "Invalid number of arguments, expected <buf> <*pObject>.");
+        return sq_throwerror(v, "Invalid number of arguments, expected <filename> <*pObject>.");
     }
 
-    if (SQ_FAILED(sq_getstring(v, 2, &buf))) {
-        return sq_throwerror(v, "Expected a string for the buffer.");
+    if (SQ_FAILED(sq_getstring(v, 2, &filename))) {
+        return sq_throwerror(v, "Expected a string for the filename.");
     }
 
     if (SQ_FAILED(sq_getuserdata(v, 3, (SQUserPointer*)&pObject, NULL))) {
         return sq_throwerror(v, "Expected a pointer to SQObject.");
     }
 
-    size = (SQInteger)sq_getsize(v, 2);
+    if (EmbedData embed = get_new_file_data(filename)) {
+        if (SQ_FAILED(sq_compilebuffer(v, (const SQChar*)embed.data, embed.length, "compiled from buffer", SQFalse))) {
+            return sq_throwerror(v, "Failed to compile script from buffer.");
+        }
 
-    if (SQ_FAILED(sq_compilebuffer(v, buf, size, "compiled from buffer", SQFalse))) {
-        return sq_throwerror(v, "Failed to compile script from buffer.");
+        sq_getstackobj(v, -1, pObject);
+
+        sq_pop(v, 1);
     }
-
-    sq_getstackobj(v, -1, pObject);
-
-    sq_pop(v, 1);  
-
-    log_printf("new file succesfully loaded!\n");
 
     return SQ_OK;
 }
@@ -182,24 +180,16 @@ extern "C" {
             // like adding squirrel globals/funcs/etc.
             sq_pushroottable(v);
 
-            //embeds
-            sq_pushstring(v, _SC("embed"),-1);
-                sq_newtable(v);
-                sq_pushstring(v,_SC("misc_menu"),-1);
-                    sq_pushstring(v,(SQChar*)misc_nut,-1);
-                sq_newslot(v, -3, SQFalse);
-            sq_newslot(v, -3, SQFalse);
-
             //config table setup
             sq_pushstring(v, _SC("setting"), -1);
                 sq_newtable(v);
                 sq_pushstring(v, _SC("version"), -1);
-                    sq_pushinteger(v, 69420); //PLACEHOLDER
+                    sq_pushinteger(v, PLUGIN_VERSION);
                 sq_newslot(v, -3, SQFalse);
                 sq_pushstring(v, _SC("ping"), -1);
-                    sq_newclass(v,SQFalse);
-                    sq_pushstring(v,_SC("X"),-1);
-                        sq_pushinteger(v,get_ping_x());
+                    sq_newclass(v, SQFalse);
+                    sq_pushstring(v, _SC("X"), -1);
+                        sq_pushinteger(v, get_ping_x());
                     sq_newslot(v, -3, SQFalse);
                     sq_pushstring(v, _SC("Y"), -1);
                         sq_pushinteger(v, get_ping_y());
@@ -226,7 +216,7 @@ extern "C" {
 
             //modifications to the manbow table
             sq_pushstring(v, _SC("manbow"), -1);
-            if (SQ_SUCCEEDED(sq_get(v,-2))){
+            if (SQ_SUCCEEDED(sq_get(v, -2))) {
                 sq_pushstring(v, _SC("CompileBuffer"), -1);
                     sq_newclosure(v, CompileBuffer, 0);
                 sq_newslot(v, -3, SQFalse);
@@ -249,22 +239,22 @@ extern "C" {
 
         //saving ::network.IsPlaying to a variable
         //getting the network table
-        sq_pushstring(v,_SC("network"),-1);
-        if (SQ_SUCCEEDED(sq_get(v,-2))){
+        sq_pushstring(v, _SC("network"), -1);
+        if (SQ_SUCCEEDED(sq_get(v, -2))) {
             //Getting the variable
-            sq_pushstring(v,_SC("IsPlaying"),-1);
-            if (SQ_SUCCEEDED(sq_get(v,-2))){
-                if (sq_gettype(v,-1) == OT_BOOL){
-                    sq_getbool(v,-1,&isplaying);
+            sq_pushstring(v, _SC("IsPlaying"), -1);
+            if (SQ_SUCCEEDED(sq_get(v, -2))) {
+                if (sq_gettype(v, -1) == OT_BOOL) {
+                    sq_getbool(v, -1, &isplaying);
                 }
                 //pop the variable
-                sq_pop(v,1);
+                sq_pop(v, 1);
             }
             //pop the network table
-            sq_pop(v,1);
+            sq_pop(v, 1);
         }
         //pop the roottable
-        sq_pop(v,1);        
+        sq_pop(v, 1);        
         return 1;
     }
 

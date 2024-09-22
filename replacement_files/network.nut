@@ -636,29 +636,29 @@ function UpdateMatchWait()
 
 function LobbyUpdate()
 {
-  local now = ::manbow.timeGetTime();
+	local now = ::manbow.timeGetTime();
 
-  if (now - this.lobby_time_stamp < this.lobby_interval)
-  {
-    return;
-  }
+	if (now - this.lobby_time_stamp < this.lobby_interval)
+	{
+		return;
+	}
 
-  this.lobby_time_stamp = now;
+	this.lobby_time_stamp = now;
 
-  if (::config.network.lobby_name != "")
-  {
-    if (::LOBBY.GetNetworkState() == ::LOBBY.CLOSED)
-    {
-      local lobby_server = "202.216.14.165";
-      local lobby_port = "49955";
-      local lobby_pass = "kzxmckfqbpqieh8rw<rczuturKfnsjxhauhybttboiuuzmWdmnt5mnlczpythaxf";
-      ::LOBBY.Connect(lobby_server, "" + lobby_port, lobby_pass, ::config.network.lobby_name, ::config.network.lobby_name);
-    }
-  }
-  else if (::LOBBY.GetNetworkState() != ::LOBBY.CLOSED)
-  {
-    ::LOBBY.Close();
-  }
+	if (::config.network.lobby_name != "")
+	{
+		if (::LOBBY.GetNetworkState() == ::LOBBY.CLOSED)
+		{
+			local lobby_server = "service1.tasofro.net";
+			local lobby_port = "49955";
+			local lobby_pass = "kzxmckfqbpqieh8rw<rczuturKfnsjxhauhybttboiuuzmWdmnt5mnlczpythaxf";
+			::LOBBY.Connect(lobby_server, "" + lobby_port, lobby_pass, ::config.network.lobby_name, ::config.network.lobby_name);
+		}
+	}
+	else if (::LOBBY.GetNetworkState() != ::LOBBY.CLOSED)
+	{
+		::LOBBY.Close();
+	}
 }
 
 function LobbyTerminate()

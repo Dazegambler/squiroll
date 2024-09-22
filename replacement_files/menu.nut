@@ -40,7 +40,7 @@ this.key_config <- {};
 ::manbow.CompileFile("data/system/key_config/key_config.nut", this.key_config);
 scene.append(this.key_config);
 this.misc_config <- {};
-::manbow.CompileBuffer(::embed.misc_menu,this.misc_config);
+::manbow.CompileBuffer("misc_config.nut", this.misc_config);
 scene.append(this.misc_config);
 this.help <- {};
 ::manbow.CompileFile("data/system/help/help.nut", this.help);

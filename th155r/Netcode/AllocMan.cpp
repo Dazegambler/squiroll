@@ -1,3 +1,8 @@
+#if __INTELLISENSE__
+#undef _HAS_CXX20
+#define _HAS_CXX20 0
+#endif
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stddef.h>

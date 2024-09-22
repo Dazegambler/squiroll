@@ -25,6 +25,7 @@ function Initialize()
 	if (::network.inst)
 	{
 		this.ping = ::font.CreateSystemString("");
+		::setting.ping.update_consts();
 		this.ping.sx = ::setting.ping.SX;
 		this.ping.sy = ::setting.ping.SY;
 		this.ping.x = ::setting.ping.X - (this.ping.width / 2);

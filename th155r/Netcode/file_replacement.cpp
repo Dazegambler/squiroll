@@ -45,14 +45,6 @@ struct PackageReader : FileReader {
 	// 0x10044
 };
 
-struct ReplacementData {
-	const uint8_t* data;
-	size_t length;
-
-	template<size_t N>
-	constexpr ReplacementData(const uint8_t(&data)[N]) : data(data), length(N) {}
-};
-
 static constexpr uint8_t network_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
 #include "replacement_files/network_encrypted.nut.h"
@@ -85,7 +77,7 @@ static constexpr uint8_t menu_nut[] = {
 #endif
 };
 
-static std::unordered_map<std::string_view, ReplacementData> replacements = {
+static const std::unordered_map<std::string_view, const EmbedData> replacements = {
 	{"data/system/network/network.nut"sv, network_nut},
 	{"data/script/version.nut"sv, version_nut},
 	{"data/actor/status/gauge_vs.nut"sv, gauge_vs_nut},
@@ -95,7 +87,7 @@ static std::unordered_map<std::string_view, ReplacementData> replacements = {
 
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
 
-static std::unordered_map<HANDLE, ReplacementData> current_replacements;
+static std::unordered_map<HANDLE, EmbedData> current_replacements;
 
 extern "C" {
 	void fastcall file_replacement_impl(PackageReader* file_reader, const char* file_name) {
@@ -165,3 +157,21 @@ naked void file_replacement_hook() {
 }
 
 #endif
+
+
+
+static constexpr uint8_t misc_nut[] = {
+#include "new_files/misc_config.nut.h"
+};
+
+static const std::unordered_map<std::string_view, const EmbedData> new_files = {
+	{ "misc_config.nut"sv, misc_nut }
+};
+
+EmbedData get_new_file_data(const char* name) {
+	auto new_file = new_files.find(name);
+	if (new_file != new_files.end()) {
+		return new_file->second;
+	}
+	return {};
+}

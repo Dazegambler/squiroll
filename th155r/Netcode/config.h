@@ -9,6 +9,8 @@
 
 #include "util.h"
 
+static inline constexpr size_t PLUGIN_VERSION = 1;
+
 void init_config_file();
 
 const char* get_lobby_host(const char* host);

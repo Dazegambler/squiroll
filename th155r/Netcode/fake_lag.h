@@ -86,7 +86,7 @@ static int WSAAPI WSASendTo_fake_lag(SOCKET s, LPWSABUF lpBuffers, DWORD dwBuffe
     args->lpOverlapped = lpOverlapped;
     args->lpCompletionRoutine = lpCompletionRoutine;
 
-    CreateThread(NULL, 0, [](void* thread_args) -> DWORD {
+    CreateThread(NULL, 0, [](void* thread_args) stdcall -> DWORD {
 #if FAKE_PACKET_LOSS_PERCENTAGE || FAKE_SEND_JITTER_AMOUNT || FAKE_SPIKE_PERCENTAGE
         srand((unsigned int)time(NULL));
 #endif

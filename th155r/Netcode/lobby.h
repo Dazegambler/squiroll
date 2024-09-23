@@ -9,6 +9,9 @@
 #include <winsock2.h>
 #include <windows.h>
 
+
+#define LOG_BASE_GAME_SENDTO_RECVFROM 0
+
 extern uintptr_t lobby_base_address;
 
 void patch_se_lobby(void* base_address);
@@ -22,7 +25,7 @@ int WSAAPI WSASendTo_log(
     DWORD dwBufferCount,
     LPDWORD lpNumberOfBytesSent,
     DWORD dwFlags,
-    struct sockaddr *lpTo,
+    const sockaddr* lpTo,
     int iTolen,
     LPWSAOVERLAPPED lpOverlapped,
     LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
@@ -34,7 +37,7 @@ int WSAAPI WSARecvFrom_log(
     DWORD dwBufferCount,
     LPDWORD lpNumberOfBytesRecvd,
     LPDWORD lpFlags,
-    sockaddr *lpFrom,
+    sockaddr* lpFrom,
     LPINT lpFromlen,
     LPWSAOVERLAPPED lpOverlapped,
     LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine

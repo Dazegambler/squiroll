@@ -500,13 +500,15 @@ hostent* WSAAPI my_gethostbyname(const char* name) {
     return gethostbyname(name);
 }
 
+#include "fake_lag.h"
+
 int WSAAPI WSASendTo_log(
     SOCKET s,
     LPWSABUF lpBuffers,
     DWORD dwBufferCount,
     LPDWORD lpNumberOfBytesSent,
     DWORD dwFlags,
-    struct sockaddr *lpTo,
+    const sockaddr* lpTo,
     int iTolen,
     LPWSAOVERLAPPED lpOverlapped,
     LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
@@ -546,6 +548,10 @@ int WSAAPI WSASendTo_log(
     }
     return ret;
 }
+
+#ifdef WSASendTo
+#undef WSASendTo
+#endif
 
 int WSAAPI WSARecvFrom_log(
     SOCKET s,

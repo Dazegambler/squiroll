@@ -9,13 +9,13 @@
 #include "fake_lag.h"
 #include "netcode.h"
 #include "log.h"
+#include "lobby.h"
 
 
 #define resync_patch_addr (0x0E364C_R)
 #define patchA_addr (0x0E357A_R)
 #define wsasendto_import_addr (0x3884D4_R)
 #define wsarecvfrom_import_addr (0x3884D8_R)
-#define createmutex_patch_addr (0x01DC61_R)
 
 struct PacketLayout {
     int8_t type;
@@ -99,6 +99,8 @@ void run_resync_logic(uint64_t new_timestamp) {
 
 
 int WSAAPI my_WSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWORD lpNumberOfBytesSent, DWORD dwFlags, const sockaddr* lpTo, int iTolen, LPWSAOVERLAPPED lpOverlapped, LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine) {
+
+#if NETPLAY_PATCH_TYPE == NETPLAY_VER_103F
     PacketLayout* packet = (PacketLayout*)lpBuffers[0].buf;
 
     switch (packet->type) {
@@ -125,13 +127,23 @@ int WSAAPI my_WSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWO
             }
             break;
     }
+#endif
 
+#if LOG_BASE_GAME_SENDTO_RECVFROM
+    return WSASendTo_log(s, lpBuffers, dwBufferCount, lpNumberOfBytesSent, dwFlags, lpTo, iTolen, lpOverlapped, lpCompletionRoutine);
+#else
     return WSASendTo(s, lpBuffers, dwBufferCount, lpNumberOfBytesSent, dwFlags, lpTo, iTolen, lpOverlapped, lpCompletionRoutine);
+#endif
 }
 
 int WSAAPI my_WSARecvFrom(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWORD lpNumberOfBytesRecvd, LPDWORD lpFlags, sockaddr* lpFrom, LPINT lpFromLen, LPWSAOVERLAPPED lpOverlapped, LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine) {
+#if LOG_BASE_GAME_SENDTO_RECVFROM
+    int ret = WSARecvFrom_log(s, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromLen, lpOverlapped, lpCompletionRoutine);
+#else
     int ret = WSARecvFrom(s, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromLen, lpOverlapped, lpCompletionRoutine);
+#endif
 
+#if NETPLAY_PATCH_TYPE == NETPLAY_VER_103F
     PacketLayout* packet = (PacketLayout*)lpBuffers[0].buf;
 
     switch (packet->type) {
@@ -142,15 +154,14 @@ int WSAAPI my_WSARecvFrom(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPD
         case 11:
             break;
     }
+#endif
 
     return ret;
 }
 
 void patch_netplay() {
     static constexpr uint8_t data[] = { INT8_MAX };
-    mem_write(patchA_addr, data, sizeof(data)); //first netcode patch
-    static constexpr uint8_t data_mutexa[] = { 0x68, 0x00, 0x00, 0x00, 0x00 };
-    mem_write(createmutex_patch_addr, data_mutexa, sizeof(data_mutexa)); //mutex patch
+    mem_write(patchA_addr, data, sizeof(data));
     resync_patch(160);
     hotpatch_import(wsarecvfrom_import_addr, my_WSARecvFrom);
     hotpatch_import(wsasendto_import_addr, my_WSASendTo);

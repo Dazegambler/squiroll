@@ -196,6 +196,8 @@ void patch_se_trust(void* base_address) {
 
 #define patch_act_script_plugin_hook_addr (0x127ADC_R)
 
+#define createmutex_patch_addr (0x01DC61_R)
+
 // Basic thcrap style replacement mode
 #define file_replacement_hook_addrA (0x23FAA_R)
 #define file_replacement_read_addrA (0x2DFA1_R)
@@ -212,8 +214,8 @@ void patch_autopunch() {
     //hotpatch_import(bind_import_addr, my_bind);
     //hotpatch_import(closesocket_import_addr, my_closesocket);
 
-    hotpatch_icall(0x170E5A_R, WSARecvFrom_log);
-    hotpatch_icall(0x170501_R, WSASendTo_log);
+    //hotpatch_icall(0x170E5A_R, WSARecvFrom_log);
+    //hotpatch_icall(0x170501_R, WSASendTo_log);
 
     //autopunch_init();
 
@@ -270,12 +272,15 @@ void patch_file_loading() {
 // Initialization code shared by th155r and thcrap use
 // Executes before the start of the process
 void common_init(LogType log_type) {
-//#ifndef NDEBUG
     if (log_type != NO_LOGGING) {
         enable_debug_console(log_type == LOG_TO_PARENT_CONSOLE);
         patch_throw_logs();
     }
-//#endif
+    else {
+        // Disable the original game's printf use
+        // when logging is disabled
+        hotpatch_ret(0x25270_R, 0);
+    }
 
     // Turn off scroll lock to simplify static management for the toggle func
     SetScrollLockState(false);
@@ -284,8 +289,11 @@ void common_init(LogType log_type) {
 
     patch_allocman();
 
+    // Allow launching multiple instances of the game
+    static constexpr uint8_t data_mutexa[] = { 0x68, 0x00, 0x00, 0x00, 0x00 };
+    mem_write(createmutex_patch_addr, data_mutexa, sizeof(data_mutexa)); //mutex patch
+
     patch_netplay();
-    //hotpatch_rel32(init_call_addr,my_init);
 
     //hotpatch_rel32(sq_vm_init_call_addrB, my_sq_vm_init); //not sure why its called twice but pretty sure the first call is enough
 

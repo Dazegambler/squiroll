@@ -30,8 +30,6 @@ using namespace std::literals::string_view_literals;
 const uintptr_t base_address = (uintptr_t)GetModuleHandleA(NULL);
 uintptr_t libact_base_address = 0;
 
-//SQVM Rx4DACE4 initialized at Rx124710
-
 void Cleanup() {
     autopunch_cleanup();
 }

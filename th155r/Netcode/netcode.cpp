@@ -67,14 +67,12 @@ void run_resync_logic(uint64_t new_timestamp) {
             if (++lag_packets >= RESYNC_THRESHOLD) {
                 resyncing = SQTrue;
                 lag_packets = 0;
-                //show message window displaying "resyncing" or something like it
             }
         }
     } else {
         if (lag_packets >= RESYNC_DURATION) {
             resyncing = SQFalse;
             lag_packets = 0;
-            //kill message window?
         }
         else {
             resync_patch(lag_packets);

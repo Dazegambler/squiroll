@@ -7,6 +7,10 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <string>
+#include <string_view>
+#include <unordered_map>
+
 #include "kite_api.h"
 #include "PatchUtils.h"
 
@@ -16,6 +20,7 @@
 #include "config.h"
 #include "file_replacement.h"
 #include "AllocMan.h"
+#include "plugin.h"
 
 const KiteSquirrelAPI* KITE;
 
@@ -106,6 +111,20 @@ public:
 
 HSQUIRRELVM v;
 
+static const std::unordered_map<std::string_view, const void *> changes = {
+    {"data/script/version.nut"sv, version_nut},
+};
+
+ChangeData get_change(const char *name)
+{
+    auto new_file = changes.find(name);
+    if (new_file != changes.end())
+    {
+        return new_file->second;
+    }
+    return {};
+}
+
 SQInteger CompileBuffer(HSQUIRRELVM v) {
     const SQChar* filename;
     SQObject* pObject;
@@ -129,6 +148,60 @@ SQInteger CompileBuffer(HSQUIRRELVM v) {
 
         sq_getstackobj(v, -1, pObject);
 
+        sq_pop(v, 1);
+    }
+
+    return SQ_OK;
+}
+
+//
+SQInteger CompileFileFlag(HSQUIRRELVM v){
+    const SQChar* filepath;
+    SQObject* pObject;
+
+    if (sq_gettop(v) != 3)
+    {
+        return sq_throwerror(v, "Invalid number of arguments, expected <filename> <*pObject>.");
+    }
+
+    if (SQ_FAILED(sq_getstring(v, 2, &filename)))
+    {
+        return sq_throwerror(v, "Expected a string for the filename.");
+    }
+
+    if (SQ_FAILED(sq_getuserdata(v, 3, (SQUserPointer *)&pObject, NULL)))
+    {
+        return sq_throwerror(v, "Expected a pointer to SQObject.");
+    }
+
+    sq_pushstring(v, _SC("manbow"), -1);
+    if (SQ_SUCCEEDED(sq_get(v, -2)))
+    {
+        sq_pushstring(v, _SC("CompileFile"), -1);
+        if (SQ_SUCCEEDED(sq_get(v, -2)))
+        {
+
+            sq_pushstring(v, filepath, -1);
+            sq_pushobject(v, *pObject);
+            if (ChangeData change = get_change(filepath))
+            {
+                if (SQ_SUCCEEDED(sq_call(v, 2, SQTrue, SQTrue)))
+                {
+                    SQInteger res;
+                    if (SQ_SUCCEEDED(sq_getinteger(v, -1, &res)))
+                    {
+                        if (res == 1)
+                        {
+                            change->apply();
+                        }
+                    }
+                    sq_pop(v, 1);
+                }
+            }else{
+                sq_call(v, 2, SQTrue, SQTrue);
+            }
+            sq_pop(v, 1);
+        }
         sq_pop(v, 1);
     }
 
@@ -221,6 +294,25 @@ extern "C" {
                 sq_newslot(v, -3, SQFalse);
                 sq_pop(v, 1);
             }
+
+            //this changes the item array in the config menu :)
+            //yes i know it's beatiful you don't have to tell me
+            // sq_pushstring(v,_SC("menu"),-1);
+            // if (SQ_SUCCEEDED(sq_get(v,-2))){
+            //     sq_pushstring(v,_SC("config"),-1);
+            //     if (SQ_SUCCEEDED(sq_get(v,-2))){
+            //         sq_pushstring(v,_SC("item"),-1);
+            //         if (SQ_SUCCEEDED(sq_get(v,-2))){
+            //             sq_pushstring(v,_SC("misc"),-1);
+            //             if(SQ_SUCCEEDED(sq_arrayappend(v,-2))){
+            //                 log_printf("Succesfully added to array");
+            //             }
+            //             sq_pop(v,1);
+            //         }
+            //         sq_pop(v,1);
+            //     }
+            //     sq_pop(v,1);
+            // }
 
             sq_pop(v, 1);
             return 1;

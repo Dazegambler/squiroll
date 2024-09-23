@@ -25,14 +25,14 @@ function Initialize()
 	if (::network.inst)
 	{
 		this.ping = ::font.CreateSystemString("");
-		::setting.ping.update_consts();
+		//::setting.ping.update_consts();
 		this.ping.sx = ::setting.ping.SX;
 		this.ping.sy = ::setting.ping.SY;
 		this.ping.x = ::setting.ping.X - (this.ping.width / 2);
 		this.ping.y = (::setting.ping.Y - this.ping.height);
 		this.ping.ConnectRenderSlot(::graphics.slot.status, 60000);
 		this.AddParts(this.ping,this.mat_center);
-		
+
 		for( local i = 0; i < 2; i = ++i )
 		{
 			local icon = ::manbow.Sprite();

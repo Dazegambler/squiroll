@@ -146,7 +146,7 @@ SQInteger update_ping_constants(HSQUIRRELVM v) {
     sq_pushstring(v, _SC("setting"), -1);
     if (SQ_SUCCEEDED(sq_get(v, -2))) {
         sq_pushstring(v, _SC("ping"), -1);
-            sq_newclass(v, SQFalse);
+        if (SQ_SUCCEEDED(sq_get(v,-2))){
             sq_pushstring(v, _SC("X"), -1);
                 sq_pushinteger(v, get_ping_x());
             sq_newslot(v, -3, SQFalse);
@@ -159,9 +159,10 @@ SQInteger update_ping_constants(HSQUIRRELVM v) {
             sq_pushstring(v, _SC("SY"), -1);
                 sq_pushfloat(v, get_ping_scale_y());
             sq_newslot(v, -3, SQFalse);
-        sq_newslot(v, -3, SQFalse);
+            sq_pop(v,1);
+        }
+        sq_pop(v, 1);
     }
-    sq_pop(v, 1);
 
     sq_pop(v, 1);
     return 1;

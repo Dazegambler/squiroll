@@ -77,11 +77,18 @@ static constexpr uint8_t menu_nut[] = {
 #endif
 };
 
+static constexpr uint8_t title_nut[] = {
+#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+#include "replacement_files/title.nut.h"
+#endif
+};
+
 static const std::unordered_map<std::string_view, const EmbedData> replacements = {
 	{"data/system/network/network.nut"sv, network_nut},
 	{"data/script/version.nut"sv, version_nut},
 	{"data/actor/status/gauge_vs.nut"sv, gauge_vs_nut},
-	//{"data/script/config.nut"sv, config_nut},
+	{"data/system/title/title.nut"sv, title_nut},
+	//{"data/system/config/config.nut"sv, config_nut},
 	//{"data/script/menu.nut"sv, menu_nut},
 };
 

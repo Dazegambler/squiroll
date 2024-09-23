@@ -10,7 +10,6 @@ this.item <- [
 	"replay_save",
 	"replay_save_online",
 	"lang",
-	"misc",
 	null,
 	"exit"
 ];
@@ -74,7 +73,6 @@ function Initialize( enable_lang = false )
 			"replay_save",
 			"replay_save_online",
 			"lang",
-			"misc",
 			null,
 			"exit"
 		];
@@ -92,7 +90,6 @@ function Initialize( enable_lang = false )
 			"key2p",
 			"replay_save",
 			"replay_save_online",
-			"misc",
 			null,
 			"exit"
 		];
@@ -308,15 +305,6 @@ this.proc.key2p <- function ()
 	{
 		this.Suspend();
 		::menu.key_config.Initialize(1);
-		return;
-	}
-};
-this.proc.misc <- function ()
-{
-	if (this.cursor_item.ok)
-	{
-		this.Suspend();
-		::menu.misc_config.Initialize(0);
 		return;
 	}
 };

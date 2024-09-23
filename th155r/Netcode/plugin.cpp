@@ -103,10 +103,6 @@ public:
 //     return 1; // Number of return values
 // }
 
-static constexpr uint8_t misc_nut[] = {
-#include "new_files/misc_config.nut.h"
-};
-
 HSQUIRRELVM v;
 
 SQInteger CompileBuffer(HSQUIRRELVM v) {

@@ -19,7 +19,7 @@
 #define MEMORY_DEBUG_LIGHT 1
 #define MEMORY_DEBUG_HEAVY 2
 
-#define MEMORY_DEBUG_LEVEL MEMORY_DEBUG_NONE
+#define MEMORY_DEBUG_LEVEL MEMORY_DEBUG_LIGHT
 
 static inline constexpr size_t SAVED_FRAMES = 8;
 static_assert(std::has_single_bit(SAVED_FRAMES));
@@ -27,6 +27,8 @@ static_assert(std::has_single_bit(SAVED_FRAMES));
 void tick_allocs();
 size_t fastcall rollback_allocs(size_t frames);
 void reset_rollback_buffers();
+
+void update_allocs();
 
 void* cdecl my_malloc(size_t size);
 void* cdecl my_calloc(size_t num, size_t size);

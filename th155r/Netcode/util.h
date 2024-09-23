@@ -8,6 +8,7 @@
 #include <type_traits>
 #include <limits.h>
 #include <limits>
+#include <atomic>
 
 #include <winsock2.h>
 #include <windows.h>
@@ -287,15 +288,19 @@ static inline unsigned int get_random(unsigned int max_value) {
     return (unsigned int)rand() % max_value;
 }
 
-static inline void SetScrollLockState(bool state) {
-    BYTE keys[256];
-    GetKeyboardState(keys);
-    keys[VK_SCROLL] = state;
-    SetKeyboardState(keys);
+static inline bool IsKeyPressed(int key) {
+    return GetKeyState(key) < 0;
 }
 
 static inline bool ScrollLockOn() {
     return GetKeyState(VK_SCROLL) & 1;
+}
+
+static inline void SetScrollLockState(bool state) {
+    if (ScrollLockOn() != state) {
+        keybd_event(VK_SCROLL, 0x45, KEYEVENTF_EXTENDEDKEY, 0);
+        keybd_event(VK_SCROLL, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0);
+    }
 }
 
 static inline void WaitForScrollLock(size_t delay = 1000) {
@@ -352,5 +357,27 @@ static inline constexpr size_t INTEGER_BUFFER_SIZE = std::numeric_limits<T>::dig
 // text based float formats, so just add 24 for some padding.
 template <typename T>
 static inline constexpr size_t FLOAT_BUFFER_SIZE = std::numeric_limits<T>::max_digits10 + 3 + 24;
+
+struct SpinLock {
+    std::atomic<bool> flag;
+
+    inline constexpr SpinLock() : flag(false) {}
+    SpinLock(const SpinLock&) = delete;
+    SpinLock& operator=(const SpinLock&) = delete;
+
+    inline void lock() {
+        while (this->flag.exchange(true, std::memory_order_acquire));
+        std::atomic_thread_fence(std::memory_order_acquire);
+    }
+    inline bool try_lock() {
+        bool ret = this->flag.exchange(true, std::memory_order_acquire);
+        std::atomic_thread_fence(std::memory_order_acquire);
+        return ret ^ true;
+    }
+    inline void unlock() {
+        std::atomic_thread_fence(std::memory_order_release);
+        this->flag.store(false, std::memory_order_release);
+    }
+};
 
 #endif

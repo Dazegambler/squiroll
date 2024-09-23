@@ -9,10 +9,13 @@
 #include <string.h>
 #include <algorithm>
 #include <bit>
-//#include <unordered_set>
+#include <unordered_set>
 //#include <unordered_map>
+#include <mutex>
+
 #include "AllocMan.h"
 #include "log.h"
+#include "util.h"
 
 #define SHRINK_ROLLBACK_BUFFERS 0
 
@@ -120,7 +123,7 @@ struct AllocData {
         return FreeData;
     }
     
-    inline void rollback(size_t frames, SavedAlloc* saved_alloc);
+    inline bool rollback(size_t frames, SavedAlloc* saved_alloc);
 };
 
 // size: 0x8+
@@ -147,17 +150,18 @@ struct SavedAlloc {
             size = alloc->size;
             memcpy(this->data, alloc->data, size);
         }
-        return this->size = size;
+        this->size = size;
+        return sizeof(SavedAlloc) + size;
     }
 };
 
-inline void AllocData::rollback(size_t frames, SavedAlloc* saved_alloc) {
+inline bool AllocData::rollback(size_t frames, SavedAlloc* saved_alloc) {
     this->rollback_tag = true;
     size_t current_free_timer = this->free_timer;
     if (current_free_timer != 0) {
         if (current_free_timer <= ROLLBACK_TIMER_RECORD_THRESHOLD) {
             // This node can't possibly re-stabilize, so do nothing
-            return;
+            return false;
         }
         if ((current_free_timer += frames) > MAX_ROLLBACK_TIMER) {
             // This node has re-stabilized, so copy the data back
@@ -166,10 +170,11 @@ inline void AllocData::rollback(size_t frames, SavedAlloc* saved_alloc) {
             // This node could re-stabilize, but the data
             // doesn't need to be copied back yet
             this->free_timer = (rollback_timer_t)current_free_timer;
-            return;
+            return false;
         }
     }
     memcpy(this->data, saved_alloc->data, saved_alloc->size);
+    return true;
 }
 
 // size: 0x10 + 0xC * SAVED_FRAMES
@@ -262,6 +267,7 @@ struct AllocManager {
                     break;
             }
         });
+
         size_t current_index = this->increment_index();
         this->filled_sizes[current_index] = total_size;
         uint8_t* current_buffer = this->saved_data[current_index];
@@ -304,6 +310,8 @@ struct AllocManager {
 
 static AllocManager alloc_man;
 
+static SpinLock alloc_lock;
+
 static void free_alloc(AllocData* alloc) {
     if (alloc->has_record) {
         alloc->start_free();
@@ -315,11 +323,23 @@ static void free_alloc(AllocData* alloc) {
 // External definitions
 
 void tick_allocs() {
+    std::lock_guard<SpinLock> lock(alloc_lock);
     alloc_man.tick();
 }
 
 size_t fastcall rollback_allocs(size_t frames) {
+    std::lock_guard<SpinLock> lock(alloc_lock);
     return alloc_man.rollback(frames);
+}
+
+void update_allocs() {
+    std::lock_guard<SpinLock> lock(alloc_lock);
+    if (HasScrollLockChanged()) {
+        alloc_man.rollback(SAVED_FRAMES);
+    }
+    else {
+        alloc_man.tick();
+    }
 }
 
 void reset_rollback_buffers() {
@@ -329,6 +349,7 @@ void reset_rollback_buffers() {
 void* cdecl my_malloc(size_t size) {
     AllocData* real_alloc = (AllocData*)malloc(AllocData::buffer_size(size));
     if (expect(real_alloc != NULL, true)) {
+        std::lock_guard<SpinLock> lock(alloc_lock);
         real_alloc->init(size);
         alloc_man.append(real_alloc);
         return &real_alloc->data;

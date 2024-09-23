@@ -15,6 +15,7 @@
 #include "netcode.h"
 #include "config.h"
 #include "file_replacement.h"
+#include "AllocMan.h"
 
 const KiteSquirrelAPI* KITE;
 
@@ -250,7 +251,12 @@ extern "C" {
             sq_pop(v, 1);
         }
         //pop the roottable
-        sq_pop(v, 1);        
+        sq_pop(v, 1);
+
+#if ALLOCATION_PATCH_TYPE != PATCH_NO_ALLOCS
+        update_allocs();
+#endif
+
         return 1;
     }
 

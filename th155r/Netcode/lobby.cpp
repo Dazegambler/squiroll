@@ -8,7 +8,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <string>
-#include <atomic>
 #include <mutex>
 
 #include <winsock2.h>
@@ -99,30 +98,7 @@ struct AsyncLobbyClient {
 static_assert(sizeof(AsyncLobbyClient) == 0x4F8);
 static_assert(__builtin_offsetof(AsyncLobbyClient, current_nickname) == 0x308);
 
-
 uintptr_t lobby_base_address = 0;
-
-struct SpinLock {
-    std::atomic<bool> flag;
-
-    inline constexpr SpinLock() : flag(false) {}
-    SpinLock(const SpinLock&) = delete;
-    SpinLock& operator=(const SpinLock&) = delete;
-
-    inline void lock() {
-        while (this->flag.exchange(true, std::memory_order_acquire));
-        std::atomic_thread_fence(std::memory_order_acquire);
-    }
-    inline bool try_lock() {
-        bool ret = this->flag.exchange(true, std::memory_order_acquire);
-        std::atomic_thread_fence(std::memory_order_acquire);
-        return ret ^ true;
-    }
-    inline void unlock() {
-        std::atomic_thread_fence(std::memory_order_release);
-        this->flag.store(false, std::memory_order_release);
-    }
-};
 
 static SpinLock punch_lock;
 

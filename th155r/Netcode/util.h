@@ -98,9 +98,11 @@
 #if GCC_COMPAT || CLANG_COMPAT
 #define thisfastcall thiscall
 #define thisfastcall_edx(...)
+#define lambda_cc(...) __VA_ARGS__
 #else
 #define thisfastcall fastcall
 #define thisfastcall_edx(...) __VA_ARGS__
+#define lambda_cc(...)
 #endif
 
 #ifdef forceinline
@@ -286,6 +288,10 @@ static forceinline B based_pointer(B base, O offset) {
 
 static inline unsigned int get_random(unsigned int max_value) {
     return (unsigned int)rand() % max_value;
+}
+
+static inline bool random_percentage(unsigned int chance) {
+    return get_random(100) < chance;
 }
 
 static inline bool IsKeyPressed(int key) {

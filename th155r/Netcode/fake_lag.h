@@ -20,22 +20,6 @@
 
 #if FAKE_SEND_LAG_AMOUNT > 0 || FAKE_SEND_JITTER_AMOUNT > 0 || FAKE_PACKET_LOSS_PERCENTAGE > 0 || FAKE_SPIKE_PERCENTAGE > 0
 
-static inline bool should_drop_packet() {
-#if FAKE_PACKET_LOSS_PERCENTAGE
-    return get_random(100) < FAKE_PACKET_LOSS_PERCENTAGE;
-#else
-    return false;
-#endif
-}
-
-static inline bool should_spike() {
-#if FAKE_SPIKE_PERCENTAGE
-    return get_random(100) < FAKE_SPIKE_PERCENTAGE;
-#else
-    return false;
-#endif
-}
-
 static inline DWORD idc_about_sent_bytes;
 static int WSAAPI WSASendTo_fake_lag(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWORD lpNumberOfBytesSent, DWORD dwFlags, const sockaddr* lpTo, int iTolen, LPWSAOVERLAPPED lpOverlapped, LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine) {
     size_t data_size = 0;
@@ -86,16 +70,19 @@ static int WSAAPI WSASendTo_fake_lag(SOCKET s, LPWSABUF lpBuffers, DWORD dwBuffe
     args->lpOverlapped = lpOverlapped;
     args->lpCompletionRoutine = lpCompletionRoutine;
 
-    CreateThread(NULL, 0, [](void* thread_args) stdcall -> DWORD {
-#if FAKE_PACKET_LOSS_PERCENTAGE || FAKE_SEND_JITTER_AMOUNT || FAKE_SPIKE_PERCENTAGE
+    CreateThread(NULL, 0, [](void* thread_args) lambda_cc(stdcall) -> DWORD {
+#if FAKE_PACKET_LOSS_PERCENTAGE > 0 || FAKE_SEND_JITTER_AMOUNT > 0 || FAKE_SPIKE_PERCENTAGE > 0
         srand((unsigned int)time(NULL));
 #endif
         
         MinGWIsStupidWithThreads* args = (MinGWIsStupidWithThreads*)thread_args;
 
-        if (!should_drop_packet()) {
+#if FAKE_PACKET_LOSS_PERCENTAGE > 0
+        if (!random_percentage(FAKE_PACKET_LOSS_PERCENTAGE))
+#endif
+        {
 
-#if FAKE_SEND_LAG_AMOUNT > 0 || FAKE_SEND_JITTER_AMOUNT || FAKE_SPIKE_PERCENTAGE
+#if FAKE_SEND_LAG_AMOUNT > 0 || FAKE_SEND_JITTER_AMOUNT > 0 || FAKE_SPIKE_PERCENTAGE > 0
 
 #if FAKE_SEND_LAG_AMOUNT > 0
             size_t lag_ms = FAKE_SEND_LAG_AMOUNT;
@@ -103,19 +90,19 @@ static int WSAAPI WSASendTo_fake_lag(SOCKET s, LPWSABUF lpBuffers, DWORD dwBuffe
             size_t lag_ms = 0;
 #endif
 
-#if FAKE_SEND_JITTER_AMOUNT
+#if FAKE_SEND_JITTER_AMOUNT > 0
             lag_ms += (int)get_random(FAKE_SEND_JITTER_AMOUNT) - FAKE_SEND_JITTER_AMOUNT / 2;
 #endif
 
-#if FAKE_SPIKE_PERCENTAGE
-            if (should_spike()) {
+#if FAKE_SPIKE_PERCENTAGE > 0
+            if (random_percentage(FAKE_SPIKE_PERCENTAGE)) {
                 lag_ms *= FAKE_SPIKE_MULTIPLIER;
             }
 #endif
             Sleep(lag_ms);
 #endif
         
-            WSASendTo(args->s, (LPWSABUF)args->data, args->dwBufferCount, args->lpNumberOfBytesSent, args->dwFlags, args->lpTo, args->iTolen, args->lpOverlapped, args->lpCompletionRoutine);
+            (WSASendTo)(args->s, (LPWSABUF)args->data, args->dwBufferCount, args->lpNumberOfBytesSent, args->dwFlags, args->lpTo, args->iTolen, args->lpOverlapped, args->lpCompletionRoutine);
         }
         free(thread_args);
         return 0;

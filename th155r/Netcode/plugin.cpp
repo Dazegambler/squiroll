@@ -215,12 +215,11 @@ extern "C" {
 
             //modifications to the manbow table
             sq_pushstring(v, _SC("manbow"), -1);
-            if (SQ_SUCCEEDED(sq_get(v, -2))) {
+                sq_get(v,-2);
                 sq_pushstring(v, _SC("CompileBuffer"), -1);
                     sq_newclosure(v, CompileBuffer, 0);
                 sq_newslot(v, -3, SQFalse);
-                sq_pop(v, 1);
-            }
+            sq_pop(v, 1);
 
             //this changes the item array in the config menu :)
             //yes i know it's beatiful you don't have to tell me

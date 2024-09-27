@@ -157,11 +157,87 @@ int WSAAPI my_WSARecvFrom(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPD
     return ret;
 }
 
+#if BETTER_BLACK_SCREEN_FIX
+
+struct BoostLock {
+    void* mutex_addr;
+};
+
+typedef void fastcall lock_func_t(BoostLock* lock);
+
+void fastcall fix_black_screen_lock(BoostLock* lock) {
+    uint8_t* mutex_addr = (uint8_t*)lock->mutex_addr;
+    if (*based_pointer<uint32_t>(mutex_addr, -0x50) != read_fs_dword(0x24)) {
+        ((lock_func_t*)(0xF410_R))(lock);
+        *based_pointer<uint32_t>(mutex_addr, -0x50) = read_fs_dword(0x24);
+    }
+    ++mutex_addr[-0x71];
+}
+
+void fastcall fix_black_screen_unlockA(BoostLock* lock) {
+    uint8_t* mutex_addr = (uint8_t*)lock->mutex_addr;
+    if (!--mutex_addr[-0x71]) {
+        *based_pointer<uint32_t>(mutex_addr, -0x50) = 0;
+        return ((lock_func_t*)(0xF4C0_R))(lock);
+    }
+}
+
+uint32_t fastcall fix_black_screen_unlockB(uint8_t* mutex_addr) {
+    if (!--mutex_addr[-0x71]) {
+        *based_pointer<uint32_t>(mutex_addr, -0x50) = 0;
+    }
+    return 0x80000000;
+}
+
+static constexpr uintptr_t lock_fix_addrs[] = {
+    0x172FD6, 0x178B96, 0x178ED7, 0x1791BF, 0x17CDC9,
+    0x17CFEB, 0x17D1DB, 0x17D36B, 0x17D5B9, 0x17D687
+};
+static constexpr uintptr_t unlock_fixA_addrs[] = {
+    0x373F74, 0x3746FC, 0x37473C, 0x374774, 0x17CE02,
+    0x17CE98, 0x17CEB5, 0x374E04, 0x374E34
+};
+static constexpr uintptr_t unlock_fixB_addrs[] = {
+    0x173005, 0x1730A4, 0x178C3E, 0x178D69, 0x178F76,
+    0x179055, 0x1791E7, 0x179269, 0x17D15C, 0x17D2EB,
+    0x17D393, 0x17D3FD, 0x17D5D7, 0x17D6B2, 0x17D717
+};
+
+#endif
+
 void patch_netplay() {
     static constexpr uint8_t data[] = { INT8_MAX };
-    mem_write(patchA_addr, data, sizeof(data));
+    mem_write(patchA_addr, data);
+
+
+#if BETTER_BLACK_SCREEN_FIX
+    static constexpr uint8_t black_screen_patchA[] = { 0x1E };
+    static constexpr uint8_t black_screen_patchB[] = { 0x89 };
+
+    mem_write(0x171F66_R, black_screen_patchA);
+    mem_write(0x17C6E6_R, black_screen_patchA);
+    mem_write(0x17C6FB_R, black_screen_patchA);
+    mem_write(0x17C945_R, black_screen_patchA);
+    mem_write(0x171F4B_R, NOP_BYTES<1>);
+    mem_write(0x171F64_R, black_screen_patchB);
+#endif
+
     resync_patch(160);
     hotpatch_import(wsarecvfrom_import_addr, my_WSARecvFrom);
     hotpatch_import(wsasendto_import_addr, my_WSASendTo);
+
+
+#if BETTER_BLACK_SCREEN_FIX
+    uintptr_t base = base_address;
+    for (size_t i = 0; i < countof(lock_fix_addrs); ++i) {
+        hotpatch_rel32(based_pointer(base, lock_fix_addrs[i]), fix_black_screen_lock);
+    }
+    for (size_t i = 0; i < countof(unlock_fixA_addrs); ++i) {
+        hotpatch_rel32(based_pointer(base, unlock_fixA_addrs[i]), fix_black_screen_unlockA);
+    }
+    for (size_t i = 0; i < countof(unlock_fixB_addrs); ++i) {
+        hotpatch_call(based_pointer(base, unlock_fixB_addrs[i]), fix_black_screen_unlockB);
+    }
+#endif
 }
 

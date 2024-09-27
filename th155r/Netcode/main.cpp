@@ -171,8 +171,12 @@ void patch_se_trust(void* base_address) {
     hotpatch_jump(based_pointer(base_address, 0x933B), my_msize);
 #endif
 
-    static constexpr const uint8_t data[] = { 0x31, 0xC0 };
-    mem_write(based_pointer(base_address, 0x15CC), data);
+    static constexpr const uint8_t data[] = {
+        0xB8, 0x01, 0x00, 0x00, 0x00,   // MOV EAX, 1
+        0xC3,                           // RET
+        0xCC                            // INT3
+    };
+    mem_write(based_pointer(base_address, 0x13C0), data);
 }
 
 #define sq_vm_malloc_call_addr (0x186745_R)
@@ -217,7 +221,7 @@ void patch_autopunch() {
 
     //autopunch_init();
 
-    hotpatch_icall(0x1702F3_R, confirm_inherited_socket);
+    hotpatch_icall(0x1702F3_R, bind_inherited_socket);
     hotpatch_icall(0x170641_R, inherit_punch_socket);
     hotpatch_icall(0x170382_R, close_punch_socket);
     hotpatch_icall(0x1703ED_R, close_punch_socket);

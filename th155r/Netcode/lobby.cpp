@@ -223,7 +223,7 @@ SOCKET WSAAPI inherit_punch_socket(int af, int type, int protocol, LPWSAPROTOCOL
     }
 }
 
-int WSAAPI confirm_inherited_socket(SOCKET s, const sockaddr* name, int namelen) {
+int WSAAPI bind_inherited_socket(SOCKET s, const sockaddr* name, int namelen) {
     {
         std::lock_guard<SpinLock> lock(punch_lock);
 

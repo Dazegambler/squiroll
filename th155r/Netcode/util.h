@@ -48,6 +48,14 @@
 
 #endif
 
+#ifndef __has_builtin
+#define __has_builtin(name) 0
+#endif
+
+#ifndef __has_attribute
+#define __has_attribute(name) 0
+#endif
+
 #ifdef cdecl
 #undef cdecl
 #endif
@@ -62,10 +70,6 @@
 #endif
 #ifdef vectorcall
 #undef vectorcall
-#endif
-
-#ifndef __has_builtin
-#define __has_builtin(name) 0
 #endif
 
 #if GCC_COMPAT || CLANG_COMPAT
@@ -161,6 +165,28 @@
 #define unreachable do; while(0)
 #endif
 
+#if __has_attribute(address_space)
+#define read_fs_dword(offset) (*(uint32_t __attribute__((address_space(257)))*)((uintptr_t)(offset)))
+#elif defined(__SEG_FS)
+#if CLANG_COMPAT || !defined(__cplusplus)
+#define read_fs_dword(offset) (*(__seg_fs uint32_t*)((uintptr_t)(offset)))
+#else
+uint32_t fastcall read_fs_dword(size_t offset) {
+    uint32_t ret;
+    __asm__(
+        "movl %%fs:%[offset], %[ret]"
+        : [ret] "=r"(ret)
+        : [offset] "ri"(offset)
+    );
+    return ret;
+}
+#endif
+#elif MSVC_COMPAT
+#define read_fs_dword(offset) __readfsdword(offset)
+#else
+#define read_fs_dword(offset) (*(uint32_t*)((uintptr_t)(offset)))
+#endif
+
 /*
 #if GCC_COMPAT || CLANG_COMPAT
 #define stack_return_offset ((uintptr_t*)__builtin_return_address(0))
@@ -172,86 +198,11 @@
 #endif
 */
 
-#if !__has_builtin(__builtin_add_overflow)
-#define __builtin_add_overflow __builtin_add_overflow_impl
-template<typename T>
-static inline bool __builtin_add_overflow(T a, T b, T * res) {
-    if constexpr (std::is_signed_v<T>) {
-        using U = std::make_unsigned_t<T>;
-        U result = (U)a + (U)b;
-        *res = (T)result;
-        if (a > 0) {
-            return b <= std::numeric_limits<T>::max() - a;
-        } else {
-            return b >= std::numeric_limits<T>::min() - a;
-        }
-    } else {
-        return (*res = a + b) >= a;
-    }
-}
-#endif
-
-#if !__has_builtin(__builtin_sub_overflow)
-#define __builtin_sub_overflow __builtin_sub_overflow_impl
-template<typename T>
-static inline bool __builtin_sub_overflow(T a, T b, T * res) {
-    if constexpr (std::is_signed_v<T>) {
-        using U = std::make_unsigned_t<T>;
-        U result = (U)a - (U)b;
-        *res = (T)result;
-        if (a > 0) {
-            return b >= std::numeric_limits<T>::max() - a;
-        } else {
-            return b <= std::numeric_limits<T>::min() - a;
-        }
-    } else {
-        return (*res = a - b) <= a;
-    }
-}
-#endif
-
 #define countof(array_type) \
 (sizeof(array_type) / sizeof(array_type[0]))
 
 #define bitsof(type) (sizeof(type) * CHAR_BIT)
 
-
-template<typename T>
-static inline T saturate_add(T lhs, T rhs) {
-    if constexpr (std::is_signed_v<T>) {
-        using U = std::make_unsigned_t<T>;
-        T ret;
-        if (!__builtin_add_overflow(lhs, rhs, &ret)) {
-            return ret;
-        }
-        return ((U)rhs >> (bitsof(T) - 1)) + (U)std::numeric_limits<T>::max();
-    } else {
-        T ret = lhs + rhs;
-        return ret >= lhs ? ret : std::numeric_limits<T>::max();
-    }
-}
-
-template<typename T>
-static inline T saturate_sub(T lhs, T rhs) {
-    if constexpr (std::is_signed_v<T>) {
-        using U = std::make_unsigned_t<T>;
-        T ret;
-        if (!__builtin_sub_overflow(lhs, rhs, &ret)) {
-            return ret;
-        }
-        return (U)std::numeric_limits<T>::min() - ((U)rhs >> (bitsof(T) - 1));
-    } else {
-        T ret = lhs - rhs;
-        return ret <= lhs ? ret : std::numeric_limits<T>::min();
-    }
-}
-
-
-extern const uintptr_t base_address;
-
-forceinline uintptr_t operator ""_R(unsigned long long int addr) {
-    return (uintptr_t)addr + base_address;
-}
 
 template <size_t bit_count>
 using SBitIntType = std::conditional_t<bit_count <= 8, int8_t,
@@ -265,6 +216,85 @@ using UBitIntType = std::conditional_t<bit_count <= 8, uint8_t,
 					std::conditional_t<bit_count <= 32, uint32_t,
 					std::conditional_t<bit_count <= 64, uint64_t,
 					void>>>>;
+
+#if !__has_builtin(__builtin_add_overflow)
+#define __builtin_add_overflow __builtin_add_overflow_impl
+template<typename T>
+static inline bool __builtin_add_overflow_impl(T a, T b, T* res) {
+    if constexpr (std::is_signed_v<T>) {
+        using U = std::make_unsigned_t<T>;
+        U result = (U)a + (U)b;
+        *res = (T)result;
+        if (a > 0) {
+            return b <= (std::numeric_limits<T>::max)() - a;
+        } else {
+            return b >= (std::numeric_limits<T>::min)() - a;
+        }
+    } else {
+        return (*res = a + b) >= a;
+    }
+}
+#endif
+
+#if !__has_builtin(__builtin_sub_overflow)
+#define __builtin_sub_overflow __builtin_sub_overflow_impl
+template<typename T>
+static inline bool __builtin_sub_overflow_impl(T a, T b, T* res) {
+    if constexpr (std::is_signed_v<T>) {
+        using U = std::make_unsigned_t<T>;
+        U result = (U)a - (U)b;
+        *res = (T)result;
+        if (a > 0) {
+            return b >= (std::numeric_limits<T>::max)() - a;
+        } else {
+            return b <= (std::numeric_limits<T>::min)() - a;
+        }
+    } else {
+        return (*res = a - b) <= a;
+    }
+}
+#endif
+
+template<typename T>
+static inline T saturate_add(T lhs, T rhs) {
+    if constexpr (std::is_signed_v<T>) {
+        using U = std::make_unsigned_t<T>;
+        T ret;
+        if (!__builtin_add_overflow(lhs, rhs, &ret)) {
+            return ret;
+        }
+        return ((U)rhs >> (bitsof(T) - 1)) + (U)(std::numeric_limits<T>::max)();
+    } else {
+        T ret = lhs + rhs;
+        return ret >= lhs ? ret : (std::numeric_limits<T>::max)();
+    }
+}
+
+template<typename T>
+static inline T saturate_sub(T lhs, T rhs) {
+    if constexpr (std::is_signed_v<T>) {
+        using U = std::make_unsigned_t<T>;
+        T ret;
+        if (!__builtin_sub_overflow(lhs, rhs, &ret)) {
+            return ret;
+        }
+        return (U)(std::numeric_limits<T>::min)() - ((U)rhs >> (bitsof(T) - 1));
+    } else {
+        T ret = lhs - rhs;
+        return ret <= lhs ? ret : (std::numeric_limits<T>::min)();
+    }
+}
+
+template<typename T>
+static inline T saturate_mul(T lhs, T rhs) {
+
+}
+
+extern const uintptr_t base_address;
+
+forceinline uintptr_t operator ""_R(unsigned long long int addr) {
+    return (uintptr_t)addr + base_address;
+}
                     
 template <typename R, typename B, typename O> requires(!std::is_same_v<R, B>)
 static forceinline R* based_pointer(B* base, O offset) {

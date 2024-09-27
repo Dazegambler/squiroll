@@ -135,6 +135,20 @@ SQInteger CompileBuffer(HSQUIRRELVM v) {
     return SQ_OK;
 }
 
+SQInteger sq_print(HSQUIRRELVM v){
+    const SQChar *str;
+    if (sq_gettop(v) != 2){
+        return sq_throwerror(v, "Invalid arguments,expected:<string>");
+    }
+
+    if (SQ_FAILED(sq_getstring(v, 2, &str))){
+        return sq_throwerror(v, "Invalid arguments,expected a string");
+    }
+
+    log_printf(str);
+    return 1;
+}
+
 SQInteger r_resync_get(HSQUIRRELVM v) {
     sq_pushbool(v, resyncing);
     return 1;
@@ -211,10 +225,13 @@ extern "C" {
                 sq_pushstring(v, _SC("resyncing"), -1);
                     sq_newclosure(v, r_resync_get, 0);
                 sq_newslot(v, -3, SQFalse);
+                sq_pushstring(v, _SC("print"), -1);
+                    sq_newclosure(v, sq_print, 0);
+                sq_newslot(v, -3, SQFalse);
             sq_newslot(v, -3, SQFalse);
 
-            //modifications to the manbow table
-            sq_pushstring(v, _SC("manbow"), -1);
+                // modifications to the manbow table
+                sq_pushstring(v, _SC("manbow"), -1);
                 sq_get(v,-2);
                 sq_pushstring(v, _SC("CompileBuffer"), -1);
                     sq_newclosure(v, CompileBuffer, 0);

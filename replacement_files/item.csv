@@ -1,0 +1,12 @@
+exit,戻る,exit,,,,,,
+se,SE音量,se volume,,,,,,
+bgm,BGM音量,bgm volume,,,,,,
+screen,画面表示,screen mode,ウィンドウ,window,フルスクリーン,fullscreen,,
+vsync,垂直同期,vsync,無効,disable,有効,,,
+fps,FPSの表示,show fps,無効,disable,有効,,,
+key1p,1Pキーコンフィグ,,,,,,,
+key2p,2Pキーコンフィグ,,,,,,,
+replay_save,リプレイの保存,save replay,する,enable,しない,disable,選択,choose
+replay_save_online,リプレイの保存(オンライン),save replay(online),する,enable,しない,disable,,
+lang,言語,language,日本語,japanese,英語,english,,
+misc,雑多,,,,,,,

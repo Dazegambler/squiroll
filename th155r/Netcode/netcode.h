@@ -10,7 +10,7 @@
 
 #define NETPLAY_PATCH_TYPE NETPLAY_VER_103F
 
-#define BETTER_BLACK_SCREEN_FIX 0
+#define BETTER_BLACK_SCREEN_FIX 1
 
 extern SQBool resyncing;
 

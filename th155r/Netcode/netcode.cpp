@@ -161,65 +161,186 @@ int WSAAPI my_WSARecvFrom(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPD
 
 struct BoostLock {
     void* mutex_addr;
+    bool is_locked;
 };
 
 typedef void fastcall lock_func_t(BoostLock* lock);
 
 void fastcall fix_black_screen_lock(BoostLock* lock) {
+
     uint8_t* mutex_addr = (uint8_t*)lock->mutex_addr;
-    if (*based_pointer<uint32_t>(mutex_addr, -0x50) != read_fs_dword(0x24)) {
+
+    lock->is_locked = true;
+    auto current_thread = read_fs_dword(0x24);
+    if (current_thread != *based_pointer<std::atomic<uint32_t>>(mutex_addr, -0x50)) {
         ((lock_func_t*)(0xF410_R))(lock);
-        *based_pointer<uint32_t>(mutex_addr, -0x50) = read_fs_dword(0x24);
+        *based_pointer<std::atomic<uint32_t>>(mutex_addr, -0x50) = current_thread;
     }
     ++mutex_addr[-0x71];
 }
 
-void fastcall fix_black_screen_unlockA(BoostLock* lock) {
+void fastcall fix_black_screen_unlock(BoostLock* lock) {
+
     uint8_t* mutex_addr = (uint8_t*)lock->mutex_addr;
-    if (!--mutex_addr[-0x71]) {
-        *based_pointer<uint32_t>(mutex_addr, -0x50) = 0;
+    
+    if (expect(!--mutex_addr[-0x71], true)) {
+        *based_pointer<std::atomic<uint32_t>>(mutex_addr, -0x50) = 0;
         return ((lock_func_t*)(0xF4C0_R))(lock);
     }
 }
 
-uint32_t fastcall fix_black_screen_unlockB(uint8_t* mutex_addr) {
-    if (!--mutex_addr[-0x71]) {
-        *based_pointer<uint32_t>(mutex_addr, -0x50) = 0;
-    }
-    return 0x80000000;
-}
-
 static constexpr uintptr_t lock_fix_addrs[] = {
-    0x172FD6, 0x178B96, 0x178ED7, 0x1791BF, 0x17CDC9,
-    0x17CFEB, 0x17D1DB, 0x17D36B, 0x17D5B9, 0x17D687
+    0x172FD6, // Method 28
+    0x178B96, // Method 20
+    0x178ED7, // Method 24
+    0x1791BF, // Method 10
+    0x17CDC9, // Handle packet 9
+    0x17CFEB, // Handle packet 11
+    0x17D1DB, // Handle packet 12
+    0x17D36B, // Handle packet 13
+    0x17D5B9, // Handle packet 15
+    0x17D687  // Handle packet 16
 };
 static constexpr uintptr_t unlock_fixA_addrs[] = {
-    0x373F74, 0x3746FC, 0x37473C, 0x374774, 0x17CE02,
-    0x17CE98, 0x17CEB5, 0x374E04, 0x374E34
+    0x373F74, // Method 28 SEH
+    0x3746FC, // Method 20 SEH
+    0x37473C, // Method 24 SEH
+    0x374774, // Method 10 SEH
+    0x17CE02, 0x17CE98, 0x17CEB5, // Handle packet 9
+    0x374E04, // Handle packet 9 SEH
+    0x374E34  // Handle packet 11 SEH, Handle packet 12 SEH
 };
+
 static constexpr uintptr_t unlock_fixB_addrs[] = {
-    0x173005, 0x1730A4, 0x178C3E, 0x178D69, 0x178F76,
-    0x179055, 0x1791E7, 0x179269, 0x17D15C, 0x17D2EB,
-    0x17D393, 0x17D3FD, 0x17D5D7, 0x17D6B2, 0x17D717
+    0x172FF1, 0x173094, // Method 28            C1+, C2+
+    0x178C2D, 0x178D5C, // Method 20            C3, C4
+    0x178F65, 0x179048, // Method 24            C5, C6
+    0x1791D3, 0x179259, // Method 10            C7+, C8+
+    0x17D14C, // Handle packet 11               C9+
+    0x17D2DB, // Handle packet 12               C9+
+    0x17D37F, 0x17D3ED, // Handle packet 13     C10+, C8+
+    0x17D5C7, // Handle packet 15               C8+
+    0x17D69F, 0x17D706, // Handle packet 16     C11, C8+
+};
+
+// CC, F5000000, NOP3
+static constexpr uint8_t unlock_fixB1[] = {
+    0x8B, 0x4D, 0xCC,                           // MOV ECX, DWORD PTR [EBP-0x34]
+    0xFE, 0x49, 0x8F,                           // DEC BYTE PTR [ECX-0x71]
+    0x0F, 0x85, 0xF5, 0x00, 0x00, 0x00,         // JNZ
+    0x31, 0xD2,                                 // XOR EDX, EDX
+    0x87, 0x51, 0xB0,                           // XCHG DWORD PTR [ECX-0x50], EDX
+    BASE_NOP3
+};
+
+// CC, 32, NOP3
+static constexpr uint8_t unlock_fixB2[] = {
+    0x8B, 0x4D, 0xCC,                           // MOV ECX, DWORD PTR [EBP-0x34]
+    0xFE, 0x49, 0x8F,                           // DEC BYTE PTR [ECX-0x71]
+    0x75, 0x32,                                 // JNZ
+    0x31, 0xD2,                                 // XOR EDX, EDX
+    0x87, 0x51, 0xB0,                           // XCHG DWORD PTR [ECX-0x50], EDX
+    BASE_NOP3
+};
+
+// E0, 24020000
+static constexpr uint8_t unlock_fixB3[] = {
+    0x8B, 0x4D, 0xE0,                           // MOV ECX, DWORD PTR [EBP-0x20]
+    0xFE, 0x49, 0x8F,                           // DEC BYTE PTR [ECX-0x71]
+    0x0F, 0x85, 0x24, 0x02, 0x00, 0x00,         // JNZ
+    0x31, 0xD2,                                 // XOR EDX, EDX
+    0x87, 0x51, 0xB0,                           // XCHG DWORD PTR [ECX-0x50], EDX
+};
+
+// E0, 2F
+static constexpr uint8_t unlock_fixB4[] = {
+    0x8B, 0x4D, 0xE0,                           // MOV ECX, DWORD PTR [EBP-0x20]
+    0xFE, 0x49, 0x8F,                           // DEC BYTE PTR [ECX-0x71]
+    0x75, 0x2F,                                 // JNZ
+    0x31, 0xD2,                                 // XOR EDX, EDX
+    0x87, 0x51, 0xB0,                           // XCHG DWORD PTR [ECX-0x50], EDX
+};
+
+// E8, D8010000
+static constexpr uint8_t unlock_fixB5[] = {
+    0x8B, 0x4D, 0xE8,                           // MOV ECX, DWORD PTR [EBP-0x18]
+    0xFE, 0x49, 0x8F,                           // DEC BYTE PTR [ECX-0x71]
+    0x0F, 0x85, 0xD8, 0x01, 0x00, 0x00,         // JNZ
+    0x31, 0xD2,                                 // XOR EDX, EDX
+    0x87, 0x51, 0xB0,                           // XCHG DWORD PTR [ECX-0x50], EDX
+};
+
+// E8, 2F
+static constexpr uint8_t unlock_fixB6[] = {
+    0x8B, 0x4D, 0xE8,                           // MOV ECX, DWORD PTR [EBP-0x18]
+    0xFE, 0x49, 0x8F,                           // DEC BYTE PTR [ECX-0x71]
+    0x75, 0x2F,                                 // JNZ
+    0x31, 0xD2,                                 // XOR EDX, EDX
+    0x87, 0x51, 0xB0,                           // XCHG DWORD PTR [ECX-0x50], EDX
+};
+
+// EC, DB000000, NOP3
+static constexpr uint8_t unlock_fixB7[] = {
+    0x8B, 0x4D, 0xEC,                           // MOV ECX, DWORD PTR [EBP-0x14]
+    0xFE, 0x49, 0x8F,                           // DEC BYTE PTR [ECX-0x71]
+    0x0F, 0x85, 0xDB, 0x00, 0x00, 0x00,         // JNZ
+    0x31, 0xD2,                                 // XOR EDX, EDX
+    0x87, 0x51, 0xB0,                           // XCHG DWORD PTR [ECX-0x50], EDX
+    BASE_NOP3
+};
+
+// EC, 32, NOP3
+static constexpr uint8_t unlock_fixB8[] = {
+    0x8B, 0x4D, 0xEC,                           // MOV ECX, DWORD PTR [EBP-0x14]
+    0xFE, 0x49, 0x8F,                           // DEC BYTE PTR [ECX-0x71]
+    0x75, 0x32,                                 // JNZ
+    0x31, 0xD2,                                 // XOR EDX, EDX
+    0x87, 0x51, 0xB0,                           // XCHG DWORD PTR [ECX-0x50], EDX
+    BASE_NOP3
+};
+
+// E8, 32, NOP3
+static constexpr uint8_t unlock_fixB9[] = {
+    0x8B, 0x4D, 0xE8,                           // MOV ECX, DWORD PTR [EBP-0x18]
+    0xFE, 0x49, 0x8F,                           // DEC BYTE PTR [ECX-0x71]
+    0x75, 0x32,                                 // JNZ
+    0x31, 0xD2,                                 // XOR EDX, EDX
+    0x87, 0x51, 0xB0,                           // XCHG DWORD PTR [ECX-0x50], EDX
+    BASE_NOP3
+};
+
+// EC, D4010000, NOP3
+static constexpr uint8_t unlock_fixB10[] = {
+    0x8B, 0x4D, 0xEC,                           // MOV ECX, DWORD PTR [EBP-0x14]
+    0xFE, 0x49, 0x8F,                           // DEC BYTE PTR [ECX-0x71]
+    0x0F, 0x85, 0xD4, 0x01, 0x00, 0x00,         // JNZ
+    0x31, 0xD2,                                 // XOR EDX, EDX
+    0x87, 0x51, 0xB0,                           // XCHG DWORD PTR [ECX-0x50], EDX
+    BASE_NOP3
+};
+
+// EC, AC000000, NOP2
+static constexpr uint8_t unlock_fixB11[] = {
+    0x8B, 0x4D, 0xEC,                           // MOV ECX, DWORD PTR [EBP-0x14]
+    0xFE, 0x49, 0x8F,                           // DEC BYTE PTR [ECX-0x71]
+    0x0F, 0x85, 0xAC, 0x00, 0x00, 0x00,         // JNZ
+    0x31, 0xD2,                                 // XOR EDX, EDX
+    0x87, 0x51, 0xB0,                           // XCHG DWORD PTR [ECX-0x50], EDX
+    BASE_NOP2
 };
 
 #endif
 
 void patch_netplay() {
-    static constexpr uint8_t data[] = { INT8_MAX };
-    mem_write(patchA_addr, data);
-
+    mem_write(patchA_addr, SINGLE_BYTE_PATCH<INT8_MAX>);
 
 #if BETTER_BLACK_SCREEN_FIX
-    static constexpr uint8_t black_screen_patchA[] = { 0x1E };
-    static constexpr uint8_t black_screen_patchB[] = { 0x89 };
-
-    mem_write(0x171F66_R, black_screen_patchA);
-    mem_write(0x17C6E6_R, black_screen_patchA);
-    mem_write(0x17C6FB_R, black_screen_patchA);
-    mem_write(0x17C945_R, black_screen_patchA);
+    //mem_write(0x171F66_R, SINGLE_BYTE_PATCH<0x1E>);
+    mem_write(0x17C6E6_R, SINGLE_BYTE_PATCH<0x1E>);
+    mem_write(0x17C6FB_R, SINGLE_BYTE_PATCH<0x1E>);
+    mem_write(0x17C945_R, SINGLE_BYTE_PATCH<0x1E>);
     mem_write(0x171F4B_R, NOP_BYTES<1>);
-    mem_write(0x171F64_R, black_screen_patchB);
+    mem_write(0x171F64_R, SINGLE_BYTE_PATCH<0x89>);
 #endif
 
     resync_patch(160);
@@ -228,15 +349,28 @@ void patch_netplay() {
 
 
 #if BETTER_BLACK_SCREEN_FIX
+    mem_write(0x172FF1_R, unlock_fixB1);
+    mem_write(0x173094_R, unlock_fixB2);
+    mem_write(0x178C2D_R, unlock_fixB3);
+    mem_write(0x178D5C_R, unlock_fixB4);
+    mem_write(0x178F65_R, unlock_fixB5);
+    mem_write(0x179048_R, unlock_fixB6);
+    mem_write(0x1791D3_R, unlock_fixB7);
+    mem_write(0x179259_R, unlock_fixB8);
+    mem_write(0x17D14C_R, unlock_fixB9);
+    mem_write(0x17D2DB_R, unlock_fixB9);
+    mem_write(0x17D37F_R, unlock_fixB10);
+    mem_write(0x17D3ED_R, unlock_fixB8);
+    mem_write(0x17D5C7_R, unlock_fixB8);
+    mem_write(0x17D69F_R, unlock_fixB11);
+    mem_write(0x17D706_R, unlock_fixB8);
+
     uintptr_t base = base_address;
     for (size_t i = 0; i < countof(lock_fix_addrs); ++i) {
         hotpatch_rel32(based_pointer(base, lock_fix_addrs[i]), fix_black_screen_lock);
     }
     for (size_t i = 0; i < countof(unlock_fixA_addrs); ++i) {
-        hotpatch_rel32(based_pointer(base, unlock_fixA_addrs[i]), fix_black_screen_unlockA);
-    }
-    for (size_t i = 0; i < countof(unlock_fixB_addrs); ++i) {
-        hotpatch_call(based_pointer(base, unlock_fixB_addrs[i]), fix_black_screen_unlockB);
+        hotpatch_rel32(based_pointer(base, unlock_fixA_addrs[i]), fix_black_screen_unlock);
     }
 #endif
 

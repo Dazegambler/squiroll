@@ -42,6 +42,10 @@ static constexpr char CONFIG_FILE_NAME[] = "\\netcode.ini";
 #define PING_SCALE_Y_DEFAULT 1.0
 #define PING_SCALE_Y_DEFAULT_STR MACRO_STR(PING_SCALE_Y_DEFAULT)
 
+#define NETWORK_SECTION_NAME "network"
+#define NETWORK_IPV6_KEY "enable_ipv6"
+#define NETWORK_IPV6_DEFAULT "true"
+
 /*
 static constexpr char DEFAULT_CONFIG[] =
 "[" LOBBY_SECTION_NAME "]\n"
@@ -196,6 +200,21 @@ float get_ping_scale_y() {
 	return ret;
 }
 
+static char NETWORK_IPV6_BUFFER[8]{ '\0' };
+bool get_ipv6_enabled() {
+	size_t length;
+	bool ret = false;
+	if (
+		use_config &&
+		(length = get_config_string(NETWORK_SECTION_NAME, NETWORK_IPV6_KEY, NETWORK_IPV6_BUFFER))
+	) {
+		if (!stricmp(NETWORK_IPV6_BUFFER, "true")) {
+			ret = true;
+		}
+	}
+	return ret;
+}
+
 void init_config_file() {
 	size_t directory_length = GetCurrentDirectoryA(countof(CONFIG_FILE_PATH), CONFIG_FILE_PATH);
 	if (
@@ -223,6 +242,7 @@ void init_config_file() {
 			fill_default_config_string(PING_SECTION_NAME, PING_Y_KEY, PING_Y_DEFAULT_STR);
 			fill_default_config_string(PING_SECTION_NAME, PING_SCALE_X_KEY, PING_SCALE_X_DEFAULT_STR);
 			fill_default_config_string(PING_SECTION_NAME, PING_SCALE_Y_KEY, PING_SCALE_Y_DEFAULT_STR);
+			fill_default_config_string(NETWORK_SECTION_NAME, NETWORK_IPV6_KEY, NETWORK_IPV6_DEFAULT);
 		}
 	}
 }

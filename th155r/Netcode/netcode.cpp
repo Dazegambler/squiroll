@@ -10,7 +10,7 @@
 #include "netcode.h"
 #include "log.h"
 #include "lobby.h"
-
+#include "config.h"
 
 #define resync_patch_addr (0x0E364C_R)
 #define patchA_addr (0x0E357A_R)
@@ -239,5 +239,11 @@ void patch_netplay() {
         hotpatch_call(based_pointer(base, unlock_fixB_addrs[i]), fix_black_screen_unlockB);
     }
 #endif
+
+    /*
+    if (get_ipv6_enabled()) {
+        mem_write(0x172AAF_R, AF_INET6);
+    }
+    */
 }
 

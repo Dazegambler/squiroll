@@ -20,5 +20,6 @@ int32_t get_ping_x();
 int32_t get_ping_y();
 float get_ping_scale_x();
 float get_ping_scale_y();
+bool get_ipv6_enabled();
 
 #endif

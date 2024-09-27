@@ -61,6 +61,10 @@ static forceinline void hotpatch_import(T target, R replacement) {
     return hotpatch_import((void*)target, (void*)replacement);
 }
 
+
+template <uint8_t val>
+static inline constexpr uint8_t SINGLE_BYTE_PATCH = val;
+
 #define BASE_NOP0
 #define BASE_NOP1 0x90
 #define BASE_NOP2 0x66, 0x90

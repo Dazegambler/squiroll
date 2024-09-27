@@ -187,16 +187,19 @@ uint32_t fastcall read_fs_dword(size_t offset) {
 #define read_fs_dword(offset) (*(uint32_t*)((uintptr_t)(offset)))
 #endif
 
-/*
 #if GCC_COMPAT || CLANG_COMPAT
-#define stack_return_offset ((uintptr_t*)__builtin_return_address(0))
+//#define stack_return_offset ((uintptr_t*)__builtin_return_address(0))
+#define return_address ((uintptr_t)__builtin_return_address(0))
 #elif MSVC_COMPAT
 #include <intrin.h>
 #define stack_return_offset ((uintptr_t*)_AddressOfReturnAddress())
+#define return_address (*stack_return_offset)
 #else
-#error "Unknown stack offset format"
+static inline const uintptr_t dummy_ip = 0;
+#define stack_return_offset (&dummy_ip)
+#define return_address (*stack_return_offset)
 #endif
-*/
+
 
 #define countof(array_type) \
 (sizeof(array_type) / sizeof(array_type[0]))

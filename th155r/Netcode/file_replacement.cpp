@@ -65,11 +65,13 @@ static constexpr uint8_t gauge_vs_nut[] = {
 #endif
 };
 
+/*
 static constexpr uint8_t menu_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
 #include "replacement_files/menu.nut.h"
 #endif
 };
+*/
 
 static constexpr uint8_t title_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT

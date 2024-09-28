@@ -170,13 +170,13 @@ void fastcall fix_black_screen_lock(BoostLock* lock) {
 
     uint8_t* mutex_addr = (uint8_t*)lock->mutex_addr;
 
-    lock->is_locked = true;
     auto current_thread = read_fs_dword(0x24);
     if (current_thread != *based_pointer<std::atomic<uint32_t>>(mutex_addr, -0x50)) {
         ((lock_func_t*)(0xF410_R))(lock);
         *based_pointer<std::atomic<uint32_t>>(mutex_addr, -0x50) = current_thread;
     }
     ++mutex_addr[-0x71];
+    lock->is_locked = true;
 }
 
 void fastcall fix_black_screen_unlock(BoostLock* lock) {

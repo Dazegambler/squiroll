@@ -332,15 +332,15 @@ static constexpr uint8_t unlock_fixB11[] = {
 #endif
 
 void patch_netplay() {
-    mem_write(patchA_addr, SINGLE_BYTE_PATCH<INT8_MAX>);
+    mem_write(patchA_addr, PATCH_BYTES<INT8_MAX>);
 
 #if BETTER_BLACK_SCREEN_FIX
-    //mem_write(0x171F66_R, SINGLE_BYTE_PATCH<0x1E>);
-    mem_write(0x17C6E6_R, SINGLE_BYTE_PATCH<0x1E>);
-    mem_write(0x17C6FB_R, SINGLE_BYTE_PATCH<0x1E>);
-    mem_write(0x17C945_R, SINGLE_BYTE_PATCH<0x1E>);
-    mem_write(0x171F4B_R, NOP_BYTES<1>);
-    mem_write(0x171F64_R, SINGLE_BYTE_PATCH<0x89>);
+    //mem_write(0x171F66_R, PATCH_BYTES<0x1E>);
+    mem_write(0x17C6E6_R, PATCH_BYTES<0x1E>);
+    mem_write(0x17C6FB_R, PATCH_BYTES<0x1E>);
+    mem_write(0x17C945_R, PATCH_BYTES<0x1E>);
+    mem_write(0x171F4B_R, NOP_BYTES(1));
+    mem_write(0x171F64_R, PATCH_BYTES<0x89>);
 #endif
 
     resync_patch(160);

@@ -616,22 +616,22 @@ void patch_se_lobby(void* base_address) {
 #endif
     //hotpatch_import(based_pointer(base_address, 0x1292AC), my_gethostbyname);
 
-    //mem_write(based_pointer(base_address, 0x206F8), NOP_BYTES<2>);
-    //mem_write(based_pointer(base_address, 0x20872), NOP_BYTES<2>);
+    //mem_write(based_pointer(base_address, 0x206F8), NOP_BYTES(2));
+    //mem_write(based_pointer(base_address, 0x20872), NOP_BYTES(2));
 
-    mem_write(based_pointer(base_address, 0x203AA), NOP_BYTES<55>);
+    mem_write(based_pointer(base_address, 0x203AA), NOP_BYTES(55));
 
     hotpatch_rel32(based_pointer(base_address, 0x8C4C), lobby_connect_hook);
 
     hotpatch_icall(based_pointer(base_address, 0x202C1), lobby_socket_connect_hook);
 
     /*
-    static constexpr uint8_t lobby_socket_close_reg_swap[] = {
+    // lobby_socket_close_reg_swap
+    mem_write(based_pointer(base_address, 0x2003E), PATCH_BYTES<
         0x8B, 0x3D, 0xFC,   // MOV ECX, DWORD PTR [EBP-4]
         0x8B, 0x41, 0x0C,   // MOV EAX, DWORD PTR [ECX+C]
         0x50                // PUSH EAX
-    };
-    mem_write(based_pointer(base_address, 0x2003E), lobby_socket_close_reg_swap);
+    >);
     */
     hotpatch_icall(based_pointer(base_address, 0x20045), lobby_socket_close_hook);
 
@@ -648,8 +648,8 @@ void patch_se_lobby(void* base_address) {
 
     hotpatch_icall(based_pointer(base_address, 0x2070B), lobby_recv_hook);
 
-    static constexpr uint8_t remove_dupe_host_check[] = { 0xEB, 0x3A };
-    mem_write(based_pointer(base_address, 0x6610), remove_dupe_host_check);
+    // remove_dupe_host_check
+    mem_write(based_pointer(base_address, 0x6610), PATCH_BYTES<0xEB, 0x3A>);
 
 
     //mem_write(based_pointer(base_address, 0x83C4), INT3_BYTES);

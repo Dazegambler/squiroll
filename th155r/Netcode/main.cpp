@@ -292,8 +292,7 @@ void common_init(LogType log_type) {
     patch_allocman();
 
     // Allow launching multiple instances of the game
-    static constexpr uint8_t data_mutexa[] = { 0x68, 0x00, 0x00, 0x00, 0x00 };
-    mem_write(createmutex_patch_addr, data_mutexa); //mutex patch
+    mem_write(createmutex_patch_addr, PATCH_BYTES<0x68, 0x00, 0x00, 0x00, 0x00>); //mutex patch
 
     patch_netplay();
 

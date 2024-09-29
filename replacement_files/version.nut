@@ -21,7 +21,7 @@ function GetVersionString()
 
 function GetVersionSignature()
 {
-	return "1_21b+rollback ver."+::setting.version;
+	return "1_21b+R"+::setting.version;
 }
 
 ::SetWindowText("Touhou Hyouibana ~ Antinomy of Common Flowers. " + this.GetVersionString());

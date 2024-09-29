@@ -96,7 +96,7 @@ static const std::unordered_map<std::string_view, const EmbedData> replacements 
 	{"data/script/version.nut"sv, version_nut},
 	{"data/actor/status/gauge_vs.nut"sv, gauge_vs_nut},
 	{"data/system/title/title.nut"sv, title_nut},
-	{"data/system/config/config.nut"sv, config_nut},
+	//{"data/system/config/config.nut"sv, config_nut},
 	//{"data/system/config/item.csv"sv, item_csv},
 	//{"data/script/menu.nut"sv, menu_nut},
 };

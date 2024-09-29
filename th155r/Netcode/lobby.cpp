@@ -246,6 +246,7 @@ int WSAAPI close_punch_socket(SOCKET s) {
 
         if (s == punch_socket) {
             log_printf("Closing the punch socket. Bad? A\n");
+            //return 0;
             SENDTO_ADDR = {};
             RECVFROM_ADDR = {};
             SENDTO_ADDR_LEN = 0;
@@ -309,7 +310,7 @@ SOCKET get_or_create_punch_socket(uint16_t port) {
                         return sock;
                     }
             }
-            log_printf("UDP bind fail (%u):%u\n", port, WSAGetLastError());
+            log_printf("UDP bindA fail (%u):%u\n", port, WSAGetLastError());
             closesocket(sock);
         } else {
             log_printf("UDP socket fail:%u\n", WSAGetLastError());
@@ -349,7 +350,12 @@ int WSAAPI bind_inherited_socket(SOCKET s, const sockaddr* name, int namelen) {
     {
         std::lock_guard<SpinLock> lock(punch_lock);
 
-        if (!punch_socket_is_loaned) {
+        if (
+            // Somehow uncommenting this makes things less reliable
+            // even though it shouldn't do anything? Why?
+            //s == punch_socket &&
+            !punch_socket_is_loaned
+        ) {
             return 0;
         }
     }
@@ -363,9 +369,15 @@ int WSAAPI bind_inherited_socket(SOCKET s, const sockaddr* name, int namelen) {
             port = ((const sockaddr_in6*)name)->sin6_port;
             break;
     }
-    log_printf("BNDB:%u\n", __builtin_bswap16(port));
+    log_printf("BNDB:%u (PUNCH: %s)\n", __builtin_bswap16(port), bool_str(s == punch_socket));
     
-    return bind(s, name, namelen);
+    int ret = bind(s, name, namelen);
+
+    if (ret) {
+        log_printf("UDP bindB fail (%u):%u\n", port, WSAGetLastError());
+    }
+
+    return ret;
 }
 
 /*

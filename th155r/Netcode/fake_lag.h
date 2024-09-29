@@ -12,10 +12,10 @@
 
 #include "util.h"
 
-#define FAKE_SEND_LAG_AMOUNT 100          // Base lag miliseconds
-#define FAKE_SEND_JITTER_AMOUNT 150       // miliseconds
+#define FAKE_SEND_LAG_AMOUNT 0          // Base lag miliseconds
+#define FAKE_SEND_JITTER_AMOUNT 0       // miliseconds
 #define FAKE_PACKET_LOSS_PERCENTAGE 0   // 0-100
-#define FAKE_SPIKE_PERCENTAGE 15         // 0-100
+#define FAKE_SPIKE_PERCENTAGE 0         // 0-100
 #define FAKE_SPIKE_MULTIPLIER 5
 
 #if FAKE_SEND_LAG_AMOUNT > 0 || FAKE_SEND_JITTER_AMOUNT > 0 || FAKE_PACKET_LOSS_PERCENTAGE > 0 || FAKE_SPIKE_PERCENTAGE > 0
@@ -91,7 +91,16 @@ static int WSAAPI WSASendTo_fake_lag(SOCKET s, LPWSABUF lpBuffers, DWORD dwBuffe
 #endif
 
 #if FAKE_SEND_JITTER_AMOUNT > 0
-            lag_ms += (int)get_random(FAKE_SEND_JITTER_AMOUNT) - FAKE_SEND_JITTER_AMOUNT / 2;
+            int jitter = (int)(get_random(FAKE_SEND_JITTER_AMOUNT) - FAKE_SEND_JITTER_AMOUNT) / 2;
+#if FAKE_SEND_JITTER_AMOUNT / 2 > FAKE_SEND_LAG_AMOUNT
+            if (jitter < 0) {
+                lag_ms = saturate_sub<size_t>(lag_ms, -jitter);
+            }
+            else
+#endif
+            {
+                lag_ms += jitter;
+            }
 #endif
 
 #if FAKE_SPIKE_PERCENTAGE > 0

@@ -17,11 +17,6 @@
 #define wsasendto_import_addr (0x3884D4_R)
 #define wsarecvfrom_import_addr (0x3884D8_R)
 
-struct PacketLayout {
-    int8_t type;
-    unsigned char data[];
-};
-
 static bool not_in_match = true;
 SQBool resyncing = SQFalse;
 SQBool isplaying = SQFalse;
@@ -30,6 +25,10 @@ static uint64_t prev_timestamp = 0;
 
 static inline constexpr uint8_t RESYNC_THRESHOLD = UINT8_MAX;
 static inline constexpr uint8_t RESYNC_DURATION = UINT8_MAX;
+
+static inline constexpr PacketPunchPing PUNCH_PING_PACKET = {
+    .type = PACKET_TYPE_PUNCH_PING
+};
 
 /*
 TO FIX:
@@ -98,11 +97,13 @@ void run_resync_logic(uint64_t new_timestamp) {
 
 int WSAAPI my_WSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWORD lpNumberOfBytesSent, DWORD dwFlags, const sockaddr* lpTo, int iTolen, LPWSAOVERLAPPED lpOverlapped, LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine) {
 
-#if NETPLAY_PATCH_TYPE == NETPLAY_VER_103F
     PacketLayout* packet = (PacketLayout*)lpBuffers[0].buf;
 
     switch (packet->type) {
-        case 9:
+        default:
+            break;
+#if NETPLAY_PATCH_TYPE == NETPLAY_VER_103F
+        case PACKET_TYPE_9:
             if (not_in_match) {
                 if (lpNumberOfBytesSent) {
                     *lpNumberOfBytesSent = 1;
@@ -111,21 +112,21 @@ int WSAAPI my_WSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWO
             }
             not_in_match = true;
             break;
-        case 11:
+        case PACKET_TYPE_11:
             not_in_match = false;
             break;
-        case 18:
+        case PACKET_TYPE_18:
             if (lpBuffers[0].len >= 25) {
                 run_resync_logic(*(uint64_t*)&packet->data[16]);
             }
             break;
-        case 19:
+        case PACKET_TYPE_19:
             if (lpBuffers[0].len >= 26) {
                 run_resync_logic(*(uint64_t*)&packet->data[17]);
             }
             break;
-    }
 #endif
+    }
 
 #if LOG_BASE_GAME_SENDTO_RECVFROM
     return WSASendTo_log(s, lpBuffers, dwBufferCount, lpNumberOfBytesSent, dwFlags, lpTo, iTolen, lpOverlapped, lpCompletionRoutine);
@@ -141,18 +142,22 @@ int WSAAPI my_WSARecvFrom(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPD
     int ret = WSARecvFrom(s, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromLen, lpOverlapped, lpCompletionRoutine);
 #endif
 
-#if NETPLAY_PATCH_TYPE == NETPLAY_VER_103F
     PacketLayout* packet = (PacketLayout*)lpBuffers[0].buf;
 
     switch (packet->type) {
-        case 0: default:
+        default:
+            break;
+#if NETPLAY_PATCH_TYPE == NETPLAY_VER_103F
+        case PACKET_TYPE_0: case PACKET_TYPE_12: case PACKET_TYPE_13:
+        case PACKET_TYPE_14: case PACKET_TYPE_15: case PACKET_TYPE_16:
+        case PACKET_TYPE_17: case PACKET_TYPE_18: case PACKET_TYPE_19:
             not_in_match = false;
-        case 1: case 2: case 3: case 4: case 5:
-        case 6: case 7: case 8: case 9: case 10:
-        case 11:
+            break;
+#endif
+        case PACKET_TYPE_PUNCH_PING:
+            sendto(s, (const char*)&PUNCH_PING_PACKET, sizeof(PUNCH_PING_PACKET), 0, lpFrom, *lpFromLen);
             break;
     }
-#endif
 
     return ret;
 }

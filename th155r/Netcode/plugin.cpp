@@ -145,7 +145,7 @@ SQInteger sq_print(HSQUIRRELVM v){
         return sq_throwerror(v, "Invalid arguments,expected a string");
     }
 
-    log_printf(str);
+    log_printf("%s", str);
     return 1;
 }
 

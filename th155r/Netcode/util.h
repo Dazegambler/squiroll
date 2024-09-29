@@ -36,8 +36,17 @@
 
 #if GCC_COMPAT || CLANG_COMPAT
 #define USE_MSVC_ASM 0
+#define VLA_SUPPORT 1
 #elif MSVC_COMPAT
 #define USE_MSVC_ASM 1
+#define VLA_SUPPORT 0
+#else
+#define USE_MSVC_ASM 0
+#define VLA_SUPPORT 0
+#endif
+
+#if MSVC_COMPAT
+#include <malloc.h>
 #endif
 
 #define MACRO_VOID(...)
@@ -206,6 +215,7 @@ static inline const uintptr_t dummy_ip = 0;
 
 #define bitsof(type) (sizeof(type) * CHAR_BIT)
 
+#define bool_str(...) ((bool)(__VA_ARGS__) ? "true" : "false")
 
 template <size_t bit_count>
 using SBitIntType = std::conditional_t<bit_count <= 8, int8_t,
@@ -288,11 +298,6 @@ static inline T saturate_sub(T lhs, T rhs) {
     }
 }
 
-template<typename T>
-static inline T saturate_mul(T lhs, T rhs) {
-
-}
-
 extern const uintptr_t base_address;
 
 forceinline uintptr_t operator ""_R(unsigned long long int addr) {
@@ -357,6 +362,12 @@ inline bool HasScrollLockChanged() {
         return true;
     }
     return false;
+}
+
+static inline uint64_t query_performance_counter() {
+    LARGE_INTEGER ret;
+    QueryPerformanceCounter(&ret);
+    return ret.QuadPart;
 }
 
 static inline bool file_exists(const char* path) {

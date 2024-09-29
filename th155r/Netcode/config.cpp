@@ -13,7 +13,8 @@
 #include <windows.h>
 
 #include "util.h"
-
+#include "config.h"
+#include "log.h"
 
 static bool use_config = false;
 static char CONFIG_FILE_PATH[MAX_PATH];
@@ -44,7 +45,7 @@ static constexpr char CONFIG_FILE_NAME[] = "\\netcode.ini";
 
 #define NETWORK_SECTION_NAME "network"
 #define NETWORK_IPV6_KEY "enable_ipv6"
-#define NETWORK_IPV6_DEFAULT "true"
+#define NETWORK_IPV6_DEFAULT "maybe"
 
 /*
 static constexpr char DEFAULT_CONFIG[] =
@@ -109,8 +110,8 @@ static inline size_t get_config_string(const char* section, const char* key, cha
 }
 
 static inline void fill_default_config_string(const char* section, const char* key, const char* default_value) {
-	static char DUMMY[1]{ '\0' };
-	if (!GetPrivateProfileStringA(section, key, NULL, DUMMY, 0, CONFIG_FILE_PATH)) {
+	static char DUMMY[2]{ '\0' };
+	if (!GetPrivateProfileStringA(section, key, NULL, DUMMY, 2, CONFIG_FILE_PATH)) {
 		WritePrivateProfileStringA(section, key, default_value, CONFIG_FILE_PATH);
 	}
 }
@@ -201,18 +202,25 @@ float get_ping_scale_y() {
 }
 
 static char NETWORK_IPV6_BUFFER[8]{ '\0' };
-bool get_ipv6_enabled() {
+IPv6State get_ipv6_state() {
 	size_t length;
-	bool ret = false;
+	IPv6State ret = IPv6NeedsTest;
 	if (
 		use_config &&
 		(length = get_config_string(NETWORK_SECTION_NAME, NETWORK_IPV6_KEY, NETWORK_IPV6_BUFFER))
 	) {
 		if (!stricmp(NETWORK_IPV6_BUFFER, "true")) {
-			ret = true;
+			ret = IPv6Enabled;
+		}
+		else if (!stricmp(NETWORK_IPV6_BUFFER, "false")) {
+			ret = IPv6Disabled;
 		}
 	}
 	return ret;
+}
+
+void set_ipv6_state(bool state) {
+	set_config_string(NETWORK_SECTION_NAME, NETWORK_IPV6_KEY, bool_str(state));
 }
 
 void init_config_file() {

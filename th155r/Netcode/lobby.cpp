@@ -9,16 +9,121 @@
 #include <stdio.h>
 #include <string>
 #include <mutex>
+#include <charconv>
+#include <system_error>
+#include <bit>
 
 #include <winsock2.h>
 #include <ws2tcpip.h>
 //#include <MSWSock.h>
+#include <windns.h>
+
+#include <ip2string.h>
 
 #include "util.h"
 #include "config.h"
 #include "PatchUtils.h"
 #include "AllocMan.h"
 #include "log.h"
+#include "netcode.h"
+
+/*
+template <typename T>
+static inline size_t uint16_to_strbuf(uint16_t value, T* text_buffer) {
+    size_t digit_offset;
+    switch (value) {
+        case 0 ... 9:
+            digit_offset = 0;
+            break;
+        case 10 ... 99:
+            digit_offset = 1;
+            break;
+        case 100 ... 999:
+            digit_offset = 2;
+            break;
+        case 1000 ... 9999:
+            digit_offset = 3;
+            break;
+        default:
+            digit_offset = 4;
+            break;
+    }
+    size_t ret = digit_offset + 1;
+    do {
+        uint16_t digit = value % 10;
+        value /= 10;
+        text_buffer[digit_offset] = ((T)'0') + digit;
+    } while (digit_offset--);
+    return ret;
+}
+
+template <typename T>
+static inline size_t uint16_to_hex_strbuf(uint16_t value, T* text_buffer) {
+    uint32_t temp = value;
+    size_t digit_offset = temp ? 15 - std::countl_zero(value) >> 2 : 0;
+    size_t ret = digit_offset + 1;
+    do {
+        uint16_t digit = temp & 0xF;
+        temp >>= 2;
+        text_buffer[digit_offset] = (digit < 10 ? (T)'0' : (T)('A' - 10)) + digit;
+    } while (digit_offset--);
+    return ret;
+}
+
+void print_ipv4(IP4_ADDRESS addr) {
+    union {
+        uint32_t temp;
+        uint8_t as_bytes[4];
+    };
+    temp = addr;
+    log_printf(
+        "%u.%u.%u.%u"
+        , as_bytes[0], as_bytes[1], as_bytes[2], as_bytes[3]
+    );
+}
+
+void print_ipv6(const IP6_ADDRESS& addr) {
+    log_printf(
+        "%0hX:%0hX:%0hX:%0hX:%0hX:%0hX:%0hX:%0hX"
+        , __builtin_bswap16(addr.IP6Word[0]), __builtin_bswap16(addr.IP6Word[1])
+        , __builtin_bswap16(addr.IP6Word[2]), __builtin_bswap16(addr.IP6Word[3])
+        , __builtin_bswap16(addr.IP6Word[4]), __builtin_bswap16(addr.IP6Word[5])
+        , __builtin_bswap16(addr.IP6Word[6]), __builtin_bswap16(addr.IP6Word[7])
+    );
+}
+
+template<typename T>
+int sprint_ipv6(const IP6_ADDRESS& addr, T* buf) {
+    T* buf_write = buf;
+    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[0]), buf_write);
+    *buf_write++ = (T)':';
+    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[1]), buf_write);
+    *buf_write++ = (T)':';
+    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[2]), buf_write);
+    *buf_write++ = (T)':';
+    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[3]), buf_write);
+    *buf_write++ = (T)':';
+    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[4]), buf_write);
+    *buf_write++ = (T)':';
+    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[5]), buf_write);
+    *buf_write++ = (T)':';
+    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[6]), buf_write);
+    *buf_write++ = (T)':';
+    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[7]), buf_write);
+    return buf_write - buf;
+}
+
+void print_sockaddr(const sockaddr* addr) {
+    switch (addr->sa_family) {
+        case AF_INET:
+            print_ipv4(*(IP4_ADDRESS*)&((const sockaddr_in*)addr)->sin_addr);
+            break;
+        case AF_INET6:
+            print_ipv6(*(IP6_ADDRESS*)&((const sockaddr_in6*)addr)->sin6_addr);
+            break;
+    }
+}
+*/
 
 // size: 0x4F4
 struct AsyncLobbyClient {
@@ -107,7 +212,9 @@ static bool punch_socket_is_loaned = false;
 static bool punch_socket_is_inherited = false;
 
 static sockaddr_storage lobby_addr = {};
+static sockaddr_storage local_addr = {};
 static size_t lobby_addr_length = 0;
+static size_t local_addr_length = 0;
 
 //static char SENDTO_STR[256];
 //static char RECVFROM_STR[256];
@@ -289,7 +396,13 @@ int thisfastcall lobby_send_string_udp_send_hook_REQUEST(
     if (sock != INVALID_SOCKET) {
         char* nickname = self->current_nickname.data();
         size_t length = self->current_nickname.length();
-        int success = sendto(sock, nickname, length, 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
+
+        PacketLobbyName* name_packet = (PacketLobbyName*)_alloca(LOBBY_NAME_PACKET_SIZE(length));
+        name_packet->type = PACKET_TYPE_LOBBY_NAME;
+        name_packet->length = length;
+        memcpy(name_packet->name, nickname, length);
+
+        int success = sendto(sock, (const char*)name_packet, LOBBY_NAME_PACKET_SIZE(length), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
         log_printf("Sending nick (%zu):%s\n", length, nickname);
         if (success == SOCKET_ERROR) {
             log_printf("FAILED nick:%u\n", WSAGetLastError());
@@ -311,7 +424,13 @@ int thisfastcall lobby_send_string_udp_send_hook_WELCOME(
     if (sock != INVALID_SOCKET) {
         char* nickname = self->current_nickname.data();
         size_t length = self->current_nickname.length();
-        int success = sendto(sock, nickname, length, 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
+
+        PacketLobbyName* name_packet = (PacketLobbyName*)_alloca(LOBBY_NAME_PACKET_SIZE(length));
+        name_packet->type = PACKET_TYPE_LOBBY_NAME;
+        name_packet->length = length;
+        memcpy(name_packet->name, nickname, length);
+
+        int success = sendto(sock, (const char*)name_packet, LOBBY_NAME_PACKET_SIZE(length), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
         log_printf("Sending nick (%zu):%s\n", length, nickname);
         if (success == SOCKET_ERROR) {
             log_printf("FAILED nick:%u\n", WSAGetLastError());
@@ -336,7 +455,13 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
 ) {
     SOCKET sock = get_or_create_punch_socket(self->local_port);
     if (sock != INVALID_SOCKET) {
-        int success = sendto(sock, current_nickname, current_nickname_length, 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
+
+        PacketLobbyName* name_packet = (PacketLobbyName*)_alloca(LOBBY_NAME_PACKET_SIZE(current_nickname_length));
+        name_packet->type = PACKET_TYPE_LOBBY_NAME;
+        name_packet->length = current_nickname_length;
+        memcpy(name_packet->name, current_nickname, current_nickname_length);
+
+        int success = sendto(sock, (const char*)name_packet, LOBBY_NAME_PACKET_SIZE(current_nickname_length), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
         log_printf("Sending nick (%zu):%s\n", current_nickname_length, current_nickname);
         if (success == SOCKET_ERROR) {
             log_printf("FAILED nick:%u\n", WSAGetLastError());
@@ -460,10 +585,110 @@ int thisfastcall lobby_connect_hook(
     );
 }
 
+static inline constexpr addrinfo udp_addr_hint = {
+    .ai_flags = AI_NUMERICHOST | AI_NUMERICSERV | AI_ALL,
+    .ai_family = AF_INET6,
+    .ai_socktype = SOCK_DGRAM,
+    .ai_protocol = IPPROTO_UDP
+};
+
+neverinline void lobby_test_ipv6() {
+    SOCKET sock = ::socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+    if (sock != INVALID_SOCKET) {
+        //log_printf("IPv6: Socket created\n");
+
+        BOOL val = FALSE;
+        setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&val, sizeof(BOOL));
+
+        IP6_ADDRESS ipv6;
+        IP6_ADDRESS* ipv6_ptr;
+        switch (lobby_addr.ss_family) {
+            default:
+                goto ipv6_fail;
+            case AF_INET:
+                ipv6.IP6Dword[0] = 0;
+                ipv6.IP6Dword[1] = 0;
+                ipv6.IP6Dword[2] = 0xFFFF0000;
+                ipv6.IP6Dword[3] = *(IP4_ADDRESS*)&((sockaddr_in*)&lobby_addr)->sin_addr;
+                ipv6_ptr = &ipv6;
+                break;
+            case AF_INET6:
+                ipv6_ptr = (IP6_ADDRESS*)&((sockaddr_in6*)&lobby_addr)->sin6_addr;
+                break;
+        }
+
+        char ip_str[INET6_ADDRSTRLEN];
+        inet_ntop(AF_INET6, ipv6_ptr, ip_str, countof(ip_str));
+
+        char port_str[INTEGER_BUFFER_SIZE<uint16_t>]{};
+        std::to_chars(port_str, port_str + countof(port_str), __builtin_bswap16(((sockaddr_in*)&lobby_addr)->sin_port), 10);
+
+        //log_printf("IPv6: Connecting to %s:%s\n", ip_str, port_str);
+
+        addrinfo* addrs;
+        if (getaddrinfo(ip_str, port_str, &udp_addr_hint, &addrs) == 0) {
+            addrinfo* cur_addr = addrs;
+            do {
+                if (cur_addr->ai_family == AF_INET6) {
+                    if (connect(sock, (const sockaddr*)cur_addr->ai_addr, cur_addr->ai_addrlen) == 0) {
+                        freeaddrinfo(addrs);
+
+                        PacketIPv6Test test_packet = {};
+                        test_packet.type = PACKET_TYPE_IPV6_TEST;
+                        QueryPerformanceCounter(&test_packet.tsc);
+                        uint64_t tsc = test_packet.tsc.QuadPart;
+
+                        DWORD timeout = 5000;
+                        setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(DWORD));
+
+                        u_long nonblocking_state = true;
+                        ioctlsocket(sock, FIONBIO, &nonblocking_state);
+
+                        send(sock, (const char*)&test_packet, sizeof(test_packet), 0);
+
+                        test_packet = {};
+
+                        int recv_ret = recv(sock, (char*)&test_packet, sizeof(test_packet), 0);
+                        if (
+                            recv_ret == sizeof(test_packet) &&
+                            test_packet.type == PACKET_TYPE_IPV6_TEST &&
+                            tsc == test_packet.tsc.QuadPart
+                        ) {
+                            closesocket(sock);
+                            //log_printf("IPv6: Timed out\n");
+                            set_ipv6_state(true);
+                            return;
+                        }
+                        //log_printf("IPv6: Timed out\n");
+                        goto ipv6_fail;
+                    }
+                }
+            } while ((cur_addr = cur_addr->ai_next));
+            freeaddrinfo(addrs);
+            //log_printf("IPv6: Failed to find addr\n");
+        }
+
+ipv6_fail:
+        closesocket(sock);
+    }
+    set_ipv6_state(false);
+}
+
 int WSAAPI lobby_socket_connect_hook(SOCKET s, const sockaddr* name, int namelen) {
     int ret = connect(s, name, namelen);
     if (ret == 0) {
         memcpy(&lobby_addr, name, lobby_addr_length = namelen);
+
+        local_addr_length = sizeof(sockaddr_storage);
+        getsockname(s, (sockaddr*)&local_addr, (int*)&local_addr_length);
+
+        //log_printf("Local IP: ");
+        //print_sockaddr((sockaddr*)&local_addr);
+        //log_printf("\n");
+
+        if (get_ipv6_state() == IPv6NeedsTest) {
+            lobby_test_ipv6();
+        }
     }
     return ret;
 }

@@ -51,7 +51,7 @@ enum PacketType : uint8_t {
     PACKET_TYPE_PUNCH_PING = 0x81,
     PACKET_TYPE_PUNCH_WAIT = 0x82,
     PACKET_TYPE_PUNCH_CONNECT = 0x83,
-
+    PACKET_TYPE_PUNCH = 0x84,
     PACKET_TYPE_IPV6_TEST = 0x88,
 };
 
@@ -85,5 +85,34 @@ struct PacketIPv6Test {
 static_assert(sizeof(PacketIPv6Test) == 0x10, "");
 
 #define LOBBY_NAME_PACKET_SIZE(len) (sizeof(PacketLobbyName) + (len))
+
+// size: 0x4+
+struct PacketPunchWait {
+    PacketType type; // 0x0
+    uint8_t is_ipv6; // 0x1
+    uint16_t local_port; // 0x2
+    alignas(4) unsigned char ip[]; // 0x4
+};
+
+static inline constexpr uint8_t LOCAL_IS_IPV6_MASK = 0b01;
+static inline constexpr uint8_t DEST_IS_IPV6_MASK = 0b10;
+
+// size: 0x8+
+struct PacketPunchConnect {
+    PacketType type; // 0x0
+    uint8_t is_ipv6; // 0x1
+    uint16_t local_port; // 0x2
+    uint16_t dest_port; // 0x4
+    // 0x6
+    alignas(4) unsigned char ips[]; // 0x8
+};
+
+// size: 0x4
+struct PacketPunch {
+    PacketType type; // 0x0
+    uint8_t is_ipv6; // 0x1
+    uint16_t remote_port; // 0x2
+    alignas(4) unsigned char ip[]; // 0x4
+};
 
 #endif

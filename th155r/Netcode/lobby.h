@@ -10,7 +10,7 @@
 #include <windows.h>
 
 
-#define LOG_BASE_GAME_SENDTO_RECVFROM 0
+#define LOG_BASE_GAME_SENDTO_RECVFROM 1
 
 extern uintptr_t lobby_base_address;
 

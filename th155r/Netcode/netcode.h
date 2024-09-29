@@ -51,7 +51,8 @@ enum PacketType : uint8_t {
     PACKET_TYPE_PUNCH_PING = 0x81,
     PACKET_TYPE_PUNCH_WAIT = 0x82,
     PACKET_TYPE_PUNCH_CONNECT = 0x83,
-    PACKET_TYPE_PUNCH = 0x84,
+    PACKET_TYPE_PUNCH_PEER = 0x84,
+    PACKET_TYPE_PUNCH = 0x85,
     PACKET_TYPE_IPV6_TEST = 0x88,
 };
 
@@ -108,11 +109,21 @@ struct PacketPunchConnect {
 };
 
 // size: 0x4
-struct PacketPunch {
+struct PacketPunchPeer {
     PacketType type; // 0x0
     uint8_t is_ipv6; // 0x1
     uint16_t remote_port; // 0x2
     alignas(4) unsigned char ip[]; // 0x4
+};
+
+// size: 0x1
+struct PacketPunch {
+    PacketType type; // 0x0
+    // 0x1
+};
+
+static inline constexpr PacketPunch PUNCH_PACKET = {
+    .type = PACKET_TYPE_PUNCH
 };
 
 #endif

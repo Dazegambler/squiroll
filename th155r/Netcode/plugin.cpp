@@ -110,21 +110,15 @@ SQInteger CompileBuffer(HSQUIRRELVM v) {
     const SQChar* filename;
     SQObject* pObject;
 
-    if (sq_gettop(v) != 3) {
-        return sq_throwerror(v, "Invalid number of arguments, expected <filename> <*pObject>.");
-    }
-
-    if (SQ_FAILED(sq_getstring(v, 2, &filename))) {
-        return sq_throwerror(v, "Expected a string for the filename.");
-    }
-
-    if (SQ_FAILED(sq_getuserdata(v, 3, (SQUserPointer*)&pObject, NULL))) {
-        return sq_throwerror(v, "Expected a pointer to SQObject.");
+    if (sq_gettop(v) != 3 || 
+        SQ_FAILED(sq_getstring(v, 2, &filename)) || 
+        SQ_FAILED(sq_getuserdata(v, 3, (SQUserPointer *)&pObject, NULL))){
+        return sq_throwerror(v, _SC("invalid arguments...expected: <filename> <*pObject>.\n"));
     }
 
     if (EmbedData embed = get_new_file_data(filename)) {
         if (SQ_FAILED(sq_compilebuffer(v, (const SQChar*)embed.data, embed.length, "compiled from buffer", SQFalse))) {
-            return sq_throwerror(v, "Failed to compile script from buffer.");
+            return sq_throwerror(v, _SC("Failed to compile script from buffer.\n"));
         }
 
         sq_getstackobj(v, -1, pObject);
@@ -146,7 +140,7 @@ SQInteger sq_print(HSQUIRRELVM v){
     }
 
     log_printf("%s", str);
-    return 1;
+    return 0;
 }
 
 SQInteger r_resync_get(HSQUIRRELVM v) {
@@ -179,7 +173,7 @@ SQInteger update_ping_constants(HSQUIRRELVM v) {
     }
 
     sq_pop(v, 1);
-    return 1;
+    return 0;
 }
 
 extern "C" {
@@ -231,7 +225,7 @@ extern "C" {
             sq_newslot(v, -3, SQFalse);
 
                 // modifications to the manbow table
-                sq_pushstring(v, _SC("manbow"), -1);
+            sq_pushstring(v, _SC("manbow"), -1);
                 sq_get(v,-2);
                 sq_pushstring(v, _SC("CompileBuffer"), -1);
                     sq_newclosure(v, CompileBuffer, 0);
@@ -268,7 +262,6 @@ extern "C" {
     }
 
     dll_export int stdcall update_frame() {
-    
         sq_pushroottable(v);
 
         //saving ::network.IsPlaying to a variable

@@ -21,27 +21,27 @@ function Initialize() {
 	this.face.slave1 <- actor;
 
 	if (::network.inst) {
-		::setting.ping.update_consts();
-		local ping = {};
-		ping.text <- ::font.CreateSystemString("");
-		ping.text.sx = ::setting.ping.SX;
-		ping.text.sy = ::setting.ping.SY;
-		ping.text.ConnectRenderSlot(::graphics.slot.ui, 60000);
-		ping.Update <-  function() {
-			if (::network.inst) {
-				if (::rollback.resyncing() != false) {
-					this.text.Set("ping:" + ::network.GetDelay() + "(resyncing)");
-				} else {
-					this.text.Set("ping:" + ::network.GetDelay());
-				}
-				this.text.x = ::setting.ping.X - (this.text.width / 2);
-				this.text.y = (::setting.ping.Y - this.text.height);
-			}else{
-				::loop.DeleteTask(this);
-				this = null;
-			}
-		};
-		::loop.AddTask(ping);
+		// ::setting.ping.update_consts();
+		// local ping = {};
+		// ping.text <- ::font.CreateSystemString("");
+		// ping.text.sx = ::setting.ping.SX;
+		// ping.text.sy = ::setting.ping.SY;
+		// ping.text.ConnectRenderSlot(::graphics.slot.ui, 60000);
+		// ping.Update <-  function() {
+		// 	if (::network.inst) {
+		// 		if (::rollback.resyncing() != false) {
+		// 			this.text.Set("ping:" + ::network.GetDelay() + "(resyncing)");
+		// 		} else {
+		// 			this.text.Set("ping:" + ::network.GetDelay());
+		// 		}
+		// 		this.text.x = ::setting.ping.X - (this.text.width / 2);
+		// 		this.text.y = (::setting.ping.Y - this.text.height);
+		// 	}else{
+		// 		::loop.DeleteTask(this);
+		// 		this = null;
+		// 	}
+		// };
+		// ::loop.AddTask(ping);
 
 		for (local i = 0; i < 2; i = ++i) {
 			local icon = ::manbow.Sprite();

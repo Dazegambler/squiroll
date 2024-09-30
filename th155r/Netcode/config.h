@@ -16,10 +16,35 @@ void init_config_file();
 const char* get_lobby_host(const char* host);
 const char* get_lobby_port(const char* port);
 const char* get_lobby_pass(const char* pass);
+
+bool get_ping_enabled();
 int32_t get_ping_x();
 int32_t get_ping_y();
 float get_ping_scale_x();
 float get_ping_scale_y();
+uint32_t get_ping_color();
+
+bool get_inputp1_enabled();
+int32_t get_inputp1_x();
+int32_t get_inputp1_y();
+float get_inputp1_scale_x();
+float get_inputp1_scale_y();
+int32_t get_inputp1_offset();
+int32_t get_inputp1_count();
+uint32_t get_inputp1_color();
+bool get_inputp1_spacing();
+
+/*
+bool get_inputp2_enabled();
+int32_t get_inputp2_x();
+int32_t get_inputp2_y();
+float get_inputp2_scale_x();
+float get_inputp2_scale_y();
+int32_t get_inputp2_offset();
+int32_t get_inputp2_count();
+uint32_t get_inputp2_color();
+bool get_inputp2_spacing();
+*/
 
 enum IPv6State : int8_t {
 	IPv6NeedsTest = -1,

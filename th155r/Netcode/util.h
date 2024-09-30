@@ -15,6 +15,12 @@
 
 #define _MACRO_CAT(arg1, arg2) arg1 ## arg2
 #define MACRO_CAT(arg1, arg2) _MACRO_CAT(arg1, arg2)
+#define _MACRO_CATW(arg1, arg2, arg3) arg1 ## arg2 ## arg3
+#define MACRO_CATW(arg1, arg2, arg3) _MACRO_CATW(arg1, arg2, arg3)
+#define _MACRO_CAT4(arg1, arg2, arg3, arg4) arg1 ## arg2 ## arg3 ## arg4
+#define MACRO_CAT4(arg1, arg2, arg3, arg4) _MACRO_CAT4(arg1, arg2, arg3, arg4)
+#define _MACRO_CAT5(arg1, arg2, arg3, arg4, arg5) arg1 ## arg2 ## arg3 ## arg4 ## arg5
+#define MACRO_CAT5(arg1, arg2, arg3, arg4, arg5) _MACRO_CAT5(arg1, arg2, arg3, arg4, arg5)
 #define _MACRO_STR(arg) #arg
 #define MACRO_STR(arg) _MACRO_STR(arg)
 #define MACRO_EVAL(...) __VA_ARGS__

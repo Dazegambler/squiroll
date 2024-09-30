@@ -135,64 +135,74 @@ function Create( param )
 	//additions
 	if (::network.inst) {
 		::setting.ping.update_consts();
-		local ping = {};
-		ping.text <- ::font.CreateSystemString("");
-		ping.text.sx = ::setting.ping.SX;
-		ping.text.sy = ::setting.ping.SY;
-		ping.text.ConnectRenderSlot(::graphics.slot.ui, 60000);
-		ping.Update <-  function() {
-			if (::network.inst) {
-				if (::rollback.resyncing() != false) {
-					this.text.Set("ping:" + ::network.GetDelay() + "(resyncing)");
-				} else {
-					this.text.Set("ping:" + ::network.GetDelay());
+		if (::setting.ping.enabled) {
+			local ping = {};
+			ping.text <- ::font.CreateSystemString("");
+			ping.text.sx = ::setting.ping.SX;
+			ping.text.sy = ::setting.ping.SY;
+			ping.text.red = ::setting.ping.red;
+			ping.text.green = ::setting.ping.green;
+			ping.text.blue = ::setting.ping.blue;
+			ping.text.alpha = ::setting.ping.alpha;
+			ping.text.ConnectRenderSlot(::graphics.slot.ui, 60000);
+			ping.Update <-  function() {
+				if (::network.inst) {
+					if (::rollback.resyncing() != false) {
+						this.text.Set("ping:" + ::network.GetDelay() + "(resyncing)");
+					} else {
+						this.text.Set("ping:" + ::network.GetDelay());
+					}
+					this.text.x = ::setting.ping.X - (this.text.width / 2);
+					this.text.y = (::setting.ping.Y - this.text.height);
+				}else{
+					::loop.DeleteTask(this);
+					this = null;
 				}
-				this.text.x = ::setting.ping.X - (this.text.width / 2);
-				this.text.y = (::setting.ping.Y - this.text.height);
-			}else{
-				::loop.DeleteTask(this);
-				this = null;
-			}
-		};
-		::loop.AddTask(ping);
-	}
-
-	if (::setting.input_display.enabled){
-		local input = {};
-		input.list <- [];
-		input.entries <- [];
-		input.lastinput <- "";
-		input.getinputs <- getinputs;
-		input.listmax <- ::setting.input_display.list_max;
-
-		for (local i = 0; i < input.listmax; i++){
-			local t = ::manbow.String();
-			input.list.append(t);
-			input.list[i].Initialize(::talk.font);
-			input.list[i].red = ::setting.input_display.red;
-			input.list[i].green = ::setting.input_display.green;
-			input.list[i].blue = ::setting.input_display.blue;
-			input.list[i].alpha = ::setting.input_display.alpha;
-			input.list[i].sy = ::setting.input_display.SY;
-			input.list[i].sx = ::setting.input_display.SX;
-			input.list[i].x = ::setting.input_display.X;
-			input.list[i].y = ::setting.input_display.Y-(i*::setting.input_display.offset);
-			input.list[i].ConnectRenderSlot(::graphics.slot.ui,60000);
+			};
+			::loop.AddTask(ping);
 		}
-		input.Update <- function () {
-			local str = this.getinputs();
-			if (str != this.lastinput && str != ""){
-				this.entries.insert(0, str);
-				if (this.entries.len() > this.listmax){
-					this.entries.pop();
+	}
+	else {
+		::setting.input_display.update_consts();
+		if (::setting.input_display.p1.enabled){
+			local input = {};
+			input.list <- [];
+			input.entries <- [];
+			input.lastinput <- "";
+			input.getinputs <- getinputs;
+			input.padding <- ::setting.input_display.p1.spacing ? " " : "";
+			//input.empty <- ::setting.input_display.p1.spacing ? "         " : "";
+			input.listmax <- ::setting.input_display.p1.list_max;
+
+			for (local i = 0; i < input.listmax; i++){
+				local t = ::manbow.String();
+				input.list.append(t);
+				input.list[i].Initialize(::talk.font);
+				input.list[i].red = ::setting.input_display.p1.red;
+				input.list[i].green = ::setting.input_display.p1.green;
+				input.list[i].blue = ::setting.input_display.p1.blue;
+				input.list[i].alpha = ::setting.input_display.p1.alpha;
+				input.list[i].sy = ::setting.input_display.p1.SY;
+				input.list[i].sx = ::setting.input_display.p1.SX;
+				input.list[i].x = ::setting.input_display.p1.X;
+				input.list[i].y = ::setting.input_display.p1.Y - (i * ::setting.input_display.p1.offset);
+				input.list[i].ConnectRenderSlot(::graphics.slot.ui, 60000);
+			}
+			input.Update <- function () {
+				local str = this.getinputs(this.padding);
+				if (str != this.lastinput && str != ""){
+					this.entries.insert(0, str);
+					if (this.entries.len() > this.listmax){
+						this.entries.pop();
+					}
+					this.lastinput = str;
 				}
-				this.lastinput = str;
-			}
-			for (local i = 0; i < this.listmax; i++){
-				this.list[i].Set(this.entries.len() > i ? this.entries[i] : "");
-			}
-		};
-		AddTask(input);
+				for (local i = 0; i < this.listmax; i++){
+					this.list[i].Set(this.entries.len() > i ? this.entries[i] : "");
+				}
+			};
+			AddTask(input);
+		}
 	}
 	//end of additions
 
@@ -218,19 +228,19 @@ function Create( param )
 }
 
 //additions
-function getinputs()
+function getinputs(none)
 {
 	local str = "";
-	str += ::input_all.x < 0 ? "4" : "";
-	str += ::input_all.x > 0 ? "6" : "";
-	str += ::input_all.y < 0 ? "8" : "";
-	str += ::input_all.y > 0 ? "2" : "";
+	str += ::input_all.x < 0 ? "4" : none;
+	str += ::input_all.x > 0 ? "6" : none;
+	str += ::input_all.y < 0 ? "8" : none;
+	str += ::input_all.y > 0 ? "2" : none;
 	//str += "";
-	str += ::input_all.b0 ? "A" : "";
-	str += ::input_all.b1 ? "B" : "";
-	str += ::input_all.b2 ? "C" : "";
-	str += ::input_all.b4 ? "D" : "";
-	str += ::input_all.b3 ? "E" : "";
+	str += ::input_all.b0 ? "A" : none;
+	str += ::input_all.b1 ? "B" : none;
+	str += ::input_all.b2 ? "C" : none;
+	str += ::input_all.b4 ? "D" : none;
+	str += ::input_all.b3 ? "E" : none;
 
 	return str;
 }

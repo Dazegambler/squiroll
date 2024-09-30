@@ -154,7 +154,10 @@ SQInteger update_ping_constants(HSQUIRRELVM v) {
     sq_pushstring(v, _SC("setting"), -1);
     if (SQ_SUCCEEDED(sq_get(v, -2))) {
         sq_pushstring(v, _SC("ping"), -1);
-        if (SQ_SUCCEEDED(sq_get(v,-2))){
+        if (SQ_SUCCEEDED(sq_get(v,-2))) {
+            sq_pushstring(v, _SC("enabled"), -1);
+                sq_pushbool(v, get_ping_enabled());
+            sq_newslot(v, -3, SQFalse);
             sq_pushstring(v, _SC("X"), -1);
                 sq_pushinteger(v, get_ping_x());
             sq_newslot(v, -3, SQFalse);
@@ -167,7 +170,120 @@ SQInteger update_ping_constants(HSQUIRRELVM v) {
             sq_pushstring(v, _SC("SY"), -1);
                 sq_pushfloat(v, get_ping_scale_y());
             sq_newslot(v, -3, SQFalse);
+            uint32_t color = get_ping_color();
+            sq_pushstring(v, _SC("blue"), -1);
+                sq_pushfloat(v, (float)(uint8_t)color / 255.0f);
+            sq_newslot(v, -3, SQFalse);
+            sq_pushstring(v, _SC("green"), -1);
+                sq_pushfloat(v, (float)(uint8_t)(color >> 8) / 255.0f);
+            sq_newslot(v, -3, SQFalse);
+            sq_pushstring(v, _SC("red"), -1);
+                sq_pushfloat(v, (float)(uint8_t)(color >> 16) / 255.0f);
+            sq_newslot(v, -3, SQFalse);
+            sq_pushstring(v, _SC("alpha"), -1);
+                sq_pushfloat(v, (float)(uint8_t)(color >> 24) / 255.0f);
+            sq_newslot(v, -3, SQFalse);
             sq_pop(v,1);
+        }
+        sq_pop(v, 1);
+    }
+
+    sq_pop(v, 1);
+    return 0;
+}
+
+SQInteger update_input_constants(HSQUIRRELVM v) {
+    sq_pushroottable(v);
+
+    sq_pushstring(v, _SC("setting"), -1);
+    if (SQ_SUCCEEDED(sq_get(v, -2))) {
+        sq_pushstring(v, _SC("input_display"), -1);
+        if (SQ_SUCCEEDED(sq_get(v, -2))) {
+            sq_pushstring(v, _SC("p1"), -1);
+            if (SQ_SUCCEEDED(sq_get(v, -2))) {
+                sq_pushstring(v, _SC("enabled"), -1);
+                    sq_pushbool(v, get_inputp1_enabled());
+                sq_newslot(v, -3, SQFalse);
+                sq_pushstring(v, _SC("X"), -1);
+                    sq_pushinteger(v, get_inputp1_x());
+                sq_newslot(v, -3, SQFalse);
+                sq_pushstring(v, _SC("Y"), -1);
+                    sq_pushinteger(v, get_inputp1_y());
+                sq_newslot(v, -3, SQFalse);
+                sq_pushstring(v, _SC("SX"), -1);
+                    sq_pushfloat(v, get_inputp1_scale_x());
+                sq_newslot(v, -3, SQFalse);
+                sq_pushstring(v, _SC("SY"), -1);
+                    sq_pushfloat(v, get_inputp1_scale_y());
+                sq_newslot(v, -3, SQFalse);
+                sq_pushstring(v, _SC("offset"), -1);
+                    sq_pushinteger(v, get_inputp1_offset());
+                sq_newslot(v, -3, SQFalse);
+                sq_pushstring(v, _SC("list_max"), -1);
+                    sq_pushinteger(v, get_inputp1_count());
+                sq_newslot(v, -3 ,SQFalse);
+                sq_pushstring(v, _SC("spacing"), -1);
+                    sq_pushbool(v, get_inputp1_spacing());
+                sq_newslot(v, -3, SQFalse);
+                uint32_t color = get_inputp1_color();
+                sq_pushstring(v, _SC("blue"), -1);
+                    sq_pushfloat(v, (float)(uint8_t)color / 255.0f);
+                sq_newslot(v, -3, SQFalse);
+                sq_pushstring(v, _SC("green"), -1);
+                    sq_pushfloat(v, (float)(uint8_t)(color >> 8) / 255.0f);
+                sq_newslot(v, -3, SQFalse);
+                sq_pushstring(v, _SC("red"), -1);
+                    sq_pushfloat(v, (float)(uint8_t)(color >> 16) / 255.0f);
+                sq_newslot(v, -3, SQFalse);
+                sq_pushstring(v, _SC("alpha"), -1);
+                    sq_pushfloat(v, (float)(uint8_t)(color >> 24) / 255.0f);
+                sq_newslot(v, -3, SQFalse);
+                sq_pop(v, 1);
+            }
+            /*
+            sq_pushstring(v, _SC("p2"), -1);
+            if (SQ_SUCCEEDED(sq_get(v, -2))) {
+                sq_pushstring(v, _SC("enabled"), -1);
+                    sq_pushbool(v, get_inputp2_enabled());
+                sq_newslot(v, -3, SQFalse);
+                sq_pushstring(v, _SC("X"), -1);
+                    sq_pushinteger(v, get_inputp2_x());
+                sq_newslot(v, -3, SQFalse);
+                sq_pushstring(v, _SC("Y"), -1);
+                    sq_pushinteger(v, get_inputp2_y());
+                sq_newslot(v, -3, SQFalse);
+                sq_pushstring(v, _SC("SX"), -1);
+                    sq_pushfloat(v, get_inputp2_scale_x());
+                sq_newslot(v, -3, SQFalse);
+                sq_pushstring(v, _SC("SY"), -1);
+                    sq_pushfloat(v, get_inputp2_scale_y());
+                sq_newslot(v, -3, SQFalse);
+                sq_pushstring(v, _SC("offset"), -1);
+                    sq_pushinteger(v, get_inputp2_offset());
+                sq_newslot(v, -3, SQFalse);
+                sq_pushstring(v, _SC("list_max"), -1);
+                    sq_pushinteger(v, get_inputp2_count());
+                sq_newslot(v, -3 ,SQFalse);
+                sq_pushstring(v, _SC("spacing"), -1);
+                    sq_pushbool(v, get_inputp2_spacing());
+                sq_newslot(v, -3, SQFalse);
+                uint32_t color = get_inputp2_color();
+                sq_pushstring(v, _SC("blue"), -1);
+                    sq_pushfloat(v, (float)(uint8_t)color / 255.0f);
+                sq_newslot(v, -3, SQFalse);
+                sq_pushstring(v, _SC("green"), -1);
+                    sq_pushfloat(v, (float)(uint8_t)(color >> 8) / 255.0f);
+                sq_newslot(v, -3, SQFalse);
+                sq_pushstring(v, _SC("red"), -1);
+                    sq_pushfloat(v, (float)(uint8_t)(color >> 16) / 255.0f);
+                sq_newslot(v, -3, SQFalse);
+                sq_pushstring(v, _SC("alpha"), -1);
+                    sq_pushfloat(v, (float)(uint8_t)(color >> 24) / 255.0f);
+                sq_newslot(v, -3, SQFalse);
+                sq_pop(v, 1);
+            }
+            */
+            sq_pop(v, 1);
         }
         sq_pop(v, 1);
     }
@@ -194,7 +310,14 @@ extern "C" {
                     sq_pushinteger(v, PLUGIN_VERSION);
                 sq_newslot(v, -3, SQFalse);
                 sq_pushstring(v, _SC("ping"), -1);
+                {
                     sq_newclass(v, SQFalse);
+                    sq_pushstring(v, _SC("update_consts"), -1);
+                        sq_newclosure(v, update_ping_constants, 0);
+                    sq_newslot(v, -3, SQFalse);
+                    sq_pushstring(v, _SC("enabled"), -1);
+                        sq_pushbool(v, get_ping_enabled());
+                    sq_newslot(v, -3, SQFalse);
                     sq_pushstring(v, _SC("X"), -1);
                         sq_pushinteger(v, get_ping_x());
                     sq_newslot(v, -3, SQFalse);
@@ -207,45 +330,112 @@ extern "C" {
                     sq_pushstring(v, _SC("SY"), -1);
                         sq_pushfloat(v, get_ping_scale_y());
                     sq_newslot(v, -3, SQFalse);
-                    sq_pushstring(v, _SC("update_consts"), -1);
-                        sq_newclosure(v, update_ping_constants, 0);
+                    uint32_t color = get_ping_color();
+                    sq_pushstring(v, _SC("blue"), -1);
+                        sq_pushfloat(v, (float)(uint8_t)color / 255.0f);
                     sq_newslot(v, -3, SQFalse);
+                    sq_pushstring(v, _SC("green"), -1);
+                        sq_pushfloat(v, (float)(uint8_t)(color >> 8) / 255.0f);
+                    sq_newslot(v, -3, SQFalse);
+                    sq_pushstring(v, _SC("red"), -1);
+                        sq_pushfloat(v, (float)(uint8_t)(color >> 16) / 255.0f);
+                    sq_newslot(v, -3, SQFalse);
+                    sq_pushstring(v, _SC("alpha"), -1);
+                        sq_pushfloat(v, (float)(uint8_t)(color >> 24) / 255.0f);
+                    sq_newslot(v, -3, SQFalse);
+                }
                 sq_newslot(v, -3, SQFalse);
                 sq_pushstring(v, _SC("input_display"), -1);
                     sq_newclass(v, SQFalse);
-                    sq_pushstring(v, _SC("enabled"), -1);
-                        sq_pushbool(v, SQTrue);//PLACHEHOLDER PLEASE CHANGE
+                    sq_pushstring(v, _SC("update_consts"), -1);
+                        sq_newclosure(v, update_input_constants, 0);
                     sq_newslot(v, -3, SQFalse);
-                     sq_pushstring(v, _SC("X"), -1);
-                        sq_pushinteger(v, 10);//PLACHEHOLDER PLEASE CHANGE
+                    sq_pushstring(v, _SC("p1"), -1);
+                    {
+                        sq_newclass(v, SQFalse);
+                        sq_pushstring(v, _SC("enabled"), -1);
+                            sq_pushbool(v, get_inputp1_enabled());
+                        sq_newslot(v, -3, SQFalse);
+                         sq_pushstring(v, _SC("X"), -1);
+                            sq_pushinteger(v, get_inputp1_x());
+                        sq_newslot(v, -3, SQFalse);
+                        sq_pushstring(v, _SC("Y"), -1);
+                            sq_pushinteger(v, get_inputp1_y());
+                        sq_newslot(v, -3, SQFalse);
+                        sq_pushstring(v, _SC("SX"), -1);
+                            sq_pushfloat(v, get_inputp1_scale_x());
+                        sq_newslot(v, -3, SQFalse);
+                        sq_pushstring(v, _SC("SY"), -1);
+                            sq_pushfloat(v, get_inputp1_scale_y());
+                        sq_newslot(v, -3, SQFalse);
+                        sq_pushstring(v, _SC("offset"), -1);
+                            sq_pushinteger(v, get_inputp1_offset());
+                        sq_newslot(v, -3, SQFalse);
+                        sq_pushstring(v, _SC("list_max"), -1);
+                            sq_pushinteger(v, get_inputp1_count());
+                        sq_newslot(v, -3 ,SQFalse);
+                        sq_pushstring(v, _SC("spacing"), -1);
+                            sq_pushbool(v, get_inputp1_spacing());
+                        sq_newslot(v, -3, SQFalse);
+                        uint32_t color = get_inputp1_color();
+                        sq_pushstring(v, _SC("blue"), -1);
+                            sq_pushfloat(v, (float)(uint8_t)color / 255.0f);
+                        sq_newslot(v, -3, SQFalse);
+                        sq_pushstring(v, _SC("green"), -1);
+                            sq_pushfloat(v, (float)(uint8_t)(color >> 8) / 255.0f);
+                        sq_newslot(v, -3, SQFalse);
+                        sq_pushstring(v, _SC("red"), -1);
+                            sq_pushfloat(v, (float)(uint8_t)(color >> 16) / 255.0f);
+                        sq_newslot(v, -3, SQFalse);
+                        sq_pushstring(v, _SC("alpha"), -1);
+                            sq_pushfloat(v, (float)(uint8_t)(color >> 24) / 255.0f);
+                        sq_newslot(v, -3, SQFalse);
+                    }
                     sq_newslot(v, -3, SQFalse);
-                    sq_pushstring(v, _SC("Y"), -1);
-                        sq_pushinteger(v, 515);//PLACHEHOLDER PLEASE CHANGE
+                    /*
+                    sq_pushstring(v, _SC("p2"), -1);
+                    {
+                        sq_newclass(v, SQFalse);
+                        sq_pushstring(v, _SC("enabled"), -1);
+                            sq_pushbool(v, get_inputp2_enabled());
+                        sq_newslot(v, -3, SQFalse);
+                         sq_pushstring(v, _SC("X"), -1);
+                            sq_pushinteger(v, get_inputp2_x());
+                        sq_newslot(v, -3, SQFalse);
+                        sq_pushstring(v, _SC("Y"), -1);
+                            sq_pushinteger(v, get_inputp2_y());
+                        sq_newslot(v, -3, SQFalse);
+                        sq_pushstring(v, _SC("SX"), -1);
+                            sq_pushfloat(v, get_inputp2_scale_x());
+                        sq_newslot(v, -3, SQFalse);
+                        sq_pushstring(v, _SC("SY"), -1);
+                            sq_pushfloat(v, get_inputp2_scale_y());
+                        sq_newslot(v, -3, SQFalse);
+                        sq_pushstring(v, _SC("offset"), -1);
+                            sq_pushinteger(v, get_inputp2_offset());
+                        sq_newslot(v, -3, SQFalse);
+                        sq_pushstring(v, _SC("list_max"), -1);
+                            sq_pushinteger(v, get_inputp2_count());
+                        sq_newslot(v, -3 ,SQFalse);
+                        sq_pushstring(v, _SC("spacing"), -1);
+                            sq_pushbool(v, get_inputp2_spacing());
+                        sq_newslot(v, -3, SQFalse);
+                        uint32_t color = get_inputp2_color();
+                        sq_pushstring(v, _SC("blue"), -1);
+                            sq_pushfloat(v, (float)(uint8_t)color / 255.0f);
+                        sq_newslot(v, -3, SQFalse);
+                        sq_pushstring(v, _SC("green"), -1);
+                            sq_pushfloat(v, (float)(uint8_t)(color >> 8) / 255.0f);
+                        sq_newslot(v, -3, SQFalse);
+                        sq_pushstring(v, _SC("red"), -1);
+                            sq_pushfloat(v, (float)(uint8_t)(color >> 16) / 255.0f);
+                        sq_newslot(v, -3, SQFalse);
+                        sq_pushstring(v, _SC("alpha"), -1);
+                            sq_pushfloat(v, (float)(uint8_t)(color >> 24) / 255.0f);
+                        sq_newslot(v, -3, SQFalse);
+                    }
                     sq_newslot(v, -3, SQFalse);
-                    sq_pushstring(v, _SC("SX"), -1);
-                        sq_pushfloat(v, 1.0);//PLACHEHOLDER PLEASE CHANGE
-                    sq_newslot(v, -3, SQFalse);
-                    sq_pushstring(v, _SC("SY"), -1);
-                        sq_pushfloat(v, 1.0);//PLACHEHOLDER PLEASE CHANGE
-                    sq_newslot(v, -3, SQFalse);
-                    sq_pushstring(v, _SC("offset"), -1);
-                        sq_pushinteger(v, 30);//PLACEHOLDER PLEASE CHANGE
-                    sq_newslot(v, -3, SQFalse);
-                    sq_pushstring(v, _SC("list_max"), -1);
-                        sq_pushinteger(v, 12);//PLACEHOLDER PLEASE CHANGE
-                    sq_newslot(v, -3 ,SQFalse);
-                    sq_pushstring(v, _SC("red"), -1);
-                        sq_pushfloat(v, 0.0);//PLACHEHOLDER PLEASE CHANGE
-                    sq_newslot(v, -3, SQFalse);
-                    sq_pushstring(v, _SC("green"), -1);
-                        sq_pushfloat(v, 1.0);//PLACHEHOLDER PLEASE CHANGE
-                    sq_newslot(v, -3, SQFalse);
-                    sq_pushstring(v, _SC("blue"), -1);
-                        sq_pushfloat(v, 0.0);//PLACHEHOLDER PLEASE CHANGE
-                    sq_newslot(v, -3, SQFalse);
-                    sq_pushstring(v, _SC("alpha"), -1);
-                        sq_pushfloat(v, 1.0);//PLACHEHOLDER PLEASE CHANGE
-                    sq_newslot(v, -3, SQFalse);
+                    */
                 sq_newslot(v, -3, SQFalse);
             sq_newslot(v, -3, SQFalse);
 

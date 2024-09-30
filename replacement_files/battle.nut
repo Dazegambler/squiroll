@@ -172,6 +172,7 @@ function Create( param )
 			input.list[i].red = ::setting.input_display.red;
 			input.list[i].green = ::setting.input_display.green;
 			input.list[i].blue = ::setting.input_display.blue;
+			input.list[i].alpha = ::setting.input_display.alpha;
 			input.list[i].sy = ::setting.input_display.SY;
 			input.list[i].sx = ::setting.input_display.SX;
 			input.list[i].x = ::setting.input_display.X;

@@ -211,7 +211,43 @@ extern "C" {
                         sq_newclosure(v, update_ping_constants, 0);
                     sq_newslot(v, -3, SQFalse);
                 sq_newslot(v, -3, SQFalse);
-            sq_newslot(v,-3, SQFalse);
+                sq_pushstring(v, _SC("input_display"), -1);
+                    sq_newclass(v, SQFalse);
+                    sq_pushstring(v, _SC("enabled"), -1);
+                        sq_pushbool(v, SQTrue);//PLACHEHOLDER PLEASE CHANGE
+                    sq_newslot(v, -3, SQFalse);
+                     sq_pushstring(v, _SC("X"), -1);
+                        sq_pushinteger(v, 10);//PLACHEHOLDER PLEASE CHANGE
+                    sq_newslot(v, -3, SQFalse);
+                    sq_pushstring(v, _SC("Y"), -1);
+                        sq_pushinteger(v, 515);//PLACHEHOLDER PLEASE CHANGE
+                    sq_newslot(v, -3, SQFalse);
+                    sq_pushstring(v, _SC("SX"), -1);
+                        sq_pushfloat(v, 1.0);//PLACHEHOLDER PLEASE CHANGE
+                    sq_newslot(v, -3, SQFalse);
+                    sq_pushstring(v, _SC("SY"), -1);
+                        sq_pushfloat(v, 1.0);//PLACHEHOLDER PLEASE CHANGE
+                    sq_newslot(v, -3, SQFalse);
+                    sq_pushstring(v, _SC("offset"), -1);
+                        sq_pushinteger(v, 30);//PLACEHOLDER PLEASE CHANGE
+                    sq_newslot(v, -3, SQFalse);
+                    sq_pushstring(v, _SC("list_max"), -1);
+                        sq_pushinteger(v, 12);//PLACEHOLDER PLEASE CHANGE
+                    sq_newslot(v, -3 ,SQFalse);
+                    sq_pushstring(v, _SC("red"), -1);
+                        sq_pushfloat(v, 0.0);//PLACHEHOLDER PLEASE CHANGE
+                    sq_newslot(v, -3, SQFalse);
+                    sq_pushstring(v, _SC("green"), -1);
+                        sq_pushfloat(v, 1.0);//PLACHEHOLDER PLEASE CHANGE
+                    sq_newslot(v, -3, SQFalse);
+                    sq_pushstring(v, _SC("blue"), -1);
+                        sq_pushfloat(v, 0.0);//PLACHEHOLDER PLEASE CHANGE
+                    sq_newslot(v, -3, SQFalse);
+                    sq_pushstring(v, _SC("alpha"), -1);
+                        sq_pushfloat(v, 1.0);//PLACHEHOLDER PLEASE CHANGE
+                    sq_newslot(v, -3, SQFalse);
+                sq_newslot(v, -3, SQFalse);
+            sq_newslot(v, -3, SQFalse);
 
             // rollback table setup
             sq_pushstring(v, _SC("rollback"), -1);

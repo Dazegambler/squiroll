@@ -159,26 +159,52 @@ function Create( param )
 
 	local input = {};
 	input.list <- [];
+	input.entries <- [];
 	input.getinputs <- getinputs;
-	input.text <- ::font.CreateSystemString("");
-	input.maxbuffer <- 2;
-	input.text.sy = 1.0;
-	input.text.sx = 1.0;
-	input.text.ConnectRenderSlot(::graphics.slot.ui,60000);
-	input.Update <- function () {
-		this.text.Set(this.getinputs());
-		this.text.x = 640;//- (this.text.width / 2);//1280x720
-		this.text.y =  360;//- (this.text.height / 2);
-		// local str = "";
-		// local i = 0;
-		// do{
-		// str += this.getinputs();
-		// this.text.Set(str);
-		// this.text.x = 640;//- (this.text.width / 2);//1280x720
-		// this.text.y =  360;//- (this.text.height / 2);
-		// i++;
-		// }while(i < this.maxbuffer);
+	input.listmax <- 11;
 
+	for (local i = 0; i < input.listmax; i++){
+		local t = ::manbow.String();
+		input.list.append(t);
+		input.list[i].Initialize(::talk.font);
+		input.list[i].filter = 1;
+		input.list[i].red = 0.0;
+		input.list[i].green = 1.0;
+		input.list[i].blue = 0.0;
+		input.list[i].SetSpace(0,0);
+		input.list[i].sy = 1.2;
+		input.list[i].sx = 1.2;
+		input.list[i].Set("");
+		input.list[i].x = 10;
+		input.list[i].y = 515.0-(i*35);
+		input.list[i].ConnectRenderSlot(::graphics.slot.ui,60000);
+	}
+
+	// input.text <- ::manbow.String();
+	// input.text.Initialize(::talk.font);
+	// input.text.filter = 1;
+	// input.text.red = 0.0;
+	// input.text.green = 1.0;
+	// input.text.blue = 0.0;
+	// input.text.SetSpace(0,0);
+	// input.text.sy = 1.2;
+	// input.text.sx = 1.2;
+	// input.text.ConnectRenderSlot(::graphics.slot.ui,60000);
+	input.Update <- function () {
+		local str = this.getinputs();
+		// this.text.Set(str);
+		// this.text.x = 640 - (this.text.width / 2);//1280x720
+		// this.text.y =  360 - (this.text.height / 2);
+
+		this.entries.insert(0, str);
+		if (this.entries.len() > this.listmax){
+			this.entries.pop();
+		}
+
+		for (local i = 0; i < this.listmax; i += 1)
+		{
+			this.list[i].Set(this.entries[i]??"");
+		}
 	};
 	AddTask(input);
 	//end of additions
@@ -205,13 +231,6 @@ function Create( param )
 }
 
 //additions
-function AddInput(input){
-	this.inputs.insert(0, input);
-	if (this.inputs.len() > 5){
-		this.inputs.pop();
-	}
-}
-
 function getinputs()
 {
 	local str = "";

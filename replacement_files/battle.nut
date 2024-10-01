@@ -237,7 +237,7 @@ function getinputs(none)
 	str += ::input_all.y > 0 ? "2" : none;
 	//str += "";
 	str += ::input_all.b0 ? "A" : none;
-	str += ::input_all.b1 ? "B" : none;
+	str += ::input_all.b1 ? ::input_all.b1 > 12 ? "[B]" : "B" : none;
 	str += ::input_all.b2 ? "C" : none;
 	str += ::input_all.b4 ? "D" : none;
 	str += ::input_all.b3 ? "E" : none;

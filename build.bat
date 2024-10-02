@@ -9,6 +9,7 @@ set TOOLS_PATH=.\tools\make_embed_windows.exe
 set REPLACEMENT_FILES_DIR=replacement_files
 set REPLACEMENT_DESTINATION_DIR=th155r\Netcode\replacement_files
 
+
 set NEW_FILES_DIR=new_files
 set NEW_DESTINATION_DIR=th155r\Netcode\new_files
 

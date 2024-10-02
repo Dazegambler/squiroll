@@ -162,48 +162,48 @@ function Create( param )
 			::loop.AddTask(ping);
 		}
 	}
-	else {
-		::setting.input_display.update_consts();
-		if (::setting.input_display.p1.enabled){
-			local input = {};
-			input.list <- [];
-			input.entries <- [];
-			input.lastinput <- "";
-			input.getinputs <- getinputs;
-			input.padding <- ::setting.input_display.p1.spacing ? " " : "";
-			//input.empty <- ::setting.input_display.p1.spacing ? "         " : "";
-			input.listmax <- ::setting.input_display.p1.list_max;
+	// else {
+		// ::setting.input_display.update_consts();
+		// if (::setting.input_display.p1.enabled){
+		// 	local input = {};
+		// 	input.list <- [];
+		// 	input.entries <- [];
+		// 	input.lastinput <- "";
+		// 	input.getinputs <- getinputs;
+		// 	input.padding <- ::setting.input_display.p1.spacing ? " " : "";
+		// 	//input.empty <- ::setting.input_display.p1.spacing ? "         " : "";
+		// 	input.listmax <- ::setting.input_display.p1.list_max;
 
-			for (local i = 0; i < input.listmax; i++){
-				local t = ::manbow.String();
-				input.list.append(t);
-				input.list[i].Initialize(::talk.font);
-				input.list[i].red = ::setting.input_display.p1.red;
-				input.list[i].green = ::setting.input_display.p1.green;
-				input.list[i].blue = ::setting.input_display.p1.blue;
-				input.list[i].alpha = ::setting.input_display.p1.alpha;
-				input.list[i].sy = ::setting.input_display.p1.SY;
-				input.list[i].sx = ::setting.input_display.p1.SX;
-				input.list[i].x = ::setting.input_display.p1.X;
-				input.list[i].y = ::setting.input_display.p1.Y - (i * ::setting.input_display.p1.offset);
-				input.list[i].ConnectRenderSlot(::graphics.slot.ui, 60000);
-			}
-			input.Update <- function () {
-				local str = this.getinputs(this.padding);
-				if (str != this.lastinput && str != ""){
-					this.entries.insert(0, str);
-					if (this.entries.len() > this.listmax){
-						this.entries.pop();
-					}
-					this.lastinput = str;
-				}
-				for (local i = 0; i < this.listmax; i++){
-					this.list[i].Set(this.entries.len() > i ? this.entries[i] : "");
-				}
-			};
-			AddTask(input);
-		}
-	}
+		// 	for (local i = 0; i < input.listmax; i++){
+		// 		local t = ::manbow.String();
+		// 		input.list.append(t);
+		// 		input.list[i].Initialize(::talk.font);
+		// 		input.list[i].red = ::setting.input_display.p1.red;
+		// 		input.list[i].green = ::setting.input_display.p1.green;
+		// 		input.list[i].blue = ::setting.input_display.p1.blue;
+		// 		input.list[i].alpha = ::setting.input_display.p1.alpha;
+		// 		input.list[i].sy = ::setting.input_display.p1.SY;
+		// 		input.list[i].sx = ::setting.input_display.p1.SX;
+		// 		input.list[i].x = ::setting.input_display.p1.X;
+		// 		input.list[i].y = ::setting.input_display.p1.Y - (i * ::setting.input_display.p1.offset);
+		// 		input.list[i].ConnectRenderSlot(::graphics.slot.ui, 60000);
+		// 	}
+		// 	input.Update <- function () {
+		// 		local str = this.getinputs(this.padding);
+		// 		if (str != this.lastinput && str != ""){
+		// 			this.entries.insert(0, str);
+		// 			if (this.entries.len() > this.listmax){
+		// 				this.entries.pop();
+		// 			}
+		// 			this.lastinput = str;
+		// 		}
+		// 		for (local i = 0; i < this.listmax; i++){
+		// 			this.list[i].Set(this.entries.len() > i ? this.entries[i] : "");
+		// 		}
+		// 	};
+		// 	AddTask(input);
+		// }
+	//}
 	//end of additions
 
 	if (!::network.IsActive())
@@ -228,47 +228,47 @@ function Create( param )
 }
 
 //additions
-function getinputs(none)
-{
-	local str = "";
-	switch (true){
-		case (::input_all.x < 0 && ::input_all.y < 0):
-			str += "7";
-			break;
-		case (::input_all.x < 0 && ::input_all.y > 0):
-			str += "1";
-			break;
-		case (::input_all.x > 0 && ::input_all.y < 0):
-			str += "9";
-			break;
-		case (::input_all.x > 0 && ::input_all.y > 0):
-			str += "3";
-			break;
-		case (::input_all.x < 0):
-			str += "4";
-			break;
-		case (::input_all.x > 0):
-			str += "6";
-			break;
-		case (::input_all.y < 0):
-			str += "8";
-			break;
-		case (::input_all.y > 0):
-			str += "2";
-			break;
-		default:
-			str += none;
-			break;
-	}
-	str += none;
-	str += ::input_all.b0 ? "A" : none;
-	str += ::input_all.b1 ? ::input_all.b1 > 12 ? "[B]" : "B" : none;
-	str += ::input_all.b2 ? "C" : none;
-	str += ::input_all.b4 ? "D" : none;
-	str += ::input_all.b3 ? "E" : none;
+// function getinputs(none)
+// {
+// 	local str = "";
+// 	switch (true){
+// 		case (::input_all.x < 0 && ::input_all.y < 0):
+// 			str += "7";
+// 			break;
+// 		case (::input_all.x < 0 && ::input_all.y > 0):
+// 			str += "1";
+// 			break;
+// 		case (::input_all.x > 0 && ::input_all.y < 0):
+// 			str += "9";
+// 			break;
+// 		case (::input_all.x > 0 && ::input_all.y > 0):
+// 			str += "3";
+// 			break;
+// 		case (::input_all.x < 0):
+// 			str += "4";
+// 			break;
+// 		case (::input_all.x > 0):
+// 			str += "6";
+// 			break;
+// 		case (::input_all.y < 0):
+// 			str += "8";
+// 			break;
+// 		case (::input_all.y > 0):
+// 			str += "2";
+// 			break;
+// 		default:
+// 			str += none;
+// 			break;
+// 	}
+// 	str += none;
+// 	str += ::input_all.b0 ? "A" : none;
+// 	str += ::input_all.b1 ? ::input_all.b1 > 12 ? "[B]" : "B" : none;
+// 	str += ::input_all.b2 ? "C" : none;
+// 	str += ::input_all.b4 ? "D" : none;
+// 	str += ::input_all.b3 ? "E" : none;
 
-	return str;
-}
+// 	return str;
+// }
 //end of additions
 function Release()
 {

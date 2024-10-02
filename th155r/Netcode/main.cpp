@@ -83,7 +83,7 @@ void* thisfastcall patch_exe_script_plugin(
     }
     else {
         if (!strcmp(plugin_path, "data/plugin\\data/plugin/se_libact.dll.dll")) {
-            base_address = (void*)GetModuleHandleW(L"Netcode.dll");
+            base_address = (void*)GetModuleHandleW(L"NetplayQOL.dll");
         }
     }
 
@@ -289,14 +289,14 @@ void common_init(LogType log_type) {
 
     init_config_file();
 
-    patch_allocman();
+    //patch_allocman();
 
     // Allow launching multiple instances of the game
     mem_write(createmutex_patch_addr, PATCH_BYTES<0x68, 0x00, 0x00, 0x00, 0x00>); //mutex patch
 
-    patch_netplay();
+    //patch_netplay();
 
-    patch_autopunch();
+    //patch_autopunch();
 
     hotpatch_rel32(patch_act_script_plugin_hook_addr, patch_exe_script_plugin);
 
@@ -335,7 +335,18 @@ extern "C" {
     dll_export void cdecl netcode_mod_init(void* param) {
         common_init(enable_thcrap_console ? LOG_TO_PARENT_CONSOLE : NO_LOGGING);
     }
-    
+
+    dll_export void cdecl InitializeAt(void* module)
+    {
+        common_init(NO_LOGGING);
+    }
+
+    // Rx1B90
+    dll_export void Initialize()
+    {
+        InitializeAt(GetModuleHandleA(NULL));
+    }
+
     // thcrap plugin init
     dll_export int stdcall thcrap_plugin_init() {
         if (HMODULE thcrap_handle = GetModuleHandleW(L"thcrap.dll")) {

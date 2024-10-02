@@ -16,12 +16,12 @@ function GetUpdaterVersion()
 
 function GetVersionString()
 {
-	return "Ver1.21b+rollback ver."+::setting.version;
+	return "Ver1.21b+QOL ver."+::setting.version;
 }
 
 function GetVersionSignature()
 {
-	return "1_21b+R"+::setting.version;
+	return "1_21b+QOL"+::setting.version;
 }
 
 ::SetWindowText("Touhou Hyouibana ~ Antinomy of Common Flowers. " + this.GetVersionString());

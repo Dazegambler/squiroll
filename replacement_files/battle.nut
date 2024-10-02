@@ -231,11 +231,36 @@ function Create( param )
 function getinputs(none)
 {
 	local str = "";
-	str += ::input_all.x < 0 ? "4" : none;
-	str += ::input_all.x > 0 ? "6" : none;
-	str += ::input_all.y < 0 ? "8" : none;
-	str += ::input_all.y > 0 ? "2" : none;
-	//str += "";
+	switch (true){
+		case (::input_all.x < 0 && ::input_all.y < 0):
+			str += "7";
+			break;
+		case (::input_all.x < 0 && ::input_all.y > 0):
+			str += "1";
+			break;
+		case (::input_all.x > 0 && ::input_all.y < 0):
+			str += "9";
+			break;
+		case (::input_all.x > 0 && ::input_all.y > 0):
+			str += "3";
+			break;
+		case (::input_all.x < 0):
+			str += "4";
+			break;
+		case (::input_all.x > 0):
+			str += "6";
+			break;
+		case (::input_all.y < 0):
+			str += "8";
+			break;
+		case (::input_all.y > 0):
+			str += "2";
+			break;
+		default:
+			str += none;
+			break;
+	}
+	str += none;
 	str += ::input_all.b0 ? "A" : none;
 	str += ::input_all.b1 ? ::input_all.b1 > 12 ? "[B]" : "B" : none;
 	str += ::input_all.b2 ? "C" : none;

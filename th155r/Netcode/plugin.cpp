@@ -321,157 +321,248 @@ extern "C" {
             // like adding squirrel globals/funcs/etc.
             sq_pushroottable(v);
 
-            //config table setup
+            // setting table setup
             sq_pushstring(v, _SC("setting"), -1);
+            {
                 sq_newtable(v);
                 sq_pushstring(v, _SC("version"), -1);
+                {
                     sq_pushinteger(v, PLUGIN_VERSION);
-                sq_newslot(v, -3, SQFalse);
+                    sq_newslot(v, -3, SQFalse);
+                }
                 sq_pushstring(v, _SC("ping"), -1);
                 {
                     sq_newclass(v, SQFalse);
                     sq_pushstring(v, _SC("update_consts"), -1);
+                    {
                         sq_newclosure(v, update_ping_constants, 0);
-                    sq_newslot(v, -3, SQFalse);
+                        sq_newslot(v, -3, SQFalse);
+                    }
                     sq_pushstring(v, _SC("enabled"), -1);
+                    {
                         sq_pushbool(v, get_ping_enabled());
-                    sq_newslot(v, -3, SQFalse);
+                        sq_newslot(v, -3, SQFalse);
+                    }
                     sq_pushstring(v, _SC("X"), -1);
+                    {
                         sq_pushinteger(v, get_ping_x());
-                    sq_newslot(v, -3, SQFalse);
+                        sq_newslot(v, -3, SQFalse);
+                    }
                     sq_pushstring(v, _SC("Y"), -1);
+                    {
                         sq_pushinteger(v, get_ping_y());
-                    sq_newslot(v, -3, SQFalse);
+                        sq_newslot(v, -3, SQFalse);
+                    }
                     sq_pushstring(v, _SC("SX"), -1);
+                    {
                         sq_pushfloat(v, get_ping_scale_x());
-                    sq_newslot(v, -3, SQFalse);
+                        sq_newslot(v, -3, SQFalse);
+                    }
                     sq_pushstring(v, _SC("SY"), -1);
+                    {
                         sq_pushfloat(v, get_ping_scale_y());
-                    sq_newslot(v, -3, SQFalse);
+                        sq_newslot(v, -3, SQFalse);
+                    }
                     uint32_t color = get_ping_color();
                     sq_pushstring(v, _SC("blue"), -1);
+                    {
                         sq_pushfloat(v, (float)(uint8_t)color / 255.0f);
-                    sq_newslot(v, -3, SQFalse);
+                        sq_newslot(v, -3, SQFalse);
+                    }
                     sq_pushstring(v, _SC("green"), -1);
+                    {
                         sq_pushfloat(v, (float)(uint8_t)(color >> 8) / 255.0f);
-                    sq_newslot(v, -3, SQFalse);
+                        sq_newslot(v, -3, SQFalse);
+                    }
                     sq_pushstring(v, _SC("red"), -1);
+                    {
                         sq_pushfloat(v, (float)(uint8_t)(color >> 16) / 255.0f);
-                    sq_newslot(v, -3, SQFalse);
+                        sq_newslot(v, -3, SQFalse);
+                    }
                     sq_pushstring(v, _SC("alpha"), -1);
+                    {
                         sq_pushfloat(v, (float)(uint8_t)(color >> 24) / 255.0f);
+                        sq_newslot(v, -3, SQFalse);
+                    }
                     sq_newslot(v, -3, SQFalse);
                 }
-                sq_newslot(v, -3, SQFalse);
                 sq_pushstring(v, _SC("input_display"), -1);
+                {
                     sq_newclass(v, SQFalse);
                     sq_pushstring(v, _SC("update_consts"), -1);
+                    {
                         sq_newclosure(v, update_input_constants, 0);
-                    sq_newslot(v, -3, SQFalse);
+                        sq_newslot(v, -3, SQFalse);
+                    }
                     sq_pushstring(v, _SC("p1"), -1);
                     {
                         sq_newclass(v, SQFalse);
                         sq_pushstring(v, _SC("enabled"), -1);
+                        {
                             sq_pushbool(v, get_inputp1_enabled());
-                        sq_newslot(v, -3, SQFalse);
-                         sq_pushstring(v, _SC("X"), -1);
+                            sq_newslot(v, -3, SQFalse);
+                        }
+                        sq_pushstring(v, _SC("X"), -1);
+                        {
                             sq_pushinteger(v, get_inputp1_x());
-                        sq_newslot(v, -3, SQFalse);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         sq_pushstring(v, _SC("Y"), -1);
+                        {
                             sq_pushinteger(v, get_inputp1_y());
-                        sq_newslot(v, -3, SQFalse);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         sq_pushstring(v, _SC("SX"), -1);
+                        {
                             sq_pushfloat(v, get_inputp1_scale_x());
-                        sq_newslot(v, -3, SQFalse);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         sq_pushstring(v, _SC("SY"), -1);
+                        {
                             sq_pushfloat(v, get_inputp1_scale_y());
-                        sq_newslot(v, -3, SQFalse);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         sq_pushstring(v, _SC("offset"), -1);
+                        {
                             sq_pushinteger(v, get_inputp1_offset());
-                        sq_newslot(v, -3, SQFalse);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         sq_pushstring(v, _SC("list_max"), -1);
+                        {
                             sq_pushinteger(v, get_inputp1_count());
-                        sq_newslot(v, -3 ,SQFalse);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         sq_pushstring(v, _SC("spacing"), -1);
+                        {
                             sq_pushbool(v, get_inputp1_spacing());
-                        sq_newslot(v, -3, SQFalse);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         uint32_t color = get_inputp1_color();
                         sq_pushstring(v, _SC("blue"), -1);
+                        {
                             sq_pushfloat(v, (float)(uint8_t)color / 255.0f);
-                        sq_newslot(v, -3, SQFalse);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         sq_pushstring(v, _SC("green"), -1);
+                        {
                             sq_pushfloat(v, (float)(uint8_t)(color >> 8) / 255.0f);
-                        sq_newslot(v, -3, SQFalse);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         sq_pushstring(v, _SC("red"), -1);
+                        {
                             sq_pushfloat(v, (float)(uint8_t)(color >> 16) / 255.0f);
-                        sq_newslot(v, -3, SQFalse);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         sq_pushstring(v, _SC("alpha"), -1);
+                        {
                             sq_pushfloat(v, (float)(uint8_t)(color >> 24) / 255.0f);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         sq_newslot(v, -3, SQFalse);
                     }
-                    sq_newslot(v, -3, SQFalse);
                     /*
                     sq_pushstring(v, _SC("p2"), -1);
                     {
                         sq_newclass(v, SQFalse);
                         sq_pushstring(v, _SC("enabled"), -1);
+                        {
                             sq_pushbool(v, get_inputp2_enabled());
-                        sq_newslot(v, -3, SQFalse);
-                         sq_pushstring(v, _SC("X"), -1);
+                            sq_newslot(v, -3, SQFalse);
+                        }
+                        sq_pushstring(v, _SC("X"), -1);
+                        {
                             sq_pushinteger(v, get_inputp2_x());
-                        sq_newslot(v, -3, SQFalse);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         sq_pushstring(v, _SC("Y"), -1);
+                        {
                             sq_pushinteger(v, get_inputp2_y());
-                        sq_newslot(v, -3, SQFalse);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         sq_pushstring(v, _SC("SX"), -1);
+                        {
                             sq_pushfloat(v, get_inputp2_scale_x());
-                        sq_newslot(v, -3, SQFalse);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         sq_pushstring(v, _SC("SY"), -1);
+                        {
                             sq_pushfloat(v, get_inputp2_scale_y());
-                        sq_newslot(v, -3, SQFalse);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         sq_pushstring(v, _SC("offset"), -1);
+                        {
                             sq_pushinteger(v, get_inputp2_offset());
-                        sq_newslot(v, -3, SQFalse);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         sq_pushstring(v, _SC("list_max"), -1);
+                        {
                             sq_pushinteger(v, get_inputp2_count());
-                        sq_newslot(v, -3 ,SQFalse);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         sq_pushstring(v, _SC("spacing"), -1);
+                        {
                             sq_pushbool(v, get_inputp2_spacing());
-                        sq_newslot(v, -3, SQFalse);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         uint32_t color = get_inputp2_color();
                         sq_pushstring(v, _SC("blue"), -1);
+                        {
                             sq_pushfloat(v, (float)(uint8_t)color / 255.0f);
-                        sq_newslot(v, -3, SQFalse);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         sq_pushstring(v, _SC("green"), -1);
+                        {
                             sq_pushfloat(v, (float)(uint8_t)(color >> 8) / 255.0f);
-                        sq_newslot(v, -3, SQFalse);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         sq_pushstring(v, _SC("red"), -1);
+                        {
                             sq_pushfloat(v, (float)(uint8_t)(color >> 16) / 255.0f);
-                        sq_newslot(v, -3, SQFalse);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         sq_pushstring(v, _SC("alpha"), -1);
+                        {
                             sq_pushfloat(v, (float)(uint8_t)(color >> 24) / 255.0f);
+                            sq_newslot(v, -3, SQFalse);
+                        }
                         sq_newslot(v, -3, SQFalse);
                     }
-                    sq_newslot(v, -3, SQFalse);
                     */
+                    sq_newslot(v, -3, SQFalse);
+                }
                 sq_newslot(v, -3, SQFalse);
-            sq_newslot(v, -3, SQFalse);
+            }
 
             // rollback table setup
             sq_pushstring(v, _SC("rollback"), -1);
+            {
                 sq_newtable(v);
-                sq_pushstring(v, _SC("resyncing"), -1);
-                    sq_newclosure(v, r_resync_get, 0);
+                    sq_pushstring(v, _SC("resyncing"), -1);
+                    {
+                        sq_newclosure(v, r_resync_get, 0);
+                        sq_newslot(v, -3, SQFalse);
+                    }
                 sq_newslot(v, -3, SQFalse);
-                sq_pushstring(v, _SC("print"), -1);
-                    sq_newclosure(v, sq_print, 0);
-                sq_newslot(v, -3, SQFalse);
-                sq_pushstring(v, _SC("fprint"), -1);
-                    sq_newclosure(v, sq_fprint, 0);
-                sq_newslot(v, -3, SQFalse);
-            sq_newslot(v, -3, SQFalse);
+            }
 
-                // modifications to the manbow table
+            // debug table setup
+            sq_pushstring(v, _SC("debug"),-1);
+            {
+                sq_newtable(v);
+                sq_pushstring(v, _SC("print"),-1);
+                {
+                    sq_newclosure(v, sq_print, 0);
+                    sq_newslot(v, -3, SQFalse);
+                }
+                sq_pushstring(v, _SC("fprint"), -1);
+                {
+                    sq_newclosure(v, sq_fprint, 0);
+                    sq_newslot(v, -3, SQFalse);
+                }
+                sq_newslot(v, -3, SQFalse);
+            }
+
+            // modifications to the manbow table
             sq_pushstring(v, _SC("manbow"), -1);
                 sq_get(v,-2);
                 sq_pushstring(v, _SC("CompileBuffer"), -1);

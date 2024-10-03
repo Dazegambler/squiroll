@@ -106,6 +106,8 @@ public:
 
 static HSQUIRRELVM v;
 
+static FILE* debug;
+
 SQInteger CompileBuffer(HSQUIRRELVM v) {
     const SQChar* filename;
     SQObject* pObject;
@@ -140,6 +142,22 @@ SQInteger sq_print(HSQUIRRELVM v){
     }
 
     log_printf("%s", str);
+    return 0;
+}
+
+SQInteger sq_fprint(HSQUIRRELVM v)
+{
+    const SQChar *str;
+    const SQChar *path;
+    if (sq_gettop(v) != 3 ||
+        SQ_FAILED(sq_getstring(v, 2, &path)) ||
+        SQ_FAILED(sq_getstring(v, 3, &str)))
+    {
+        return sq_throwerror(v, _SC("invalid arguments...expected: <file> <string>.\n"));
+    }
+    FILE* file = fopen(path,"a");
+    log_fprintf(file,"%s", str);
+    fclose(file);
     return 0;
 }
 
@@ -447,6 +465,9 @@ extern "C" {
                 sq_newslot(v, -3, SQFalse);
                 sq_pushstring(v, _SC("print"), -1);
                     sq_newclosure(v, sq_print, 0);
+                sq_newslot(v, -3, SQFalse);
+                sq_pushstring(v, _SC("fprint"), -1);
+                    sq_newclosure(v, sq_fprint, 0);
                 sq_newslot(v, -3, SQFalse);
             sq_newslot(v, -3, SQFalse);
 

@@ -94,21 +94,7 @@ function Initialize( param )
 	::battle.Create(battle_param);
 	::battle.Begin();
 	::loop.Begin(this);
-	displayAllElements(battle_param.team[0],"");
-}
-
-function displayAllElements(obj,indent) {
-	indent += " ";
-    ::rollback.fprint("output.txt",indent+"----"+obj+"----\n");
-
-    foreach (key, value in obj) {
-        ::rollback.fprint("output.txt",indent+key + " : " + typeof(value) + "\n");
-
-        if (typeof(value) == "table" || typeof(value) == "class") {
-            displayAllElements(value,indent);
-        }
-    }
-	::rollback.fprint("output.txt",indent+"---------------\n")
+	::debug.displayAllElements(battle_param.team[0],"");
 }
 
 function Terminate()

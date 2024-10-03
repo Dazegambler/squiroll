@@ -102,7 +102,7 @@ static const std::unordered_map<std::string_view, const EmbedData> replacements 
 	{"data/script/version.nut"sv, version_nut},
 	{"data/script/battle/battle.nut"sv, battle_nut},
 	{"data/system/title/title.nut"sv, title_nut},
-	//{"data/script/scene/vs.nut"sv, vs_nut},
+	{"data/script/scene/vs.nut"sv, vs_nut},
 	//{"data/system/config/config.nut"sv, config_nut},
 	//{"data/system/config/item.csv"sv, item_csv},
 	//{"data/script/menu.nut"sv, menu_nut},
@@ -187,9 +187,13 @@ static constexpr uint8_t misc_nut[] = {
 #include "new_files/misc_config.nut.h"
 };
 
+static constexpr uint8_t debug_nut[] = {
+#include "new_files/debug.nut.h"
+};
+
 static const std::unordered_map<std::string_view, const EmbedData> new_files = {
 	{"misc_config.nut"sv, misc_nut},
-
+	{"debug.nut"sv, debug_nut},
 };
 
 EmbedData get_new_file_data(const char* name) {

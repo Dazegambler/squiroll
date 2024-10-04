@@ -94,7 +94,7 @@ function Initialize( param )
 	::battle.Create(battle_param);
 	::battle.Begin();
 	::loop.Begin(this);
-	::debug.displayAllElements(battle_param.team[0],"");
+	displayAllElements(battle_param.team[0],"");
 }
 
 function Terminate()

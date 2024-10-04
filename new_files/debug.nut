@@ -1,4 +1,3 @@
-print("test!!!!!!!!!!!\n");
 function displayAllElements(obj,indent) {
 	indent += " ";
     fprint("output.txt",indent+"----"+obj+"----\n");

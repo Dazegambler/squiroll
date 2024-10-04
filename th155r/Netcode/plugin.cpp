@@ -322,13 +322,6 @@ extern "C" {
             sq_createtable(v, _SC("debug"), [](HSQUIRRELVM v) {
                 sq_setfunc(v, _SC("print"), sq_print);
                 sq_setfunc(v, _SC("fprint"), sq_fprint);
-                if (EmbedData embed = get_new_file_data("debug.nut")) {
-                    if (SQ_FAILED(sq_compilebuffer(v, (const SQChar *)embed.data, embed.length, _SC("compiled from buffer"), SQFalse)))
-                    {
-                        sq_throwerror(v, _SC("Failed to compile script from buffer.\n"));
-                    }
-                    sq_call(v, 1, SQFalse, SQTrue);
-                }
             });
 
             // modifications to the manbow table

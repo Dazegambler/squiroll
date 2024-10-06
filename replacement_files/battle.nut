@@ -167,11 +167,13 @@ function Create( param )
 		if (::setting.input_display.p1.enabled){
 			local input = {};
 			input.list <- [];
-			input.entries <- [];
 			input.lastinput <- "";
+			input.sincelast <- 0; //frames
+			input.autodeletetimer <- ::setting.input_display.p1.timer; //frames
+			input.reset <- false;
+			input.cursor <- -1;
 			input.getinputs <- getinputs;
 			input.padding <- ::setting.input_display.p1.spacing ? " " : "";
-			//input.empty <- ::setting.input_display.p1.spacing ? "         " : "";
 			input.listmax <- ::setting.input_display.p1.list_max;
 
 			for (local i = 0; i < input.listmax; i++){
@@ -191,14 +193,20 @@ function Create( param )
 			input.Update <- function () {
 				local str = this.getinputs(this.padding);
 				if (str != this.lastinput && str != ""){
-					this.entries.insert(0, str);
-					if (this.entries.len() > this.listmax){
-						this.entries.pop();
-					}
+					this.reset = true;
+					this.list[++this.cursor < (this.listmax) ? this.cursor : this.cursor = 0].Set(str/*+ this.sincelast > 0 && this.sincelast < 15 ? "["+this.sincelast+"]" : ""*/);
 					this.lastinput = str;
-				}
-				for (local i = 0; i < this.listmax; i++){
-					this.list[i].Set(this.entries.len() > i ? this.entries[i] : "");
+					this.sincelast = 0;
+				}else if (this.sincelast > this.autodeletetimer){
+					if (this.reset == true){
+						for ( this.cursor = (this.listmax-1); this.cursor > -1; this.cursor--){
+							this.list[this.cursor].Set("");
+						}
+						this.cursor = 0;
+						this.reset = false;
+					}
+				}else{
+					this.sincelast++;
 				}
 			};
 			AddTask(input);

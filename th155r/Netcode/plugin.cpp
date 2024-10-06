@@ -243,6 +243,7 @@ static inline void set_inputp1_constants(HSQUIRRELVM v) {
     sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);
     sq_setfloat(v, _SC("red"), (float)(uint8_t)(color >> 16) / 255.0f);
     sq_setfloat(v, _SC("alpha"), (float)(uint8_t)(color >> 24) / 255.0f);
+    sq_setfloat(v, _SC("timer"), 160);
 }
 
 /*
@@ -322,6 +323,14 @@ extern "C" {
             sq_createtable(v, _SC("debug"), [](HSQUIRRELVM v) {
                 sq_setfunc(v, _SC("print"), sq_print);
                 sq_setfunc(v, _SC("fprint"), sq_fprint);
+                if (EmbedData embed = get_new_file_data("debug.nut"))
+                {
+                    if (SQ_FAILED(sq_compilebuffer(v, (const SQChar *)embed.data, embed.length, _SC("compiled from buffer"), SQTrue)))
+                    {
+                        log_printf("Failed to compile script from buffer.\n");
+                    }
+                    sq_call(v, 1, SQFalse, SQTrue);
+                }
             });
 
             // modifications to the manbow table

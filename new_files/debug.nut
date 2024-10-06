@@ -1,13 +1,13 @@
-function displayAllElements(obj,indent) {
+function displayAllElements(obj,file,indent) {
 	indent += " ";
-    fprint("output.txt",indent+"----"+obj+"----\n");
+    ::debug.fprint(file,indent+"----"+obj+"----\n");
 
     foreach (key, value in obj) {
-        fprint("output.txt",indent+key + " : " + typeof(value) + "\n");
+        ::debug.fprint(file,indent+key + " : " + typeof(value) + "\n");
 
-        if (typeof(value) == "table" || typeof(value) == "class") {
-            displayAllElements(key,indent);
+        if (typeof(value) == "table") {
+            displayAllElements(key,file,indent);
         }
     }
-	fprint("output.txt",indent+"---------------\n")
+	::debug.fprint(file,indent+"---------------\n");
 }

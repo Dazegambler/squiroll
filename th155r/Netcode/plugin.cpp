@@ -227,7 +227,7 @@ static inline void set_ping_constants(HSQUIRRELVM v) {
     sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);
     sq_setfloat(v, _SC("red"), (float)(uint8_t)(color >> 16) / 255.0f);
     sq_setfloat(v, _SC("alpha"), (float)(uint8_t)(color >> 24) / 255.0f);
-    sq_setbool(v, _SC("ping_in_frames"), get_ping_pif());
+    sq_setbool(v, _SC("ping_in_frames"), get_ping_frames());
 }
 
 static inline void set_inputp1_constants(HSQUIRRELVM v) {
@@ -244,7 +244,8 @@ static inline void set_inputp1_constants(HSQUIRRELVM v) {
     sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);
     sq_setfloat(v, _SC("red"), (float)(uint8_t)(color >> 16) / 255.0f);
     sq_setfloat(v, _SC("alpha"), (float)(uint8_t)(color >> 24) / 255.0f);
-    sq_setinteger(v, _SC("timer"), get_inputp1_timer());
+    int32_t timer = get_inputp1_timer();
+    sq_setinteger(v, _SC("timer"), timer > 0 ? timer : 0);
     sq_setbool(v, _SC("raw_input"), get_inputp1_raw_input());
 }
 
@@ -262,7 +263,8 @@ static inline void set_inputp2_constants(HSQUIRRELVM v) {
     sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);
     sq_setfloat(v, _SC("red"), (float)(uint8_t)(color >> 16) / 255.0f);
     sq_setfloat(v, _SC("alpha"), (float)(uint8_t)(color >> 24) / 255.0f);
-    sq_setinteger(v, _SC("timer"), get_inputp2_timer());
+    int32_t timer = get_inputp2_timer();
+    sq_setinteger(v, _SC("timer"), timer > 0 ? timer : 0);
     sq_setbool(v, _SC("raw_input"), get_inputp2_raw_input());
 }
 

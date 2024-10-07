@@ -51,9 +51,9 @@ static constexpr char CONFIG_FILE_NAME[] = "\\netcode.ini";
 #define PING_COLOR_KEY "color"
 #define PING_COLOR_DEFAULT FFFFFFFF
 #define PING_COLOR_DEFAULT_STR MACRO_STR(PING_COLOR_DEFAULT)
-#define PING_PIF_KEY "ping_in_frames"
-#define PING_PIF_DEFAULT true
-#define PING_PIF_DEFAULT_STR MACRO_STR(PING_PIF_DEFAULT)
+#define PING_FRAMES_KEY "frames"
+#define PING_FRAMES_DEFAULT true
+#define PING_FRAMES_DEFAULT_STR MACRO_STR(PING_FRAMES_DEFAULT)
 
 #define INPUT1_SECTION_NAME "input_display_p1"
 #define INPUT1_ENABLED_KEY "enabled"
@@ -305,10 +305,10 @@ uint32_t get_ping_color() {
 	return GET_HEX_CONFIG(PING, COLOR);
 }
 
-static char PING_PIF_BUFFER[8]{ '\0' };
-uint32_t get_ping_pif()
+static char PING_FRAMES_BUFFER[8]{ '\0' };
+bool get_ping_frames()
 {
-	return GET_BOOL_CONFIG(PING, PIF);
+	return GET_BOOL_CONFIG(PING, FRAMES);
 }
 
 // ====================
@@ -360,8 +360,8 @@ bool get_inputp1_spacing() {
 	return GET_BOOL_CONFIG(INPUT1, SPACING);
 }
 
-static char INPUT1_TIMER_BUFFER[INTEGER_BUFFER_SIZE<uint32_t>]{ '\0' };
-uint32_t get_inputp1_timer()
+static char INPUT1_TIMER_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
+int32_t get_inputp1_timer()
 {
 	return GET_INT_CONFIG(INPUT1, TIMER);
 }
@@ -422,8 +422,8 @@ bool get_inputp2_spacing() {
 	return GET_BOOL_CONFIG(INPUT2, SPACING);
 }
 
-static char INPUT2_TIMER_BUFFER[INTEGER_BUFFER_SIZE<uint32_t>]{ '\0' };
-uint32_t get_inputp2_timer()
+static char INPUT2_TIMER_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
+int32_t get_inputp2_timer()
 {
 	return GET_INT_CONFIG(INPUT2, TIMER);
 }
@@ -493,7 +493,7 @@ void init_config_file() {
 			CONFIG_DEFAULT(PING, SCALE_X);
 			CONFIG_DEFAULT(PING, SCALE_Y);
 			CONFIG_DEFAULT(PING, COLOR);
-			CONFIG_DEFAULT(PING, PIF);
+			CONFIG_DEFAULT(PING, FRAMES);
 
 			CONFIG_DEFAULT(INPUT1, ENABLED);
 			CONFIG_DEFAULT(INPUT1, X);

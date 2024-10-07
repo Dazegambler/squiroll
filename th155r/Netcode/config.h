@@ -23,7 +23,7 @@ int32_t get_ping_y();
 float get_ping_scale_x();
 float get_ping_scale_y();
 uint32_t get_ping_color();
-uint32_t get_ping_pif();
+bool get_ping_frames();
 
 bool get_inputp1_enabled();
 int32_t get_inputp1_x();
@@ -34,7 +34,7 @@ int32_t get_inputp1_offset();
 int32_t get_inputp1_count();
 uint32_t get_inputp1_color();
 bool get_inputp1_spacing();
-uint32_t get_inputp1_timer();
+int32_t get_inputp1_timer();
 bool get_inputp1_raw_input();
 
 bool get_inputp2_enabled();
@@ -46,7 +46,7 @@ int32_t get_inputp2_offset();
 int32_t get_inputp2_count();
 uint32_t get_inputp2_color();
 bool get_inputp2_spacing();
-uint32_t get_inputp2_timer();
+int32_t get_inputp2_timer();
 bool get_inputp2_raw_input();
 
 enum IPv6State : int8_t {

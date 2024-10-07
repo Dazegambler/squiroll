@@ -34,7 +34,6 @@ int32_t get_inputp1_count();
 uint32_t get_inputp1_color();
 bool get_inputp1_spacing();
 
-/*
 bool get_inputp2_enabled();
 int32_t get_inputp2_x();
 int32_t get_inputp2_y();
@@ -44,7 +43,6 @@ int32_t get_inputp2_offset();
 int32_t get_inputp2_count();
 uint32_t get_inputp2_color();
 bool get_inputp2_spacing();
-*/
 
 enum IPv6State : int8_t {
 	IPv6NeedsTest = -1,

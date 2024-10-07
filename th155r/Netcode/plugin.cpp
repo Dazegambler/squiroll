@@ -243,10 +243,9 @@ static inline void set_inputp1_constants(HSQUIRRELVM v) {
     sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);
     sq_setfloat(v, _SC("red"), (float)(uint8_t)(color >> 16) / 255.0f);
     sq_setfloat(v, _SC("alpha"), (float)(uint8_t)(color >> 24) / 255.0f);
-    sq_setfloat(v, _SC("timer"), 160);
+    sq_setfloat(v, _SC("timer"), 160);//PLACEHOLDER PLEASE CHANGE
 }
 
-/*
 static inline void set_inputp2_constants(HSQUIRRELVM v) {
     sq_setbool(v, _SC("enabled"), get_inputp2_enabled());
     sq_setinteger(v, _SC("X"), get_inputp2_x());
@@ -261,8 +260,9 @@ static inline void set_inputp2_constants(HSQUIRRELVM v) {
     sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);
     sq_setfloat(v, _SC("red"), (float)(uint8_t)(color >> 16) / 255.0f);
     sq_setfloat(v, _SC("alpha"), (float)(uint8_t)(color >> 24) / 255.0f);
+    sq_setfloat(v, _SC("timer"), 160); // PLACEHOLDER PLEASE CHANGE
 }
-*/
+
 
 SQInteger update_ping_constants(HSQUIRRELVM v) {
     sq_pushroottable(v);
@@ -310,7 +310,7 @@ extern "C" {
                 sq_createtable(v, _SC("input_display"), [](HSQUIRRELVM v) {
                     sq_setfunc(v, _SC("update_consts"), update_input_constants);
                     sq_createtable(v, _SC("p1"), set_inputp1_constants);
-                    //sq_createtable(v, _SC("p2"), set_inputp2_constants);
+                    sq_createtable(v, _SC("p2"), set_inputp2_constants);
                 });
             });
 

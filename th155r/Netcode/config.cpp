@@ -81,13 +81,12 @@ static constexpr char CONFIG_FILE_NAME[] = "\\netcode.ini";
 #define INPUT1_SPACING_DEFAULT false
 #define INPUT1_SPACING_DEFAULT_STR MACRO_STR(INPUT1_SPACING_DEFAULT)
 
-/*
 #define INPUT2_SECTION_NAME "input_display_p2"
 #define INPUT2_ENABLED_KEY "enabled"
 #define INPUT2_ENABLED_DEFAULT false
 #define INPUT2_ENABLED_DEFAULT_STR MACRO_STR(INPUT2_ENABLED_DEFAULT)
 #define INPUT2_X_KEY "x"
-#define INPUT2_X_DEFAULT 10
+#define INPUT2_X_DEFAULT 1190
 #define INPUT2_X_DEFAULT_STR MACRO_STR(INPUT2_X_DEFAULT)
 #define INPUT2_Y_KEY "y"
 #define INPUT2_Y_DEFAULT 515
@@ -110,7 +109,6 @@ static constexpr char CONFIG_FILE_NAME[] = "\\netcode.ini";
 #define INPUT2_SPACING_KEY "spacing"
 #define INPUT2_SPACING_DEFAULT false
 #define INPUT2_SPACING_DEFAULT_STR MACRO_STR(INPUT2_SPACING_DEFAULT)
-*/
 
 #define NETWORK_SECTION_NAME "network"
 #define NETWORK_IPV6_KEY "enable_ipv6"
@@ -345,7 +343,7 @@ bool get_inputp1_spacing() {
 // INPUT P2
 // ====================
 
-/*
+
 static char INPUT2_ENABLED_BUFFER[8]{ '\0' };
 bool get_inputp2_enabled() {
 	return GET_BOOL_CONFIG(INPUT2, ENABLED);
@@ -377,7 +375,7 @@ int32_t get_inputp2_offset() {
 }
 
 static char INPUT2_COUNT_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
-int32_t get_inputp1_count() {
+int32_t get_inputp2_count() {
 	return GET_INT_CONFIG(INPUT2, COUNT);
 }
 
@@ -390,7 +388,6 @@ static char INPUT2_SPACING_BUFFER[8]{ '\0' };
 bool get_inputp2_spacing() {
 	return GET_BOOL_CONFIG(INPUT2, SPACING);
 }
-*/
 
 // ====================
 // NETWORK
@@ -462,7 +459,6 @@ void init_config_file() {
 			CONFIG_DEFAULT(INPUT1, COLOR);
 			CONFIG_DEFAULT(INPUT1, SPACING);
 
-			/*
 			CONFIG_DEFAULT(INPUT2, ENABLED);
 			CONFIG_DEFAULT(INPUT2, X);
 			CONFIG_DEFAULT(INPUT2, Y);
@@ -472,7 +468,6 @@ void init_config_file() {
 			CONFIG_DEFAULT(INPUT2, COUNT);
 			CONFIG_DEFAULT(INPUT2, COLOR);
 			CONFIG_DEFAULT(INPUT2, SPACING);
-			*/
 
 			CONFIG_DEFAULT(NETWORK, IPV6);
 		}

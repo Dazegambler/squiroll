@@ -69,11 +69,14 @@ function Create( param )
 	case 10:
 		::manbow.CompileFile("data/actor/status/gauge_story.nut", this.gauge);
 		::manbow.CompileFile("data/script/battle/battle_story.nut", this);
+		inputdisplaysetup(0);
+		inputdisplaysetup(1);
 		break;
 
 	case 40:
 		::manbow.CompileFile("data/actor/status/gauge_vs.nut", this.gauge);
 		::manbow.CompileFile("data/script/battle/battle_practice.nut", this);
+		inputdisplaysetup(0);
 		break;
 
 	case 30:
@@ -92,6 +95,8 @@ function Create( param )
 		if (::network.IsActive())
 		{
 			::manbow.CompileFile("data/script/battle/battle_watch.nut", this);
+			inputdisplaysetup(1);
+			inputdisplaysetup(0);
 		}
 		else if (param.game_mode == 10)
 		{
@@ -100,12 +105,15 @@ function Create( param )
 		else
 		{
 			::manbow.CompileFile("data/script/battle/battle_replay.nut", this);
+			inputdisplaysetup(0);
+			inputdisplaysetup(1);
 		}
 	}
 
 	if (::network.IsPlaying())
 	{
 		::manbow.CompileFile("data/script/battle/battle_network.nut", this);
+		inputdisplaysetup(2);
 	}
 
 	this.srand(param.seed);
@@ -147,11 +155,11 @@ function Create( param )
 			ping.text.ConnectRenderSlot(::graphics.slot.ui, 60000);
 			ping.Update <-  function() {
 				if (::network.inst) {
-					if (::rollback.resyncing() != false) {
-						this.text.Set("ping:" + ::network.GetDelay() + "(resyncing)");
-					} else {
-						this.text.Set("ping:" + ::network.GetDelay());
-					}
+					local delay = ::network.GetDelay();
+					local str = "ping:" + delay;
+					str += ::setting.ping.ping_in_frames == true ? "["+((delay + 15) / 16)+"f]" : "";
+					str += ::rollback.resyncing() != false ? "(resyncing)" : "";
+					this.text.Set(str);
 					this.text.x = ::setting.ping.X - (this.text.width / 2);
 					this.text.y = (::setting.ping.Y - this.text.height);
 				}else{
@@ -162,48 +170,6 @@ function Create( param )
 			::loop.AddTask(ping);
 		}
 	}
-	// else {
-		// ::setting.input_display.update_consts();
-		// if (::setting.input_display.p1.enabled){
-		// 	local input = {};
-		// 	input.list <- [];
-		// 	input.entries <- [];
-		// 	input.lastinput <- "";
-		// 	input.getinputs <- getinputs;
-		// 	input.padding <- ::setting.input_display.p1.spacing ? " " : "";
-		// 	//input.empty <- ::setting.input_display.p1.spacing ? "         " : "";
-		// 	input.listmax <- ::setting.input_display.p1.list_max;
-
-		// 	for (local i = 0; i < input.listmax; i++){
-		// 		local t = ::manbow.String();
-		// 		input.list.append(t);
-		// 		input.list[i].Initialize(::talk.font);
-		// 		input.list[i].red = ::setting.input_display.p1.red;
-		// 		input.list[i].green = ::setting.input_display.p1.green;
-		// 		input.list[i].blue = ::setting.input_display.p1.blue;
-		// 		input.list[i].alpha = ::setting.input_display.p1.alpha;
-		// 		input.list[i].sy = ::setting.input_display.p1.SY;
-		// 		input.list[i].sx = ::setting.input_display.p1.SX;
-		// 		input.list[i].x = ::setting.input_display.p1.X;
-		// 		input.list[i].y = ::setting.input_display.p1.Y - (i * ::setting.input_display.p1.offset);
-		// 		input.list[i].ConnectRenderSlot(::graphics.slot.ui, 60000);
-		// 	}
-		// 	input.Update <- function () {
-		// 		local str = this.getinputs(this.padding);
-		// 		if (str != this.lastinput && str != ""){
-		// 			this.entries.insert(0, str);
-		// 			if (this.entries.len() > this.listmax){
-		// 				this.entries.pop();
-		// 			}
-		// 			this.lastinput = str;
-		// 		}
-		// 		for (local i = 0; i < this.listmax; i++){
-		// 			this.list[i].Set(this.entries.len() > i ? this.entries[i] : "");
-		// 		}
-		// 	};
-		// 	AddTask(input);
-		// }
-	//}
 	//end of additions
 
 	if (!::network.IsActive())
@@ -227,48 +193,159 @@ function Create( param )
 	}
 }
 
-//additions
-// function getinputs(none)
-// {
-// 	local str = "";
-// 	switch (true){
-// 		case (::input_all.x < 0 && ::input_all.y < 0):
-// 			str += "7";
-// 			break;
-// 		case (::input_all.x < 0 && ::input_all.y > 0):
-// 			str += "1";
-// 			break;
-// 		case (::input_all.x > 0 && ::input_all.y < 0):
-// 			str += "9";
-// 			break;
-// 		case (::input_all.x > 0 && ::input_all.y > 0):
-// 			str += "3";
-// 			break;
-// 		case (::input_all.x < 0):
-// 			str += "4";
-// 			break;
-// 		case (::input_all.x > 0):
-// 			str += "6";
-// 			break;
-// 		case (::input_all.y < 0):
-// 			str += "8";
-// 			break;
-// 		case (::input_all.y > 0):
-// 			str += "2";
-// 			break;
-// 		default:
-// 			str += none;
-// 			break;
-// 	}
-// 	str += none;
-// 	str += ::input_all.b0 ? "A" : none;
-// 	str += ::input_all.b1 ? ::input_all.b1 > 12 ? "[B]" : "B" : none;
-// 	str += ::input_all.b2 ? "C" : none;
-// 	str += ::input_all.b4 ? "D" : none;
-// 	str += ::input_all.b3 ? "E" : none;
+function inputdisplaysetup(player){
+	::setting.input_display.update_consts();
+	local p = player != 1 ? ::setting.input_display.p1 : ::setting.input_display.p2;
+	if (p.enabled){
+		local input = {};
+		input.list <- [];
+		input.buf <- [];
+		input.lastinput <- "";
+		input.sincelast <- 0; //frames
+		input.autodeletetimer <- p.timer; //frames
+		input.reset <- false;
+		input.cursor <- -1;
+		input.getinputs <- getinputs;
+		input.padding <-p.spacing ? " " : "";
+		input.listmax <- p.list_max;
 
-// 	return str;
-// }
+		for (local i = 0; i < input.listmax; i++){
+			local t = ::manbow.String();
+			input.list.append(t);
+			input.list[i].Initialize(::talk.font);
+			input.list[i].red = p.red;
+			input.list[i].green = p.green;
+			input.list[i].blue = p.blue;
+			input.list[i].alpha = p.alpha;
+			input.list[i].sy = p.SY;
+			input.list[i].sx = p.SX;
+			input.list[i].x = p.X;
+			input.list[i].y = p.Y - (i * p.offset);
+			input.list[i].ConnectRenderSlot(::graphics.slot.ui, 60000);
+		}
+		for (local i = 0; i < input.listmax; i++){
+			input.buf.append("");
+		}
+		input.Update <- function () {
+			local str = this.getinputs(player,this.padding);
+			if (str != this.lastinput && str != ""){
+				this.reset = true;
+				for (local i = (this.listmax-1); i > -1; i--){
+					if (i+1 == (this.listmax)){
+						this.buf[i] = "";
+						this.list[i].Set("");
+					}else{
+						this.buf[i+1] = this.buf[i];
+						this.list[i+1].Set(this.buf[i]);
+					}
+				}
+				this.buf[0] = str;
+				this.list[0].Set(str);
+				this.lastinput = str;
+				this.sincelast = 0;
+			}else if (this.sincelast > this.autodeletetimer){
+				if (this.reset == true){
+					for ( this.cursor = (this.listmax-1); this.cursor > -1; this.cursor--){
+						this.buf[this.cursor] = "";
+						this.list[this.cursor].Set("");
+					}
+					this.cursor = 0;
+					this.lastinput = "";
+					this.reset = false;
+				}
+			}else{
+				this.sincelast++;
+			}
+		};
+		AddTask(input);
+	}
+}
+
+//additions
+function getinputs(player,none)
+{
+	local str = "";
+	local team = 0;
+	local setting = player != 1 ? ::setting.input_display.p1 : ::setting.input_display.p2;
+	if (::network.IsPlaying()){
+		if (::network.is_parent_vs){
+			team = ::battle.team[1];
+		}else{
+			team = ::battle.team[0];
+		}
+	}else{
+		team = ::battle.team[player != 1 ? 0 : 1];
+	}
+	local input = team.input;
+	if (setting.raw_input == true || team.current.direction > 0){
+		switch (true){
+			case (input.x < 0 && input.y < 0):
+				str += "7";
+				break;
+			case (input.x < 0 && input.y > 0):
+				str += "1";
+				break;
+			case (input.x > 0 && input.y < 0):
+				str += "9";
+				break;
+			case (input.x > 0 && input.y > 0):
+				str += "3";
+				break;
+			case (input.x < 0):
+				str += "4";
+				break;
+			case (input.x > 0):
+				str += "6";
+				break;
+			case (input.y < 0):
+				str += "8";
+				break;
+			case (input.y > 0):
+				str += "2";
+				break;
+			default:
+				str += none;
+				break;
+		}
+	}else {
+		switch (true){
+			case (input.x < 0 && input.y < 0):
+				str += "9";
+				break;
+			case (input.x < 0 && input.y > 0):
+				str += "3";
+				break;
+			case (input.x > 0 && input.y < 0):
+				str += "7";
+				break;
+			case (input.x > 0 && input.y > 0):
+				str += "1";
+				break;
+			case (input.x < 0):
+				str += "6";
+				break;
+			case (input.x > 0):
+				str += "4";
+				break;
+			case (input.y < 0):
+				str += "8";
+				break;
+			case (input.y > 0):
+				str += "2";
+				break;
+			default:
+				str += none;
+				break;
+		}
+	}
+	str += none;
+	str += input.b0 ? "A" : none;
+	str += input.b1 ? input.b1 > 12 ? "[B]" : "B" : none;
+	str += input.b2 ? "C" : none;
+	str += input.b4 ? "D" : none;
+	str += input.b3 ? "E" : none;
+	return str;
+}
 //end of additions
 function Release()
 {

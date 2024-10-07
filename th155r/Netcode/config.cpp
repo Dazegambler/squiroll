@@ -51,6 +51,9 @@ static constexpr char CONFIG_FILE_NAME[] = "\\netcode.ini";
 #define PING_COLOR_KEY "color"
 #define PING_COLOR_DEFAULT FFFFFFFF
 #define PING_COLOR_DEFAULT_STR MACRO_STR(PING_COLOR_DEFAULT)
+#define PING_PIF_KEY "ping_in_frames"
+#define PING_PIF_DEFAULT true
+#define PING_PIF_DEFAULT_STR MACRO_STR(PING_PIF_DEFAULT)
 
 #define INPUT1_SECTION_NAME "input_display_p1"
 #define INPUT1_ENABLED_KEY "enabled"
@@ -80,14 +83,19 @@ static constexpr char CONFIG_FILE_NAME[] = "\\netcode.ini";
 #define INPUT1_SPACING_KEY "spacing"
 #define INPUT1_SPACING_DEFAULT false
 #define INPUT1_SPACING_DEFAULT_STR MACRO_STR(INPUT1_SPACING_DEFAULT)
+#define INPUT1_TIMER_KEY "timer"
+#define INPUT1_TIMER_DEFAULT 200
+#define INPUT1_TIMER_DEFAULT_STR MACRO_STR(INPUT1_TIMER_DEFAULT)
+#define INPUT1_RAW_INPUT_KEY "raw_input"
+#define INPUT1_RAW_INPUT_DEFAULT false
+#define INPUT1_RAW_INPUT_DEFAULT_STR MACRO_STR(INPUT1_RAW_INPUT_DEFAULT)
 
-/*
 #define INPUT2_SECTION_NAME "input_display_p2"
 #define INPUT2_ENABLED_KEY "enabled"
 #define INPUT2_ENABLED_DEFAULT false
 #define INPUT2_ENABLED_DEFAULT_STR MACRO_STR(INPUT2_ENABLED_DEFAULT)
 #define INPUT2_X_KEY "x"
-#define INPUT2_X_DEFAULT 10
+#define INPUT2_X_DEFAULT 1210
 #define INPUT2_X_DEFAULT_STR MACRO_STR(INPUT2_X_DEFAULT)
 #define INPUT2_Y_KEY "y"
 #define INPUT2_Y_DEFAULT 515
@@ -110,7 +118,12 @@ static constexpr char CONFIG_FILE_NAME[] = "\\netcode.ini";
 #define INPUT2_SPACING_KEY "spacing"
 #define INPUT2_SPACING_DEFAULT false
 #define INPUT2_SPACING_DEFAULT_STR MACRO_STR(INPUT2_SPACING_DEFAULT)
-*/
+#define INPUT2_TIMER_KEY "timer"
+#define INPUT2_TIMER_DEFAULT 200
+#define INPUT2_TIMER_DEFAULT_STR MACRO_STR(INPUT2_TIMER_DEFAULT)
+#define INPUT2_RAW_INPUT_KEY "raw_input"
+#define INPUT2_RAW_INPUT_DEFAULT false
+#define INPUT2_RAW_INPUT_DEFAULT_STR MACRO_STR(INPUT2_RAW_INPUT_DEFAULT)
 
 #define NETWORK_SECTION_NAME "network"
 #define NETWORK_IPV6_KEY "enable_ipv6"
@@ -292,6 +305,12 @@ uint32_t get_ping_color() {
 	return GET_HEX_CONFIG(PING, COLOR);
 }
 
+static char PING_PIF_BUFFER[8]{ '\0' };
+uint32_t get_ping_pif()
+{
+	return GET_BOOL_CONFIG(PING, PIF);
+}
+
 // ====================
 // INPUT P1
 // ====================
@@ -341,11 +360,23 @@ bool get_inputp1_spacing() {
 	return GET_BOOL_CONFIG(INPUT1, SPACING);
 }
 
+static char INPUT1_TIMER_BUFFER[INTEGER_BUFFER_SIZE<uint32_t>]{ '\0' };
+uint32_t get_inputp1_timer()
+{
+	return GET_INT_CONFIG(INPUT1, TIMER);
+}
+
+static char INPUT1_RAW_INPUT_BUFFER[8]{'\0'};
+bool get_inputp1_raw_input()
+{
+	return GET_BOOL_CONFIG(INPUT1, RAW_INPUT);
+}
+
 // ====================
 // INPUT P2
 // ====================
 
-/*
+
 static char INPUT2_ENABLED_BUFFER[8]{ '\0' };
 bool get_inputp2_enabled() {
 	return GET_BOOL_CONFIG(INPUT2, ENABLED);
@@ -377,7 +408,7 @@ int32_t get_inputp2_offset() {
 }
 
 static char INPUT2_COUNT_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
-int32_t get_inputp1_count() {
+int32_t get_inputp2_count() {
 	return GET_INT_CONFIG(INPUT2, COUNT);
 }
 
@@ -390,7 +421,18 @@ static char INPUT2_SPACING_BUFFER[8]{ '\0' };
 bool get_inputp2_spacing() {
 	return GET_BOOL_CONFIG(INPUT2, SPACING);
 }
-*/
+
+static char INPUT2_TIMER_BUFFER[INTEGER_BUFFER_SIZE<uint32_t>]{ '\0' };
+uint32_t get_inputp2_timer()
+{
+	return GET_INT_CONFIG(INPUT2, TIMER);
+}
+
+static char INPUT2_RAW_INPUT_BUFFER[8]{ '\0' };
+bool get_inputp2_raw_input()
+{
+	return GET_BOOL_CONFIG(INPUT2, RAW_INPUT);
+}
 
 // ====================
 // NETWORK
@@ -451,6 +493,7 @@ void init_config_file() {
 			CONFIG_DEFAULT(PING, SCALE_X);
 			CONFIG_DEFAULT(PING, SCALE_Y);
 			CONFIG_DEFAULT(PING, COLOR);
+			CONFIG_DEFAULT(PING, PIF);
 
 			CONFIG_DEFAULT(INPUT1, ENABLED);
 			CONFIG_DEFAULT(INPUT1, X);
@@ -461,8 +504,9 @@ void init_config_file() {
 			CONFIG_DEFAULT(INPUT1, COUNT);
 			CONFIG_DEFAULT(INPUT1, COLOR);
 			CONFIG_DEFAULT(INPUT1, SPACING);
+			CONFIG_DEFAULT(INPUT1, TIMER);
+			CONFIG_DEFAULT(INPUT1, RAW_INPUT);
 
-			/*
 			CONFIG_DEFAULT(INPUT2, ENABLED);
 			CONFIG_DEFAULT(INPUT2, X);
 			CONFIG_DEFAULT(INPUT2, Y);
@@ -472,7 +516,8 @@ void init_config_file() {
 			CONFIG_DEFAULT(INPUT2, COUNT);
 			CONFIG_DEFAULT(INPUT2, COLOR);
 			CONFIG_DEFAULT(INPUT2, SPACING);
-			*/
+			CONFIG_DEFAULT(INPUT2, TIMER);
+			CONFIG_DEFAULT(INPUT2, RAW_INPUT);
 
 			CONFIG_DEFAULT(NETWORK, IPV6);
 		}

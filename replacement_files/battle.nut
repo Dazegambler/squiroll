@@ -113,7 +113,7 @@ function Create( param )
 	if (::network.IsPlaying())
 	{
 		::manbow.CompileFile("data/script/battle/battle_network.nut", this);
-		inputdisplaysetup(0);
+		inputdisplaysetup(2);
 	}
 
 	this.srand(param.seed);
@@ -155,11 +155,11 @@ function Create( param )
 			ping.text.ConnectRenderSlot(::graphics.slot.ui, 60000);
 			ping.Update <-  function() {
 				if (::network.inst) {
-					if (::rollback.resyncing() != false) {
-						this.text.Set("ping:" + ::network.GetDelay() + "(resyncing)");
-					} else {
-						this.text.Set("ping:" + ::network.GetDelay());
-					}
+					local delay = ::network.GetDelay();
+					local str = "ping:" + delay;
+					str += ::setting.ping.ping_in_frames == true ? "["+((delay + 15) / 16)+"f]" : "";
+					str += ::rollback.resyncing() != false ? "(resyncing)" : "";
+					this.text.Set(str);
 					this.text.x = ::setting.ping.X - (this.text.width / 2);
 					this.text.y = (::setting.ping.Y - this.text.height);
 				}else{
@@ -195,31 +195,32 @@ function Create( param )
 
 function inputdisplaysetup(player){
 	::setting.input_display.update_consts();
-	if ((player == 1 ? ::setting.input_display.p2 : ::setting.input_display.p1).enabled){
+	local p = player != 1 ? ::setting.input_display.p1 : ::setting.input_display.p2;
+	if (p.enabled){
 		local input = {};
 		input.list <- [];
 		input.buf <- [];
 		input.lastinput <- "";
 		input.sincelast <- 0; //frames
-		input.autodeletetimer <- (player == 1 ? ::setting.input_display.p2 : ::setting.input_display.p1).timer; //frames
+		input.autodeletetimer <- p.timer; //frames
 		input.reset <- false;
 		input.cursor <- -1;
 		input.getinputs <- getinputs;
-		input.padding <- (player == 1 ? ::setting.input_display.p2 : ::setting.input_display.p1).spacing ? " " : "";
-		input.listmax <- (player == 1 ? ::setting.input_display.p2 : ::setting.input_display.p1).list_max;
+		input.padding <-p.spacing ? " " : "";
+		input.listmax <- p.list_max;
 
 		for (local i = 0; i < input.listmax; i++){
 			local t = ::manbow.String();
 			input.list.append(t);
 			input.list[i].Initialize(::talk.font);
-			input.list[i].red = (player == 1 ? ::setting.input_display.p2 : ::setting.input_display.p1).red;
-			input.list[i].green = (player == 1 ? ::setting.input_display.p2 : ::setting.input_display.p1).green;
-			input.list[i].blue = (player == 1 ? ::setting.input_display.p2 : ::setting.input_display.p1).blue;
-			input.list[i].alpha = (player == 1 ? ::setting.input_display.p2 : ::setting.input_display.p1).alpha;
-			input.list[i].sy = (player == 1 ? ::setting.input_display.p2 : ::setting.input_display.p1).SY;
-			input.list[i].sx = (player == 1 ? ::setting.input_display.p2 : ::setting.input_display.p1).SX;
-			input.list[i].x = (player == 1 ? ::setting.input_display.p2 : ::setting.input_display.p1).X;
-			input.list[i].y = (player == 1 ? ::setting.input_display.p2 : ::setting.input_display.p1).Y - (i * (player == 1 ? ::setting.input_display.p2 : ::setting.input_display.p1).offset);
+			input.list[i].red = p.red;
+			input.list[i].green = p.green;
+			input.list[i].blue = p.blue;
+			input.list[i].alpha = p.alpha;
+			input.list[i].sy = p.SY;
+			input.list[i].sx = p.SX;
+			input.list[i].x = p.X;
+			input.list[i].y = p.Y - (i * p.offset);
 			input.list[i].ConnectRenderSlot(::graphics.slot.ui, 60000);
 		}
 		for (local i = 0; i < input.listmax; i++){
@@ -264,45 +265,87 @@ function inputdisplaysetup(player){
 function getinputs(player,none)
 {
 	local str = "";
-	local player = ::battle.team[player]
-	switch (true){
-		case (player.input.x < 0 && player.input.y < 0)://4
-			str += player.current.direction > 0 ? "7" :"9";
-			break;
-		case (player.input.x < 0 && player.input.y > 0)://4
-			str += player.current.direction > 0 ? "1" : "3";
-			break;
-		case (player.input.x > 0 && player.input.y < 0)://6
-			str += player.current.direction > 0 ? "9" : "7";
-			break;
-		case (player.input.x > 0 && player.input.y > 0)://6
-			str += player.current.direction > 0 ? "3" : "1";
-			break;
-		case (player.input.x < 0)://raw 4
-			str += player.current.direction > 0 ? "4" : "6";
-			break;
-		case (player.input.x > 0)://raw 6
-			str += player.current.direction > 0 ? "6" : "4";
-			break;
-		case (player.input.y < 0):
-			str += "8";
-			break;
-		case (player.input.y > 0):
-			str += "2";
-			break;
-		default:
-			str += none;
-			break;
+	local team = 0;
+	local setting = player != 1 ? ::setting.input_display.p1 : ::setting.input_display.p2;
+	if (::network.IsPlaying()){
+		if (::network.is_parent_vs){
+			team = ::battle.team[1];
+		}else{
+			team = ::battle.team[0];
+		}
+	}else{
+		team = ::battle.team[player != 1 ? 0 : 1];
+	}
+	local input = team.input;
+	if (setting.raw_input == true || team.current.direction > 0){
+		switch (true){
+			case (input.x < 0 && input.y < 0):
+				str += "7";
+				break;
+			case (input.x < 0 && input.y > 0):
+				str += "1";
+				break;
+			case (input.x > 0 && input.y < 0):
+				str += "9";
+				break;
+			case (input.x > 0 && input.y > 0):
+				str += "3";
+				break;
+			case (input.x < 0):
+				str += "4";
+				break;
+			case (input.x > 0):
+				str += "6";
+				break;
+			case (input.y < 0):
+				str += "8";
+				break;
+			case (input.y > 0):
+				str += "2";
+				break;
+			default:
+				str += none;
+				break;
+		}
+	}else {
+		switch (true){
+			case (input.x < 0 && input.y < 0):
+				str += "9";
+				break;
+			case (input.x < 0 && input.y > 0):
+				str += "3";
+				break;
+			case (input.x > 0 && input.y < 0):
+				str += "7";
+				break;
+			case (input.x > 0 && input.y > 0):
+				str += "1";
+				break;
+			case (input.x < 0):
+				str += "6";
+				break;
+			case (input.x > 0):
+				str += "4";
+				break;
+			case (input.y < 0):
+				str += "8";
+				break;
+			case (input.y > 0):
+				str += "2";
+				break;
+			default:
+				str += none;
+				break;
+		}
 	}
 	str += none;
-	str += player.input.b0 ? "A" : none;
-	str += player.input.b1 ? player.input.b1 > 12 ? "[B]" : "B" : none;
-	str += player.input.b2 ? "C" : none;
-	str += player.input.b4 ? "D" : none;
-	str += player.input.b3 ? "E" : none;
+	str += input.b0 ? "A" : none;
+	str += input.b1 ? input.b1 > 12 ? "[B]" : "B" : none;
+	str += input.b2 ? "C" : none;
+	str += input.b4 ? "D" : none;
+	str += input.b3 ? "E" : none;
 	return str;
 }
-
 //end of additions
 function Release()
 {

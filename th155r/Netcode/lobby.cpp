@@ -234,7 +234,18 @@ static void send_lobby_name_packet(SOCKET sock, const char* nickname, size_t len
 
     int success = sendto(sock, (const char*)name_packet, LOBBY_NAME_PACKET_SIZE(length), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
     log_printf("Sending nick (%zu):%s\n", length, nickname);
-    if (success == SOCKET_ERROR) {
+    if (success != SOCKET_ERROR) {
+        sockaddr_storage idgaf;
+        int idgaf_len = sizeof(idgaf);
+        char buffer[8];
+        //recvfrom(sock, buffer, sizeof(buffer), 0, (sockaddr*)&idgaf, &idgaf_len);
+        WSABUF buf_data;
+        buf_data.len = sizeof(buffer);
+        buf_data.buf = buffer;
+        DWORD bytes;
+        DWORD flags = 0;
+        WSARecvFrom_log(sock, &buf_data, 1, &bytes, &flags, (sockaddr*)&idgaf, &idgaf_len, NULL, NULL);
+    } else {
         log_printf("FAILED nick:%u\n", WSAGetLastError());
     }
 }
@@ -414,8 +425,8 @@ int thisfastcall lobby_send_string_udp_send_hook_REQUEST(
     const char* str
 ) {
     // This fails if properly using a 0 port?
-    SOCKET sock = get_or_create_punch_socket(self->local_port);
-    //SOCKET sock = get_or_create_punch_socket(0);
+    //SOCKET sock = get_or_create_punch_socket(self->local_port);
+    SOCKET sock = get_or_create_punch_socket(0);
     if (sock != INVALID_SOCKET) {
         send_lobby_name_packet(sock, self->current_nickname.data(), self->current_nickname.length());
     }
@@ -833,7 +844,8 @@ int WSAAPI WSARecvFrom_log(
 ) {
     int ret = WSARecvFrom(s, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromlen, lpOverlapped, lpCompletionRoutine);
     if (ret != SOCKET_ERROR) {
-        if (lpFrom->sa_family == AF_INET) {
+        //halt_and_catch_fire();
+        //if (lpFrom->sa_family == AF_INET) {
             
             /*
             char recvfrom_buff[countof(RECVFROM_STR)];
@@ -868,7 +880,7 @@ int WSAAPI WSARecvFrom_log(
             inet_ntop(AF_INET, &((sockaddr_in*)lpFrom)->sin_addr, ip_buffer, countof(ip_buffer));
             uint16_t port = __builtin_bswap16(((sockaddr_in*)lpFrom)->sin_port);
             log_printf("RECVFROM: %s:%u type %hhu\n", ip_buffer, port, from_type);
-        }
+        //}
     } else {
         int error = WSAGetLastError();
         if (error != WSA_IO_PENDING) {

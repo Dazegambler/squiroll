@@ -225,6 +225,8 @@ void patch_autopunch() {
     hotpatch_icall(0x170641_R, inherit_punch_socket);
     hotpatch_icall(0x170382_R, close_punch_socket);
     hotpatch_icall(0x1703ED_R, close_punch_socket);
+
+    mem_write(0x17045A_R, INT3_BYTES);
 }
 
 void patch_allocman() {

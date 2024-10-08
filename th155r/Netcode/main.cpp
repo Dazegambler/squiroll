@@ -216,8 +216,10 @@ void patch_autopunch() {
     //hotpatch_import(bind_import_addr, my_bind);
     //hotpatch_import(closesocket_import_addr, my_closesocket);
 
-    //hotpatch_icall(0x170E5A_R, WSARecvFrom_log);
-    //hotpatch_icall(0x170501_R, WSASendTo_log);
+#if (NETPLAY_PATCH_TYPE == NETPLAY_DISABLE) && (CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS)
+    hotpatch_icall(0x170E5A_R, WSARecvFrom_log);
+    hotpatch_icall(0x170501_R, WSASendTo_log);
+#endif
 
     //autopunch_init();
 
@@ -226,7 +228,12 @@ void patch_autopunch() {
     hotpatch_icall(0x170382_R, close_punch_socket);
     hotpatch_icall(0x1703ED_R, close_punch_socket);
 
+    // This regular send call looks unused, so
+    // just break it and see if anything dies.
     mem_write(0x17045A_R, INT3_BYTES);
+
+    //mem_write(0x1709C7_R, INT3_BYTES);
+    //mem_write(0x170F44_R, INT3_BYTES);
 }
 
 void patch_allocman() {

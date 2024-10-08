@@ -9,8 +9,7 @@
 #include <winsock2.h>
 #include <windows.h>
 
-
-#define LOG_BASE_GAME_SENDTO_RECVFROM 1
+#include "log.h"
 
 extern uintptr_t lobby_base_address;
 
@@ -19,6 +18,7 @@ SOCKET WSAAPI inherit_punch_socket(int af, int type, int protocol, LPWSAPROTOCOL
 int WSAAPI bind_inherited_socket(SOCKET s, const sockaddr* name, int namelen);
 int WSAAPI close_punch_socket(SOCKET s);
 
+#if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
 int WSAAPI WSASendTo_log(
     SOCKET s,
     LPWSABUF lpBuffers,
@@ -42,6 +42,10 @@ int WSAAPI WSARecvFrom_log(
     LPWSAOVERLAPPED lpOverlapped,
     LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
 );
+#else
+#define WSASendTo_log(...) WSASendTo(__VA_ARGS__)
+#define WSARecvFrom_log(...) WSARecvFrom(__VA_ARGS__)
+#endif
 
 void send_lobby_punch_wait();
 

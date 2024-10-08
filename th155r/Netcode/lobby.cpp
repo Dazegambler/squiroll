@@ -28,6 +28,12 @@
 #include "netcode.h"
 #include "lobby.h"
 
+#if CONNECTION_LOGGING & CONNECTION_LOGGING_LOBBY_DEBUG
+#define lobby_debug_printf(...) log_printf(__VA_ARGS__)
+#else
+#define lobby_debug_printf(...) EVAL_NOOP(__VA_ARGS__)
+#endif
+
 /*
 template <typename T>
 static inline size_t uint16_to_strbuf(uint16_t value, T* text_buffer) {
@@ -219,12 +225,14 @@ static sockaddr_storage local_addr = {};
 static size_t lobby_addr_length = 0;
 static size_t local_addr_length = 0;
 
+#if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
 static sockaddr_storage SENDTO_ADDR = {};
 static sockaddr_storage RECVFROM_ADDR = {};
 static int SENDTO_ADDR_LEN = 0;
 static int RECVFROM_ADDR_LEN = 0;
 static uint8_t SENDTO_TYPE = UINT8_MAX;
 static uint8_t RECVFROM_TYPE = UINT8_MAX;
+#endif
 
 template<bool is_welcome = false>
 static void send_lobby_name_packet(SOCKET sock, const char* nickname, size_t length) {
@@ -234,24 +242,9 @@ static void send_lobby_name_packet(SOCKET sock, const char* nickname, size_t len
     memcpy(name_packet->name, nickname, length);
 
     int success = sendto(sock, (const char*)name_packet, LOBBY_NAME_PACKET_SIZE(length), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
-    log_printf(!is_welcome ? "Sending nickA (%zu):%s\n" : "Sending nickB (%zu):%s\n", length, nickname);
-    if (success != SOCKET_ERROR) {
-        /*
-        if constexpr (!is_welcome) {
-            sockaddr_storage idgaf;
-            int idgaf_len = sizeof(idgaf);
-            char buffer[8];
-            //recvfrom(sock, buffer, sizeof(buffer), 0, (sockaddr*)&idgaf, &idgaf_len);
-            WSABUF buf_data;
-            buf_data.len = sizeof(buffer);
-            buf_data.buf = buffer;
-            DWORD bytes;
-            DWORD flags = 0;
-            WSARecvFrom_log(sock, &buf_data, 1, &bytes, &flags, (sockaddr*)&idgaf, &idgaf_len, NULL, NULL);
-        }
-        */
-    } else {
-        log_printf("FAILED nick:%u\n", WSAGetLastError());
+    lobby_debug_printf(!is_welcome ? "Sending nickA (%zu):%s\n" : "Sending nickB (%zu):%s\n", length, nickname);
+    if (success == SOCKET_ERROR) {
+        lobby_debug_printf("FAILED nick:%u\n", WSAGetLastError());
     }
 }
 
@@ -261,7 +254,7 @@ void send_lobby_punch_wait() {
 
     int ret = sendto(punch_socket, (const char*)&packet, sizeof(PacketPunchWait), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
     if (ret <= 0) {
-        log_printf("FAILED wait:%u\n", WSAGetLastError());
+        lobby_debug_printf("FAILED wait:%u\n", WSAGetLastError());
     }
 }
 
@@ -271,14 +264,16 @@ int WSAAPI close_punch_socket(SOCKET s) {
         std::lock_guard<SpinLock> lock(punch_lock);
 
         if (s == punch_socket) {
-            log_printf("Closing the punch socket. Bad? A\n");
+            lobby_debug_printf("Closing the punch socket. Bad? A\n");
             //return 0;
+#if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
             SENDTO_ADDR = {};
             RECVFROM_ADDR = {};
             SENDTO_ADDR_LEN = 0;
             RECVFROM_ADDR_LEN = 0;
             SENDTO_TYPE = UINT8_MAX;
             RECVFROM_TYPE = UINT8_MAX;
+#endif
             //halt_and_catch_fire();
             punch_socket = INVALID_SOCKET;
             punch_socket_is_loaned = false;
@@ -330,19 +325,21 @@ SOCKET get_or_create_punch_socket(uint16_t port) {
                         };
                         bind_addr_length = sizeof(sockaddr_in6);
                     }
-                    log_printf("BNDA:%u\n", port);
+                    lobby_debug_printf("BNDA:%u\n", port);
                     if (!bind(sock, (const sockaddr*)&bind_addr, bind_addr_length)) {
+#if CONNECTION_LOGGING & CONNECTION_LOGGING_LOBBY_DEBUG
                         bind_addr_length = sizeof(sockaddr_storage);
                         getsockname(sock, (sockaddr*)&bind_addr, &bind_addr_length);
-                        log_printf("BNDC:%u\n", __builtin_bswap16(((sockaddr_in*)&bind_addr)->sin_port));
+                        lobby_debug_printf("BNDC:%u\n", __builtin_bswap16(((sockaddr_in*)&bind_addr)->sin_port));
+#endif
                         punch_socket = sock;
                         return sock;
                     }
             }
-            log_printf("UDP bindA fail (%u):%u\n", port, WSAGetLastError());
+            lobby_debug_printf("UDP bindA fail (%u):%u\n", port, WSAGetLastError());
             closesocket(sock);
         } else {
-            log_printf("UDP socket fail:%u\n", WSAGetLastError());
+            lobby_debug_printf("UDP socket fail:%u\n", WSAGetLastError());
         }
     }
     return sock;
@@ -398,12 +395,12 @@ int WSAAPI bind_inherited_socket(SOCKET s, const sockaddr* name, int namelen) {
             port = ((const sockaddr_in6*)name)->sin6_port;
             break;
     }
-    log_printf("BNDB:%u (PUNCH: %s)\n", __builtin_bswap16(port), bool_str(s == punch_socket));
+    lobby_debug_printf("BNDB:%u (PUNCH: %s)\n", __builtin_bswap16(port), bool_str(s == punch_socket));
     
     int ret = bind(s, name, namelen);
 
     if (ret) {
-        log_printf("UDP bindB fail (%u):%u\n", port, WSAGetLastError());
+        lobby_debug_printf("UDP bindB fail (%u):%u\n", port, WSAGetLastError());
     }
 
     return ret;
@@ -421,7 +418,7 @@ int thisfastcall log_sent_text(
     thisfastcall_edx(int dummy_edx,)
     const char* str
 ) {
-    log_printf("Sending:%s", str);
+    lobby_debug_printf("Sending:%s", str);
     return based_pointer<send_text_t>(lobby_base_address, 0x20820)(
         self,
         thisfastcall_edx(dummy_edx,)
@@ -442,13 +439,7 @@ int thisfastcall lobby_send_string_udp_send_hook_REQUEST(
     thisfastcall_edx(int dummy_edx,)
     const char* str
 ) {
-    // This fails if properly using a 0 port?
-    SOCKET sock;
-    if (ScrollLockOn()) {
-        sock = get_or_create_punch_socket(self->local_port);
-    } else {
-        sock = get_or_create_punch_socket(0);
-    }
+    SOCKET sock = get_or_create_punch_socket(!ScrollLockOn() ? 0 : self->local_port);
     if (sock != INVALID_SOCKET) {
         send_lobby_name_packet(sock, self->current_nickname.data(), self->current_nickname.length());
     }
@@ -475,7 +466,6 @@ int thisfastcall lobby_send_string_udp_send_hook_WELCOME(
     );
 }
 
-//static constexpr char DUMMY_SEND[1]{};
 static WSABUF PUNCH_BUF = {
     .len = sizeof(PUNCH_PACKET),
     .buf = (CHAR*)&PUNCH_PACKET
@@ -507,7 +497,6 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
 
         DWORD idc;
         for (size_t i = 0; i < 30; ++i) {
-            //sendto(sock, DUMMY_SEND, sizeof(DUMMY_SEND), 0, (const sockaddr*)&client_addr, sizeof(sockaddr));
             WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, (const sockaddr*)&client_addr, sizeof(sockaddr), NULL, NULL);
         }
     }
@@ -593,7 +582,6 @@ msvc_string* fastcall lobby_recv_welcome_hook(
 
         DWORD idc;
         for (size_t i = 0; i < 30; ++i) {
-            //sendto(sock, DUMMY_SEND, sizeof(DUMMY_SEND), 0, (const sockaddr*)&client_addr, sizeof(sockaddr));
             WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, (const sockaddr*)&client_addr, sizeof(sockaddr), NULL, NULL);
         }
     }
@@ -617,8 +605,7 @@ static constexpr uint8_t lobby_recv_welcome_patchB[] = {
     0x50                                        // PUSH EAX
 };
 
-typedef int WSAAPI lobby_recv_hook_t(SOCKET s, char* buf, int len, int flags);
-
+#if CONNECTION_LOGGING & CONNECTION_LOGGING_LOBBY_PACKETS
 int WSAAPI lobby_recv_hook(SOCKET s, char* buf, int len, int flags) {
     int ret = recv(s, buf, len, flags);
     if (ret != SOCKET_ERROR) {
@@ -626,6 +613,7 @@ int WSAAPI lobby_recv_hook(SOCKET s, char* buf, int len, int flags) {
     }
     return ret;
 }
+#endif
 
 typedef int thisfastcall lobby_connect_t(
     void* self,
@@ -777,14 +765,16 @@ int WSAAPI lobby_socket_close_hook(SOCKET s) {
             sock != INVALID_SOCKET &&
             !punch_socket_is_inherited
         ) {
-            log_printf("Closing the punch socket. Bad? B\n");
+            lobby_debug_printf("Closing the punch socket. Bad? B\n");
             closesocket(sock);
+#if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
             SENDTO_ADDR = {};
             RECVFROM_ADDR = {};
             SENDTO_ADDR_LEN = 0;
             RECVFROM_ADDR_LEN = 0;
             SENDTO_TYPE = UINT8_MAX;
             RECVFROM_TYPE = UINT8_MAX;
+#endif
         }
         punch_socket_is_loaned = false;
         punch_socket_is_inherited = false;
@@ -796,6 +786,8 @@ hostent* WSAAPI my_gethostbyname(const char* name) {
     log_printf("LOBBY HOST: %s\n", name);
     return gethostbyname(name);
 }
+
+#if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
 
 #include "fake_lag.h"
 
@@ -914,6 +906,8 @@ int WSAAPI WSARecvFrom_log(
     return ret;
 }
 
+#endif
+
 void patch_se_lobby(void* base_address) {
     lobby_base_address = (uintptr_t)base_address;
 
@@ -962,7 +956,9 @@ void patch_se_lobby(void* base_address) {
     hotpatch_call(based_pointer(base_address, 0x8810), lobby_recv_welcome_hook);
     
 
+#if CONNECTION_LOGGING & CONNECTION_LOGGING_LOBBY_PACKETS
     hotpatch_icall(based_pointer(base_address, 0x2070B), lobby_recv_hook);
+#endif
 
     // remove_dupe_host_check
     mem_write(based_pointer(base_address, 0x6610), PATCH_BYTES<0xEB, 0x3A>);

@@ -213,7 +213,6 @@ static SpinLock punch_lock;
 static SOCKET punch_socket = INVALID_SOCKET;
 static bool punch_socket_is_loaned = false;
 static bool punch_socket_is_inherited = false;
-static bool punch_socket_skip_close = false;
 
 static sockaddr_storage lobby_addr = {};
 static sockaddr_storage local_addr = {};
@@ -273,12 +272,6 @@ int WSAAPI close_punch_socket(SOCKET s) {
 
         if (s == punch_socket) {
             log_printf("Closing the punch socket. Bad? A\n");
-            punch_socket_is_loaned = false;
-            punch_socket_is_inherited = false;
-            if (punch_socket_skip_close) {
-                punch_socket_skip_close = false;
-                return 0;
-            }
             //return 0;
             SENDTO_ADDR = {};
             RECVFROM_ADDR = {};
@@ -288,14 +281,12 @@ int WSAAPI close_punch_socket(SOCKET s) {
             RECVFROM_TYPE = UINT8_MAX;
             //halt_and_catch_fire();
             punch_socket = INVALID_SOCKET;
+            punch_socket_is_loaned = false;
+            punch_socket_is_inherited = false;
         }
     }
 
     return closesocket(s);
-}
-
-void lobby_skip_punch_close() {
-    punch_socket_skip_close = true;
 }
 
 SOCKET get_punch_socket() {

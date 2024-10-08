@@ -44,6 +44,5 @@ int WSAAPI WSARecvFrom_log(
 );
 
 void send_lobby_punch_wait();
-void lobby_skip_punch_close();
 
 #endif

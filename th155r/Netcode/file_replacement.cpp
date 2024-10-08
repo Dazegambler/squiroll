@@ -85,6 +85,12 @@ static constexpr uint8_t battle_nut[] = {
 #endif
 };
 
+static constexpr uint8_t battle_practice_nut[] = {
+#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+#include "replacement_files/battle_practice.nut.h"
+#endif
+};
+
 static constexpr uint8_t vs_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
 #include "replacement_files/vs.nut.h"
@@ -97,10 +103,12 @@ static constexpr uint8_t item_csv[] = {
 #endif
 };
 
+
 static const std::unordered_map<std::string_view, const EmbedData> replacements = {
 	{"data/system/network/network.nut"sv, network_nut},
 	{"data/script/version.nut"sv, version_nut},
 	{"data/script/battle/battle.nut"sv, battle_nut},
+	{"data/script/battle/battle_practice.nut"sv, battle_practice_nut},
 	{"data/system/title/title.nut"sv, title_nut},
 	//{"data/script/scene/vs.nut"sv, vs_nut},
 	//{"data/system/config/config.nut"sv, config_nut},

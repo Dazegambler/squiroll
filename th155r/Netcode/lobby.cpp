@@ -431,8 +431,12 @@ int thisfastcall lobby_send_string_udp_send_hook_REQUEST(
     const char* str
 ) {
     // This fails if properly using a 0 port?
-    //SOCKET sock = get_or_create_punch_socket(self->local_port);
-    SOCKET sock = get_or_create_punch_socket(0);
+    SOCKET sock;
+    if (ScrollLockOn()) {
+        sock = get_or_create_punch_socket(self->local_port);
+    } else {
+        sock = get_or_create_punch_socket(0);
+    }
     if (sock != INVALID_SOCKET) {
         send_lobby_name_packet(sock, self->current_nickname.data(), self->current_nickname.length());
     }

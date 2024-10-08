@@ -255,6 +255,16 @@ static void send_lobby_name_packet(SOCKET sock, const char* nickname, size_t len
     }
 }
 
+void send_lobby_punch_wait() {
+    PacketPunchWait packet;
+    new (&packet) PacketPunchWait(local_addr, local_addr_length);
+
+    int ret = sendto(punch_socket, (const char*)&packet, sizeof(PacketPunchWait), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
+    if (ret <= 0) {
+        log_printf("FAILED wait:%u\n", WSAGetLastError());
+    }
+}
+
 // EXE hook, overrides ref count
 int WSAAPI close_punch_socket(SOCKET s) {
     if (s != INVALID_SOCKET) {

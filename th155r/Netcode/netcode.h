@@ -7,6 +7,10 @@
 #include <stdint.h>
 #include <squirrel.h>
 
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <windns.h>
+
 #include "util.h"
 
 #define NETPLAY_DISABLE 0
@@ -87,12 +91,32 @@ static_assert(sizeof(PacketIPv6Test) == 0x10, "");
 
 #define LOBBY_NAME_PACKET_SIZE(len) (sizeof(PacketLobbyName) + (len))
 
-// size: 0x4+
+// size: 0x4
 struct PacketPunchWait {
     PacketType type; // 0x0
     uint8_t is_ipv6; // 0x1
     uint16_t local_port; // 0x2
-    alignas(4) unsigned char ip[]; // 0x4
+    alignas(4) unsigned char ip[sizeof(IP6_ADDRESS)]; // 0x4
+    // 0x14
+
+    PacketPunchWait() = default;
+
+    PacketPunchWait(const sockaddr_storage& addr, size_t addr_len)
+        : type(PACKET_TYPE_PUNCH_WAIT)
+    
+    {
+        this->local_port = __builtin_bswap16(((const sockaddr_in*)&addr)->sin_port);
+        switch (addr.ss_family) {
+            default:
+                this->is_ipv6 = false;
+                *(IP4_ADDRESS*)this->ip = *(IP4_ADDRESS*)&((const sockaddr_in*)&addr)->sin_addr;
+                break;
+            case AF_INET6:
+                this->is_ipv6 = true;
+                *(IP6_ADDRESS*)this->ip = *(IP6_ADDRESS*)&((const sockaddr_in6*)&addr)->sin6_addr;
+                break;
+        }
+    }
 };
 
 static inline constexpr uint8_t LOCAL_IS_IPV6_MASK = 0b01;
@@ -105,7 +129,9 @@ struct PacketPunchConnect {
     uint16_t local_port; // 0x2
     uint16_t dest_port; // 0x4
     // 0x6
-    alignas(4) unsigned char ips[]; // 0x8
+    alignas(4) unsigned char local_ip[sizeof(IP6_ADDRESS)]; // 0x8
+    alignas(4) unsigned char dest_ip[sizeof(IP6_ADDRESS)]; // 0x18
+    // 0x28
 };
 
 // size: 0x4
@@ -113,7 +139,8 @@ struct PacketPunchPeer {
     PacketType type; // 0x0
     uint8_t is_ipv6; // 0x1
     uint16_t remote_port; // 0x2
-    alignas(4) unsigned char ip[]; // 0x4
+    alignas(4) unsigned char ip[sizeof(IP6_ADDRESS)]; // 0x4
+    // 0x14
 };
 
 // size: 0x1

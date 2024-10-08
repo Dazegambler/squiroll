@@ -268,7 +268,7 @@ function UpdateMain()
 
 				this.lobby_user_state = ::LOBBY.WAIT_INCOMMING;
 				::network.use_lobby = true;
-				::network.StartupServer(::config.network.hosting_port);
+				::network.StartupServer(::config.network.hosting_port, 0);
 				this.update = this.UpdateMatch;
 				::Dialog(-1, this.item_table.wait_incomming[0], null, this.dialog_wait.InitializeWithUPnP);
 			}
@@ -294,7 +294,7 @@ function UpdateMain()
 
 		case 4:
 			::network.use_lobby = false;
-			::network.StartupServer(::config.network.hosting_port);
+			::network.StartupServer(::config.network.hosting_port, 1);
 			this.update = this.UpdateWaitServer;
 			::Dialog(-1, this.item_table.wait_incomming[0], null, this.dialog_wait.InitializeWithUPnP);
 			break;
@@ -472,7 +472,7 @@ function UpdateInputAddr()
 			port = port + this.target_addr_v[i].val;
 		}
 
-		::network.StartupClient(addr, port, this.item[this.cursor_item.val] == "watch" ? 1 : 0);
+		::network.StartupClient(addr, port, this.item[this.cursor_item.val] == "watch" ? 3 : 2);
 		this.update = this.UpdateWaitClient;
 		::config.network.target_host = addr;
 		::config.network.target_port = port;
@@ -626,7 +626,7 @@ function UpdateMatchWait()
 
 		if (this.lobby_user_state == ::LOBBY.WAIT_INCOMMING)
 		{
-			::network.StartupServer(::config.network.hosting_port);
+			::network.StartupServer(::config.network.hosting_port, 0);
 		}
 
 		this.update = this.UpdateMatch;

@@ -16,6 +16,7 @@
 #include "config.h"
 #include "file_replacement.h"
 #include "AllocMan.h"
+#include "lobby.h"
 
 const KiteSquirrelAPI* KITE;
 
@@ -293,6 +294,11 @@ SQInteger update_input_constants(HSQUIRRELVM v) {
     return 0;
 }
 
+SQInteger start_direct_punch_wait(HSQUIRRELVM v) {
+    send_lobby_punch_wait();
+    return 0;
+}
+
 extern "C" {
     dll_export int stdcall init_instance_v2(HostEnvironment* environment) {
         if (
@@ -321,6 +327,10 @@ extern "C" {
             // rollback table setup
             sq_createtable(v, _SC("rollback"), [](HSQUIRRELVM v) {
                 sq_setfunc(v, _SC("resyncing"), r_resync_get);
+            });
+
+            sq_createtable(v, _SC("punch"), [](HSQUIRRELVM v) {
+                sq_setfunc(v, _SC("init_wait"), start_direct_punch_wait);
             });
 
             // debug table setup

@@ -43,4 +43,6 @@ int WSAAPI WSARecvFrom_log(
     LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
 );
 
+void send_lobby_punch_wait();
+
 #endif

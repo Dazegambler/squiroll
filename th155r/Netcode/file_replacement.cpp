@@ -53,6 +53,12 @@ static constexpr uint8_t network_nut[] = {
 #endif
 };
 
+static constexpr uint8_t network_component_nut[] = {
+#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+#include "replacement_files/network_component.nut.h"
+#endif
+};
+
 static constexpr uint8_t version_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
 #include "replacement_files/version.nut.h"
@@ -106,6 +112,7 @@ static constexpr uint8_t item_csv[] = {
 
 static const std::unordered_map<std::string_view, const EmbedData> replacements = {
 	{"data/system/network/network.nut"sv, network_nut},
+	{"data/system/component/network.nut"sv, network_component_nut},
 	{"data/script/version.nut"sv, version_nut},
 	{"data/script/battle/battle.nut"sv, battle_nut},
 	{"data/script/battle/battle_practice.nut"sv, battle_practice_nut},

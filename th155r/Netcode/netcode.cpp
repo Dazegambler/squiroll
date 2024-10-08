@@ -155,7 +155,7 @@ int WSAAPI my_WSARecvFrom(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPD
             break;
 #endif
         case PACKET_TYPE_PUNCH_PING:
-            sendto(s, (const char*)&PUNCH_PING_PACKET, sizeof(PUNCH_PING_PACKET), 0, lpFrom, *lpFromLen);
+            //sendto(s, (const char*)&PUNCH_PING_PACKET, sizeof(PUNCH_PING_PACKET), 0, lpFrom, *lpFromLen);
             break;
         case PACKET_TYPE_PUNCH_PEER: {
 

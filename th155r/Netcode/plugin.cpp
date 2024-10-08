@@ -298,6 +298,10 @@ SQInteger start_direct_punch_wait(HSQUIRRELVM v) {
     send_lobby_punch_wait();
     return 0;
 }
+SQInteger skip_punch_close(HSQUIRRELVM v) {
+    lobby_skip_punch_close();
+    return 0;
+}
 
 extern "C" {
     dll_export int stdcall init_instance_v2(HostEnvironment* environment) {
@@ -331,6 +335,7 @@ extern "C" {
 
             sq_createtable(v, _SC("punch"), [](HSQUIRRELVM v) {
                 sq_setfunc(v, _SC("init_wait"), start_direct_punch_wait);
+                sq_setfunc(v, _SC("skip_close"), skip_punch_close);
             });
 
             // debug table setup

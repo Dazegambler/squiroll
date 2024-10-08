@@ -213,6 +213,7 @@ static SpinLock punch_lock;
 static SOCKET punch_socket = INVALID_SOCKET;
 static bool punch_socket_is_loaned = false;
 static bool punch_socket_is_inherited = false;
+static bool punch_socket_skip_close = false;
 
 static sockaddr_storage lobby_addr = {};
 static sockaddr_storage local_addr = {};
@@ -272,6 +273,12 @@ int WSAAPI close_punch_socket(SOCKET s) {
 
         if (s == punch_socket) {
             log_printf("Closing the punch socket. Bad? A\n");
+            punch_socket_is_loaned = false;
+            punch_socket_is_inherited = false;
+            if (punch_socket_skip_close) {
+                punch_socket_skip_close = false;
+                return 0;
+            }
             //return 0;
             SENDTO_ADDR = {};
             RECVFROM_ADDR = {};
@@ -281,12 +288,14 @@ int WSAAPI close_punch_socket(SOCKET s) {
             RECVFROM_TYPE = UINT8_MAX;
             //halt_and_catch_fire();
             punch_socket = INVALID_SOCKET;
-            punch_socket_is_loaned = false;
-            punch_socket_is_inherited = false;
         }
     }
 
     return closesocket(s);
+}
+
+void lobby_skip_punch_close() {
+    punch_socket_skip_close = true;
 }
 
 SOCKET get_punch_socket() {
@@ -867,7 +876,7 @@ int WSAAPI WSARecvFrom_log(
     int ret = WSARecvFrom(s, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromlen, lpOverlapped, lpCompletionRoutine);
     if (ret != SOCKET_ERROR) {
         //halt_and_catch_fire();
-        //if (lpFrom->sa_family == AF_INET) {
+        if (lpFrom->sa_family == AF_INET) {
             
             /*
             char recvfrom_buff[countof(RECVFROM_STR)];
@@ -877,7 +886,7 @@ int WSAAPI WSARecvFrom_log(
                 log_printf("%s", RECVFROM_STR);
             }
             */
-            /*
+            
             int from_length = *lpFromlen;
             uint8_t from_type = *(uint8_t*)lpBuffers[0].buf;
             if (
@@ -894,15 +903,17 @@ int WSAAPI WSARecvFrom_log(
                 uint16_t port = __builtin_bswap16(((sockaddr_in*)lpFrom)->sin_port);
                 log_printf("RECVFROM: %s:%u type %hhu\n", ip_buffer, port, from_type);
             }
-            */
+            
             //log_printf("RECVFROM: %s:%u\n", ip_buffer, port);
 
+            /*
             uint8_t from_type = *(uint8_t*)lpBuffers[0].buf;
             char ip_buffer[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &((sockaddr_in*)lpFrom)->sin_addr, ip_buffer, countof(ip_buffer));
             uint16_t port = __builtin_bswap16(((sockaddr_in*)lpFrom)->sin_port);
             log_printf("RECVFROM: %s:%u type %hhu\n", ip_buffer, port, from_type);
-        //}
+            */
+        }
     } else {
         int error = WSAGetLastError();
         if (error != WSA_IO_PENDING) {

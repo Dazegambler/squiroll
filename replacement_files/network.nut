@@ -598,6 +598,7 @@ function UpdateMatch()
 	if (st_host != "")
 	{
 		::LOBBY.SetLobbyUserState(::LOBBY.NO_OPERATION);
+		//::punch.skip_close();
 		::network.Terminate();
 		::network.StartupClient(this.GetHostName(st_host), st_userdata.tointeger(), 0);
 		this.update = this.UpdateMatchWait;
@@ -621,6 +622,7 @@ function UpdateMatchWait()
 	if (this.timeout++ > 360)
 	{
 		::LOBBY.SetLobbyUserState(this.lobby_user_state);
+		//::punch.skip_close();
 		::network.Terminate();
 		this.timeout = 0;
 

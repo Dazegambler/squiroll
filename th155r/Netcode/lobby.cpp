@@ -236,6 +236,7 @@ static void send_lobby_name_packet(SOCKET sock, const char* nickname, size_t len
     int success = sendto(sock, (const char*)name_packet, LOBBY_NAME_PACKET_SIZE(length), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
     log_printf(!is_welcome ? "Sending nickA (%zu):%s\n" : "Sending nickB (%zu):%s\n", length, nickname);
     if (success != SOCKET_ERROR) {
+        /*
         if constexpr (!is_welcome) {
             sockaddr_storage idgaf;
             int idgaf_len = sizeof(idgaf);
@@ -248,6 +249,7 @@ static void send_lobby_name_packet(SOCKET sock, const char* nickname, size_t len
             DWORD flags = 0;
             WSARecvFrom_log(sock, &buf_data, 1, &bytes, &flags, (sockaddr*)&idgaf, &idgaf_len, NULL, NULL);
         }
+        */
     } else {
         log_printf("FAILED nick:%u\n", WSAGetLastError());
     }

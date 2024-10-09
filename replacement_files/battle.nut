@@ -118,7 +118,6 @@ function Create( param )
 	if (::network.IsPlaying())
 	{
 		::manbow.CompileFile("data/script/battle/battle_network.nut", this);
-		inputdisplaysetup(2);
 	}
 
 	this.srand(param.seed);

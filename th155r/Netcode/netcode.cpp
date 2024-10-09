@@ -1,8 +1,13 @@
-
+#if __INTELLISENSE__
+#undef _HAS_CXX20
+#define _HAS_CXX20 0
+#endif
 
 #include <winsock2.h>
 #include <windows.h>
 #include <squirrel.h>
+
+#include <vector>
 
 #include "util.h"
 #include "PatchUtils.h"
@@ -12,10 +17,141 @@
 #include "lobby.h"
 #include "config.h"
 
+// size: 0x1C
+struct BoostSockAddr {
+    SOCKADDR_INET addr = {}; // 0x0
+    // 0x1C
+
+    inline size_t length() const {
+        switch (this->addr.si_family) {
+            case AF_INET:
+                return sizeof(sockaddr_in);
+            case AF_INET6:
+                return sizeof(sockaddr_in6);
+            default:
+                return 0;
+        }
+    }
+
+    inline sockaddr_in& addr_v4() {
+        return this->addr.Ipv4;
+    }
+
+    inline sockaddr_in6& addr_v6() {
+        return this->addr.Ipv6;
+    }
+
+    inline sockaddr& addr_any() {
+        return *(sockaddr*)&this->addr;
+    }
+};
+
+// size: 0x8
+struct BoostMutex {
+    std::atomic<uint32_t> active_count; // 0x0
+    void* event_handle; // 0x4
+    // 0x8
+};
+
+// size: 0x4
+struct UDPInnerB {
+    int __dword_0; // 0x0
+    // 0x4
+};
+
+// size: 0x14+
+struct UDPInnerD {
+    void* __ptr_0; // 0x0
+    void* __ptr_4; // 0x4
+    void* __ptr_8; // 0x8
+    void* __ptr_C; // 0xC
+    int __dword_10; // 0x10
+    // 0x14
+};
+
+// size: 0x4
+struct UDPInnerE {
+    unsigned char unknown_fields[0x4]; // 0x0
+    // 0x4
+};
+
+// size: 0x98
+struct ConnectionData {
+    BoostSockAddr addr; // 0x0
+    short __word_1C; // 0x1C
+    unsigned char probably_padding_bytesA[0x2]; // 0x1E
+    int state; // 0x20
+    int __int_24; // 0x24
+    int __dword_28; // 0x28
+    uint32_t __uint_2C; // 0x2C
+    int __int_30; // 0x30
+    int __int_34; // 0x34
+    int __dword_38; // 0x38
+    int delay; // 0x3C
+    unsigned char __byte_40; // 0x40
+    unsigned char probably_padding_bytesB[0x3]; // 0x41
+    uint32_t __uint_44; // 0x44 Written as u32, read as u16. QPC related
+    std::vector<uint8_t> __vector_48; // 0x48
+    std::vector<uint8_t> __vector_54; // 0x54
+    int __dword_60; // 0x60 Some sort of bitset thing?
+    int __dword_64; // 0x64
+    int __dword_68; // 0x68
+    int __dword_6C; // 0x6C Another instance of whatever 0x60 is
+    int __dword_70; // 0x70
+    int __dword_74; // 0x74
+    UDPInnerD __innerD_78; // 0x78
+    UDPInnerE __innerE_8C; // 0x8C
+    BoostMutex __mutex_90; // 0x90
+    // 0x98
+};
+
+static_assert(sizeof(ConnectionData) == 0x98);
+
+struct TF4UDP {
+    void* vftable; // 0x0
+    void* __mutex_related_4; // 0x4
+    int __dword_8; // 0x8
+    void* __ptr_C; // 0xC
+    int __dword_array_10[4]; // 0x10
+    SOCKET& socket; // 0x20
+    int __dword_24; // 0x24
+    BoostSockAddr __addr_28; // 0x28
+    BoostSockAddr __addr_44; // 0x44
+    BoostSockAddr __addr_60; // 0x60
+    BoostSockAddr __addr_7C; // 0x7C
+    UDPInnerB __innerB_98; // 0x98
+    ConnectionData __connection_9C; // 0x9C
+    ConnectionData parent; // 0x134
+    ConnectionData* child_array; // 0x1CC
+    size_t child_array_size; // 0x1D0
+    unsigned char __byte_1D4; // 0x1D4
+    unsigned char probably_padding_bytesA[0x3]; // 0x1D5
+    UDPInnerB __innerB_1D8; // 0x1D8
+    std::vector<BoostSockAddr> __addr_vector_1DC; // 0x1DC
+    uint32_t __uint_1E8; // 0x1E8
+    uint32_t __uint_1EC; // 0x1EC These are counters of some sort
+    uint32_t __uint_1F0; // 0x1F0
+    BoostMutex __mutex_1F4; // 0x1F4
+    std::vector<uint8_t> __vector_1FC; // 0x1FC
+    BoostMutex __mutex_208; // 0x208
+    unsigned char __byte_210; // 0x210
+    unsigned char probably_padding_bytesB[0x3]; // 0x211
+    UDPInnerB __innerB_214; // 0x214
+    BoostSockAddr recv_addr; // 0x218
+    std::vector<uint8_t> recv_data; // 0x234
+    void* __ptr_240; // 0x240
+    int __dword_244; // 0x244
+    void* __manbow_network_impl; // 0x248
+    // 0x24C
+};
+
+static_assert(sizeof(TF4UDP) == 0x24C);
+
 #define resync_patch_addr (0x0E364C_R)
 #define patchA_addr (0x0E357A_R)
 #define wsasendto_import_addr (0x3884D4_R)
 #define wsarecvfrom_import_addr (0x3884D8_R)
+#define packet_parser_addr (0x176BB0_R)
 
 static bool not_in_match = true;
 SQBool resyncing = SQFalse;
@@ -131,8 +267,12 @@ int WSAAPI my_WSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWO
     return WSASendTo_log(s, lpBuffers, dwBufferCount, lpNumberOfBytesSent, dwFlags, lpTo, iTolen, lpOverlapped, lpCompletionRoutine);
 }
 
+// For some reason everything breaks if
+// this logic is moved from an actual import
+// hook to the packet parser.
+// TODO: Investigate why
 int WSAAPI my_WSARecvFrom(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWORD lpNumberOfBytesRecvd, LPDWORD lpFlags, sockaddr* lpFrom, LPINT lpFromLen, LPWSAOVERLAPPED lpOverlapped, LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine) {
-    int ret = WSARecvFrom_log(s, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromLen, lpOverlapped, lpCompletionRoutine);
+    int ret = WSARecvFrom(s, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromLen, lpOverlapped, lpCompletionRoutine);
 
     PacketLayout* packet = (PacketLayout*)lpBuffers[0].buf;
 
@@ -146,16 +286,42 @@ int WSAAPI my_WSARecvFrom(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPD
             not_in_match = false;
             break;
 #endif
+    }
+
+    return ret;
+}
+
+
+typedef void thisfastcall packet_parser_t(
+    TF4UDP* self,
+    thisfastcall_edx(int dummy_edx, )
+    size_t packet_size
+);
+
+void thisfastcall packet_parser_hook(
+    TF4UDP* self,
+    thisfastcall_edx(int dummy_edx, )
+    size_t packet_size
+) {
+    
+    PacketLayout* packet = (PacketLayout*)self->recv_data.data();
+
+    recvfrom_log(packet, packet_size, &self->recv_addr.addr_any(), self->recv_addr.length());
+
+    switch (packet->type) {
         case PACKET_TYPE_PUNCH_PING:
-            //sendto(s, (const char*)&PUNCH_PING_PACKET, sizeof(PUNCH_PING_PACKET), 0, lpFrom, *lpFromLen);
+            //sendto(self->socket, (const char*)&PUNCH_PING_PACKET, sizeof(PUNCH_PING_PACKET), 0, &self->recv_addr.addr_any(), self->recv_addr.length());
             break;
         case PACKET_TYPE_PUNCH_PEER: {
 
         }
-
     }
-
-    return ret;
+    
+    return ((packet_parser_t*)packet_parser_addr)(
+        self,
+        thisfastcall_edx(dummy_edx,)
+        packet_size
+    );
 }
 
 #if BETTER_BLACK_SCREEN_FIX
@@ -346,6 +512,7 @@ void patch_netplay() {
 
     resync_patch(160);
     hotpatch_import(wsarecvfrom_import_addr, my_WSARecvFrom);
+    hotpatch_rel32(0x176B8A_R, packet_parser_hook);
     hotpatch_import(wsasendto_import_addr, my_WSASendTo);
 
 

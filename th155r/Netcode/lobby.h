@@ -31,20 +31,15 @@ int WSAAPI WSASendTo_log(
     LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
 );
 
-int WSAAPI WSARecvFrom_log(
-    SOCKET s,
-    LPWSABUF lpBuffers,
-    DWORD dwBufferCount,
-    LPDWORD lpNumberOfBytesRecvd,
-    LPDWORD lpFlags,
-    sockaddr* lpFrom,
-    LPINT lpFromlen,
-    LPWSAOVERLAPPED lpOverlapped,
-    LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
+void recvfrom_log(
+    void* data,
+    size_t data_length,
+    sockaddr* from,
+    int from_length
 );
 #else
 #define WSASendTo_log(...) WSASendTo(__VA_ARGS__)
-#define WSARecvFrom_log(...) WSARecvFrom(__VA_ARGS__)
+#define recvfrom_log(...) EVAL_NOOP(__VA_ARGS__)
 #endif
 
 void send_lobby_punch_wait();

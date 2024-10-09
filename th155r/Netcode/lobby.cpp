@@ -845,65 +845,29 @@ int WSAAPI WSASendTo_log(
 #undef WSASendTo
 #endif
 
-int WSAAPI WSARecvFrom_log(
-    SOCKET s,
-    LPWSABUF lpBuffers,
-    DWORD dwBufferCount,
-    LPDWORD lpNumberOfBytesRecvd,
-    LPDWORD lpFlags,
-    sockaddr *lpFrom,
-    LPINT lpFromlen,
-    LPWSAOVERLAPPED lpOverlapped,
-    LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
+void recvfrom_log(
+    void* data,
+    size_t data_length,
+    sockaddr* from,
+    int from_length
 ) {
-    int ret = WSARecvFrom(s, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromlen, lpOverlapped, lpCompletionRoutine);
-    if (ret != SOCKET_ERROR) {
-        //halt_and_catch_fire();
-        if (lpFrom->sa_family == AF_INET) {
-            
-            /*
-            char recvfrom_buff[countof(RECVFROM_STR)];
-            snprintf(recvfrom_buff, countof(recvfrom_buff), "RECVFROM: %s:%u\n", ip_buffer, port);
-            if (strcmp(recvfrom_buff, RECVFROM_STR)) {
-                memcpy(RECVFROM_STR, recvfrom_buff, sizeof(RECVFROM_STR));
-                log_printf("%s", RECVFROM_STR);
-            }
-            */
-            
-            int from_length = *lpFromlen;
-            uint8_t from_type = *(uint8_t*)lpBuffers[0].buf;
-            if (
-                from_length != RECVFROM_ADDR_LEN ||
-                from_type != RECVFROM_TYPE ||
-                memcmp(lpFrom, &RECVFROM_ADDR, from_length)
-            ) {
-                RECVFROM_TYPE = from_type;
-                RECVFROM_ADDR_LEN = from_length;
-                memcpy(&RECVFROM_ADDR, lpFrom, from_length);
+    if (from->sa_family == AF_INET) {
+        uint8_t from_type = *(uint8_t*)data;
+        if (
+            from_length != RECVFROM_ADDR_LEN ||
+            from_type != RECVFROM_TYPE ||
+            memcmp(from, &RECVFROM_ADDR, from_length)
+        ) {
+            RECVFROM_TYPE = from_type;
+            RECVFROM_ADDR_LEN = from_length;
+            memcpy(&RECVFROM_ADDR, from, from_length);
 
-                char ip_buffer[INET_ADDRSTRLEN];
-                inet_ntop(AF_INET, &((sockaddr_in*)lpFrom)->sin_addr, ip_buffer, countof(ip_buffer));
-                uint16_t port = __builtin_bswap16(((sockaddr_in*)lpFrom)->sin_port);
-                log_printf("RECVFROM: %s:%u type %hhu\n", ip_buffer, port, from_type);
-            }
-            
-            //log_printf("RECVFROM: %s:%u\n", ip_buffer, port);
-
-            /*
-            uint8_t from_type = *(uint8_t*)lpBuffers[0].buf;
             char ip_buffer[INET_ADDRSTRLEN];
-            inet_ntop(AF_INET, &((sockaddr_in*)lpFrom)->sin_addr, ip_buffer, countof(ip_buffer));
-            uint16_t port = __builtin_bswap16(((sockaddr_in*)lpFrom)->sin_port);
+            inet_ntop(AF_INET, &((sockaddr_in*)from)->sin_addr, ip_buffer, countof(ip_buffer));
+            uint16_t port = __builtin_bswap16(((sockaddr_in*)from)->sin_port);
             log_printf("RECVFROM: %s:%u type %hhu\n", ip_buffer, port, from_type);
-            */
-        }
-    } else {
-        int error = WSAGetLastError();
-        if (error != WSA_IO_PENDING) {
-            log_printf("RECVFROM: FAIL %u\n", error);
         }
     }
-    return ret;
 }
 
 #endif

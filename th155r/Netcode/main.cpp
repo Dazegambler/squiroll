@@ -217,7 +217,6 @@ void patch_autopunch() {
     //hotpatch_import(closesocket_import_addr, my_closesocket);
 
 #if (NETPLAY_PATCH_TYPE == NETPLAY_DISABLE) && (CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS)
-    hotpatch_icall(0x170E5A_R, WSARecvFrom_log);
     hotpatch_icall(0x170501_R, WSASendTo_log);
 #endif
 

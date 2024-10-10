@@ -68,5 +68,8 @@
         "thread": "cpp",
         "cinttypes": "cpp",
         "map": "cpp"
+    },
+    "cmake.configureSettings": {
+        "CMAKE_TOOLCHAIN_FILE": "toolchain-clang.cmake"
     }
 }

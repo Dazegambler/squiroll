@@ -47,21 +47,21 @@ struct PackageReader : FileReader {
 
 static constexpr uint8_t network_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
-#include "replacement_files/network_encrypted.nut.h"
+#include <replacement_files/network_encrypted.nut.h>
 #elif FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/network.nut.h"
+#include <replacement_files/network.nut.h>
 #endif
 };
 
 static constexpr uint8_t network_component_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/network_component.nut.h"
+#include <replacement_files/network_component.nut.h>
 #endif
 };
 
 static constexpr uint8_t version_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/version.nut.h"
+#include <replacement_files/version.nut.h>
 #endif
 };
 

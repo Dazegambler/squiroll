@@ -1,0 +1,53 @@
+name: build
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+    types: [opened]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: ["windows-2019", "windows-2022"]
+        config: ["Release", "Debug"]
+        generator: ["", "-G \"Ninja Multi-Config\""]
+        include:
+          - os: windows-2022
+            generator: ""
+            upload: 1
+          - generator: "-G \"Ninja Multi-Config\""
+            install_deps: "choco install ninja"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: build
+        run: |
+          ${{ matrix.install_deps }}
+          $VERSION = git describe --always
+          echo VERSION=${VERSION} >> $env:GITHUB_ENV
+          $PREFIX = "${PWD}/prefix/"
+          echo PREFIX=${PREFIX} >> $env:GITHUB_ENV
+          mkdir build
+          cd build
+          cmake --install-prefix ${PREFIX} ${{ matrix.generator }} ..
+          cmake --build . --config ${{ matrix.config }}
+          cmake --install . --config ${{ matrix.config }}
+      - name: Upload builds
+        if: ${{ matrix.upload }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: squiroll-${{ matrix.config }}-${{ env.VERSION }}
+          path: |
+            ${{ env.PREFIX }}/Netcode.dll
+            ${{ env.PREFIX }}/th155r.exe
+      - name: Upload pdbs
+        if: ${{ matrix.upload }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: squiroll-${{ matrix.config }}-pdb-${{ env.VERSION }}
+          path: |
+            ${{ env.PREFIX }}/Netcode.pdb
+            ${{ env.PREFIX }}/th155r.pdb

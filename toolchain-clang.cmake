@@ -24,7 +24,8 @@ set(CMAKE_CXX_FLAGS "-fuse-ld=lld -m32")
 
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
     set(CMAKE_GENERATOR_TOOLSET "ClangCL")
-    set(CMAKE_GENERATOR_PLATFORM "Win32")
+    # https://stackoverflow.com/questions/31148943/option-to-force-either-32-bit-or-64-bit-build-with-cmake#comment105537509_47983786
+    set(CMAKE_GENERATOR_PLATFORM Win32 CACHE INTERNAL "Force 32-bit compilation")
 endif()
 
 # # skip c/cxx compiler checks

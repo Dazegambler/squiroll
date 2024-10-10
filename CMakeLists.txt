@@ -10,9 +10,43 @@ add_compile_options(-gcodeview-command-line -gcolumn-info -gcodeview -gcodeview-
 add_link_options(/DEBUG)
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
 	add_link_options(/OPT:REF /OPT:ICF /PDBALTPATH:%_PDB%)
+	add_compile_options("SHELL:-Xclang -O3")
 endif()
-add_compile_options(-Wno-cpp -Wno-narrowing -Wno-nonportable-include-path -Wno-pragma-pack /EHsc)
-add_compile_definitions(_CRT_SECURE_NO_WARNINGS _WINSOCK_DEPRECATED_NO_WARNINGS NOMINMAX _WINSOCKAPI_)
+add_compile_options(
+	-Wno-cpp
+	-Wno-narrowing
+	-Wno-nonportable-include-path
+	-Wno-pragma-pack
+	-Wno-c++11-narrowing
+	-Wno-c++17-extensions
+	-Wno-c++2b-extensions
+	-Wno-unused-function
+	-Wno-unused-const-variable
+	-Wno-unused-variable
+	-Wno-unused-but-set-variable
+	-Wno-unused-label
+	-Wno-missing-braces
+	-Wno-logical-op-parentheses
+	-Wno-bitwise-op-parentheses
+	-Wno-shift-op-parentheses
+	-Wno-pointer-to-int-cast
+	-Wno-int-to-pointer-cast
+	-Wno-format-security
+	-Wno-gnu-alignof-expression
+	-Wno-missing-declarations
+	-Wno-initializer-overrides
+	-Wno-microsoft-goto
+	-Wno-microsoft-template
+	-Wno-microsoft-extra-qualification
+	-Wno-deprecated-this-capture
+	-Wno-inline-namespace-reopened-noninline
+	/clang:-mstack-probe-size=1024
+	/GS-
+	/Gs-
+	/EHsc
+	/Zc:threadSafeInit-
+)
+add_compile_definitions(_CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_DEPRECATE _CRT_DECLARE_NONSTDC_NAMES _WINSOCK_DEPRECATED_NO_WARNINGS DOSWIN32=1 NOMINMAX _WINSOCKAPI_)
 
 add_executable(
 	th155r
@@ -46,7 +80,7 @@ endfunction()
 file(GLOB NETCODE_CPPS CONFIGURE_DEPENDS th155r/Netcode/*.cpp)
 add_library(
 	Netcode
-	MODULE
+	SHARED
 	${NETCODE_CPPS}
 )
 target_embed_dir(Netcode ${REPLACEMENT_FILES_DIR})

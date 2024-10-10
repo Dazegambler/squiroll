@@ -8,7 +8,7 @@ set (NEW_FILES_DIR "new_files")
 # Generate PDB files
 add_compile_options(-gcodeview-command-line -gcolumn-info -gcodeview -gcodeview-ghash -g)
 add_link_options(/DEBUG)
-if (NOT CMAKE_BUILD_TYPE STREQUAL Debug)
+if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
 	add_link_options(/OPT:REF /OPT:ICF /PDBALTPATH:%_PDB%)
 endif()
 add_compile_options(-Wno-cpp -Wno-narrowing -Wno-nonportable-include-path -Wno-pragma-pack /EHsc)
@@ -20,9 +20,11 @@ add_executable(
 )
 target_include_directories(th155r PRIVATE th155r/shared)
 set_property(TARGET th155r PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded")
+install(TARGETS th155r DESTINATION .)
+install(FILES $<TARGET_PDB_FILE:th155r> DESTINATION .)
 
 include(ExternalProject)
-ExternalProject_Add(make_embed URL tools INSTALL_COMMAND "" BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/tools)
+ExternalProject_Add(make_embed SOURCE_DIR ${CMAKE_SOURCE_DIR}/tools/ CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_CURRENT_BINARY_DIR}/tools_prefix/)
 
 set(EMBEDDED_H ${CMAKE_CURRENT_BINARY_DIR}/embedded_h)
 function(target_embed_dir target dir)
@@ -33,8 +35,9 @@ function(target_embed_dir target dir)
 		file(RELATIVE_PATH file_path ${dir} ${file_full_path})
 		add_custom_command(
 			OUTPUT ${EMBEDDED_H}/${file_path}.h
-			COMMAND ${CMAKE_CURRENT_BINARY_DIR}/tools/make_embed ${file_full_path} ${EMBEDDED_H}/${file_path}.h
-			DEPENDS make_embed ${file_full_path}
+			COMMAND ${CMAKE_CURRENT_BINARY_DIR}/tools_prefix/bin/make_embed ${file_full_path} ${EMBEDDED_H}/${file_path}.h
+			DEPENDS make_embed
+			MAIN_DEPENDENCY ${file_path}
 		)
 		target_sources(${target} PRIVATE ${EMBEDDED_H}/${file_path}.h)
 		# message(${file_full_path} ${file_path})
@@ -57,5 +60,8 @@ target_link_libraries(
 )
 target_include_directories(Netcode PRIVATE th155r/shared th155r/Netcode/include)
 target_link_options(Netcode PRIVATE "-exclude-all-symbols" "-kill-at" "/DEF:${CMAKE_SOURCE_DIR}/Netcode.def")
+set_property(TARGET Netcode APPEND PROPERTY SOURCES "Netcode.def")
 # Avoid using different ABI on STL on debug builds
 set_property(TARGET Netcode PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded")
+install(TARGETS Netcode DESTINATION .)
+install(FILES $<TARGET_PDB_FILE:Netcode> DESTINATION .)

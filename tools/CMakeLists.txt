@@ -1,4 +1,4 @@
 cmake_minimum_required(VERSION 3.15)
 project(make_embed)
-
+set (CMAKE_CXX_STANDARD 20)
 add_executable(make_embed make_embed.cpp)

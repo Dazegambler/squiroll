@@ -60,7 +60,7 @@ target_link_libraries(
 )
 target_include_directories(Netcode PRIVATE th155r/shared th155r/Netcode/include)
 target_link_options(Netcode PRIVATE "-exclude-all-symbols" "-kill-at" "/DEF:${CMAKE_SOURCE_DIR}/Netcode.def")
-set_property(TARGET Netcode APPEND PROPERTY SOURCES "Netcode.def")
+target_sources(Netcode PRIVATE "Netcode.def")
 # Avoid using different ABI on STL on debug builds
 set_property(TARGET Netcode PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded")
 install(TARGETS Netcode DESTINATION .)

@@ -57,8 +57,14 @@ set_property(TARGET th155r PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded")
 install(TARGETS th155r DESTINATION .)
 install(FILES $<TARGET_PDB_FILE:th155r> DESTINATION .)
 
-include(ExternalProject)
-ExternalProject_Add(make_embed SOURCE_DIR ${CMAKE_SOURCE_DIR}/tools/ CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_CURRENT_BINARY_DIR}/tools_prefix/)
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows" AND (CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "X86" OR CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "AMD64"))
+	add_executable(make_embed tools/make_embed.cpp)
+	set(MAKE_EMBED make_embed)
+else()
+	include(ExternalProject)
+	ExternalProject_Add(make_embed SOURCE_DIR ${CMAKE_SOURCE_DIR}/tools/ CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_CURRENT_BINARY_DIR}/tools_prefix/)
+	set(MAKE_EMBED ${CMAKE_CURRENT_BINARY_DIR}/tools_prefix/bin/make_embed)
+endif()
 
 set(EMBEDDED_H ${CMAKE_CURRENT_BINARY_DIR}/embedded_h)
 function(target_embed_dir target dir)
@@ -69,7 +75,7 @@ function(target_embed_dir target dir)
 		file(RELATIVE_PATH file_path ${dir} ${file_full_path})
 		add_custom_command(
 			OUTPUT ${EMBEDDED_H}/${file_path}.h
-			COMMAND ${CMAKE_CURRENT_BINARY_DIR}/tools_prefix/bin/make_embed ${file_full_path} ${EMBEDDED_H}/${file_path}.h
+			COMMAND ${MAKE_EMBED} ${file_full_path} ${EMBEDDED_H}/${file_path}.h
 			DEPENDS make_embed
 			MAIN_DEPENDENCY ${file_path}
 		)

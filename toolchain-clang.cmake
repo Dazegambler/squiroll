@@ -2,13 +2,14 @@ set(CMAKE_SYSTEM_NAME Windows)
 set(CMAKE_SYSTEM_PROCESSOR i686)
 
 set(PREFIX $ENV{HOME}/.xwin-cache/splat)
+set(CLANG_SUFFIX "-18" CACHE STRING "")
 
 # specify the cross compiler
-set(CMAKE_C_COMPILER clang-cl-18)
-set(CMAKE_CXX_COMPILER clang-cl-18)
-set(CMAKE_RC_COMPILER llvm-rc-18)
-set(CMAKE_LINKER lld-link-18)
-set(CMAKE_MT llvm-mt-18)
+set(CMAKE_C_COMPILER clang-cl${CLANG_SUFFIX} )
+set(CMAKE_CXX_COMPILER clang-cl${CLANG_SUFFIX})
+set(CMAKE_RC_COMPILER llvm-rc${CLANG_SUFFIX})
+set(CMAKE_LINKER lld-link${CLANG_SUFFIX})
+set(CMAKE_MT llvm-mt${CLANG_SUFFIX})
 
 set(CMAKE_C_FLAGS "-fuse-ld=lld -m32")
 set(CMAKE_CXX_FLAGS "-fuse-ld=lld -m32")

@@ -5,6 +5,8 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <mutex>
+#include <optional>
 
 #include <winsock2.h>
 #include <windows.h>
@@ -17,6 +19,9 @@ void patch_se_lobby(void* base_address);
 SOCKET WSAAPI inherit_punch_socket(int af, int type, int protocol, LPWSAPROTOCOL_INFOW lpProtocolInfo, GROUP g, DWORD dwFlags);
 int WSAAPI bind_inherited_socket(SOCKET s, const sockaddr* name, int namelen);
 int WSAAPI close_punch_socket(SOCKET s);
+
+extern std::mutex to_be_punched_mutex;
+extern std::optional<sockaddr_storage> to_be_punched;
 
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
 int WSAAPI WSASendTo_log(

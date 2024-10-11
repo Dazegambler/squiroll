@@ -267,15 +267,26 @@ int WSAAPI my_WSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWO
     return WSASendTo_log(s, lpBuffers, dwBufferCount, lpNumberOfBytesSent, dwFlags, lpTo, iTolen, lpOverlapped, lpCompletionRoutine);
 }
 
-// For some reason everything breaks if
-// this logic is moved from an actual import
-// hook to the packet parser.
-// TODO: Investigate why
-int WSAAPI my_WSARecvFrom(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWORD lpNumberOfBytesRecvd, LPDWORD lpFlags, sockaddr* lpFrom, LPINT lpFromLen, LPWSAOVERLAPPED lpOverlapped, LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine) {
-    int ret = WSARecvFrom(s, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromLen, lpOverlapped, lpCompletionRoutine);
+void handle_received_packet(char* buf, size_t size, sockaddr* from, int from_length) {
+    recvfrom_log(buf, size, from, from_length);
+    if (from->sa_family == AF_INET) {
+        std::unique_lock<std::mutex> lock(to_be_punched_mutex);
+        if (
+            to_be_punched.has_value() &&
+            ((sockaddr_in*)&to_be_punched.value())->sin_family == ((sockaddr_in*)from)->sin_family &&
+            ((sockaddr_in*)&to_be_punched.value())->sin_addr.s_addr == ((sockaddr_in*)from)->sin_addr.s_addr &&
+            ((sockaddr_in*)&to_be_punched.value())->sin_port == ((sockaddr_in*)from)->sin_port
+        ) {
+            to_be_punched.reset();
+            lock.unlock();
+            log_printf("received packets from to_be_punched address. so stop punching.\n");
+        }
+    }
+    if (size == 0) {
+        return;
+    }
 
-    PacketLayout* packet = (PacketLayout*)lpBuffers[0].buf;
-
+    PacketLayout* packet = (PacketLayout*)buf;
     switch (packet->type) {
         default:
             break;
@@ -286,7 +297,26 @@ int WSAAPI my_WSARecvFrom(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPD
             not_in_match = false;
             break;
 #endif
+        case PACKET_TYPE_PUNCH_PING:
+            //sendto(self->socket, (const char*)&PUNCH_PING_PACKET, sizeof(PUNCH_PING_PACKET), 0, &self->recv_addr.addr_any(), self->recv_addr.length());
+            break;
+        case PACKET_TYPE_PUNCH_PEER: {
+            break;
+        }
     }
+}
+
+// For some reason everything breaks if
+// this logic is moved from an actual import
+// hook to the packet parser.
+// TODO: Investigate why
+int WSAAPI my_WSARecvFrom(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWORD lpNumberOfBytesRecvd, LPDWORD lpFlags, sockaddr* lpFrom, LPINT lpFromLen, LPWSAOVERLAPPED lpOverlapped, LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine) {
+    int ret = WSARecvFrom(s, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromLen, lpOverlapped, lpCompletionRoutine);
+
+    if (ret == SOCKET_ERROR)
+        return ret;
+
+    handle_received_packet(lpBuffers->buf, *lpNumberOfBytesRecvd, lpFrom, *lpFromLen);
 
     return ret;
 }
@@ -306,16 +336,7 @@ void thisfastcall packet_parser_hook(
     
     PacketLayout* packet = (PacketLayout*)self->recv_data.data();
 
-    recvfrom_log(packet, packet_size, &self->recv_addr.addr_any(), self->recv_addr.length());
-
-    switch (packet->type) {
-        case PACKET_TYPE_PUNCH_PING:
-            //sendto(self->socket, (const char*)&PUNCH_PING_PACKET, sizeof(PUNCH_PING_PACKET), 0, &self->recv_addr.addr_any(), self->recv_addr.length());
-            break;
-        case PACKET_TYPE_PUNCH_PEER: {
-
-        }
-    }
+    handle_received_packet((char*) packet->data, packet_size, &self->recv_addr.addr_any(), self->recv_addr.length());
     
     return ((packet_parser_t*)packet_parser_addr)(
         self,

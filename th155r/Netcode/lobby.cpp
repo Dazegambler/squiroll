@@ -12,11 +12,13 @@
 #include <charconv>
 #include <system_error>
 #include <bit>
+#include <optional>
 
 #include <winsock2.h>
 #include <ws2tcpip.h>
 //#include <MSWSock.h>
 #include <windns.h>
+#include <synchapi.h>
 
 #include <ip2string.h>
 
@@ -234,6 +236,11 @@ static uint8_t SENDTO_TYPE = UINT8_MAX;
 static uint8_t RECVFROM_TYPE = UINT8_MAX;
 #endif
 
+std::mutex to_be_punched_mutex;
+std::optional<sockaddr_storage> to_be_punched;
+static std::mutex punch_thread_mutex;
+static std::thread punch_thread;
+
 template<bool is_welcome = false>
 static void send_lobby_name_packet(SOCKET sock, const char* nickname, size_t length) {
     PacketLobbyName* name_packet = (PacketLobbyName*)_alloca(LOBBY_NAME_PACKET_SIZE(length));
@@ -264,6 +271,10 @@ int WSAAPI close_punch_socket(SOCKET s) {
         std::lock_guard<SpinLock> lock(punch_lock);
 
         if (s == punch_socket) {
+            {
+                std::lock_guard<std::mutex> _lock(to_be_punched_mutex);
+                to_be_punched.reset();
+            }
             lobby_debug_printf("Closing the punch socket. Bad? A\n");
             //return 0;
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
@@ -471,6 +482,50 @@ static WSABUF PUNCH_BUF = {
     .buf = (CHAR*)&PUNCH_PACKET
 };
 
+void punch(SOCKET sock) {
+    log_printf("start punching\n");
+    DWORD idc;
+    for (size_t i = 0; i < 60; ++i) {
+        {
+            std::unique_lock<std::mutex> _lock(to_be_punched_mutex);
+            if (to_be_punched.has_value()) {
+                auto to_be_punched_ = to_be_punched.value();
+                _lock.unlock();
+                WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, (const sockaddr*)&to_be_punched_, sizeof(sockaddr), NULL, NULL);
+            }
+            else {
+                break;
+            }
+        }
+        Sleep(100);
+    }
+    log_printf("end punching\n");
+    std::lock_guard<std::mutex> _lock(to_be_punched_mutex);
+    to_be_punched.reset();
+}
+
+// port is in host bytes order
+void start_punching(SOCKET sock, const char* host, unsigned short port) {
+    if (sock == INVALID_SOCKET) {
+        return;
+    }
+    sockaddr_storage client_addr;
+    client_addr.ss_family = AF_INET;
+    ((sockaddr_in*)&client_addr)->sin_port = htons(port);
+    inet_pton(AF_INET, host, &((sockaddr_in*)&client_addr)->sin_addr);
+
+    log_printf("Create punching thread\n");
+    std::lock_guard<std::mutex> _lock(punch_thread_mutex);
+    if (punch_thread.joinable()) {
+        punch_thread.join();
+    }
+    {
+        std::lock_guard<std::mutex> _lock(to_be_punched_mutex);
+        to_be_punched = { client_addr };
+    }
+    punch_thread = std::thread{[sock] {punch(sock);}};
+}
+
 int fastcall lobby_send_string_udp_send_hook_WELCOME2(
     AsyncLobbyClient* self,
     size_t current_nickname_length,
@@ -490,15 +545,7 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
     );
 
     if (sock != INVALID_SOCKET) {
-        sockaddr_storage client_addr;
-        client_addr.ss_family = AF_INET;
-        ((sockaddr_in*)&client_addr)->sin_port = __builtin_bswap16(port);
-        inet_pton(AF_INET, host, &((sockaddr_in*)&client_addr)->sin_addr);
-
-        DWORD idc;
-        for (size_t i = 0; i < 30; ++i) {
-            WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, (const sockaddr*)&client_addr, sizeof(sockaddr), NULL, NULL);
-        }
+        start_punching(sock, host, port);
     }
     return ret;
 }
@@ -575,15 +622,7 @@ msvc_string* fastcall lobby_recv_welcome_hook(
 
     SOCKET sock = get_punch_socket();
     if (sock != INVALID_SOCKET) {
-        sockaddr_storage client_addr;
-        client_addr.ss_family = AF_INET;
-        ((sockaddr_in*)&client_addr)->sin_port = __builtin_bswap16(atoi(port->data()));
-        inet_pton(AF_INET, host, &((sockaddr_in*)&client_addr)->sin_addr);
-
-        DWORD idc;
-        for (size_t i = 0; i < 30; ++i) {
-            WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, (const sockaddr*)&client_addr, sizeof(sockaddr), NULL, NULL);
-        }
+        start_punching(sock, host, atoi(port->data()));
     }
 
     return based_pointer<lobby_std_string_concat_t>(lobby_base_address, 0x12920)(out_str, strB, port);
@@ -765,6 +804,10 @@ int WSAAPI lobby_socket_close_hook(SOCKET s) {
             sock != INVALID_SOCKET &&
             !punch_socket_is_inherited
         ) {
+            {
+                std::lock_guard<std::mutex> _lock(to_be_punched_mutex);
+                to_be_punched.reset();
+            }
             lobby_debug_printf("Closing the punch socket. Bad? B\n");
             closesocket(sock);
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
@@ -837,6 +880,7 @@ int WSAAPI WSASendTo_log(
         if (error != WSA_IO_PENDING) {
             log_printf("SENDTO: FAIL %u\n", error);
         }
+        WSASetLastError(error);
     }
     return ret;
 }
@@ -851,7 +895,7 @@ void recvfrom_log(
     sockaddr* from,
     int from_length
 ) {
-    if (from->sa_family == AF_INET) {
+    if (from->sa_family == AF_INET && data_length > 0) {
         uint8_t from_type = *(uint8_t*)data;
         if (
             from_length != RECVFROM_ADDR_LEN ||
@@ -871,6 +915,17 @@ void recvfrom_log(
 }
 
 #endif
+
+void join_punch_thread_at_exit() {
+    std::lock_guard<std::mutex> _lock(punch_thread_mutex);
+    {
+        std::lock_guard<std::mutex> _lock(to_be_punched_mutex);
+        to_be_punched.reset();
+    }
+    if (punch_thread.joinable()) {
+        punch_thread.join();
+    }
+}
 
 void patch_se_lobby(void* base_address) {
     lobby_base_address = (uintptr_t)base_address;
@@ -943,4 +998,6 @@ void patch_se_lobby(void* base_address) {
     //hotpatch_rel32(based_pointer(base_address, 0x7C67), log_sent_text);
     //hotpatch_rel32(based_pointer(base_address, 0x7D2D), log_sent_text);
     //hotpatch_rel32(based_pointer(base_address, 0x84E6), log_sent_text);
+
+    std::atexit(join_punch_thread_at_exit);
 }

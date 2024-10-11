@@ -94,7 +94,16 @@ function Initialize( param )
 	::battle.Create(battle_param);
 	::battle.Begin();
 	::loop.Begin(this);
-	displayAllElements(battle_param.team[0],"");
+	foreach (i, v in battle_param.team[0].master) {
+		if (typeof(v) != "class" && typeof(v) != "table"){
+			::debug.fprint("master.txt",i +":"+ typeof(v) +":"+ v +"\n");
+		}else{
+			::debug.fprint("master.txt",i +":"+ typeof(v) +"\n");
+			foreach (t, w in v) {
+				if(typeof(w)!="function")::debug.fprint("master.txt",">"+ t +":"+ typeof(w) +":"+ w +"\n");
+			}
+		}
+	}
 }
 
 function Terminate()

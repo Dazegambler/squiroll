@@ -171,7 +171,7 @@ function Create( param )
 		}
 	}
 	//end of additions
-
+	//displayAllElements(this.team[0].master,"master.txt","");
 	if (!::network.IsActive())
 	{
 		if (param.game_mode == 10)
@@ -192,6 +192,20 @@ function Create( param )
 		}
 	}
 }
+
+// function displayAllElements(obj,file,indent) {
+// 	indent += " ";
+//     ::debug.fprint(file,indent+"----"+obj+"----\n");
+
+//     // foreach (key, value in obj) {
+//     //     ::debug.fprint(file,indent+key + " : " + typeof(value) + "\n");
+
+//     //     if (typeof(value) == "table") {
+//     //         displayAllElements(key,file,indent);
+//     //     }
+//     // }
+// 	::debug.fprint(file,indent+"---------------\n");
+// }
 
 function inputdisplaysetup(player) {
 	::setting.input_display.update_consts();

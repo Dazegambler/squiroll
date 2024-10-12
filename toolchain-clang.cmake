@@ -22,6 +22,11 @@ set(CMAKE_MT llvm-mt${CLANG_SUFFIX})
 set(CMAKE_C_FLAGS "-fuse-ld=lld -m32")
 set(CMAKE_CXX_FLAGS "-fuse-ld=lld -m32")
 
+if (CMAKE_GENERATOR MATCHES "Visual Studio")
+    set(CMAKE_GENERATOR_TOOLSET "ClangCL")
+    set(CMAKE_GENERATOR_PLATFORM "Win32")
+endif()
+
 # # skip c/cxx compiler checks
 # set(CMAKE_C_COMPILER_WORKS 1)
 # set(CMAKE_CXX_COMPILER_WORKS 1)

@@ -65,8 +65,13 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows" AND (CMAKE_HOST_SYSTEM_PROCESSOR ST
 	set(MAKE_EMBED make_embed)
 else()
 	include(ExternalProject)
-	ExternalProject_Add(make_embed SOURCE_DIR ${CMAKE_SOURCE_DIR}/tools/ CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_CURRENT_BINARY_DIR}/tools_prefix/)
-	set(MAKE_EMBED ${CMAKE_CURRENT_BINARY_DIR}/tools_prefix/bin/make_embed)
+	set(MAKE_EMBED_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/tools_prefix)
+	ExternalProject_Add(make_embed_ BUILD_ALWAYS true SOURCE_DIR ${CMAKE_SOURCE_DIR}/tools/
+		BUILD_BYPRODUCTS ${MAKE_EMBED_PREFIX}/bin/make_embed${CMAKE_HOST_EXECUTABLE_SUFFIX}
+		CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${MAKE_EMBED_PREFIX}/)
+	add_executable(make_embed IMPORTED)
+	set_property(TARGET make_embed PROPERTY IMPORTED_LOCATION ${MAKE_EMBED_PREFIX}/bin/make_embed${CMAKE_HOST_EXECUTABLE_SUFFIX})
+	add_dependencies(make_embed make_embed_)
 endif()
 
 set(EMBEDDED_H ${CMAKE_CURRENT_BINARY_DIR}/embedded_h)
@@ -78,7 +83,7 @@ function(target_embed_dir target dir)
 		file(RELATIVE_PATH file_path ${dir} ${file_full_path})
 		add_custom_command(
 			OUTPUT ${EMBEDDED_H}/${file_path}.h
-			COMMAND ${MAKE_EMBED} ${file_full_path} ${EMBEDDED_H}/${file_path}.h
+			COMMAND $<TARGET_FILE:make_embed> ${file_full_path} ${EMBEDDED_H}/${file_path}.h
 			DEPENDS make_embed
 			MAIN_DEPENDENCY ${file_path}
 		)

@@ -11,10 +11,9 @@ set (NEW_FILES_DIR "new_files")
 # Generate PDB files
 add_compile_options(-gcodeview-command-line -gcolumn-info -gcodeview -gcodeview-ghash -g)
 add_link_options(/DEBUG)
-if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-	add_link_options(/OPT:REF /OPT:ICF /PDBALTPATH:%_PDB%)
-	add_compile_options("SHELL:-Xclang -O3")
-endif()
+add_link_options("$<$<NOT:$<CONFIG:Debug>>:SHELL:/OPT:REF /OPT:ICF /PDBALTPATH:%_PDB%>")
+add_compile_options("$<$<NOT:$<CONFIG:Debug>>:SHELL:-Xclang -O3>")
+
 add_compile_options(
 	-Wno-cpp
 	-Wno-narrowing

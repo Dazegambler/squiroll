@@ -5,12 +5,19 @@
 
 #include <stdio.h>
 #include "util.h"
+#include <synchapi.h>
 
 typedef void cdecl printf_t(const char* format, ...);
 typedef void cdecl fprintf_t(FILE* stream, const char* format, ...);
 
 extern printf_t* log_printf;
 extern fprintf_t* log_fprintf;
+
+#define log_time_printf(format, ...) do { \
+    SYSTEMTIME lt; \
+    GetLocalTime(&lt); \
+    log_printf("%02u:%02u,%03u " format, lt.wHour, lt.wMinute, lt.wMilliseconds , __VA_ARGS__); \
+} while(0)
 
 #ifdef NDEBUG
 #define debug_printf(...) EVAL_NOOP(__VA_ARGS__)

@@ -279,7 +279,7 @@ void handle_received_packet(char* buf, size_t size, sockaddr* from, int from_len
         ) {
             to_be_punched.reset();
             lock.unlock();
-            log_printf("received packets from to_be_punched address. so stop punching.\n");
+            log_time_printf("received packets from to_be_punched address. so stop punching.\n");
         }
     }
     if (size == 0) {

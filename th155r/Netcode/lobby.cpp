@@ -31,7 +31,7 @@
 #include "lobby.h"
 
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_LOBBY_DEBUG
-#define lobby_debug_printf(...) log_printf(__VA_ARGS__)
+#define lobby_debug_printf(...) log_time_printf(__VA_ARGS__)
 #else
 #define lobby_debug_printf(...) EVAL_NOOP(__VA_ARGS__)
 #endif
@@ -249,7 +249,13 @@ static void send_lobby_name_packet(SOCKET sock, const char* nickname, size_t len
     memcpy(name_packet->name, nickname, length);
 
     int success = sendto(sock, (const char*)name_packet, LOBBY_NAME_PACKET_SIZE(length), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
-    lobby_debug_printf(!is_welcome ? "Sending nickA (%zu):%s\n" : "Sending nickB (%zu):%s\n", length, nickname);
+    if (!is_welcome) {
+        lobby_debug_printf("Sending nickA (%zu):%s\n", length, nickname);
+    }
+    else {
+        lobby_debug_printf("Sending nickB (%zu):%s\n", length, nickname);
+
+    }
     if (success == SOCKET_ERROR) {
         lobby_debug_printf("FAILED nick:%u\n", WSAGetLastError());
     }
@@ -483,7 +489,7 @@ static WSABUF PUNCH_BUF = {
 };
 
 void punch(SOCKET sock) {
-    log_printf("start punching\n");
+    log_time_printf("start punching\n");
     DWORD idc;
     for (size_t i = 0; i < 60; ++i) {
         {
@@ -499,7 +505,7 @@ void punch(SOCKET sock) {
         }
         Sleep(100);
     }
-    log_printf("end punching\n");
+    log_time_printf("end punching\n");
     std::lock_guard<std::mutex> _lock(to_be_punched_mutex);
     to_be_punched.reset();
 }
@@ -514,7 +520,7 @@ void start_punching(SOCKET sock, const char* host, unsigned short port) {
     ((sockaddr_in*)&client_addr)->sin_port = htons(port);
     inet_pton(AF_INET, host, &((sockaddr_in*)&client_addr)->sin_addr);
 
-    log_printf("Create punching thread\n");
+    log_time_printf("Create punching thread\n");
     std::lock_guard<std::mutex> _lock(punch_thread_mutex);
     if (punch_thread.joinable()) {
         punch_thread.join();
@@ -869,7 +875,7 @@ int WSAAPI WSASendTo_log(
             char ip_buffer[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &((sockaddr_in*)lpTo)->sin_addr, ip_buffer, countof(ip_buffer));
             uint16_t port = __builtin_bswap16(((sockaddr_in*)lpTo)->sin_port);
-            log_printf("SENDTO: %s:%u type %hhu (PUNCH: %s)\n", ip_buffer, port, send_type, bool_str(s == punch_socket));
+            log_time_printf("SENDTO: %s:%u type %hhu (PUNCH: %s)\n", ip_buffer, port, send_type, bool_str(s == punch_socket));
         }
 
         //log_printf("SENDTO: %s:%u\n", ip_buffer, port);
@@ -878,7 +884,7 @@ int WSAAPI WSASendTo_log(
     if (ret == SOCKET_ERROR) {
         int error = WSAGetLastError();
         if (error != WSA_IO_PENDING) {
-            log_printf("SENDTO: FAIL %u\n", error);
+            log_time_printf("SENDTO: FAIL %u\n", error);
         }
         WSASetLastError(error);
     }
@@ -909,7 +915,7 @@ void recvfrom_log(
             char ip_buffer[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &((sockaddr_in*)from)->sin_addr, ip_buffer, countof(ip_buffer));
             uint16_t port = __builtin_bswap16(((sockaddr_in*)from)->sin_port);
-            log_printf("RECVFROM: %s:%u type %hhu\n", ip_buffer, port, from_type);
+            log_time_printf("RECVFROM: %s:%u type %hhu\n", ip_buffer, port, from_type);
         }
     }
 }

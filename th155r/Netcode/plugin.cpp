@@ -107,6 +107,19 @@ public:
 
 static HSQUIRRELVM v;
 
+void sq_throwexception(const char* src){
+    log_printf("#####Squirrel exception from:%s#####\n", src);
+
+    sq_getlasterror(v);
+    const char *errorMsg;
+    if (SQ_SUCCEEDED(sq_getstring(v, -1, &errorMsg))) {
+        log_printf("%s\n", errorMsg);
+    }
+    sq_pop(v, 1);
+
+    log_printf("#####End of stack trace#####\n");
+}
+
 static inline void sq_setinteger(HSQUIRRELVM v, const SQChar* name, const SQInteger& value) {
     sq_pushstring(v, name, -1);
     sq_pushinteger(v, value);
@@ -171,6 +184,7 @@ SQInteger CompileBuffer(HSQUIRRELVM v) {
 
     if (EmbedData embed = get_new_file_data(filename)) {
         if (SQ_FAILED(sq_compilebuffer(v, (const SQChar*)embed.data, embed.length, _SC("compiled from buffer"), SQFalse))) {
+            sq_throwexception("CompileBuffer");
             return sq_throwerror(v, _SC("Failed to compile script from buffer.\n"));
         }
 
@@ -184,12 +198,9 @@ SQInteger CompileBuffer(HSQUIRRELVM v) {
 
 SQInteger sq_print(HSQUIRRELVM v) {
     const SQChar* str;
-    if (sq_gettop(v) != 2) {
+    if (sq_gettop(v) != 2 || 
+        SQ_FAILED(sq_getstring(v, 2, &str))){
         return sq_throwerror(v, "Invalid arguments,expected:<string>");
-    }
-
-    if (SQ_FAILED(sq_getstring(v, 2, &str))) {
-        return sq_throwerror(v, "Invalid arguments,expected a string");
     }
 
     log_printf("%s", str);
@@ -339,11 +350,10 @@ extern "C" {
                 sq_setfunc(v, _SC("fprint"), sq_fprint);
                 if (EmbedData embed = get_new_file_data("debug.nut"))
                 {
-                    if (SQ_FAILED(sq_compilebuffer(v, (const SQChar *)embed.data, embed.length, _SC("compiled from buffer"), SQTrue)))
-                    {
-                        log_printf("Failed to compile script from buffer.\n");
-                    }
-                    sq_call(v, 1, SQFalse, SQTrue);
+                  if (SQ_FAILED(sq_compilebuffer(v, (const SQChar *)embed.data,embed.length, _SC("embed"),SQTrue)) ||
+                      SQ_FAILED(sq_call(v, 1, SQFalse, SQTrue))) {
+                        sq_throwexception("debug buffer");
+                  }
                 }
             });
 

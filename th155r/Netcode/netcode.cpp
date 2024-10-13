@@ -333,10 +333,7 @@ void thisfastcall packet_parser_hook(
     thisfastcall_edx(int dummy_edx, )
     size_t packet_size
 ) {
-    
-    PacketLayout* packet = (PacketLayout*)self->recv_data.data();
-
-    handle_received_packet((char*) packet->data, packet_size, &self->recv_addr.addr_any(), self->recv_addr.length());
+    handle_received_packet((char *) self->recv_data.data(), packet_size, &self->recv_addr.addr_any(), self->recv_addr.length());
     
     return ((packet_parser_t*)packet_parser_addr)(
         self,

@@ -107,13 +107,17 @@ public:
 
 static HSQUIRRELVM v;
 
-void sq_throwexception(const char* src){
+void sq_throwexception(HSQUIRRELVM v, const char* src) {
     log_printf("#####Squirrel exception from:%s#####\n", src);
 
     sq_getlasterror(v);
-    const char *errorMsg;
+    const SQChar* errorMsg;
     if (SQ_SUCCEEDED(sq_getstring(v, -1, &errorMsg))) {
+#if SQUNICODE
+        log_printf("%ls\n", errorMsg);
+#else
         log_printf("%s\n", errorMsg);
+#endif
     }
     sq_pop(v, 1);
 
@@ -184,7 +188,7 @@ SQInteger CompileBuffer(HSQUIRRELVM v) {
 
     if (EmbedData embed = get_new_file_data(filename)) {
         if (SQ_FAILED(sq_compilebuffer(v, (const SQChar*)embed.data, embed.length, _SC("compiled from buffer"), SQFalse))) {
-            sq_throwexception("CompileBuffer");
+            sq_throwexception(v, "CompileBuffer");
             return sq_throwerror(v, _SC("Failed to compile script from buffer.\n"));
         }
 
@@ -199,7 +203,8 @@ SQInteger CompileBuffer(HSQUIRRELVM v) {
 SQInteger sq_print(HSQUIRRELVM v) {
     const SQChar* str;
     if (sq_gettop(v) != 2 || 
-        SQ_FAILED(sq_getstring(v, 2, &str))){
+        SQ_FAILED(sq_getstring(v, 2, &str))
+    ) {
         return sq_throwerror(v, "Invalid arguments,expected:<string>");
     }
 
@@ -212,14 +217,21 @@ SQInteger sq_fprint(HSQUIRRELVM v) {
     const SQChar* path;
     if (sq_gettop(v) != 3 ||
         SQ_FAILED(sq_getstring(v, 2, &path)) ||
-        SQ_FAILED(sq_getstring(v, 3, &str)))
-    {
+        SQ_FAILED(sq_getstring(v, 3, &str))
+    ) {
         return sq_throwerror(v, _SC("invalid arguments...expected: <file> <string>.\n"));
     }
+#if SQUNICODE
+    if (FILE* file = _wfopen(path, L"a")) {
+        log_fprintf(file, "%ls", str);
+        fclose(file);
+    }
+#else
     if (FILE* file = fopen(path, "a")) {
         log_fprintf(file, "%s", str);
         fclose(file);
     }
+#endif
     return 0;
 }
 
@@ -348,12 +360,13 @@ extern "C" {
             sq_createtable(v, _SC("debug"), [](HSQUIRRELVM v) {
                 sq_setfunc(v, _SC("print"), sq_print);
                 sq_setfunc(v, _SC("fprint"), sq_fprint);
-                if (EmbedData embed = get_new_file_data("debug.nut"))
-                {
-                  if (SQ_FAILED(sq_compilebuffer(v, (const SQChar *)embed.data,embed.length, _SC("embed"),SQTrue)) ||
-                      SQ_FAILED(sq_call(v, 1, SQFalse, SQTrue))) {
-                        sq_throwexception("debug buffer");
-                  }
+                if (EmbedData embed = get_new_file_data("debug.nut")) {
+                    if (
+                        SQ_FAILED(sq_compilebuffer(v, (const SQChar *)embed.data, embed.length, _SC("embed"), SQTrue)) ||
+                        SQ_FAILED(sq_call(v, 1, SQFalse, SQTrue))
+                    ) {
+                        sq_throwexception(v, "debug buffer");
+                    }
                 }
             });
 

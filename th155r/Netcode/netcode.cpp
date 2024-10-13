@@ -153,10 +153,13 @@ static_assert(sizeof(TF4UDP) == 0x24C);
 #define wsarecvfrom_import_addr (0x3884D8_R)
 #define packet_parser_addr (0x176BB0_R)
 
-static bool not_in_match = true;
+// TODO: Is this variable name inverted?
+static bool not_in_match = false;
+
+
+static uint8_t lag_packets = 0;
 SQBool resyncing = SQFalse;
 SQBool isplaying = SQFalse;
-static uint8_t lag_packets = 0;
 static uint64_t prev_timestamp = 0;
 
 static inline constexpr uint8_t RESYNC_THRESHOLD = UINT8_MAX;
@@ -267,40 +270,15 @@ int WSAAPI my_WSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWO
     return WSASendTo_log(s, lpBuffers, dwBufferCount, lpNumberOfBytesSent, dwFlags, lpTo, iTolen, lpOverlapped, lpCompletionRoutine);
 }
 
-// For some reason everything breaks if
-// this logic is moved from an actual import
-// hook to the packet parser.
-// TODO: Investigate why
-int WSAAPI my_WSARecvFrom(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWORD lpNumberOfBytesRecvd, LPDWORD lpFlags, sockaddr* lpFrom, LPINT lpFromLen, LPWSAOVERLAPPED lpOverlapped, LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine) {
-    int ret = WSARecvFrom(s, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromLen, lpOverlapped, lpCompletionRoutine);
-
-    PacketLayout* packet = (PacketLayout*)lpBuffers[0].buf;
-
-    switch (packet->type) {
-        default:
-            break;
-#if NETPLAY_PATCH_TYPE == NETPLAY_VER_103F
-        case PACKET_TYPE_0: case PACKET_TYPE_12: case PACKET_TYPE_13:
-        case PACKET_TYPE_14: case PACKET_TYPE_15: case PACKET_TYPE_16:
-        case PACKET_TYPE_17: case PACKET_TYPE_18: case PACKET_TYPE_19:
-            not_in_match = false;
-            break;
-#endif
-    }
-
-    return ret;
-}
-
-
 typedef void thisfastcall packet_parser_t(
     TF4UDP* self,
-    thisfastcall_edx(int dummy_edx, )
+    thisfastcall_edx(int dummy_edx,)
     size_t packet_size
 );
 
 void thisfastcall packet_parser_hook(
     TF4UDP* self,
-    thisfastcall_edx(int dummy_edx, )
+    thisfastcall_edx(int dummy_edx,)
     size_t packet_size
 ) {
     
@@ -309,6 +287,17 @@ void thisfastcall packet_parser_hook(
     recvfrom_log(packet, packet_size, &self->recv_addr.addr_any(), self->recv_addr.length());
 
     switch (packet->type) {
+        default:
+            break;
+#if NETPLAY_PATCH_TYPE == NETPLAY_VER_103F
+        // TODO: These packet numbers don't seem quite
+        // right based on the variable name...
+        case PACKET_TYPE_0: case PACKET_TYPE_12: case PACKET_TYPE_13:
+        case PACKET_TYPE_14: case PACKET_TYPE_15: case PACKET_TYPE_16:
+        case PACKET_TYPE_17: case PACKET_TYPE_18: case PACKET_TYPE_19:
+            not_in_match = false;
+            break;
+#endif
         case PACKET_TYPE_PUNCH_PING:
             //sendto(self->socket, (const char*)&PUNCH_PING_PACKET, sizeof(PUNCH_PING_PACKET), 0, &self->recv_addr.addr_any(), self->recv_addr.length());
             break;
@@ -511,7 +500,12 @@ void patch_netplay() {
 #endif
 
     resync_patch(160);
-    hotpatch_import(wsarecvfrom_import_addr, my_WSARecvFrom);
+
+    // This may seem redundant, but it helps prevent
+    // conflicts with the original netplay patch
+    hotpatch_import(wsarecvfrom_import_addr, WSARecvFrom);
+
+
     hotpatch_rel32(0x176B8A_R, packet_parser_hook);
     hotpatch_import(wsasendto_import_addr, my_WSASendTo);
 

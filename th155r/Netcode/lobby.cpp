@@ -765,7 +765,7 @@ int WSAAPI lobby_socket_close_hook(SOCKET s) {
             sock != INVALID_SOCKET &&
             !punch_socket_is_inherited
         ) {
-            lobby_debug_printf("Closing the punch socket. Bad? B\n");
+            lobby_debug_printf("Closing the punch socket. Bad? (Lobby close)\n");
             closesocket(sock);
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
             SENDTO_ADDR = {};

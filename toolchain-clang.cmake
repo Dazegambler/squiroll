@@ -10,7 +10,7 @@ set(SDK_INCLUDE_PATH ${XWIN_SPLAT_PREFIX}/sdk/include/ CACHE PATH "SDK headers p
 set(SDK_LIB_PATH ${XWIN_SPLAT_PREFIX}/sdk/lib/ CACHE PATH "SDK libs path, like C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.20262.0\\ on Windows,\
     where there is `um/x86/kernel32.lib`")
 
-set(CLANG_SUFFIX "-18" CACHE STRING "")
+set(CLANG_SUFFIX "" CACHE STRING "Clang version suffix, such as -18")
 
 # specify the cross compiler
 set(CMAKE_C_COMPILER clang-cl${CLANG_SUFFIX} )

@@ -5,3 +5,4 @@
 .vs*
 out/
 *.lib
+/th155r/Netcode/embedded_h/

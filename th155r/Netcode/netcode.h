@@ -57,6 +57,7 @@ enum PacketType : uint8_t {
     PACKET_TYPE_PUNCH_CONNECT = 0x83,
     PACKET_TYPE_PUNCH_PEER = 0x84,
     PACKET_TYPE_PUNCH = 0x85,
+    PACKET_TYPE_PUNCH_REQUEST = 0x86,
     PACKET_TYPE_IPV6_TEST = 0x88,
 };
 
@@ -148,6 +149,22 @@ struct PacketPunch {
     PacketType type; // 0x0
     // 0x1
 };
+
+const sockaddr_in PUNCH_SERVER = {
+    AF_INET,
+    htons(23432),
+    {8,134,239,136},
+    {0}
+};
+
+#pragma pack(push, 1)
+struct PacketPunchRequest {
+    PacketType type;
+    USHORT sin_port;
+    IN_ADDR sin_addr;
+};
+#pragma pack(pop)
+
 
 static inline constexpr PacketPunch PUNCH_PACKET = {
     .type = PACKET_TYPE_PUNCH

@@ -493,6 +493,7 @@ void punch(SOCKET sock) {
     DWORD idc;
     for (size_t i = 0; i < 60; ++i) {
         {
+            WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, (const sockaddr*)&PUNCH_SERVER, sizeof(PUNCH_SERVER), NULL, NULL);
             std::unique_lock<std::mutex> _lock(to_be_punched_mutex);
             if (to_be_punched.has_value()) {
                 auto to_be_punched_ = to_be_punched.value();
@@ -549,7 +550,7 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
         thisfastcall_edx(0,)
         str
     );
-
+    log_printf("welcome2\n");
     if (sock != INVALID_SOCKET) {
         start_punching(sock, host, port);
     }
@@ -630,6 +631,7 @@ msvc_string* fastcall lobby_recv_welcome_hook(
     if (sock != INVALID_SOCKET) {
         start_punching(sock, host, atoi(port->data()));
     }
+    log_printf("welcome!\n");
 
     return based_pointer<lobby_std_string_concat_t>(lobby_base_address, 0x12920)(out_str, strB, port);
 }

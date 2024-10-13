@@ -576,7 +576,7 @@ function UpdateMatch()
 	{
 		if (this.timeout++ > 360)
 		{
-			::debug.print(this.retry_count"\n");
+			::debug.print(this.retry_count+"\n");
 			if (this.retry_count++ > 5)
 			{
 				this.lobby_user_state = ::LOBBY.MATCHING;

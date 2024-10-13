@@ -360,14 +360,14 @@ extern "C" {
             sq_createtable(v, _SC("debug"), [](HSQUIRRELVM v) {
                 sq_setfunc(v, _SC("print"), sq_print);
                 sq_setfunc(v, _SC("fprint"), sq_fprint);
-                if (EmbedData embed = get_new_file_data("debug.nut")) {
-                    if (
-                        SQ_FAILED(sq_compilebuffer(v, (const SQChar *)embed.data, embed.length, _SC("embed"), SQTrue)) ||
-                        SQ_FAILED(sq_call(v, 1, SQFalse, SQTrue))
-                    ) {
-                        sq_throwexception(v, "debug buffer");
-                    }
-                }
+                // if (EmbedData embed = get_new_file_data("debug.nut")) {
+                //     if (
+                //         SQ_FAILED(sq_compilebuffer(v, (const SQChar *)embed.data, embed.length, _SC("embed"), SQTrue)) ||
+                //         SQ_FAILED(sq_call(v, 1, SQFalse, SQTrue))
+                //     ) {
+                //         sq_throwexception(v, "debug buffer");
+                //     }
+                // }
             });
 
             // modifications to the manbow table

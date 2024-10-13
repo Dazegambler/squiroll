@@ -236,7 +236,7 @@ function Update()
 	}
 
 	this.LobbyUpdate();
-
+	::debug.print(this.retry_count"\n");
 	if (this.update)
 	{
 		this.update();

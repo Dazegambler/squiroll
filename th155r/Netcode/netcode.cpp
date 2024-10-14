@@ -153,10 +153,13 @@ static_assert(sizeof(TF4UDP) == 0x24C);
 #define wsarecvfrom_import_addr (0x3884D8_R)
 #define packet_parser_addr (0x176BB0_R)
 
-static bool not_in_match = true;
+// TODO: Is this variable name inverted?
+static bool not_in_match = false;
+
+
+static uint8_t lag_packets = 0;
 SQBool resyncing = SQFalse;
 SQBool isplaying = SQFalse;
-static uint8_t lag_packets = 0;
 static uint64_t prev_timestamp = 0;
 
 static inline constexpr uint8_t RESYNC_THRESHOLD = UINT8_MAX;
@@ -276,9 +279,23 @@ int WSAAPI my_WSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWO
     return WSASendTo_log(s, lpBuffers, dwBufferCount, lpNumberOfBytesSent, dwFlags, lpTo, iTolen, lpOverlapped, lpCompletionRoutine);
 }
 
-void handle_received_packet(SOCKET s, char* buf, size_t size, sockaddr* from, int from_length) {
-    recvfrom_log(buf, size, from, from_length);
-    if (from->sa_family == AF_INET && !(size > 0 && (uint8_t)buf[0] == PACKET_TYPE_PUNCH)) {
+typedef void thisfastcall packet_parser_t(
+    TF4UDP* self,
+    thisfastcall_edx(int dummy_edx,)
+    size_t packet_size
+);
+
+void thisfastcall packet_parser_hook(
+    TF4UDP* self,
+    thisfastcall_edx(int dummy_edx,)
+    size_t packet_size
+) {
+    PacketLayout* packet = (PacketLayout*)self->recv_data.data();
+
+    recvfrom_log(packet, packet_size, &self->recv_addr.addr_any(), self->recv_addr.length());
+
+    sockaddr_in* from = &self->recv_addr.addr_v4();
+    if (self->recv_addr.addr.si_family == AF_INET && !(packet_size > 0 && packet->type <= 19)) {
         std::unique_lock<std::mutex> lock(to_be_punched_mutex);
         if (
             to_be_punched.has_value() &&
@@ -291,91 +308,63 @@ void handle_received_packet(SOCKET s, char* buf, size_t size, sockaddr* from, in
             log_time_printf("received packets from to_be_punched address. so stop punching.\n");
         }
     }
-    if (size == 0) {
-        return;
-    }
-
-    PacketLayout* packet = (PacketLayout*)buf;
-    switch (packet->type) {
-        default:
-            break;
-#if NETPLAY_PATCH_TYPE == NETPLAY_VER_103F
-        case PACKET_TYPE_0: case PACKET_TYPE_12: case PACKET_TYPE_13:
-        case PACKET_TYPE_14: case PACKET_TYPE_15: case PACKET_TYPE_16:
-        case PACKET_TYPE_17: case PACKET_TYPE_18: case PACKET_TYPE_19:
-            not_in_match = false;
-            break;
-#endif
-        case PACKET_TYPE_PUNCH_PING:
-            //sendto(self->socket, (const char*)&PUNCH_PING_PACKET, sizeof(PUNCH_PING_PACKET), 0, &self->recv_addr.addr_any(), self->recv_addr.length());
-            break;
-        case PACKET_TYPE_PUNCH_PEER: {
-            break;
-        }
-        case PACKET_TYPE_PUNCH_REQUEST: {
-            if (from->sa_family != AF_INET) {
+    if (packet_size != 0) {
+        switch (packet->type) {
+            default:
+                break;
+    #if NETPLAY_PATCH_TYPE == NETPLAY_VER_103F
+            // TODO: These packet numbers don't seem quite
+            // right based on the variable name...
+            case PACKET_TYPE_0: case PACKET_TYPE_12: case PACKET_TYPE_13:
+            case PACKET_TYPE_14: case PACKET_TYPE_15: case PACKET_TYPE_16:
+            case PACKET_TYPE_17: case PACKET_TYPE_18: case PACKET_TYPE_19:
+                not_in_match = false;
+                break;
+    #endif
+            case PACKET_TYPE_PUNCH_PING:
+                //sendto(self->socket, (const char*)&PUNCH_PING_PACKET, sizeof(PUNCH_PING_PACKET), 0, &self->recv_addr.addr_any(), self->recv_addr.length());
+                break;
+            case PACKET_TYPE_PUNCH_PEER: {
                 break;
             }
-            if (size != sizeof(PacketPunchRequest)) {
-                log_time_printf("size %d is unmatched with PacketPunchRequest\n", size);
-                break;
-            }
-            if (memcmp(&PUNCH_SERVER, from, sizeof(PUNCH_SERVER)) != 0) {
-                log_time_printf("source address is unmatched with the punch server\n", size);
-                break;
-            }
-            const PacketPunchRequest *packet_ = (PacketPunchRequest*) packet;
-            std::unique_lock<std::mutex> lock(to_be_punched_mutex);
-            if (!to_be_punched.has_value()) {
-                log_time_printf("is not punching or not through lobby?\n");
-            } else {
-                auto value = (sockaddr_in *) &to_be_punched.value();
-                if (value->sin_addr.s_addr !=0 && value->sin_addr.s_addr != packet_->sin_addr.s_addr) {
-                    log_time_printf("sin_addr is unmatched\n");
+            case PACKET_TYPE_PUNCH_REQUEST: {
+                if (from->sin_family != AF_INET) {
                     break;
                 }
-                log_time_printf("set to_be_punch to the address from punch server\n");
-                value->sin_addr.s_addr = packet_->sin_addr.s_addr;
-                value->sin_port = packet_->sin_port;
+                if (packet_size != sizeof(PacketPunchRequest)) {
+                    log_time_printf("size %d is unmatched with PacketPunchRequest\n", packet_size);
+                    break;
+                }
+                if (memcmp(&PUNCH_SERVER, from, sizeof(PUNCH_SERVER)) != 0) {
+                    log_time_printf("source address is unmatched with the punch server\n");
+                    break;
+                }
+                const PacketPunchRequest *packet_ = (PacketPunchRequest*) packet;
+                std::unique_lock<std::mutex> lock(to_be_punched_mutex);
+                if (!to_be_punched.has_value()) {
+                    log_time_printf("is not punching or not through lobby?\n");
+                } else {
+                    auto value = (sockaddr_in *) &to_be_punched.value();
+                    if (value->sin_addr.s_addr !=0 && value->sin_addr.s_addr != packet_->sin_addr.s_addr) {
+                        log_time_printf("sin_addr is unmatched\n");
+                        break;
+                    }
+                    log_time_printf("set to_be_punch to the address from punch server\n");
+                    value->sin_addr.s_addr = packet_->sin_addr.s_addr;
+                    value->sin_port = packet_->sin_port;
+                }
+                sockaddr_in to {AF_INET, packet_->sin_port, packet_->sin_addr};
+                WSABUF PUNCH_BUF = {
+                    .len = sizeof(PUNCH_PACKET),
+                    .buf = (CHAR*)&PUNCH_PACKET
+                };
+                unsigned long size = sizeof(PUNCH_PACKET);
+                log_time_printf("send to the address from punch server\n");
+                WSASendTo_log(self->socket, &PUNCH_BUF, 1, &size, 0, (sockaddr *)&to, sizeof(to), NULL, NULL);
             }
-            sockaddr_in to {AF_INET, packet_->sin_port, packet_->sin_addr};
-            WSABUF PUNCH_BUF = {
-                .len = sizeof(PUNCH_PACKET),
-                .buf = (CHAR*)&PUNCH_PACKET
-            };
-            unsigned long size = sizeof(PUNCH_PACKET);
-            log_time_printf("send to the address from punch server\n");
-            WSASendTo_log(s, &PUNCH_BUF, 1, &size, 0, (sockaddr *)&to, sizeof(to), NULL, NULL);
         }
     }
-}
-
-// For some reason everything breaks if
-// this logic is moved from an actual import
-// hook to the packet parser.
-// TODO: Investigate why
-int WSAAPI my_WSARecvFrom(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWORD lpNumberOfBytesRecvd, LPDWORD lpFlags, sockaddr* lpFrom, LPINT lpFromLen, LPWSAOVERLAPPED lpOverlapped, LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine) {
-    int ret = WSARecvFrom(s, lpBuffers, dwBufferCount, lpNumberOfBytesRecvd, lpFlags, lpFrom, lpFromLen, lpOverlapped, lpCompletionRoutine);
-    if (ret == SOCKET_ERROR)
-        return ret;
-    handle_received_packet(s, lpBuffers->buf, *lpNumberOfBytesRecvd, lpFrom, *lpFromLen);
-    return ret;
-}
-
-
-typedef void thisfastcall packet_parser_t(
-    TF4UDP* self,
-    thisfastcall_edx(int dummy_edx, )
-    size_t packet_size
-);
-
-void thisfastcall packet_parser_hook(
-    TF4UDP* self,
-    thisfastcall_edx(int dummy_edx, )
-    size_t packet_size
-) {
-    PacketLayout* packet = (PacketLayout*)self->recv_data.data();
-    handle_received_packet(self->socket, (char *) packet, packet_size, &self->recv_addr.addr_any(), self->recv_addr.length());
+    
     return ((packet_parser_t*)packet_parser_addr)(
         self,
         thisfastcall_edx(dummy_edx,)
@@ -570,7 +559,12 @@ void patch_netplay() {
 #endif
 
     resync_patch(160);
-    hotpatch_import(wsarecvfrom_import_addr, my_WSARecvFrom);
+
+    // This may seem redundant, but it helps prevent
+    // conflicts with the original netplay patch
+    hotpatch_import(wsarecvfrom_import_addr, WSARecvFrom);
+
+
     hotpatch_rel32(0x176B8A_R, packet_parser_hook);
     hotpatch_import(wsasendto_import_addr, my_WSASendTo);
 

@@ -15,6 +15,11 @@ function Initialize()
 	this.title.Initialize(texture, res.left, res.top, res.width, res.height);
 	this.item.push(this.title);
 	local item_table = ::menu.common.LoadItemTextArray("data/system/config/item.csv");
+	foreach (k,v in item_table){
+		::debug.print(k+":"+v+"\n");
+		foreach(i,t in v) ::debug.print(i+":"+t+"\n");
+	}
+	//item_table["misc"] <- ["雑多","misc"];
 	::menu.common.InitializeLayout.call(this, null, item_table);
 	local item_width = 548;
 	local left = ::menu.common.item_x - item_width / 2;
@@ -22,6 +27,7 @@ function Initialize()
 
 	foreach( i, v in this.action.item )
 	{
+		//::debug.print(i+":"+v+":"+this.action.item+"\n");
 		if (v == null)
 		{
 			continue;

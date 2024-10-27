@@ -1,3 +1,4 @@
+#include <cstdint>
 #if __INTELLISENSE__
 #undef _HAS_CXX20
 #define _HAS_CXX20 0
@@ -227,6 +228,9 @@ void patch_autopunch() {
     hotpatch_icall(0x170382_R, close_punch_socket);
     hotpatch_icall(0x1703ED_R, close_punch_socket);
 
+    mem_write(0x172AA8_R,NOP_BYTES(1));//push eax
+    mem_write(0x172AB3_R,NOP_BYTES(1));//push ecx
+    mem_write(0x172AB6_R,NOP_BYTES(5));//function call
     // This regular send call looks unused, so
     // just break it and see if anything dies.
     mem_write(0x17045A_R, INT3_BYTES);

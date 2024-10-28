@@ -265,6 +265,9 @@ int WSAAPI close_punch_socket(SOCKET s) {
 
         if (s == punch_socket) {
             lobby_debug_printf("Closing the punch socket. Bad? A\n");
+            if (SENDTO_TYPE == 133){
+                //halt_and_catch_fire();
+            }
             //return 0;
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
             SENDTO_ADDR = {};
@@ -873,6 +876,7 @@ void recvfrom_log(
 #endif
 
 void patch_se_lobby(void* base_address) {
+    log_printf("0x%x\n",(void*)close_punch_socket);
     lobby_base_address = (uintptr_t)base_address;
 
 #if ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS

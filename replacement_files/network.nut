@@ -254,7 +254,7 @@ function UpdateMain()
 
 		switch(this.cursor_item.val)
 		{
-		case 0:
+		case 0://hosting on lobby with upnp
 			if (::LOBBY.GetNetworkState() == 2)
 			{
 				::LOBBY.SetExternalPort(::config.network.hosting_port);
@@ -274,7 +274,7 @@ function UpdateMain()
 
 			break;
 
-		case 1:
+		case 1://hosting on lobby
 			if (::LOBBY.GetNetworkState() == 2)
 			{
 				::LOBBY.SetExternalPort(::config.network.hosting_port);
@@ -287,28 +287,28 @@ function UpdateMain()
 
 			break;
 
-		case 2:
+		case 2://changing lobby type
 			this.update = this.UpdateSelectLobby;
 			break;
 
-		case 4:
+		case 4://hosting with upnp
 			::network.use_lobby = false;
 			::network.StartupServer(::config.network.hosting_port, 1);
 			this.update = this.UpdateWaitServer;
 			::Dialog(-1, this.item_table.wait_incomming[0], null, this.dialog_wait.InitializeWithUPnP);
 			break;
 
-		case 5:
+		case 5://honestly idk
 			this.target_addr_h.val = 0;
 			::Dialog(-1, this.item_table.input_address[0], null, this.dialog_address.Initialize);
 			break;
 
-		case 6:
+		case 6://same here
 			this.target_addr_h.val = 0;
 			::Dialog(-1, this.item_table.input_address[0], null, this.dialog_address.Initialize);
 			break;
 
-		case 8:
+		case 8://changing player name
 			::Dialog(2, ::menu.common.GetMessageText("input_name"), function ( ret )
 			{
 				if (ret)
@@ -319,21 +319,21 @@ function UpdateMain()
 			}, ::config.network.player_name);
 			break;
 
-		case 9:
+		case 9://changing port
 			this.SetHostingPortToCursor(::config.network.hosting_port);
 			this.server_port_h.val = 0;
 			::Dialog(-1, this.item_table.input_port[0], null, this.dialog_port.Initialize);
 			break;
 
-		case 10:
+		case 10://changing upnp
 			this.update = this.UpdateUPnP;
 			break;
 
-		case 11:
+		case 11://changing spectator
 			this.update = this.UpdateAllowWatch;
 			break;
 
-		case 13:
+		case 13://exit
 			::loop.End();
 			break;
 		}

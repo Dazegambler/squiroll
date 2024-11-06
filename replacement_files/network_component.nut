@@ -217,6 +217,7 @@ function StartupServer( port, mode )
 	}.bindenv(this);
 	this.client_num = 2;
 	this.inst_connect = mb_server;
+	::debug.print("server loaded\n");
 	local ret = mb_server.Init(port, this.client_num);
 	if (mode & 1) {
 		::punch.init_wait();
@@ -397,10 +398,11 @@ function StartupClient( addr, port, mode )
 		connect_param.is_watch <- false;
 	}
 	if (mode & 2) {
-		
+
 	}
 
 	this.inst_connect = mb_client;
+	::debug.print("client loaded\n");
 	return mb_client.Connect(addr, port, connect_param);
 }
 

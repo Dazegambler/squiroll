@@ -408,8 +408,6 @@ function StartupClient( addr, port, mode )
 	::debug.print("mb_client.Connect("+addr+","+port+","+connect_param+") begin\n");
 	::debug.fprint("network.log","mb_client.Connect("+addr+","+port+","+connect_param+") begin\n");
 	return mb_client.Connect(addr, port, connect_param);
-	::debug.print("mb_client.Connect end\n");
-	::debug.fprint("network.log","mb_client.Connect end\n");
 }
 
 function Disconnect( scene = true )

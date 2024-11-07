@@ -29,7 +29,12 @@
 #include "lobby.h"
 
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_LOBBY_DEBUG
-#define lobby_debug_printf(...) log_printf(__VA_ARGS__)
+#define lobby_debug_printf(...)\
+    log_printf(__VA_ARGS__);\
+    if (FILE* file = fopen("network.log", "a")) {\
+        log_fprintf(file, __VA_ARGS__);\
+        fclose(file);\
+    }
 #else
 #define lobby_debug_printf(...) EVAL_NOOP(__VA_ARGS__)
 #endif
@@ -612,7 +617,7 @@ static constexpr uint8_t lobby_recv_welcome_patchB[] = {
 int WSAAPI lobby_recv_hook(SOCKET s, char* buf, int len, int flags) {
     int ret = recv(s, buf, len, flags);
     if (ret != SOCKET_ERROR) {
-        log_printf("RECV:%s", buf);
+        lobby_debug_printf("RECV:%s", buf);
     }
     return ret;
 }
@@ -786,7 +791,7 @@ int WSAAPI lobby_socket_close_hook(SOCKET s) {
 }
 
 hostent* WSAAPI my_gethostbyname(const char* name) {
-    log_printf("LOBBY HOST: %s\n", name);
+    lobby_debug_printf("LOBBY HOST: %s\n", name);
     return gethostbyname(name);
 }
 
@@ -829,7 +834,7 @@ int WSAAPI WSASendTo_log(
             char ip_buffer[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &((sockaddr_in*)lpTo)->sin_addr, ip_buffer, countof(ip_buffer));
             uint16_t port = __builtin_bswap16(((sockaddr_in*)lpTo)->sin_port);
-            log_printf("SENDTO: %s:%u type %hhu (PUNCH: %s)\n", ip_buffer, port, send_type, bool_str(s == punch_socket));
+            lobby_debug_printf("SENDTO: %s:%u type %hhu (PUNCH: %s)\n", ip_buffer, port, send_type, bool_str(s == punch_socket));
         }
 
         //log_printf("SENDTO: %s:%u\n", ip_buffer, port);
@@ -838,7 +843,7 @@ int WSAAPI WSASendTo_log(
     if (ret == SOCKET_ERROR) {
         int error = WSAGetLastError();
         if (error != WSA_IO_PENDING) {
-            log_printf("SENDTO: FAIL %u\n", error);
+            lobby_debug_printf("SENDTO: FAIL %u\n", error);
         }
     }
     return ret;
@@ -868,7 +873,7 @@ void recvfrom_log(
             char ip_buffer[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &((sockaddr_in*)from)->sin_addr, ip_buffer, countof(ip_buffer));
             uint16_t port = __builtin_bswap16(((sockaddr_in*)from)->sin_port);
-            log_printf("RECVFROM: %s:%u type %hhu\n", ip_buffer, port, from_type);
+            lobby_debug_printf("RECVFROM: %s:%u type %hhu\n", ip_buffer, port, from_type);
         }
     }
 }

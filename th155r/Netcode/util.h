@@ -9,6 +9,7 @@
 #include <limits.h>
 #include <limits>
 #include <atomic>
+#include <bit>
 
 #include <winsock2.h>
 #include <windows.h>
@@ -477,5 +478,70 @@ struct SpinLock {
         this->flag.store(false, std::memory_order_release);
     }
 };
+
+template <typename T>
+static inline size_t uint8_to_strbuf(uint8_t value, T* text_buffer) {
+    size_t digit_offset;
+    switch (value) {
+        case 0 ... 9:
+            digit_offset = 0;
+            break;
+        case 10 ... 99:
+            digit_offset = 1;
+            break;
+        default:
+            digit_offset = 2;
+            break;
+    }
+    size_t ret = digit_offset + 1;
+    do {
+        uint8_t digit = value % 10;
+        value /= 10;
+        text_buffer[digit_offset] = ((T)'0') + digit;
+    } while (digit_offset--);
+    return ret;
+}
+
+template <typename T>
+static inline size_t uint16_to_strbuf(uint16_t value, T* text_buffer) {
+    size_t digit_offset;
+    switch (value) {
+        case 0 ... 9:
+            digit_offset = 0;
+            break;
+        case 10 ... 99:
+            digit_offset = 1;
+            break;
+        case 100 ... 999:
+            digit_offset = 2;
+            break;
+        case 1000 ... 9999:
+            digit_offset = 3;
+            break;
+        default:
+            digit_offset = 4;
+            break;
+    }
+    size_t ret = digit_offset + 1;
+    do {
+        uint16_t digit = value % 10;
+        value /= 10;
+        text_buffer[digit_offset] = ((T)'0') + digit;
+    } while (digit_offset--);
+    return ret;
+}
+
+template <typename T>
+static inline size_t uint16_to_hex_strbuf(uint16_t value, T* text_buffer) {
+    uint32_t temp = value;
+    size_t digit_offset = temp ? 15 - std::countl_zero(value) >> 2 : 0;
+    size_t ret = digit_offset + 1;
+    do {
+        uint16_t digit = temp & 0xF;
+        temp >>= 2;
+        text_buffer[digit_offset] = (digit < 10 ? (T)'0' : (T)('A' - 10)) + digit;
+    } while (digit_offset--);
+    return ret;
+}
 
 #endif

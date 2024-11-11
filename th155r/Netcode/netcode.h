@@ -154,4 +154,7 @@ static inline constexpr PacketPunch PUNCH_PACKET = {
     .type = PACKET_TYPE_PUNCH
 };
 
+extern char punch_ip_buffer[INET6_ADDRSTRLEN];
+extern size_t punch_ip_len;
+
 #endif

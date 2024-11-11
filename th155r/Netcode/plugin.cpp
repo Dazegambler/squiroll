@@ -139,6 +139,11 @@ static inline void sq_setbool(HSQUIRRELVM v, const SQChar* name, const SQBool& v
     sq_pushbool(v, value);
     sq_newslot(v, -3, SQFalse);
 }
+static inline void sq_setstring(HSQUIRRELVM v, const SQChar* name, const SQChar* value) {
+    sq_pushstring(v, name, -1);
+    sq_pushstring(v, value, -1);
+    sq_newslot(v, -3, SQFalse);
+}
 static inline void sq_setfunc(HSQUIRRELVM v, const SQChar* name, const SQFUNCTION& func) {
     sq_pushstring(v, name, -1);
     sq_newclosure(v, func, 0);
@@ -333,6 +338,31 @@ SQInteger dec_users_in_room(HSQUIRRELVM v) {
     return 0;
 }
 
+SQInteger get_punch_ip(HSQUIRRELVM v) {
+    sq_pushstring(v, punch_ip_buffer, -1);
+    return 1;
+}
+
+SQInteger reset_punch_ip(HSQUIRRELVM v) {
+    *punch_ip_buffer = '\0';
+    punch_ip_len = 0;
+    return 0;
+}
+
+SQInteger copy_punch_ip(HSQUIRRELVM v) {
+    OpenClipboard(NULL);
+    EmptyClipboard();
+    if (size_t punch_len = punch_ip_len) {
+        ++punch_len;
+        HGLOBAL clip_mem = GlobalAlloc(GMEM_MOVEABLE, punch_len);
+        memcpy(GlobalLock(clip_mem), punch_ip_buffer, punch_len);
+        GlobalUnlock(clip_mem);
+        SetClipboardData(CF_TEXT, clip_mem);
+    }
+    CloseClipboard();
+    return 0;
+}
+
 extern "C" {
     dll_export int stdcall init_instance_v2(HostEnvironment* environment) {
         if (
@@ -365,11 +395,9 @@ extern "C" {
 
             sq_createtable(v, _SC("punch"), [](HSQUIRRELVM v) {
                 sq_setfunc(v, _SC("init_wait"), start_direct_punch_wait);
-                sq_setbool(v,_SC("punched"),true);
-                sq_setinteger(v,_SC("punched_port"),69420);
-                sq_pushstring(v, _SC("punched_ip"), -1);
-                    sq_pushstring(v, _SC("127.0.0.1"),-1);
-                sq_newslot(v, -3, SQFalse);
+                sq_setfunc(v, _SC("get_ip"), get_punch_ip);
+                sq_setfunc(v, _SC("reset_ip"), reset_punch_ip);
+                sq_setfunc(v, _SC("copy_ip_to_clipboard"), copy_punch_ip);
             });
 
             // debug table setup

@@ -44,4 +44,6 @@ void recvfrom_log(
 
 void send_lobby_punch_wait();
 
+bool addr_is_lobby(const sockaddr* addr, int addr_len);
+
 #endif

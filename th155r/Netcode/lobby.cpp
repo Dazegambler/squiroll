@@ -230,6 +230,10 @@ static sockaddr_storage local_addr = {};
 static size_t lobby_addr_length = 0;
 static size_t local_addr_length = 0;
 
+bool addr_is_lobby(const sockaddr* addr, int addr_len) {
+    return addr_len == lobby_addr_length && !memcmp(addr, &lobby_addr, addr_len);
+}
+
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
 static sockaddr_storage SENDTO_ADDR = {};
 static sockaddr_storage RECVFROM_ADDR = {};

@@ -301,8 +301,10 @@ void thisfastcall packet_parser_hook(
         case PACKET_TYPE_PUNCH_PING:
             //sendto(self->socket, (const char*)&PUNCH_PING_PACKET, sizeof(PUNCH_PING_PACKET), 0, &self->recv_addr.addr_any(), self->recv_addr.length());
             break;
-        case PACKET_TYPE_PUNCH_PEER: {
-
+        case PACKET_TYPE_PUNCH_SELF: {
+            if (addr_is_lobby(&self->recv_addr.addr_any(), self->recv_addr.length())) {
+                
+            }
         }
     }
     

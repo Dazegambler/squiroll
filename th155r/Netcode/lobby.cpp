@@ -294,6 +294,7 @@ int WSAAPI close_punch_socket(SOCKET s) {
 
         if (s == punch_socket) {
             lobby_debug_printf("Closing the punch socket. Bad? A\n");
+            //CancelIoEx((HANDLE)s, NULL);
             //return 0;
             punch_socket = INVALID_SOCKET;
             abandon_punch_socket_no_lock<false>();
@@ -308,6 +309,11 @@ SOCKET get_punch_socket() {
     //std::lock_guard<SpinLock> lock(punch_lock);
 
     return punch_socket;
+}
+
+inline void enable_addr_reuse(SOCKET sock) {
+    static const BOOL enable = TRUE;
+    ::setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&enable, sizeof(BOOL));
 }
 
 inline SOCKET create_punch_socket_no_lock(uint16_t port) {
@@ -340,6 +346,7 @@ inline SOCKET create_punch_socket_no_lock(uint16_t port) {
                     };
                     bind_addr_length = sizeof(sockaddr_in6);
                 }
+                //enable_addr_reuse(sock);
                 lobby_debug_printf("BNDA:%u\n", port);
                 if (!bind(sock, (const sockaddr*)&bind_addr, bind_addr_length)) {
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_LOBBY_DEBUG
@@ -353,6 +360,7 @@ inline SOCKET create_punch_socket_no_lock(uint16_t port) {
         }
         lobby_debug_printf("UDP bindA fail (%u):%u\n", port, WSAGetLastError());
         closesocket(sock);
+        sock = INVALID_SOCKET;
     } else {
         lobby_debug_printf("UDP socket fail:%u\n", WSAGetLastError());
     }
@@ -399,6 +407,9 @@ SOCKET get_or_recreate_punch_socket(uint16_t port) {
         }
         punch_socket = INVALID_SOCKET;
         abandon_punch_socket_no_lock();
+        //::shutdown(sock, SD_BOTH);
+        //CancelIoEx((HANDLE)sock, NULL);
+        //closesocket(sock);
     }
     
     return create_punch_socket_no_lock(port);
@@ -417,6 +428,7 @@ SOCKET WSAAPI inherit_punch_socket(int af, int type, int protocol, LPWSAPROTOCOL
                 type == SOCK_DGRAM &&
                 protocol == IPPROTO_UDP
             ) {
+                //enable_addr_reuse(sock_ret);
                 punch_socket_is_loaned = true;
                 punch_socket = sock_ret;
             }
@@ -499,7 +511,7 @@ int thisfastcall lobby_send_string_udp_send_hook_REQUEST(
     thisfastcall_edx(int dummy_edx,)
     const char* str
 ) {
-    SOCKET sock = get_or_recreate_punch_socket(!ScrollLockOn() ? 0 : self->local_port);
+    SOCKET sock = get_or_create_punch_socket(!ScrollLockOn() ? 0 : self->local_port);
     if (sock != INVALID_SOCKET) {
         send_lobby_name_packet(sock, self->current_nickname.data(), self->current_nickname.length());
     }
@@ -515,7 +527,7 @@ int thisfastcall lobby_send_string_udp_send_hook_WELCOME(
     thisfastcall_edx(int dummy_edx,)
     const char* str
 ) {
-    SOCKET sock = get_or_recreate_punch_socket(self->local_port);
+    SOCKET sock = get_or_create_punch_socket(self->local_port);
     if (sock != INVALID_SOCKET) {
         send_lobby_name_packet<true>(sock, self->current_nickname.data(), self->current_nickname.length());
     }
@@ -539,7 +551,7 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
     const char* current_nickname,
     uint16_t port
 ) {
-    SOCKET sock = get_or_recreate_punch_socket(self->local_port);
+    SOCKET sock = get_or_create_punch_socket(self->local_port);
     if (sock != INVALID_SOCKET) {
         send_lobby_name_packet<true>(sock, current_nickname, current_nickname_length);
     }

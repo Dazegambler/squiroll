@@ -105,7 +105,7 @@ struct PacketPunchWait {
         : type(PACKET_TYPE_PUNCH_WAIT)
     
     {
-        this->local_port = __builtin_bswap16(((const sockaddr_in*)&addr)->sin_port);
+        this->local_port = bswap<uint16_t>(((const sockaddr_in*)&addr)->sin_port);
         switch (addr.ss_family) {
             default:
                 this->is_ipv6 = false;

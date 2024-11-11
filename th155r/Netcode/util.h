@@ -236,6 +236,48 @@ using UBitIntType = std::conditional_t<bit_count <= 8, uint8_t,
 					std::conditional_t<bit_count <= 64, uint64_t,
 					void>>>>;
 
+#if !__has_builtin(__builtin_bswap16)
+static inline uint16_t __builtin_bswap16(uint16_t value) {
+    return value >> 8 | value << 8;
+}
+#endif
+
+#if !__has_builtin(__builtin_bswap32)
+static inline uint32_t __builtin_bswap32(uint32_t value) {
+    return value << 24 | value >> 24 | (value & 0x0000FF00u) << 8 | (value & 0x00FF0000u) >> 8;
+}
+#endif
+
+#if !__has_builtin(__builtin_bswap64)
+static inline uint64_t __builtin_bswap64(uint64_t value) {
+    value = (value & 0x00000000FFFFFFFFull) << 32 | (value & 0xFFFFFFFF00000000ull) >> 32;
+    value = (value & 0x0000FFFF0000FFFFull) << 16 | (value & 0xFFFF0000FFFF0000ull) >> 16;
+    return  (value & 0x00FF00FF00FF00FFull) << 8  | (value & 0xFF00FF00FF00FF00ull) >> 8;
+}
+#endif
+
+template<typename T>
+static T bswap(const T& value) {
+    if constexpr (sizeof(T) == sizeof(uint8_t)) {
+        return value;
+    }
+    else if constexpr (sizeof(T) == sizeof(uint16_t)) {
+        uint16_t temp = __builtin_bswap16(*(uint16_t*)&value);
+        return *(T*)&temp;
+    }
+    else if constexpr (sizeof(T) == sizeof(uint32_t)) {
+        uint32_t temp = __builtin_bswap32(*(uint32_t*)&value);
+        return *(T*)&temp;
+    }
+    else if constexpr (sizeof(T) == sizeof(uint64_t)) {
+        uint64_t temp = __builtin_bswap64(*(uint64_t*)&value);
+        return *(T*)&temp;
+    }
+    else {
+        static_assert(false, "Invalid argument type for bswap");
+    }
+}
+
 #if !__has_builtin(__builtin_add_overflow)
 #define __builtin_add_overflow __builtin_add_overflow_impl
 template<typename T>

@@ -97,31 +97,31 @@ void print_ipv4(IP4_ADDRESS addr) {
 void print_ipv6(const IP6_ADDRESS& addr) {
     log_printf(
         "%0hX:%0hX:%0hX:%0hX:%0hX:%0hX:%0hX:%0hX"
-        , __builtin_bswap16(addr.IP6Word[0]), __builtin_bswap16(addr.IP6Word[1])
-        , __builtin_bswap16(addr.IP6Word[2]), __builtin_bswap16(addr.IP6Word[3])
-        , __builtin_bswap16(addr.IP6Word[4]), __builtin_bswap16(addr.IP6Word[5])
-        , __builtin_bswap16(addr.IP6Word[6]), __builtin_bswap16(addr.IP6Word[7])
+        , bswap(addr.IP6Word[0]), bswap(addr.IP6Word[1])
+        , bswap(addr.IP6Word[2]), bswap(addr.IP6Word[3])
+        , bswap(addr.IP6Word[4]), bswap(addr.IP6Word[5])
+        , bswap(addr.IP6Word[6]), bswap(addr.IP6Word[7])
     );
 }
 
 template<typename T>
 int sprint_ipv6(const IP6_ADDRESS& addr, T* buf) {
     T* buf_write = buf;
-    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[0]), buf_write);
+    buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[0]), buf_write);
     *buf_write++ = (T)':';
-    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[1]), buf_write);
+    buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[1]), buf_write);
     *buf_write++ = (T)':';
-    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[2]), buf_write);
+    buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[2]), buf_write);
     *buf_write++ = (T)':';
-    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[3]), buf_write);
+    buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[3]), buf_write);
     *buf_write++ = (T)':';
-    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[4]), buf_write);
+    buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[4]), buf_write);
     *buf_write++ = (T)':';
-    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[5]), buf_write);
+    buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[5]), buf_write);
     *buf_write++ = (T)':';
-    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[6]), buf_write);
+    buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[6]), buf_write);
     *buf_write++ = (T)':';
-    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[7]), buf_write);
+    buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[7]), buf_write);
     return buf_write - buf;
 }
 
@@ -321,11 +321,11 @@ inline SOCKET create_punch_socket_no_lock(uint16_t port) {
                     *(sockaddr_in*)&bind_addr = (sockaddr_in){
 #if !MINGW_COMPAT
                         .sin_family = AF_INET,
-                        .sin_port = __builtin_bswap16(port),
+                        .sin_port = bswap(port),
                         .sin_addr = INADDR_ANY
 #else
                         AF_INET,
-                        __builtin_bswap16(port),
+                        bswap(port),
                         INADDR_ANY
 #endif
                     };
@@ -335,7 +335,7 @@ inline SOCKET create_punch_socket_no_lock(uint16_t port) {
             case AF_INET6:
                     *(sockaddr_in6*)&bind_addr = (sockaddr_in6){
                         .sin6_family = AF_INET6,
-                        .sin6_port = __builtin_bswap16(port),
+                        .sin6_port = bswap(port),
                         .sin6_addr = IN6ADDR_ANY_INIT
                     };
                     bind_addr_length = sizeof(sockaddr_in6);
@@ -345,7 +345,7 @@ inline SOCKET create_punch_socket_no_lock(uint16_t port) {
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_LOBBY_DEBUG
                     bind_addr_length = sizeof(sockaddr_storage);
                     getsockname(sock, (sockaddr*)&bind_addr, &bind_addr_length);
-                    lobby_debug_printf("BNDC:%u\n", __builtin_bswap16(((sockaddr_in*)&bind_addr)->sin_port));
+                    lobby_debug_printf("BNDC:%u\n", bswap<uint16_t>(((sockaddr_in*)&bind_addr)->sin_port));
 #endif
                     punch_socket = sock;
                     return sock;
@@ -454,7 +454,8 @@ int WSAAPI bind_inherited_socket(SOCKET s, const sockaddr* name, int namelen) {
             port = ((const sockaddr_in6*)name)->sin6_port;
             break;
     }
-    lobby_debug_printf("BNDB:%u (PUNCH: %s)\n", __builtin_bswap16(port), bool_str(s == punch_socket));
+    port = bswap(port);
+    lobby_debug_printf("BNDB:%u (PUNCH: %s)\n", port, bool_str(s == punch_socket));
     
     int ret = bind(s, name, namelen);
 
@@ -551,7 +552,7 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
     if (sock != INVALID_SOCKET) {
         sockaddr_storage client_addr;
         client_addr.ss_family = AF_INET;
-        ((sockaddr_in*)&client_addr)->sin_port = __builtin_bswap16(port);
+        ((sockaddr_in*)&client_addr)->sin_port = bswap(port);
         inet_pton(AF_INET, host, &((sockaddr_in*)&client_addr)->sin_addr);
 
         DWORD idc;
@@ -636,7 +637,7 @@ msvc_string* fastcall lobby_recv_welcome_hook(
     if (sock != INVALID_SOCKET) {
         sockaddr_storage client_addr;
         client_addr.ss_family = AF_INET;
-        ((sockaddr_in*)&client_addr)->sin_port = __builtin_bswap16(atoi(port->data()));
+        ((sockaddr_in*)&client_addr)->sin_port = bswap<uint16_t>(atoi(port->data()));
         inet_pton(AF_INET, host, &((sockaddr_in*)&client_addr)->sin_addr);
 
         DWORD idc;
@@ -740,7 +741,7 @@ neverinline void lobby_test_ipv6() {
         inet_ntop(AF_INET6, ipv6_ptr, ip_str, countof(ip_str));
 
         char port_str[INTEGER_BUFFER_SIZE<uint16_t>]{};
-        std::to_chars(port_str, port_str + countof(port_str), __builtin_bswap16(((sockaddr_in*)&lobby_addr)->sin_port), 10);
+        std::to_chars(port_str, port_str + countof(port_str), bswap<uint16_t>(((sockaddr_in*)&lobby_addr)->sin_port), 10);
 
         //log_printf("IPv6: Connecting to %s:%s\n", ip_str, port_str);
 
@@ -884,7 +885,7 @@ int WSAAPI WSASendTo_log(
 
             char ip_buffer[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &((sockaddr_in*)lpTo)->sin_addr, ip_buffer, countof(ip_buffer));
-            uint16_t port = __builtin_bswap16(((sockaddr_in*)lpTo)->sin_port);
+            uint16_t port = bswap<uint16_t>(((sockaddr_in*)lpTo)->sin_port);
             lobby_debug_printf("SENDTO: %s:%u type %hhu (PUNCH: %s)\n", ip_buffer, port, send_type, bool_str(s == punch_socket));
         }
 
@@ -923,7 +924,7 @@ void recvfrom_log(
 
             char ip_buffer[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &((sockaddr_in*)from)->sin_addr, ip_buffer, countof(ip_buffer));
-            uint16_t port = __builtin_bswap16(((sockaddr_in*)from)->sin_port);
+            uint16_t port = bswap<uint16_t>(((sockaddr_in*)from)->sin_port);
             lobby_debug_printf("RECVFROM: %s:%u type %hhu\n", ip_buffer, port, from_type);
         }
     }

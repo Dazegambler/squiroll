@@ -560,6 +560,9 @@ function UpdateMatch()
 
 	if (::input_all.b1 == 1)
 	{
+		if (this.cursor_item.val == 0) {
+			::lobby.dec_user_count();
+		}
 		::LOBBY.SetLobbyUserState(::LOBBY.NO_OPERATION);
 		::network.Terminate();
 		::loop.End();
@@ -624,6 +627,9 @@ function UpdateMatchWait()
 
 	if (::input_all.b1 == 1)
 	{
+		if (this.cursor_item.val == 0) {
+			::lobby.dec_user_count();
+		}
 		::LOBBY.SetLobbyUserState(::LOBBY.NO_OPERATION);
 		::network.Terminate();
 		::loop.End();

@@ -230,7 +230,7 @@ static sockaddr_storage local_addr = {};
 static size_t lobby_addr_length = 0;
 static size_t local_addr_length = 0;
 
-uint32_t users_in_room = 0;
+std::atomic<uint32_t> users_in_room = {};
 
 bool addr_is_lobby(const sockaddr* addr, int addr_len) {
     return addr_len == lobby_addr_length && !memcmp(addr, &lobby_addr, addr_len);

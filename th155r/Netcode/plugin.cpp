@@ -328,6 +328,11 @@ SQInteger get_users_in_room(HSQUIRRELVM v) {
     return 1;
 }
 
+SQInteger dec_users_in_room(HSQUIRRELVM v) {
+    --users_in_room;
+    return 0;
+}
+
 extern "C" {
     dll_export int stdcall init_instance_v2(HostEnvironment* environment) {
         if (
@@ -389,6 +394,7 @@ extern "C" {
             // custom lobby table
             sq_createtable(v, _SC("lobby"), [](HSQUIRRELVM v) {
                 sq_setfunc(v, _SC("user_count"), get_users_in_room);
+                sq_setfunc(v, _SC("dec_user_count"), dec_users_in_room);
             });
 
             //this changes the item array in the config menu :)

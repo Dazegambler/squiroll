@@ -263,6 +263,30 @@ void send_lobby_punch_wait() {
     }
 }
 
+template<bool abandon_message = true>
+inline void abandon_punch_socket_no_lock() {
+    if constexpr (abandon_message) {
+        lobby_debug_printf("Abandoning the punch socket.\n");
+    }
+#if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
+    SENDTO_ADDR = {};
+    RECVFROM_ADDR = {};
+    SENDTO_ADDR_LEN = 0;
+    RECVFROM_ADDR_LEN = 0;
+    SENDTO_TYPE = UINT8_MAX;
+    RECVFROM_TYPE = UINT8_MAX;
+#endif
+    punch_socket_is_loaned = false;
+    punch_socket_is_inherited = false;
+}
+
+template<bool abandon_message = true>
+void abandon_punch_socket() {
+    std::lock_guard<SpinLock> lock(punch_lock);
+
+    return abandon_punch_socket_no_lock<abandon_message>();
+}
+
 // EXE hook, overrides ref count
 int WSAAPI close_punch_socket(SOCKET s) {
     if (s != INVALID_SOCKET) {
@@ -270,22 +294,9 @@ int WSAAPI close_punch_socket(SOCKET s) {
 
         if (s == punch_socket) {
             lobby_debug_printf("Closing the punch socket. Bad? A\n");
-            if (SENDTO_TYPE == 133){
-                //halt_and_catch_fire();
-            }
             //return 0;
-#if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
-            SENDTO_ADDR = {};
-            RECVFROM_ADDR = {};
-            SENDTO_ADDR_LEN = 0;
-            RECVFROM_ADDR_LEN = 0;
-            SENDTO_TYPE = UINT8_MAX;
-            RECVFROM_TYPE = UINT8_MAX;
-#endif
-            //halt_and_catch_fire();
             punch_socket = INVALID_SOCKET;
-            punch_socket_is_loaned = false;
-            punch_socket_is_inherited = false;
+            abandon_punch_socket_no_lock<false>();
         }
     }
 
@@ -293,9 +304,65 @@ int WSAAPI close_punch_socket(SOCKET s) {
 }
 
 SOCKET get_punch_socket() {
-    std::lock_guard<SpinLock> lock(punch_lock);
+    // Uncomment this if more logic is added
+    //std::lock_guard<SpinLock> lock(punch_lock);
 
     return punch_socket;
+}
+
+inline SOCKET create_punch_socket_no_lock(uint16_t port) {
+    SOCKET sock = WSASocketW(AF_INET, SOCK_DGRAM, IPPROTO_UDP, NULL, 0, WSA_FLAG_OVERLAPPED);
+    if (sock != INVALID_SOCKET) {
+        sockaddr_storage bind_addr;
+        int bind_addr_length;
+        switch (lobby_addr.ss_family) {
+                if (0) {
+            case AF_INET:
+                    *(sockaddr_in*)&bind_addr = (sockaddr_in){
+#if !MINGW_COMPAT
+                        .sin_family = AF_INET,
+                        .sin_port = __builtin_bswap16(port),
+                        .sin_addr = INADDR_ANY
+#else
+                        AF_INET,
+                        __builtin_bswap16(port),
+                        INADDR_ANY
+#endif
+                    };
+                    bind_addr_length = sizeof(sockaddr_in);
+                }
+                else {
+            case AF_INET6:
+                    *(sockaddr_in6*)&bind_addr = (sockaddr_in6){
+                        .sin6_family = AF_INET6,
+                        .sin6_port = __builtin_bswap16(port),
+                        .sin6_addr = IN6ADDR_ANY_INIT
+                    };
+                    bind_addr_length = sizeof(sockaddr_in6);
+                }
+                lobby_debug_printf("BNDA:%u\n", port);
+                if (!bind(sock, (const sockaddr*)&bind_addr, bind_addr_length)) {
+#if CONNECTION_LOGGING & CONNECTION_LOGGING_LOBBY_DEBUG
+                    bind_addr_length = sizeof(sockaddr_storage);
+                    getsockname(sock, (sockaddr*)&bind_addr, &bind_addr_length);
+                    lobby_debug_printf("BNDC:%u\n", __builtin_bswap16(((sockaddr_in*)&bind_addr)->sin_port));
+#endif
+                    punch_socket = sock;
+                    return sock;
+                }
+        }
+        lobby_debug_printf("UDP bindA fail (%u):%u\n", port, WSAGetLastError());
+        closesocket(sock);
+    } else {
+        lobby_debug_printf("UDP socket fail:%u\n", WSAGetLastError());
+    }
+    return sock;
+}
+
+SOCKET create_punch_socket(uint16_t port) {
+    std::lock_guard<SpinLock> lock(punch_lock);
+
+    return create_punch_socket_no_lock(port);
 }
 
 SOCKET get_or_create_punch_socket(uint16_t port) {
@@ -303,54 +370,38 @@ SOCKET get_or_create_punch_socket(uint16_t port) {
 
     SOCKET sock = punch_socket;
     if (sock == INVALID_SOCKET) {
-        sock = WSASocketW(AF_INET, SOCK_DGRAM, IPPROTO_UDP, NULL, 0, WSA_FLAG_OVERLAPPED);
-        int error;
-        if (sock != INVALID_SOCKET) {
-            sockaddr_storage bind_addr;
-            int bind_addr_length;
-            switch (lobby_addr.ss_family) {
-                    if (0) {
-                case AF_INET:
-                        *(sockaddr_in*)&bind_addr = (sockaddr_in){
-#if !MINGW_COMPAT
-                            .sin_family = AF_INET,
-                            .sin_port = __builtin_bswap16(port),
-                            .sin_addr = INADDR_ANY
-#else
-                            AF_INET,
-                            __builtin_bswap16(port),
-                            INADDR_ANY
-#endif
-                        };
-                        bind_addr_length = sizeof(sockaddr_in);
-                    }
-                    else {
-                case AF_INET6:
-                        *(sockaddr_in6*)&bind_addr = (sockaddr_in6){
-                            .sin6_family = AF_INET6,
-                            .sin6_port = __builtin_bswap16(port),
-                            .sin6_addr = IN6ADDR_ANY_INIT
-                        };
-                        bind_addr_length = sizeof(sockaddr_in6);
-                    }
-                    lobby_debug_printf("BNDA:%u\n", port);
-                    if (!bind(sock, (const sockaddr*)&bind_addr, bind_addr_length)) {
-#if CONNECTION_LOGGING & CONNECTION_LOGGING_LOBBY_DEBUG
-                        bind_addr_length = sizeof(sockaddr_storage);
-                        getsockname(sock, (sockaddr*)&bind_addr, &bind_addr_length);
-                        lobby_debug_printf("BNDC:%u\n", __builtin_bswap16(((sockaddr_in*)&bind_addr)->sin_port));
-#endif
-                        punch_socket = sock;
-                        return sock;
-                    }
-            }
-            lobby_debug_printf("UDP bindA fail (%u):%u\n", port, WSAGetLastError());
-            closesocket(sock);
-        } else {
-            lobby_debug_printf("UDP socket fail:%u\n", WSAGetLastError());
-        }
+        sock = create_punch_socket_no_lock(port);
     }
     return sock;
+}
+
+/*
+SOCKET recreate_punch_socket(uint16_t port) {
+    std::lock_guard<SpinLock> lock(punch_lock);
+
+    SOCKET sock = punch_socket;
+    punch_socket = INVALID_SOCKET;
+    if (sock != INVALID_SOCKET) {
+        abandon_punch_socket_no_lock();
+    }
+
+    return create_punch_socket_no_lock(port);
+}
+*/
+
+SOCKET get_or_recreate_punch_socket(uint16_t port) {
+    std::lock_guard<SpinLock> lock(punch_lock);
+
+    SOCKET sock = punch_socket;
+    if (sock != INVALID_SOCKET) {
+        if (!punch_socket_is_inherited) {
+            return sock;
+        }
+        punch_socket = INVALID_SOCKET;
+        abandon_punch_socket_no_lock();
+    }
+    
+    return create_punch_socket_no_lock(port);
 }
 
 SOCKET WSAAPI inherit_punch_socket(int af, int type, int protocol, LPWSAPROTOCOL_INFOW lpProtocolInfo, GROUP g, DWORD dwFlags) {
@@ -447,7 +498,7 @@ int thisfastcall lobby_send_string_udp_send_hook_REQUEST(
     thisfastcall_edx(int dummy_edx,)
     const char* str
 ) {
-    SOCKET sock = get_or_create_punch_socket(!ScrollLockOn() ? 0 : self->local_port);
+    SOCKET sock = get_or_recreate_punch_socket(!ScrollLockOn() ? 0 : self->local_port);
     if (sock != INVALID_SOCKET) {
         send_lobby_name_packet(sock, self->current_nickname.data(), self->current_nickname.length());
     }
@@ -463,7 +514,7 @@ int thisfastcall lobby_send_string_udp_send_hook_WELCOME(
     thisfastcall_edx(int dummy_edx,)
     const char* str
 ) {
-    SOCKET sock = get_or_create_punch_socket(self->local_port);
+    SOCKET sock = get_or_recreate_punch_socket(self->local_port);
     if (sock != INVALID_SOCKET) {
         send_lobby_name_packet<true>(sock, self->current_nickname.data(), self->current_nickname.length());
     }
@@ -487,7 +538,7 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
     const char* current_nickname,
     uint16_t port
 ) {
-    SOCKET sock = get_or_create_punch_socket(self->local_port);
+    SOCKET sock = get_or_recreate_punch_socket(self->local_port);
     if (sock != INVALID_SOCKET) {
         send_lobby_name_packet<true>(sock, current_nickname, current_nickname_length);
     }

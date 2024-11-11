@@ -322,6 +322,12 @@ SQInteger start_direct_punch_wait(HSQUIRRELVM v) {
     return 0;
 }
 
+SQInteger get_users_in_room(HSQUIRRELVM v) {
+    sq_pushinteger(v, users_in_room);
+    //log_printf("Users in room: %u\n", users_in_room);
+    return 1;
+}
+
 extern "C" {
     dll_export int stdcall init_instance_v2(HostEnvironment* environment) {
         if (
@@ -378,6 +384,11 @@ extern "C" {
             // modifications to the manbow table
             sq_edit(v, _SC("manbow"), [](HSQUIRRELVM v) {
                 sq_setfunc(v, _SC("CompileBuffer"), CompileBuffer);
+            });
+
+            // custom lobby table
+            sq_createtable(v, _SC("lobby"), [](HSQUIRRELVM v) {
+                sq_setfunc(v, _SC("user_count"), get_users_in_room);
             });
 
             //this changes the item array in the config menu :)

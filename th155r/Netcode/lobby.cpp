@@ -230,6 +230,8 @@ static sockaddr_storage local_addr = {};
 static size_t lobby_addr_length = 0;
 static size_t local_addr_length = 0;
 
+uint32_t users_in_room = 0;
+
 bool addr_is_lobby(const sockaddr* addr, int addr_len) {
     return addr_len == lobby_addr_length && !memcmp(addr, &lobby_addr, addr_len);
 }
@@ -948,6 +950,112 @@ void recvfrom_log(
 
 #endif
 
+static constexpr uint8_t lobby_user_count_patchA[] = {
+    0x57,                                   // PUSH EDI
+    0x56,                                   // PUSH ESI
+    0x53,                                   // PUSH EBX
+    0x8D, 0x8D, 0x98, 0xFD, 0xFF, 0xFF,     // LEA ECX, [EBP-268]
+    0x89, 0xCF,                             // MOV EDI, ECX
+    0xE8, 0xA7, 0x30, 0x00, 0x00,           // CALL std::vector<std::string>::size
+    0x83, 0xF8, 0x02,                       // CMP EAX, 2
+    0x0F, 0x82, 0xF1, 0x00, 0x00, 0x00,     // JB Rx7A13
+    0x89, 0xC3,                             // MOV EBX, EAX
+    0x6A, 0x01,                             // PUSH 1
+    0x89, 0xF9,                             // MOV ECX, EDI
+    0xE8, 0x73, 0x30, 0x00, 0x00,           // CALL std::vector<std::string>::operator[]
+    0x89, 0x85, 0x18, 0xFD, 0xFF, 0xFF,     // MOV [EBP-2E8], EAX
+    0x83, 0xFB, 0x03,                       // CMP EBX, 3
+    0x0F, 0x82, 0xA3, 0x00, 0x00, 0x00,     // JB Rx79DF
+    0x68,                                   // PUSH imm32
+};
+
+static constexpr uint8_t lobby_user_count_patchB[] = {
+    0x50,                                   // PUSH EAX
+    0xE8, 0x69, 0xAE, 0x00, 0x00,           // CALL std::operator==(std::string& strA, char* strB)
+    0x83, 0xC4, 0x08,                       // ADD ESP, 8
+    0x84, 0xC0,                             // TEST AL, AL
+    0x0F, 0x84, 0xBF, 0x00, 0x00, 0x00,     // JZ Rx7A11
+    0x8B, 0xB5, 0xA8, 0xFD, 0xFF, 0xFF,     // MOV ESI, [EBP-258]
+    0x81, 0xC6, 0x08, 0x03, 0x00, 0x00,     // ADD ESI, 0x308
+    0x56,                                   // PUSH ESI
+    0x8D, 0x55, 0xD8,                       // LEA EDX, [EBP-28]
+    0x52,                                   // PUSH EDX
+    0xE8, 0x68, 0xB1, 0x00, 0x00,           // CALL std::operator==(std::string* strA, std::string* strB)
+    0x83, 0xC4, 0x08,                       // ADD ESP, 8
+    0x84, 0xC0,                             // TEST AL, AL
+    0x0F, 0x84, 0x9E, 0x00, 0x00, 0x00,     // JZ Rx7A11
+    0x6A, 0x02,                             // PUSH 2
+    0x89, 0xF9,                             // MOV ECX, EDI
+    0xE8, 0x24, 0x30, 0x00, 0x00,           // CALL std::vector<std::string>::operator[]
+    0x50,                                   // PUSH EAX
+    0x83, 0xC6, 0x30,                       // ADD ESI, 0x30
+    0x89, 0xF1,                             // MOV ECX, ESI
+    0xE8, 0x19, 0x37, 0x00, 0x00,           // CALL std::string::operator=(std::string& str)
+    0x68,                                   // PUSH imm32
+};
+
+static constexpr uint8_t lobby_user_count_patchC[] = {
+    0x8D, 0x4E, 0x48,                       // LEA ECX, [ESI+48]
+    0xE8, 0xEC, 0x36, 0x00, 0x00,           // CALL std::string::operator=(char* str)
+    0x83, 0xFB, 0x04,                       // CMP EBX, 4
+    0x72, 0x17,                             // JB Rx79AE
+    0x6A, 0x03,                             // PUSH 3
+    0x89, 0xF9,                             // MOV ECX, EDI
+    0xE8, 0xFE, 0x2F, 0x00, 0x00,           // CALL std::vector<std::string>::operator[]
+    0x89, 0xC1,                             // MOV ECX, EAX
+    0xE8, 0xD7, 0x35, 0x00, 0x00,           // CALL std::string::c_str
+    0x89, 0xC1,                             // MOV ECX, EAX
+    0xE8,                                   // CALL rel32
+};
+
+static constexpr uint8_t lobby_user_count_patchD[] = {
+    0x89, 0xF1,                             // MOV ECX, ESI
+    0xE8, 0xC9, 0x35, 0x00, 0x00,           // CALL std::string::c_str
+    0x80, 0x38, 0x3A,                       // CMP BYTE PTR [EAX], 0x3A
+    0x75, 0x54,                             // JNE Rx7A11
+    0x89, 0xF1,                             // MOV ECX, ESI
+    0xE8, 0x9D, 0x35, 0x00, 0x00,           // CALL std::string::length
+    0x50,                                   // PUSH EAX
+    0x6A, 0x01,                             // PUSH 1
+    0x8D, 0x8D, 0x70, 0xFE, 0xFF, 0xFF,     // LEA EDI, [EBP-190]
+    0x57,                                   // PUSH EDI
+    0x89, 0xF1,                             // MOV ECX, ESI
+    0xE8, 0xDC, 0x34, 0x00, 0x00,           // CALL std::string::__substr
+    0x50,                                   // PUSH EAX
+    0x89, 0xF1,                             // MOV ECX, ESI
+    0xE8, 0x84, 0x37, 0x00, 0x00,           // CALL std::string::__sub_rB160
+    0x89, 0xF9,                             // MOV ECX, EDI
+    0xE8, 0x2D, 0x37, 0x00, 0x00,           // CALL std::string::destructor
+    0xEB, 0x2C,                             // JMP Rx7A11
+    0xCC,                                   // INT3
+    0x6A, 0x00,                             // PUSH 0
+    0x89, 0xF9,                             // MOV ECX, EDI
+    0xE8, 0xB1, 0x2F, 0x00, 0x00,           // CALL std::vector<std::string>::operator[]
+    0x68,                                   // PUSH imm32
+};
+
+static constexpr uint8_t lobby_user_count_patchE[] = {
+    0x89, 0xC1,                             // MOV ECX, EAX
+    0xE8, 0x05, 0x34, 0x00, 0x00,           // CALL std::string::compare(char* str)
+    0x85, 0xC0,                             // TEST EAX, EAX
+    0x75, 0x12,                             // JNZ Rx7A11
+    0x8B, 0x8D, 0x18, 0xFD, 0xFF, 0xFF,     // MOV ECX, [EBP-2E8]
+    0xE8, 0x76, 0x35, 0x00, 0x00,           // CALL std::string::c_str
+    0x89, 0xC1,                             // MOV ECX, EAX
+    0xE8,                                   // CALL rel32
+};
+
+static constexpr uint8_t lobby_user_count_patchF[] = {
+    0x89, 0xD8,                             // MOV EAX, EBX
+    0x5B,                                   // POP EBX
+    0x5E,                                   // POP ESI
+    0x5F,                                   // POP EDI
+};
+
+static void fastcall lobby_user_count_from_str(const char* count) {
+    users_in_room = strtoul(count, NULL, 10);
+}
+
 void patch_se_lobby(void* base_address) {
     log_printf("0x%x\n",(void*)close_punch_socket);
     lobby_base_address = (uintptr_t)base_address;
@@ -1020,4 +1128,16 @@ void patch_se_lobby(void* base_address) {
     //hotpatch_rel32(based_pointer(base_address, 0x7C67), log_sent_text);
     //hotpatch_rel32(based_pointer(base_address, 0x7D2D), log_sent_text);
     //hotpatch_rel32(based_pointer(base_address, 0x84E6), log_sent_text);
+
+    mem_write(based_pointer(base_address, 0x7909), lobby_user_count_patchA);
+    mem_write(based_pointer(base_address, 0x793D), based_pointer(base_address, 0x182A3C));
+    mem_write(based_pointer(base_address, 0x7941), lobby_user_count_patchB);
+    mem_write(based_pointer(base_address, 0x7988), based_pointer(base_address, 0x1828D4));
+    mem_write(based_pointer(base_address, 0x798C), lobby_user_count_patchC);
+    hotpatch_rel32(based_pointer(base_address, 0x79AC), lobby_user_count_from_str);
+    mem_write(based_pointer(base_address, 0x79B0), lobby_user_count_patchD);
+    mem_write(based_pointer(base_address, 0x79F0), (const char*)"USERS");
+    mem_write(based_pointer(base_address, 0x79F4), lobby_user_count_patchE);
+    hotpatch_rel32(based_pointer(base_address, 0x7A0D), lobby_user_count_from_str);
+    mem_write(based_pointer(base_address, 0x7A11), lobby_user_count_patchF);
 }

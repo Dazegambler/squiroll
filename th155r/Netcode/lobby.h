@@ -46,4 +46,6 @@ void send_lobby_punch_wait();
 
 bool addr_is_lobby(const sockaddr* addr, int addr_len);
 
+extern uint32_t users_in_room;
+
 #endif

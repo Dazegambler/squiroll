@@ -354,6 +354,11 @@ extern "C" {
 
             sq_createtable(v, _SC("punch"), [](HSQUIRRELVM v) {
                 sq_setfunc(v, _SC("init_wait"), start_direct_punch_wait);
+                sq_setbool(v,_SC("punched"),true);
+                sq_setinteger(v,_SC("punched_port"),69420);
+                sq_pushstring(v, _SC("punched_ip"), -1);
+                    sq_pushstring(v, _SC("127.0.0.1"),-1);
+                sq_newslot(v, -3, SQFalse);
             });
 
             // debug table setup

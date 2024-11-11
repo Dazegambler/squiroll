@@ -295,7 +295,7 @@ function UpdateMain()
 			::network.use_lobby = false;
 			::network.StartupServer(::config.network.hosting_port, 1);
 			this.update = this.UpdateWaitServer;
-			::Dialog(-1, this.item_table.wait_incomming[0], null, this.dialog_wait.InitializeWithUPnP);
+			::Dialog(-1, this.item_table.wait_incomming[0]+(::punch.punched ? ::punch.punched_ip+":"+::punch.punched_port : ""), null, this.dialog_wait.InitializeWithUPnP);
 			break;
 
 		case 5://connecting to opponent

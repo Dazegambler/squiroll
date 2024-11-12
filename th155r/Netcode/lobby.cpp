@@ -1042,4 +1042,8 @@ void patch_se_lobby(void* base_address) {
     mem_write(based_pointer(base_address, 0x79F4), lobby_user_count_patchE);
     hotpatch_rel32(based_pointer(base_address, 0x7A0D), lobby_user_count_from_str);
     mem_write(based_pointer(base_address, 0x7A11), lobby_user_count_patchF);
+
+    // HACK: Jump over a useless section of code that crashes on proton for
+    // no apparent reason when applying the user count patches.
+    hotpatch_jump(based_pointer(base_address, 0x7A19), based_pointer(base_address, 0x7CEF));
 }

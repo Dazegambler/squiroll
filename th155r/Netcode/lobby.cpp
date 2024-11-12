@@ -867,7 +867,7 @@ static constexpr uint8_t lobby_user_count_patchA[] = {
     0xE8, 0x73, 0x30, 0x00, 0x00,           // CALL std::vector<std::string>::operator[]
     0x89, 0x85, 0x18, 0xFD, 0xFF, 0xFF,     // MOV [EBP-2E8], EAX
     0x83, 0xFB, 0x03,                       // CMP EBX, 3
-    0x0F, 0x82, 0xAA, 0x00, 0x00, 0x00,     // JB Rx79DF
+    0x0F, 0x82, 0xAA, 0x00, 0x00, 0x00,     // JB Rx79E6
     0x68,                                   // PUSH imm32
 };
 
@@ -914,7 +914,7 @@ static constexpr uint8_t lobby_user_count_patchD[] = {
     0x89, 0xF1,                             // MOV ECX, ESI
     0xE8, 0xC9, 0x35, 0x00, 0x00,           // CALL std::string::c_str
     0x80, 0x38, 0x3A,                       // CMP BYTE PTR [EAX], 0x3A
-    0x75, 0x54,                             // JNE Rx7A11
+    0x75, 0x55,                             // JNE Rx7A11
     0x89, 0xF1,                             // MOV ECX, ESI
     0xE8, 0x9D, 0x35, 0x00, 0x00,           // CALL std::string::length
     0x50,                                   // PUSH EAX

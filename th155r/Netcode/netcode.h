@@ -156,5 +156,6 @@ static inline constexpr PacketPunch PUNCH_PACKET = {
 
 extern char punch_ip_buffer[INET6_ADDRSTRLEN];
 extern size_t punch_ip_len;
+extern bool punch_ip_updated;
 
 #endif

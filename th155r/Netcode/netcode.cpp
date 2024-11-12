@@ -19,6 +19,7 @@
 
 char punch_ip_buffer[INET6_ADDRSTRLEN] = "";
 size_t punch_ip_len = 0;
+bool punch_ip_updated = false;
 
 static inline constexpr bool is_ipv6_compatible_with_ipv4(const IP6_ADDRESS& addr) {
     return addr.IP6Dword[0] == 0 && addr.IP6Dword[1] == 0 && addr.IP6Dword[2] == 0xFFFF0000;
@@ -371,6 +372,7 @@ void thisfastcall packet_parser_hook(
             if (addr_is_lobby(&self->recv_addr.addr_any(), self->recv_addr.length())) {
                 PacketPunchPeer* packet = (PacketPunchPeer*)packet_raw;
                 punch_ip_len = sprint_ip_and_port(punch_ip_buffer, packet->is_ipv6, packet->ip, packet->remote_port);
+                punch_ip_updated = true;
             }
             break;
         }

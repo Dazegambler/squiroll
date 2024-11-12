@@ -308,7 +308,8 @@ function UpdateMain()
 			::network.use_lobby = false;
 			::network.StartupServer(::config.network.hosting_port, 1);
 			this.update = this.UpdateWaitServer;
-			::Dialog(-1, this.item_table.wait_incomming[0] + ::punch.get_ip(), null, this.dialog_wait.InitializeWithUPnP);
+			::punch.reset_ip();
+			::Dialog(-1, this.item_table.wait_incomming[0], null, this.dialog_wait.InitializeWithUPnP);
 			break;
 
 		case 5://connecting to opponent

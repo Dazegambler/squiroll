@@ -115,6 +115,12 @@ static constexpr uint8_t item_csv[] = {
 #endif
 };
 
+static constexpr uint8_t dialog_wait_nut[] = {
+#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+#include "replacement_files/dialog_wait.nut.h"
+#endif
+};
+
 static const std::unordered_map<std::string_view, const EmbedData> replacements = {
 	{"data/system/network/network.nut"sv, network_nut},
 	{"data/system/component/network.nut"sv, network_component_nut},
@@ -127,6 +133,7 @@ static const std::unordered_map<std::string_view, const EmbedData> replacements 
 	//{"data/system/config/config_animation.nut"sv, config_animation_nut},
 	//{"data/system/config/item.csv"sv, item_csv},
 	//{"data/script/menu.nut"sv, menu_nut},
+	{"data/system/network/dialog_wait.nut"sv, dialog_wait_nut}
 };
 
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP

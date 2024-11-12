@@ -338,7 +338,13 @@ SQInteger dec_users_in_room(HSQUIRRELVM v) {
     return 0;
 }
 
+SQInteger is_punch_ip_available(HSQUIRRELVM v) {
+    sq_pushbool(v, (SQBool)punch_ip_updated);
+    return 1;
+}
+
 SQInteger get_punch_ip(HSQUIRRELVM v) {
+    punch_ip_updated = false;
     sq_pushstring(v, punch_ip_buffer, -1);
     return 1;
 }
@@ -346,6 +352,7 @@ SQInteger get_punch_ip(HSQUIRRELVM v) {
 SQInteger reset_punch_ip(HSQUIRRELVM v) {
     *punch_ip_buffer = '\0';
     punch_ip_len = 0;
+    punch_ip_updated = false;
     return 0;
 }
 
@@ -397,6 +404,7 @@ extern "C" {
                 sq_setfunc(v, _SC("init_wait"), start_direct_punch_wait);
                 sq_setfunc(v, _SC("get_ip"), get_punch_ip);
                 sq_setfunc(v, _SC("reset_ip"), reset_punch_ip);
+                sq_setfunc(v, _SC("ip_available"), is_punch_ip_available);
                 sq_setfunc(v, _SC("copy_ip_to_clipboard"), copy_punch_ip);
             });
 

@@ -919,7 +919,7 @@ static constexpr uint8_t lobby_user_count_patchD[] = {
     0xE8, 0x9D, 0x35, 0x00, 0x00,           // CALL std::string::length
     0x50,                                   // PUSH EAX
     0x6A, 0x01,                             // PUSH 1
-    0x8D, 0x8D, 0x70, 0xFE, 0xFF, 0xFF,     // LEA EDI, [EBP-190]
+    0x8D, 0xBD, 0x70, 0xFE, 0xFF, 0xFF,     // LEA EDI, [EBP-190]
     0x57,                                   // PUSH EDI
     0x89, 0xF1,                             // MOV ECX, ESI
     0xE8, 0xDC, 0x34, 0x00, 0x00,           // CALL std::string::__substr
@@ -1042,8 +1042,4 @@ void patch_se_lobby(void* base_address) {
     mem_write(based_pointer(base_address, 0x79F4), lobby_user_count_patchE);
     hotpatch_rel32(based_pointer(base_address, 0x7A0D), lobby_user_count_from_str);
     mem_write(based_pointer(base_address, 0x7A11), lobby_user_count_patchF);
-
-    // HACK: Jump over a useless section of code that crashes on proton for
-    // no apparent reason when applying the user count patches.
-    hotpatch_jump(based_pointer(base_address, 0x7A19), based_pointer(base_address, 0x7CEF));
 }

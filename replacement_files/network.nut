@@ -66,6 +66,7 @@ for( local i = 0; i < 5; i = ++i )
 this.lobby_user_str <- ::font.CreateSystemString("Users: ");
 this.lobby_user_str.x = 300;
 this.lobby_user_str.y = 300;
+this.lobby_user_str.ConnectRenderSlot(::graphics.slot.front,-1);
 this.lobby_user_str.visible = false;
 
 this.server_port_h <- this.Cursor(1, 5, ::input_all);
@@ -251,7 +252,7 @@ function UpdateMain()
 {
 	::menu.help.Set(this.help);
 	this.cursor_item.Update();
-	
+
 	if (::LOBBY.GetNetworkState() == 2) {
 		this.lobby_user_str.Set("Users: " + ::lobby.user_count());
 		this.lobby_user_str.visible = true;

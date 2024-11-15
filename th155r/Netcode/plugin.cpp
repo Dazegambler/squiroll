@@ -329,12 +329,19 @@ SQInteger start_direct_punch_wait(HSQUIRRELVM v) {
 
 SQInteger get_users_in_room(HSQUIRRELVM v) {
     sq_pushinteger(v, users_in_room);
-    //log_printf("Users in room: %u\n", users_in_room);
+    //log_printf("Users in room: %u\n", users_in_room.load());
     return 1;
 }
 
+SQInteger inc_users_in_room(HSQUIRRELVM v) {
+    ++users_in_room;
+    return 0;
+}
+
 SQInteger dec_users_in_room(HSQUIRRELVM v) {
-    --users_in_room;
+    if (users_in_room) {
+        --users_in_room;
+    }
     return 0;
 }
 
@@ -430,6 +437,7 @@ extern "C" {
             // custom lobby table
             sq_createtable(v, _SC("lobby"), [](HSQUIRRELVM v) {
                 sq_setfunc(v, _SC("user_count"), get_users_in_room);
+                sq_setfunc(v, _SC("inc_user_count"), inc_users_in_room);
                 sq_setfunc(v, _SC("dec_user_count"), dec_users_in_room);
             });
 

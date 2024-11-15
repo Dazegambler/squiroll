@@ -57,6 +57,7 @@ enum PacketType : uint8_t {
     PACKET_TYPE_PUNCH_CONNECT = 0x83,
     PACKET_TYPE_PUNCH_PEER = 0x84,
     PACKET_TYPE_PUNCH = 0x85,
+    PACKET_TYPE_PUNCH_SELF = 0x86, // Same format as PACKET_TYPE_PUNCH_PEER
     PACKET_TYPE_IPV6_TEST = 0x88,
 };
 
@@ -105,7 +106,7 @@ struct PacketPunchWait {
         : type(PACKET_TYPE_PUNCH_WAIT)
     
     {
-        this->local_port = __builtin_bswap16(((const sockaddr_in*)&addr)->sin_port);
+        this->local_port = bswap<uint16_t>(((const sockaddr_in*)&addr)->sin_port);
         switch (addr.ss_family) {
             default:
                 this->is_ipv6 = false;
@@ -152,5 +153,9 @@ struct PacketPunch {
 static inline constexpr PacketPunch PUNCH_PACKET = {
     .type = PACKET_TYPE_PUNCH
 };
+
+extern char punch_ip_buffer[INET6_ADDRSTRLEN];
+extern size_t punch_ip_len;
+extern bool punch_ip_updated;
 
 #endif

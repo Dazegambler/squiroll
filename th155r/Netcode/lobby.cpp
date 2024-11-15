@@ -29,108 +29,15 @@
 #include "lobby.h"
 
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_LOBBY_DEBUG
-#define lobby_debug_printf(...) log_printf(__VA_ARGS__)
+#define lobby_debug_printf(...)\
+    log_printf(__VA_ARGS__);\
+    if (FILE* file = fopen("network.log", "a")) {\
+        log_fprintf(file, __VA_ARGS__);\
+        fclose(file);\
+    }
 #else
 #define lobby_debug_printf(...) EVAL_NOOP(__VA_ARGS__)
 #endif
-
-/*
-template <typename T>
-static inline size_t uint16_to_strbuf(uint16_t value, T* text_buffer) {
-    size_t digit_offset;
-    switch (value) {
-        case 0 ... 9:
-            digit_offset = 0;
-            break;
-        case 10 ... 99:
-            digit_offset = 1;
-            break;
-        case 100 ... 999:
-            digit_offset = 2;
-            break;
-        case 1000 ... 9999:
-            digit_offset = 3;
-            break;
-        default:
-            digit_offset = 4;
-            break;
-    }
-    size_t ret = digit_offset + 1;
-    do {
-        uint16_t digit = value % 10;
-        value /= 10;
-        text_buffer[digit_offset] = ((T)'0') + digit;
-    } while (digit_offset--);
-    return ret;
-}
-
-template <typename T>
-static inline size_t uint16_to_hex_strbuf(uint16_t value, T* text_buffer) {
-    uint32_t temp = value;
-    size_t digit_offset = temp ? 15 - std::countl_zero(value) >> 2 : 0;
-    size_t ret = digit_offset + 1;
-    do {
-        uint16_t digit = temp & 0xF;
-        temp >>= 2;
-        text_buffer[digit_offset] = (digit < 10 ? (T)'0' : (T)('A' - 10)) + digit;
-    } while (digit_offset--);
-    return ret;
-}
-
-void print_ipv4(IP4_ADDRESS addr) {
-    union {
-        uint32_t temp;
-        uint8_t as_bytes[4];
-    };
-    temp = addr;
-    log_printf(
-        "%u.%u.%u.%u"
-        , as_bytes[0], as_bytes[1], as_bytes[2], as_bytes[3]
-    );
-}
-
-void print_ipv6(const IP6_ADDRESS& addr) {
-    log_printf(
-        "%0hX:%0hX:%0hX:%0hX:%0hX:%0hX:%0hX:%0hX"
-        , __builtin_bswap16(addr.IP6Word[0]), __builtin_bswap16(addr.IP6Word[1])
-        , __builtin_bswap16(addr.IP6Word[2]), __builtin_bswap16(addr.IP6Word[3])
-        , __builtin_bswap16(addr.IP6Word[4]), __builtin_bswap16(addr.IP6Word[5])
-        , __builtin_bswap16(addr.IP6Word[6]), __builtin_bswap16(addr.IP6Word[7])
-    );
-}
-
-template<typename T>
-int sprint_ipv6(const IP6_ADDRESS& addr, T* buf) {
-    T* buf_write = buf;
-    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[0]), buf_write);
-    *buf_write++ = (T)':';
-    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[1]), buf_write);
-    *buf_write++ = (T)':';
-    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[2]), buf_write);
-    *buf_write++ = (T)':';
-    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[3]), buf_write);
-    *buf_write++ = (T)':';
-    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[4]), buf_write);
-    *buf_write++ = (T)':';
-    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[5]), buf_write);
-    *buf_write++ = (T)':';
-    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[6]), buf_write);
-    *buf_write++ = (T)':';
-    buf_write += uint16_to_hex_strbuf(__builtin_bswap16(addr.IP6Word[7]), buf_write);
-    return buf_write - buf;
-}
-
-void print_sockaddr(const sockaddr* addr) {
-    switch (addr->sa_family) {
-        case AF_INET:
-            print_ipv4(*(IP4_ADDRESS*)&((const sockaddr_in*)addr)->sin_addr);
-            break;
-        case AF_INET6:
-            print_ipv6(*(IP6_ADDRESS*)&((const sockaddr_in6*)addr)->sin6_addr);
-            break;
-    }
-}
-*/
 
 // size: 0x4F4
 struct AsyncLobbyClient {
@@ -225,6 +132,12 @@ static sockaddr_storage local_addr = {};
 static size_t lobby_addr_length = 0;
 static size_t local_addr_length = 0;
 
+std::atomic<uint32_t> users_in_room = {};
+
+bool addr_is_lobby(const sockaddr* addr, int addr_len) {
+    return addr_len == lobby_addr_length && !memcmp(addr, &lobby_addr, addr_len);
+}
+
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
 static sockaddr_storage SENDTO_ADDR = {};
 static sockaddr_storage RECVFROM_ADDR = {};
@@ -258,6 +171,30 @@ void send_lobby_punch_wait() {
     }
 }
 
+template<bool abandon_message = true>
+inline void abandon_punch_socket_no_lock() {
+    if constexpr (abandon_message) {
+        lobby_debug_printf("Abandoning the punch socket.\n");
+    }
+#if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
+    SENDTO_ADDR = {};
+    RECVFROM_ADDR = {};
+    SENDTO_ADDR_LEN = 0;
+    RECVFROM_ADDR_LEN = 0;
+    SENDTO_TYPE = UINT8_MAX;
+    RECVFROM_TYPE = UINT8_MAX;
+#endif
+    punch_socket_is_loaned = false;
+    punch_socket_is_inherited = false;
+}
+
+template<bool abandon_message = true>
+void abandon_punch_socket() {
+    std::lock_guard<SpinLock> lock(punch_lock);
+
+    return abandon_punch_socket_no_lock<abandon_message>();
+}
+
 // EXE hook, overrides ref count
 int WSAAPI close_punch_socket(SOCKET s) {
     if (s != INVALID_SOCKET) {
@@ -265,19 +202,10 @@ int WSAAPI close_punch_socket(SOCKET s) {
 
         if (s == punch_socket) {
             lobby_debug_printf("Closing the punch socket. Bad? A\n");
+            //CancelIoEx((HANDLE)s, NULL);
             //return 0;
-#if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
-            SENDTO_ADDR = {};
-            RECVFROM_ADDR = {};
-            SENDTO_ADDR_LEN = 0;
-            RECVFROM_ADDR_LEN = 0;
-            SENDTO_TYPE = UINT8_MAX;
-            RECVFROM_TYPE = UINT8_MAX;
-#endif
-            //halt_and_catch_fire();
             punch_socket = INVALID_SOCKET;
-            punch_socket_is_loaned = false;
-            punch_socket_is_inherited = false;
+            abandon_punch_socket_no_lock<false>();
         }
     }
 
@@ -285,9 +213,72 @@ int WSAAPI close_punch_socket(SOCKET s) {
 }
 
 SOCKET get_punch_socket() {
-    std::lock_guard<SpinLock> lock(punch_lock);
+    // Uncomment this if more logic is added
+    //std::lock_guard<SpinLock> lock(punch_lock);
 
     return punch_socket;
+}
+
+inline void enable_addr_reuse(SOCKET sock) {
+    static const BOOL enable = TRUE;
+    ::setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&enable, sizeof(BOOL));
+}
+
+inline SOCKET create_punch_socket_no_lock(uint16_t port) {
+    SOCKET sock = WSASocketW(AF_INET, SOCK_DGRAM, IPPROTO_UDP, NULL, 0, WSA_FLAG_OVERLAPPED);
+    if (sock != INVALID_SOCKET) {
+        sockaddr_storage bind_addr;
+        int bind_addr_length;
+        switch (lobby_addr.ss_family) {
+                if (0) {
+            case AF_INET:
+                    *(sockaddr_in*)&bind_addr = (sockaddr_in){
+#if !MINGW_COMPAT
+                        .sin_family = AF_INET,
+                        .sin_port = bswap(port),
+                        .sin_addr = INADDR_ANY
+#else
+                        AF_INET,
+                        bswap(port),
+                        INADDR_ANY
+#endif
+                    };
+                    bind_addr_length = sizeof(sockaddr_in);
+                }
+                else {
+            case AF_INET6:
+                    *(sockaddr_in6*)&bind_addr = (sockaddr_in6){
+                        .sin6_family = AF_INET6,
+                        .sin6_port = bswap(port),
+                        .sin6_addr = IN6ADDR_ANY_INIT
+                    };
+                    bind_addr_length = sizeof(sockaddr_in6);
+                }
+                //enable_addr_reuse(sock);
+                lobby_debug_printf("BNDA:%u\n", port);
+                if (!bind(sock, (const sockaddr*)&bind_addr, bind_addr_length)) {
+#if CONNECTION_LOGGING & CONNECTION_LOGGING_LOBBY_DEBUG
+                    bind_addr_length = sizeof(sockaddr_storage);
+                    getsockname(sock, (sockaddr*)&bind_addr, &bind_addr_length);
+                    lobby_debug_printf("BNDC:%u\n", bswap<uint16_t>(((sockaddr_in*)&bind_addr)->sin_port));
+#endif
+                    punch_socket = sock;
+                    return sock;
+                }
+        }
+        lobby_debug_printf("UDP bindA fail (%u):%u\n", port, WSAGetLastError());
+        closesocket(sock);
+        sock = INVALID_SOCKET;
+    } else {
+        lobby_debug_printf("UDP socket fail:%u\n", WSAGetLastError());
+    }
+    return sock;
+}
+
+SOCKET create_punch_socket(uint16_t port) {
+    std::lock_guard<SpinLock> lock(punch_lock);
+
+    return create_punch_socket_no_lock(port);
 }
 
 SOCKET get_or_create_punch_socket(uint16_t port) {
@@ -295,54 +286,41 @@ SOCKET get_or_create_punch_socket(uint16_t port) {
 
     SOCKET sock = punch_socket;
     if (sock == INVALID_SOCKET) {
-        sock = WSASocketW(AF_INET, SOCK_DGRAM, IPPROTO_UDP, NULL, 0, WSA_FLAG_OVERLAPPED);
-        int error;
-        if (sock != INVALID_SOCKET) {
-            sockaddr_storage bind_addr;
-            int bind_addr_length;
-            switch (lobby_addr.ss_family) {
-                    if (0) {
-                case AF_INET:
-                        *(sockaddr_in*)&bind_addr = (sockaddr_in){
-#if !MINGW_COMPAT
-                            .sin_family = AF_INET,
-                            .sin_port = __builtin_bswap16(port),
-                            .sin_addr = INADDR_ANY
-#else
-                            AF_INET,
-                            __builtin_bswap16(port),
-                            INADDR_ANY
-#endif
-                        };
-                        bind_addr_length = sizeof(sockaddr_in);
-                    }
-                    else {
-                case AF_INET6:
-                        *(sockaddr_in6*)&bind_addr = (sockaddr_in6){
-                            .sin6_family = AF_INET6,
-                            .sin6_port = __builtin_bswap16(port),
-                            .sin6_addr = IN6ADDR_ANY_INIT
-                        };
-                        bind_addr_length = sizeof(sockaddr_in6);
-                    }
-                    lobby_debug_printf("BNDA:%u\n", port);
-                    if (!bind(sock, (const sockaddr*)&bind_addr, bind_addr_length)) {
-#if CONNECTION_LOGGING & CONNECTION_LOGGING_LOBBY_DEBUG
-                        bind_addr_length = sizeof(sockaddr_storage);
-                        getsockname(sock, (sockaddr*)&bind_addr, &bind_addr_length);
-                        lobby_debug_printf("BNDC:%u\n", __builtin_bswap16(((sockaddr_in*)&bind_addr)->sin_port));
-#endif
-                        punch_socket = sock;
-                        return sock;
-                    }
-            }
-            lobby_debug_printf("UDP bindA fail (%u):%u\n", port, WSAGetLastError());
-            closesocket(sock);
-        } else {
-            lobby_debug_printf("UDP socket fail:%u\n", WSAGetLastError());
-        }
+        sock = create_punch_socket_no_lock(port);
     }
     return sock;
+}
+
+/*
+SOCKET recreate_punch_socket(uint16_t port) {
+    std::lock_guard<SpinLock> lock(punch_lock);
+
+    SOCKET sock = punch_socket;
+    punch_socket = INVALID_SOCKET;
+    if (sock != INVALID_SOCKET) {
+        abandon_punch_socket_no_lock();
+    }
+
+    return create_punch_socket_no_lock(port);
+}
+*/
+
+SOCKET get_or_recreate_punch_socket(uint16_t port) {
+    std::lock_guard<SpinLock> lock(punch_lock);
+
+    SOCKET sock = punch_socket;
+    if (sock != INVALID_SOCKET) {
+        if (!punch_socket_is_inherited) {
+            return sock;
+        }
+        punch_socket = INVALID_SOCKET;
+        abandon_punch_socket_no_lock();
+        //::shutdown(sock, SD_BOTH);
+        //CancelIoEx((HANDLE)sock, NULL);
+        //closesocket(sock);
+    }
+    
+    return create_punch_socket_no_lock(port);
 }
 
 SOCKET WSAAPI inherit_punch_socket(int af, int type, int protocol, LPWSAPROTOCOL_INFOW lpProtocolInfo, GROUP g, DWORD dwFlags) {
@@ -358,6 +336,7 @@ SOCKET WSAAPI inherit_punch_socket(int af, int type, int protocol, LPWSAPROTOCOL
                 type == SOCK_DGRAM &&
                 protocol == IPPROTO_UDP
             ) {
+                //enable_addr_reuse(sock_ret);
                 punch_socket_is_loaned = true;
                 punch_socket = sock_ret;
             }
@@ -395,7 +374,8 @@ int WSAAPI bind_inherited_socket(SOCKET s, const sockaddr* name, int namelen) {
             port = ((const sockaddr_in6*)name)->sin6_port;
             break;
     }
-    lobby_debug_printf("BNDB:%u (PUNCH: %s)\n", __builtin_bswap16(port), bool_str(s == punch_socket));
+    port = bswap(port);
+    lobby_debug_printf("BNDB:%u (PUNCH: %s)\n", port, bool_str(s == punch_socket));
     
     int ret = bind(s, name, namelen);
 
@@ -492,10 +472,18 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
     if (sock != INVALID_SOCKET) {
         sockaddr_storage client_addr;
         client_addr.ss_family = AF_INET;
-        ((sockaddr_in*)&client_addr)->sin_port = __builtin_bswap16(port);
+        ((sockaddr_in*)&client_addr)->sin_port = bswap(port);
         inet_pton(AF_INET, host, &((sockaddr_in*)&client_addr)->sin_addr);
 
         DWORD idc;
+        auto now = std::chrono::high_resolution_clock::now();
+        auto duration = now.time_since_epoch();
+        auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+        while(now_ms % 1000 != 0){
+            now = std::chrono::high_resolution_clock::now();
+            duration = now.time_since_epoch();
+            now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+        }
         for (size_t i = 0; i < 30; ++i) {
             WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, (const sockaddr*)&client_addr, sizeof(sockaddr), NULL, NULL);
         }
@@ -577,10 +565,18 @@ msvc_string* fastcall lobby_recv_welcome_hook(
     if (sock != INVALID_SOCKET) {
         sockaddr_storage client_addr;
         client_addr.ss_family = AF_INET;
-        ((sockaddr_in*)&client_addr)->sin_port = __builtin_bswap16(atoi(port->data()));
+        ((sockaddr_in*)&client_addr)->sin_port = bswap<uint16_t>(atoi(port->data()));
         inet_pton(AF_INET, host, &((sockaddr_in*)&client_addr)->sin_addr);
 
         DWORD idc;
+        auto now = std::chrono::high_resolution_clock::now();
+        auto duration = now.time_since_epoch();
+        auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+        while(now_ms % 1000 != 0){
+            now = std::chrono::high_resolution_clock::now();
+            duration = now.time_since_epoch();
+            now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+        }
         for (size_t i = 0; i < 30; ++i) {
             WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, (const sockaddr*)&client_addr, sizeof(sockaddr), NULL, NULL);
         }
@@ -609,7 +605,7 @@ static constexpr uint8_t lobby_recv_welcome_patchB[] = {
 int WSAAPI lobby_recv_hook(SOCKET s, char* buf, int len, int flags) {
     int ret = recv(s, buf, len, flags);
     if (ret != SOCKET_ERROR) {
-        log_printf("RECV:%s", buf);
+        lobby_debug_printf("RECV:%s", buf);
     }
     return ret;
 }
@@ -681,7 +677,7 @@ neverinline void lobby_test_ipv6() {
         inet_ntop(AF_INET6, ipv6_ptr, ip_str, countof(ip_str));
 
         char port_str[INTEGER_BUFFER_SIZE<uint16_t>]{};
-        std::to_chars(port_str, port_str + countof(port_str), __builtin_bswap16(((sockaddr_in*)&lobby_addr)->sin_port), 10);
+        std::to_chars(port_str, port_str + countof(port_str), bswap<uint16_t>(((sockaddr_in*)&lobby_addr)->sin_port), 10);
 
         //log_printf("IPv6: Connecting to %s:%s\n", ip_str, port_str);
 
@@ -765,7 +761,7 @@ int WSAAPI lobby_socket_close_hook(SOCKET s) {
             sock != INVALID_SOCKET &&
             !punch_socket_is_inherited
         ) {
-            lobby_debug_printf("Closing the punch socket. Bad? B\n");
+            lobby_debug_printf("Closing the punch socket. Bad? (Lobby close)\n");
             closesocket(sock);
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
             SENDTO_ADDR = {};
@@ -783,7 +779,7 @@ int WSAAPI lobby_socket_close_hook(SOCKET s) {
 }
 
 hostent* WSAAPI my_gethostbyname(const char* name) {
-    log_printf("LOBBY HOST: %s\n", name);
+    lobby_debug_printf("LOBBY HOST: %s\n", name);
     return gethostbyname(name);
 }
 
@@ -825,8 +821,8 @@ int WSAAPI WSASendTo_log(
 
             char ip_buffer[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &((sockaddr_in*)lpTo)->sin_addr, ip_buffer, countof(ip_buffer));
-            uint16_t port = __builtin_bswap16(((sockaddr_in*)lpTo)->sin_port);
-            log_printf("SENDTO: %s:%u type %hhu (PUNCH: %s)\n", ip_buffer, port, send_type, bool_str(s == punch_socket));
+            uint16_t port = bswap<uint16_t>(((sockaddr_in*)lpTo)->sin_port);
+            lobby_debug_printf("SENDTO: %s:%u type %hhu (PUNCH: %s)\n", ip_buffer, port, send_type, bool_str(s == punch_socket));
         }
 
         //log_printf("SENDTO: %s:%u\n", ip_buffer, port);
@@ -835,7 +831,7 @@ int WSAAPI WSASendTo_log(
     if (ret == SOCKET_ERROR) {
         int error = WSAGetLastError();
         if (error != WSA_IO_PENDING) {
-            log_printf("SENDTO: FAIL %u\n", error);
+            lobby_debug_printf("SENDTO: FAIL %u\n", error);
         }
     }
     return ret;
@@ -864,15 +860,122 @@ void recvfrom_log(
 
             char ip_buffer[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &((sockaddr_in*)from)->sin_addr, ip_buffer, countof(ip_buffer));
-            uint16_t port = __builtin_bswap16(((sockaddr_in*)from)->sin_port);
-            log_printf("RECVFROM: %s:%u type %hhu\n", ip_buffer, port, from_type);
+            uint16_t port = bswap<uint16_t>(((sockaddr_in*)from)->sin_port);
+            lobby_debug_printf("RECVFROM: %s:%u type %hhu\n", ip_buffer, port, from_type);
         }
     }
 }
 
 #endif
 
+static constexpr uint8_t lobby_user_count_patchA[] = {
+    0x57,                                   // PUSH EDI
+    0x56,                                   // PUSH ESI
+    0x53,                                   // PUSH EBX
+    0x8D, 0x8D, 0x98, 0xFD, 0xFF, 0xFF,     // LEA ECX, [EBP-268]
+    0x89, 0xCF,                             // MOV EDI, ECX
+    0xE8, 0xA7, 0x30, 0x00, 0x00,           // CALL std::vector<std::string>::size
+    0x83, 0xF8, 0x02,                       // CMP EAX, 2
+    0x0F, 0x82, 0xF1, 0x00, 0x00, 0x00,     // JB Rx7A13
+    0x89, 0xC3,                             // MOV EBX, EAX
+    0x6A, 0x01,                             // PUSH 1
+    0x89, 0xF9,                             // MOV ECX, EDI
+    0xE8, 0x73, 0x30, 0x00, 0x00,           // CALL std::vector<std::string>::operator[]
+    0x89, 0x85, 0x18, 0xFD, 0xFF, 0xFF,     // MOV [EBP-2E8], EAX
+    0x83, 0xFB, 0x03,                       // CMP EBX, 3
+    0x0F, 0x82, 0xAA, 0x00, 0x00, 0x00,     // JB Rx79E6
+    0x68,                                   // PUSH imm32
+};
+
+static constexpr uint8_t lobby_user_count_patchB[] = {
+    0x50,                                   // PUSH EAX
+    0xE8, 0x69, 0xAE, 0x00, 0x00,           // CALL std::operator==(std::string& strA, char* strB)
+    0x83, 0xC4, 0x08,                       // ADD ESP, 8
+    0x84, 0xC0,                             // TEST AL, AL
+    0x0F, 0x84, 0xBF, 0x00, 0x00, 0x00,     // JZ Rx7A11
+    0x8B, 0xB5, 0xA8, 0xFD, 0xFF, 0xFF,     // MOV ESI, [EBP-258]
+    0x81, 0xC6, 0x08, 0x03, 0x00, 0x00,     // ADD ESI, 0x308
+    0x56,                                   // PUSH ESI
+    0x8D, 0x55, 0xD8,                       // LEA EDX, [EBP-28]
+    0x52,                                   // PUSH EDX
+    0xE8, 0x68, 0xB1, 0x00, 0x00,           // CALL std::operator==(std::string* strA, std::string* strB)
+    0x83, 0xC4, 0x08,                       // ADD ESP, 8
+    0x84, 0xC0,                             // TEST AL, AL
+    0x0F, 0x84, 0x9E, 0x00, 0x00, 0x00,     // JZ Rx7A11
+    0x6A, 0x02,                             // PUSH 2
+    0x89, 0xF9,                             // MOV ECX, EDI
+    0xE8, 0x24, 0x30, 0x00, 0x00,           // CALL std::vector<std::string>::operator[]
+    0x50,                                   // PUSH EAX
+    0x83, 0xC6, 0x30,                       // ADD ESI, 0x30
+    0x89, 0xF1,                             // MOV ECX, ESI
+    0xE8, 0x19, 0x37, 0x00, 0x00,           // CALL std::string::operator=(std::string& str)
+    0x68,                                   // PUSH imm32
+};
+
+static constexpr uint8_t lobby_user_count_patchC[] = {
+    0x8D, 0x4E, 0x48,                       // LEA ECX, [ESI+48]
+    0xE8, 0xEC, 0x36, 0x00, 0x00,           // CALL std::string::operator=(char* str)
+    0x83, 0xFB, 0x04,                       // CMP EBX, 4
+    0x72, 0x17,                             // JB Rx79AE
+    0x6A, 0x03,                             // PUSH 3
+    0x89, 0xF9,                             // MOV ECX, EDI
+    0xE8, 0xFE, 0x2F, 0x00, 0x00,           // CALL std::vector<std::string>::operator[]
+    0x89, 0xC1,                             // MOV ECX, EAX
+    0xE8, 0xD7, 0x35, 0x00, 0x00,           // CALL std::string::c_str
+    0x89, 0xC1,                             // MOV ECX, EAX
+    0xE8,                                   // CALL rel32
+};
+
+static constexpr uint8_t lobby_user_count_patchD[] = {
+    0x89, 0xF1,                             // MOV ECX, ESI
+    0xE8, 0xC9, 0x35, 0x00, 0x00,           // CALL std::string::c_str
+    0x80, 0x38, 0x3A,                       // CMP BYTE PTR [EAX], 0x3A
+    0x75, 0x55,                             // JNE Rx7A11
+    0x89, 0xF1,                             // MOV ECX, ESI
+    0xE8, 0x9D, 0x35, 0x00, 0x00,           // CALL std::string::length
+    0x50,                                   // PUSH EAX
+    0x6A, 0x01,                             // PUSH 1
+    0x8D, 0xBD, 0x70, 0xFE, 0xFF, 0xFF,     // LEA EDI, [EBP-190]
+    0x57,                                   // PUSH EDI
+    0x89, 0xF1,                             // MOV ECX, ESI
+    0xE8, 0xDC, 0x34, 0x00, 0x00,           // CALL std::string::__substr
+    0x50,                                   // PUSH EAX
+    0x89, 0xF1,                             // MOV ECX, ESI
+    0xE8, 0x84, 0x37, 0x00, 0x00,           // CALL std::string::__sub_rB160
+    0x89, 0xF9,                             // MOV ECX, EDI
+    0xE8, 0x2D, 0x37, 0x00, 0x00,           // CALL std::string::destructor
+    0xEB, 0x2C,                             // JMP Rx7A11
+    0xCC,                                   // INT3
+    0x6A, 0x00,                             // PUSH 0
+    0x89, 0xF9,                             // MOV ECX, EDI
+    0xE8, 0xB1, 0x2F, 0x00, 0x00,           // CALL std::vector<std::string>::operator[]
+    0x68,                                   // PUSH imm32
+};
+
+static constexpr uint8_t lobby_user_count_patchE[] = {
+    0x89, 0xC1,                             // MOV ECX, EAX
+    0xE8, 0x05, 0x34, 0x00, 0x00,           // CALL std::string::compare(char* str)
+    0x85, 0xC0,                             // TEST EAX, EAX
+    0x75, 0x12,                             // JNZ Rx7A11
+    0x8B, 0x8D, 0x18, 0xFD, 0xFF, 0xFF,     // MOV ECX, [EBP-2E8]
+    0xE8, 0x76, 0x35, 0x00, 0x00,           // CALL std::string::c_str
+    0x89, 0xC1,                             // MOV ECX, EAX
+    0xE8,                                   // CALL rel32
+};
+
+static constexpr uint8_t lobby_user_count_patchF[] = {
+    0x89, 0xD8,                             // MOV EAX, EBX
+    0x5B,                                   // POP EBX
+    0x5E,                                   // POP ESI
+    0x5F,                                   // POP EDI
+};
+
+static void fastcall lobby_user_count_from_str(const char* count) {
+    users_in_room = strtoul(count, NULL, 10);
+}
+
 void patch_se_lobby(void* base_address) {
+    log_printf("0x%x\n",(void*)close_punch_socket);
     lobby_base_address = (uintptr_t)base_address;
 
 #if ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS
@@ -943,4 +1046,16 @@ void patch_se_lobby(void* base_address) {
     //hotpatch_rel32(based_pointer(base_address, 0x7C67), log_sent_text);
     //hotpatch_rel32(based_pointer(base_address, 0x7D2D), log_sent_text);
     //hotpatch_rel32(based_pointer(base_address, 0x84E6), log_sent_text);
+
+    mem_write(based_pointer(base_address, 0x7909), lobby_user_count_patchA);
+    mem_write(based_pointer(base_address, 0x793D), based_pointer(base_address, 0x182A3C));
+    mem_write(based_pointer(base_address, 0x7941), lobby_user_count_patchB);
+    mem_write(based_pointer(base_address, 0x7988), based_pointer(base_address, 0x1828D4));
+    mem_write(based_pointer(base_address, 0x798C), lobby_user_count_patchC);
+    hotpatch_rel32(based_pointer(base_address, 0x79AC), lobby_user_count_from_str);
+    mem_write(based_pointer(base_address, 0x79B0), lobby_user_count_patchD);
+    mem_write(based_pointer(base_address, 0x79F0), (const char*)"USERS");
+    mem_write(based_pointer(base_address, 0x79F4), lobby_user_count_patchE);
+    hotpatch_rel32(based_pointer(base_address, 0x7A0D), lobby_user_count_from_str);
+    mem_write(based_pointer(base_address, 0x7A11), lobby_user_count_patchF);
 }

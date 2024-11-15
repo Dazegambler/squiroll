@@ -217,7 +217,11 @@ function StartupServer( port, mode )
 	}.bindenv(this);
 	this.client_num = 2;
 	this.inst_connect = mb_server;
+	::debug.print("mb_server.Init("+port+","+this.client_num+") begin\n");
+	::debug.fprint("network.log","mb_server.Init("+port+","+this.client_num+") begin\n");
 	local ret = mb_server.Init(port, this.client_num);
+	::debug.print("mb_server.Init end\n");
+	::debug.fprint("network.log","mb_server.Init end\n");
 	if (mode & 1) {
 		::punch.init_wait();
 	}
@@ -228,6 +232,7 @@ function StartupClient( addr, port, mode )
 {
 	this.Initialize();
 	local mb_client = ::manbow.NetworkClient();
+
 	this.client_num = 3;
 
 	if (!mb_client.Init(0, this.client_num))
@@ -236,7 +241,6 @@ function StartupClient( addr, port, mode )
 		mb_client = null;
 		return false;
 	}
-
 	mb_client.ConnectRequest = function ( id, context, table_src, table_dst )
 	{
 		table_dst.message <- "";
@@ -397,10 +401,12 @@ function StartupClient( addr, port, mode )
 		connect_param.is_watch <- false;
 	}
 	if (mode & 2) {
-		
+
 	}
 
 	this.inst_connect = mb_client;
+	::debug.print("mb_client.Connect("+addr+","+port+","+connect_param+") begin\n");
+	::debug.fprint("network.log","mb_client.Connect("+addr+","+port+","+connect_param+") begin\n");
 	return mb_client.Connect(addr, port, connect_param);
 }
 

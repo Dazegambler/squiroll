@@ -59,6 +59,12 @@ static constexpr uint8_t network_component_nut[] = {
 #endif
 };
 
+static constexpr uint8_t network_animation_nut[] = {
+#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+#include <replacement_files/network_animation.nut.h>
+#endif
+};
+
 static constexpr uint8_t version_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
 #include <replacement_files/version.nut.h>
@@ -68,56 +74,63 @@ static constexpr uint8_t version_nut[] = {
 /*
 static constexpr uint8_t menu_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/menu.nut.h"
+#include <replacement_files/menu.nut.h>
 #endif
 };
 */
 
 static constexpr uint8_t title_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/title.nut.h"
+#include <replacement_files/title.nut.h>
 #endif
 };
 
 static constexpr uint8_t config_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/config.nut.h"
+#include <replacement_files/config.nut.h>
 #endif
 };
 
 static constexpr uint8_t config_animation_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/config_animation.nut.h"
+#include <replacement_files/config_animation.nut.h>
 #endif
 };
 
 static constexpr uint8_t battle_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/battle.nut.h"
+#include <replacement_files/battle.nut.h>
 #endif
 };
 
 static constexpr uint8_t battle_practice_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/battle_practice.nut.h"
+#include <replacement_files/battle_practice.nut.h>
 #endif
 };
 
 static constexpr uint8_t vs_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/vs.nut.h"
+#include <replacement_files/vs.nut.h>
 #endif
 };
 
 static constexpr uint8_t item_csv[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/item.csv.h"
+#include <replacement_files/item.csv.h>
+#endif
+};
+
+static constexpr uint8_t dialog_wait_nut[] = {
+#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+#include <replacement_files/dialog_wait.nut.h>
 #endif
 };
 
 static const std::unordered_map<std::string_view, const EmbedData> replacements = {
 	{"data/system/network/network.nut"sv, network_nut},
 	{"data/system/component/network.nut"sv, network_component_nut},
+	{"data/system/network/network_animation.nut"sv, network_animation_nut},
 	{"data/script/version.nut"sv, version_nut},
 	{"data/script/battle/battle.nut"sv, battle_nut},
 	{"data/script/battle/battle_practice.nut"sv, battle_practice_nut},
@@ -127,6 +140,7 @@ static const std::unordered_map<std::string_view, const EmbedData> replacements 
 	//{"data/system/config/config_animation.nut"sv, config_animation_nut},
 	//{"data/system/config/item.csv"sv, item_csv},
 	//{"data/script/menu.nut"sv, menu_nut},
+	{"data/system/network/dialog_wait.nut"sv, dialog_wait_nut}
 };
 
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
@@ -205,11 +219,11 @@ naked void file_replacement_hook() {
 
 
 static constexpr uint8_t misc_nut[] = {
-#include "new_files/misc_config.nut.h"
+#include <new_files/misc_config.nut.h>
 };
 
 static constexpr uint8_t debug_nut[] = {
-#include "new_files/debug.nut.h"
+#include <new_files/debug.nut.h>
 };
 
 static const std::unordered_map<std::string_view, const EmbedData> new_files = {

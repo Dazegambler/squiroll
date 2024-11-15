@@ -12,6 +12,6 @@
 // 	::debug.fprint(file,indent+"---------------\n");
 // }
 
-local function testy(){
+function testy(){
     this.print("hello there o/ \n");
 }

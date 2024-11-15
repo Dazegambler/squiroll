@@ -476,6 +476,14 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
         inet_pton(AF_INET, host, &((sockaddr_in*)&client_addr)->sin_addr);
 
         DWORD idc;
+        auto now = std::chrono::high_resolution_clock::now();
+        auto duration = now.time_since_epoch();
+        auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+        while(now_ms % 1000 != 0){
+            now = std::chrono::high_resolution_clock::now();
+            duration = now.time_since_epoch();
+            now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+        }
         for (size_t i = 0; i < 30; ++i) {
             WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, (const sockaddr*)&client_addr, sizeof(sockaddr), NULL, NULL);
         }
@@ -561,6 +569,14 @@ msvc_string* fastcall lobby_recv_welcome_hook(
         inet_pton(AF_INET, host, &((sockaddr_in*)&client_addr)->sin_addr);
 
         DWORD idc;
+        auto now = std::chrono::high_resolution_clock::now();
+        auto duration = now.time_since_epoch();
+        auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+        while(now_ms % 1000 != 0){
+            now = std::chrono::high_resolution_clock::now();
+            duration = now.time_since_epoch();
+            now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+        }
         for (size_t i = 0; i < 30; ++i) {
             WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, (const sockaddr*)&client_addr, sizeof(sockaddr), NULL, NULL);
         }

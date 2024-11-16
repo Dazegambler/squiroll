@@ -31,7 +31,7 @@ function InitializeWithUPnP()
 
 function Update()
 {
-	if (::punch.ip_available()) {
+	if (::menu.network.display_ip_on_wait && ::punch.ip_available()) {
 		this.obj[1].Set(::menu.network.item_table.wait_incomming[0] + " " + ::punch.get_ip());
 		this.obj[1].x = -this.obj[1].width / 2;
 	}

@@ -307,9 +307,9 @@ extern "C" {
         ) {
             // put any important initialization stuff here,
             // like adding squirrel globals/funcs/etc.
-            sq_setcompilererrorhandler(v,SQCompilerErrorHandler);
             sq_pushroottable(v);
 
+            sq_setcompilererrorhandler(v, SQCompilerErrorHandler);
             sq_newclosure(v, sq_throwexception, 0);
             sq_seterrorhandler(v);
 

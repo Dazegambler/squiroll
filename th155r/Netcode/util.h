@@ -67,6 +67,11 @@
 
 #define MACRO_VOID(...)
 
+template<class L, int = (L{}(), 0) >
+static inline constexpr bool is_constexpr(L) { return true; }
+static inline constexpr bool is_constexpr(...) { return false; }
+#define IS_CONSTEXPR(...) is_constexpr([]{ __VA_ARGS__; })
+
 #if __INTELLISENSE__
 #define requires(...) MACRO_EVAL(MACRO_VOID(__VA_ARGS__))
 #else
@@ -223,6 +228,14 @@ uint32_t fastcall read_fs_dword(size_t offset) {
 static inline const uintptr_t dummy_ip = 0;
 #define stack_return_offset (&dummy_ip)
 #define return_address (*stack_return_offset)
+#endif
+
+#if CLANG_COMPAT
+#define nounroll _Pragma("clang loop unroll(disable)")
+#elif GCC_COMPAT
+#define nounroll _Pragma("GCC unroll 0")
+#else
+#define nounroll
 #endif
 
 

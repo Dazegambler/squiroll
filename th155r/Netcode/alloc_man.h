@@ -21,6 +21,9 @@
 
 #define MEMORY_DEBUG_LEVEL MEMORY_DEBUG_LIGHT
 
+
+#if ALLOCATION_PATCH_TYPE != PATCH_NO_ALLOCS
+
 static inline constexpr size_t SAVED_FRAMES = 8;
 static_assert(std::has_single_bit(SAVED_FRAMES));
 
@@ -37,5 +40,6 @@ size_t cdecl my_msize(void* ptr);
 void* cdecl my_expand(void* ptr, size_t new_size);
 void* cdecl my_realloc(void* ptr, size_t new_size);
 void* cdecl my_recalloc(void* ptr, size_t num, size_t size);
+#endif
 
 #endif

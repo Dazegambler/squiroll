@@ -21,9 +21,6 @@ static forceinline void mem_write(T address, const D& data) {
     return mem_write((void*)address, (const void*)&data, sizeof(D));
 }
 
-int mem_prot_overwrite(void* address, size_t size, DWORD prot);
-
-
 void hotpatch_call(void* target, void* replacement);
 void hotpatch_icall(void* target, void* replacement);
 void hotpatch_jump(void* target, void* replacement);

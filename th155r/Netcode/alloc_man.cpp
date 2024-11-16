@@ -17,6 +17,8 @@
 #include "log.h"
 #include "util.h"
 
+#if ALLOCATION_PATCH_TYPE != PATCH_NO_ALLOCS
+
 #define SHRINK_ROLLBACK_BUFFERS 0
 
 // Internal definitions
@@ -450,3 +452,5 @@ void* cdecl my_recalloc(void* ptr, size_t num, size_t size) {
     }
     return my_calloc(num, size);
 }
+
+#endif

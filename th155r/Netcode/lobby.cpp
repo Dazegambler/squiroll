@@ -27,12 +27,7 @@
 #include "lobby.h"
 
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_LOBBY_DEBUG
-#define lobby_debug_printf(...)\
-    log_printf(__VA_ARGS__);\
-    if (FILE* file = fopen("network.log", "a")) {\
-        log_fprintf(file, __VA_ARGS__);\
-        fclose(file);\
-    }
+#define lobby_debug_printf(...) log_printf(__VA_ARGS__)
 #else
 #define lobby_debug_printf(...) EVAL_NOOP(__VA_ARGS__)
 #endif

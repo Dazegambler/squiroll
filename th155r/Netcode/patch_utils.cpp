@@ -12,14 +12,6 @@ void mem_write(void* address, const void* data, size_t size) {
     }
 }
 
-int mem_prot_overwrite(void* address, size_t size, DWORD prot) {
-    int r = VirtualProtect(address, size, prot, &prot);
-    if (r != 0){
-        log_printf("Failed to overwrite protection of %x error:%d\n", address, GetLastError());
-    }
-    return r;
-}
-
 void hotpatch_call(void* target, void* replacement) {
     uint8_t bytes[] = { 0xE8, 0, 0, 0, 0 };
     *(uint32_t*)&bytes[1] = (uintptr_t)replacement - (uintptr_t)target - 5;

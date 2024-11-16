@@ -90,7 +90,7 @@ function Create( param )
 	default:
 		::manbow.CompileFile("data/actor/status/gauge_vs.nut", this.gauge);
 		::manbow.CompileFile("data/script/battle/battle_vs_player.nut", this);
-		inputdisplaysetup(0);
+		inputdisplaysetup(::network.IsPlaying() ? (::network.is_parent_vs ? 1 : 0) : 0);
 		if(!::network.IsPlaying())inputdisplaysetup(1);
 		break;
 	}

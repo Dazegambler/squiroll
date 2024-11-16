@@ -8,14 +8,14 @@
 #include <string.h>
 
 #include "kite_api.h"
-#include "PatchUtils.h"
+#include "patch_utils.h"
 
 #include "util.h"
 #include "log.h"
 #include "netcode.h"
 #include "config.h"
 #include "file_replacement.h"
-#include "AllocMan.h"
+#include "alloc_man.h"
 #include "lobby.h"
 
 const KiteSquirrelAPI* KITE;

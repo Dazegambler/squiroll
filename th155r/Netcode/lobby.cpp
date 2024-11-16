@@ -20,8 +20,8 @@
 
 #include "util.h"
 #include "config.h"
-#include "PatchUtils.h"
-#include "AllocMan.h"
+#include "patch_utils.h"
+#include "alloc_man.h"
 #include "log.h"
 #include "netcode.h"
 #include "lobby.h"

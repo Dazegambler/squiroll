@@ -6,7 +6,7 @@
 #include <windows.h>
 #include "log.h"
 #include "util.h"
-#include "PatchUtils.h"
+#include "patch_utils.h"
 
 typedef void cdecl vprintf_t(const char* format, va_list va);
 typedef void cdecl vfprintf_t(FILE* stream, const char* format, va_list va);

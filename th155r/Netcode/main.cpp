@@ -10,9 +10,8 @@
 
 #include "netcode.h"
 #include "util.h"
-#include "AllocMan.h"
-#include "Autopunch.h"
-#include "PatchUtils.h"
+#include "alloc_man.h"
+#include "patch_utils.h"
 #include "log.h"
 #include "file_replacement.h"
 #include "config.h"
@@ -34,9 +33,10 @@ uintptr_t libact_base_address = 0;
 LARGE_INTEGERX qpc_ms_frequency;
 #endif
 
+/*
 void Cleanup() {
-    autopunch_cleanup();
 }
+*/
 
 struct ScriptAPI {
     uint8_t dummy[0xF8];
@@ -213,18 +213,10 @@ void patch_se_trust(void* base_address) {
 // No encryption replacement mode
 #define file_replacement_hook_addrB (0x23F98_R)
 
-void patch_autopunch() {
-    //hotpatch_import(WSARecvFrom_import_addr, my_WSARecvFrom);
-    //hotpatch_import(WSASendTo_import_addr, my_WSASendTo);
-    //hotpatch_import(WSASend_import_addr, my_WSASend);
-    //hotpatch_import(bind_import_addr, my_bind);
-    //hotpatch_import(closesocket_import_addr, my_closesocket);
-
+void patch_sockets() {
 #if (NETPLAY_PATCH_TYPE == NETPLAY_DISABLE) && (CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS)
     hotpatch_icall(0x170501_R, WSASendTo_log);
 #endif
-
-    //autopunch_init();
 
     hotpatch_icall(0x1702F3_R, bind_inherited_socket);
     hotpatch_icall(0x170641_R, inherit_punch_socket);
@@ -314,7 +306,7 @@ void common_init(LogType log_type) {
     qpc_ms_frequency = qpc_frequency / 1000;
 #endif
 
-    patch_autopunch();
+    patch_sockets();
 
     hotpatch_rel32(patch_act_script_plugin_hook_addr, patch_exe_script_plugin);
 
@@ -379,7 +371,7 @@ extern "C" {
 
 BOOL WINAPI DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
     if (dwReason == DLL_PROCESS_DETACH) {
-        Cleanup();
+        //Cleanup();
     }
     return TRUE;
 }

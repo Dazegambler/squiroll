@@ -12,7 +12,7 @@
 #include <unordered_map>
 
 #include "util.h"
-#include "PatchUtils.h"
+#include "patch_utils.h"
 #include "file_replacement.h"
 
 //patchhook_register_t* patchhook_register = NULL;

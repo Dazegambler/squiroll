@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "util.h"
-#include "PatchUtils.h"
+#include "patch_utils.h"
 #include "fake_lag.h"
 #include "netcode.h"
 #include "log.h"

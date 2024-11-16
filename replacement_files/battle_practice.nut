@@ -171,7 +171,7 @@ function Game_BattleUpdate()
 	if (this.team[this.current].input.b3 > 0 && this.team[this.current].input.b4 > 0){
 		::input.ClearDeviceAssign(this.team[this.current].input);
 		local i = ++this.current != 1 ? this.current = 0 : 1;
-		::debug.print(i+"\n");
+		//::debug.print(i+"\n");
 		::input.SetDeviceAssign(0, this.team[0].device_id, this.team[i].input);
 	}
 

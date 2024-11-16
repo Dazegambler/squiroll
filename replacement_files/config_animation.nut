@@ -16,8 +16,8 @@ function Initialize()
 	this.item.push(this.title);
 	local item_table = ::menu.common.LoadItemTextArray("data/system/config/item.csv");
 	foreach (k,v in item_table){
-		::debug.print(k+":"+v+"\n");
-		foreach(i,t in v) ::debug.print(i+":"+t+"\n");
+		//::debug.print(k+":"+v+"\n");
+		//foreach(i,t in v) ::debug.print(i+":"+t+"\n");
 	}
 	//item_table["misc"] <- ["雑多","misc"];
 	::menu.common.InitializeLayout.call(this, null, item_table);

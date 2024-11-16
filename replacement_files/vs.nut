@@ -96,11 +96,11 @@ function Initialize( param )
 	::loop.Begin(this);
 	foreach (i, v in battle_param.team[0].master) {
 		if (typeof(v) != "class" && typeof(v) != "table"){
-			::debug.fprint("master.txt",i +":"+ typeof(v) +":"+ v +"\n");
+			//::debug.fprint("master.txt",i +":"+ typeof(v) +":"+ v +"\n");
 		}else{
-			::debug.fprint("master.txt",i +":"+ typeof(v) +"\n");
+			//::debug.fprint("master.txt",i +":"+ typeof(v) +"\n");
 			foreach (t, w in v) {
-				if(typeof(w)!="function")::debug.fprint("master.txt",">"+ t +":"+ typeof(w) +":"+ w +"\n");
+				//if(typeof(w)!="function")::debug.fprint("master.txt",">"+ t +":"+ typeof(w) +":"+ w +"\n");
 			}
 		}
 	}

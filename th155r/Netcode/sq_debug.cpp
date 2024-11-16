@@ -23,17 +23,6 @@ void SQCompilerErrorHandler(HSQUIRRELVM vm, const SQChar* desc, const SQChar* sr
     );
 }
 
-// void SQCompilerErrorHandler(HSQUIRRELVM vm, const SQChar* Desc, const SQChar* Src, SQInteger line, SQInteger col) {
-// 	std::string estr;
-
-// 	estr =
-// 		"Error in line " + std::to_string(line) + ", column " + std::to_string(col) + " - " + std::string((const char*)Src) + "\n" +
-// 		"Desc: " + std::string((const char*)Desc);
-// 	std::wstring msg = std::wstring(estr.begin(), estr.end());
-
-//     log_printf("Exception during compilation:\n %s\n",estr);
-// }
-
 void show_tree(HSQUIRRELVM v, SQObject Root) {
     sq_pushobject(v, Root);
     if (SQ_FAILED(sq_gettype(v, -1))){
@@ -267,7 +256,7 @@ SQInteger sq_compile_buffer(HSQUIRRELVM v){
     return 0;
 }
 
-SQInteger sq_exceptiontrace(HSQUIRRELVM v) {
+SQInteger sq_throwexception(HSQUIRRELVM v) {
     if (sq_gettop(v) > 0) {
         const SQChar* error_msg;
         if (SQ_SUCCEEDED(sq_getstring(v, 2, &error_msg))) {
@@ -287,24 +276,3 @@ SQInteger sq_exceptiontrace(HSQUIRRELVM v) {
     }
     return 0;
 }
-
-// SQInteger sq_throwexception(HSQUIRRELVM v) {
-//     if (sq_gettop(v) >= 1){
-//         SQStackInfos sqstack;
-//         const SQChar* error_msg;
-//         if (SQ_SUCCEEDED(sq_getstring(v, 2, &error_msg))){
-//             log_printf("Squirrel runtime exception:%s\n",error_msg);
-//             int i = 1;
-//             while (SQ_SUCCEEDED(sq_stackinfos(v, i , &sqstack))){
-//                 log_printf(
-//                     " %s \n"
-//                     " %d  |  %s\n",
-//                     sqstack.source,
-//                     sqstack.line,sqstack.funcname ? sqstack.funcname : "Anonymous function"
-//                 );
-//                 i++;
-//             }
-//         }
-//     }
-//     return 0;
-// }

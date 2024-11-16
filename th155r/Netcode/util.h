@@ -556,7 +556,7 @@ static inline size_t uint16_to_strbuf(uint16_t value, T* text_buffer) {
 template <typename T>
 static inline size_t uint16_to_hex_strbuf(uint16_t value, T* text_buffer) {
     uint32_t temp = value;
-    size_t digit_offset = temp ? 15 - std::countl_zero(value) >> 2 : 0;
+    size_t digit_offset = temp ? (15 - std::countl_zero(value)) >> 2 : 0;
     size_t ret = digit_offset + 1;
     do {
         uint16_t digit = temp & 0xF;

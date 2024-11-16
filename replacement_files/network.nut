@@ -174,6 +174,9 @@ function Initialize()
 	this.cursor_allow_watch.val = ::config.network.allow_watch ? 0 : 1;
 	this.BeginAnime();
 	::loop.Begin(this);
+	local test = {};
+	::manbow.compilebuffer("debug.nut",test);
+	test.testy();
 }
 
 function Terminate()

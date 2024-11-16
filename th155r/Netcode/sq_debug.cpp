@@ -13,22 +13,25 @@
 #include "patch_utils.h"
 
 //NATIVE FUNCTIONS
-void sq_throwexception(HSQUIRRELVM v, const char* src) {
-    log_printf("#####Squirrel exception from:%s#####\n", src);
 
-    sq_getlasterror(v);
-    const SQChar* errorMsg;
-    if (SQ_SUCCEEDED(sq_getstring(v, -1, &errorMsg))) {
-#if SQUNICODE
-        log_printf("%ls\n", errorMsg);
-#else
-        log_printf("%s\n", errorMsg);
-#endif
-    }
-    sq_pop(v, 1);
-
-    log_printf("#####End of stack trace#####\n");
+void SQCompilerErrorHandler(HSQUIRRELVM vm, const SQChar* desc, const SQChar* src, SQInteger line, SQInteger col) {
+    log_printf( 
+    "Squirrel compiler exception:%s\n"
+    "<%d,%d>%s\n",
+    src,line,col,desc
+    );
 }
+
+// void SQCompilerErrorHandler(HSQUIRRELVM vm, const SQChar* Desc, const SQChar* Src, SQInteger line, SQInteger col) {
+// 	std::string estr;
+
+// 	estr =
+// 		"Error in line " + std::to_string(line) + ", column " + std::to_string(col) + " - " + std::string((const char*)Src) + "\n" +
+// 		"Desc: " + std::string((const char*)Desc);
+// 	std::wstring msg = std::wstring(estr.begin(), estr.end());
+
+//     log_printf("Exception during compilation:\n %s\n",estr);
+// }
 
 void show_tree(HSQUIRRELVM v, SQObject Root) {
     sq_pushobject(v, Root);
@@ -172,14 +175,11 @@ void show_tree(HSQUIRRELVM v, SQObject Root) {
 void CompileScriptBuffer(HSQUIRRELVM v, const char *Src, SQObject root) {
   bool is_compiled = false;
   if (EmbedData embed = get_new_file_data(Src)) {
-    is_compiled = SQ_SUCCEEDED(sq_compilebuffer(v, (const SQChar*)embed.data, embed.length, _SC("repl"), SQTrue));
+    is_compiled = SQ_SUCCEEDED(sq_compilebuffer(v, (const SQChar*)embed.data, embed.length, Src, SQTrue));
     if (is_compiled) {
         sq_pushobject(v, root);
         sq_call(v, 1, SQFalse, SQTrue);
         sq_pop(v, -1);
-    } else{
-        sq_throwerror(v, _SC("failed to compile script...\n"));
-        sq_throwexception(v,"repl");
     }
   }
 }
@@ -268,4 +268,67 @@ SQInteger sq_compile_buffer(HSQUIRRELVM v){
     }
     CompileScriptBuffer(v,src,root);
     return 0;
+}
+
+SQInteger sq_throwexception(HSQUIRRELVM v) {
+    if (sq_gettop(v) > 0) {
+        const SQChar* error_msg;
+        if (SQ_SUCCEEDED(sq_getstring(v, 2, &error_msg))) {
+        log_printf("Squirrel runtime exception: %s\n", error_msg);
+        SQStackInfos sqstack;
+            for (
+                SQInteger i = 1;
+                SQ_SUCCEEDED(sq_stackinfos(v, i, &sqstack));
+                ++i
+            ) {
+                log_printf(
+                strcmp(sqstack.source, "") ? " %d | %s (%s)\n" : " %d | %s\n"
+                , sqstack.line, sqstack.funcname ? sqstack.funcname : "Anonymous function", sqstack.source
+                );
+            }
+        }
+    }
+    return 0;
+}
+
+// SQInteger sq_throwexception(HSQUIRRELVM v) {
+//     if (sq_gettop(v) >= 1){
+//         SQStackInfos sqstack;
+//         const SQChar* error_msg;
+//         if (SQ_SUCCEEDED(sq_getstring(v, 2, &error_msg))){
+//             log_printf("Squirrel runtime exception:%s\n",error_msg);
+//             int i = 1;
+//             while (SQ_SUCCEEDED(sq_stackinfos(v, i , &sqstack))){
+//                 log_printf(
+//                     " %s \n"
+//                     " %d  |  %s\n",
+//                     sqstack.source,
+//                     sqstack.line,sqstack.funcname ? sqstack.funcname : "Anonymous function"
+//                 );
+//                 i++;
+//             }
+//         }
+//     }
+//     return 0;
+// }
+
+
+void sq_exceptiontrace(HSQUIRRELVM v) {
+  if (sq_gettop(v) > 0) {
+    const SQChar* error_msg;
+    if (SQ_SUCCEEDED(sq_getstring(v, 2, &error_msg))) {
+      log_printf("Squirrel runtime exception: %s\n", error_msg);
+      SQStackInfos sqstack;
+      for (
+        SQInteger i = 1;
+        SQ_SUCCEEDED(sq_stackinfos(v, i, &sqstack));
+        ++i
+      ) {
+        log_printf(
+          strcmp(sqstack.source, "") ? " %d | %s (%s)\n" : " %d | %s\n"
+          , sqstack.line, sqstack.funcname ? sqstack.funcname : "Anonymous function", sqstack.source
+        );
+      }
+    }
+  }
 }

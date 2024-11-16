@@ -3,6 +3,11 @@
 #ifndef UTIL_H
 #define UTIL_H 1
 
+#define SYNC_USE_CHRONO 0
+#define SYNC_USE_QPC 1
+
+#define SYNC_TYPE SYNC_USE_CHRONO
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <type_traits>
@@ -10,6 +15,10 @@
 #include <limits>
 #include <atomic>
 #include <bit>
+
+#if SYNC_TYPE == SYNC_USE_CHRONO
+#include <chrono>
+#endif
 
 #include <winsock2.h>
 #include <windows.h>
@@ -258,7 +267,7 @@ static inline uint64_t __builtin_bswap64(uint64_t value) {
 #endif
 
 template<typename T>
-static T bswap(const T& value) {
+static inline T bswap(const T& value) {
     if constexpr (sizeof(T) == sizeof(uint8_t)) {
         return value;
     }
@@ -542,6 +551,44 @@ static inline size_t uint16_to_hex_strbuf(uint16_t value, T* text_buffer) {
         text_buffer[digit_offset] = (digit < 10 ? (T)'0' : (T)('A' - 10)) + digit;
     } while (digit_offset--);
     return ret;
+}
+
+struct LARGE_INTEGERX {
+    LARGE_INTEGER value;
+
+    inline LARGE_INTEGERX& operator=(const int64_t& value) {
+        this->value.QuadPart = value;
+        return *this;
+    }
+
+    inline LARGE_INTEGER* operator&() {
+        return &this->value;
+    }
+
+    inline operator int64_t() const {
+        return this->value.QuadPart;
+    }
+};
+
+#if SYNC_TYPE == SYNC_USE_QPC
+extern LARGE_INTEGERX qpc_ms_frequency;
+#endif
+
+static inline int64_t current_sync_time() {
+#if SYNC_TYPE == SYNC_USE_CHRONO
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+#elif SYNC_TYPE == SYNC_USE_QPC
+    LARGE_INTEGERX now;
+    QueryPerformanceCounter(&now);
+    return now / qpc_ms_frequency;
+#endif
+}
+
+static inline void sync_to_milliseconds(int64_t minimum_time, int64_t multiple) {
+    int64_t initial_time = current_sync_time();
+    int64_t current_time;
+    do current_time = current_sync_time();
+    while (current_time - initial_time >= minimum_time && current_time % multiple);
 }
 
 #endif

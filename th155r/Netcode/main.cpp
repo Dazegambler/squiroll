@@ -1,4 +1,3 @@
-#include <cstdint>
 #if __INTELLISENSE__
 #undef _HAS_CXX20
 #define _HAS_CXX20 0
@@ -30,6 +29,10 @@ using namespace std::literals::string_view_literals;
 
 const uintptr_t base_address = (uintptr_t)GetModuleHandleA(NULL);
 uintptr_t libact_base_address = 0;
+
+#if SYNC_TYPE == SYNC_USE_QPC
+LARGE_INTEGERX qpc_ms_frequency;
+#endif
 
 void Cleanup() {
     autopunch_cleanup();
@@ -304,6 +307,12 @@ void common_init(LogType log_type) {
     mem_write(createmutex_patch_addr, PATCH_BYTES<0x68, 0x00, 0x00, 0x00, 0x00>); //mutex patch
 
     patch_netplay();
+
+#if SYNC_TYPE == SYNC_USE_QPC
+    LARGE_INTEGERX qpc_frequency;
+    QueryPerformanceFrequency(&qpc_frequency);
+    qpc_ms_frequency = qpc_frequency / 1000;
+#endif
 
     patch_autopunch();
 

@@ -18,8 +18,6 @@
 //#include <MSWSock.h>
 #include <windns.h>
 
-#include <ip2string.h>
-
 #include "util.h"
 #include "config.h"
 #include "PatchUtils.h"
@@ -451,6 +449,16 @@ static WSABUF PUNCH_BUF = {
     .buf = (CHAR*)&PUNCH_PACKET
 };
 
+static void send_punch_packets(SOCKET sock, const sockaddr* addr, int addr_len) {
+    
+    sync_to_milliseconds(1000, 1000);
+
+    DWORD idc;
+    for (size_t i = 0; i < 30; ++i) {
+        WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, addr, addr_len, NULL, NULL);
+    }
+}
+
 int fastcall lobby_send_string_udp_send_hook_WELCOME2(
     AsyncLobbyClient* self,
     size_t current_nickname_length,
@@ -475,18 +483,7 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
         ((sockaddr_in*)&client_addr)->sin_port = bswap(port);
         inet_pton(AF_INET, host, &((sockaddr_in*)&client_addr)->sin_addr);
 
-        DWORD idc;
-        auto now = std::chrono::high_resolution_clock::now();
-        auto duration = now.time_since_epoch();
-        auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-        while(now_ms % 1000 != 0){
-            now = std::chrono::high_resolution_clock::now();
-            duration = now.time_since_epoch();
-            now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-        }
-        for (size_t i = 0; i < 30; ++i) {
-            WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, (const sockaddr*)&client_addr, sizeof(sockaddr), NULL, NULL);
-        }
+        send_punch_packets(sock, (const sockaddr*)&client_addr, sizeof(sockaddr));
     }
     return ret;
 }
@@ -568,18 +565,7 @@ msvc_string* fastcall lobby_recv_welcome_hook(
         ((sockaddr_in*)&client_addr)->sin_port = bswap<uint16_t>(atoi(port->data()));
         inet_pton(AF_INET, host, &((sockaddr_in*)&client_addr)->sin_addr);
 
-        DWORD idc;
-        auto now = std::chrono::high_resolution_clock::now();
-        auto duration = now.time_since_epoch();
-        auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-        while(now_ms % 1000 != 0){
-            now = std::chrono::high_resolution_clock::now();
-            duration = now.time_since_epoch();
-            now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-        }
-        for (size_t i = 0; i < 30; ++i) {
-            WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, (const sockaddr*)&client_addr, sizeof(sockaddr), NULL, NULL);
-        }
+        send_punch_packets(sock, (const sockaddr*)&client_addr, sizeof(sockaddr));
     }
 
     return based_pointer<lobby_std_string_concat_t>(lobby_base_address, 0x12920)(out_str, strB, port);

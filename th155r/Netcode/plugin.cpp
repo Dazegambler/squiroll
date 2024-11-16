@@ -17,6 +17,7 @@
 #include "file_replacement.h"
 #include "alloc_man.h"
 #include "lobby.h"
+#include "sq_debug.h"
 
 const KiteSquirrelAPI* KITE;
 
@@ -107,23 +108,6 @@ public:
 
 static HSQUIRRELVM v;
 
-void sq_throwexception(HSQUIRRELVM v, const char* src) {
-    log_printf("#####Squirrel exception from:%s#####\n", src);
-
-    sq_getlasterror(v);
-    const SQChar* errorMsg;
-    if (SQ_SUCCEEDED(sq_getstring(v, -1, &errorMsg))) {
-#if SQUNICODE
-        log_printf("%ls\n", errorMsg);
-#else
-        log_printf("%s\n", errorMsg);
-#endif
-    }
-    sq_pop(v, 1);
-
-    log_printf("#####End of stack trace#####\n");
-}
-
 static inline void sq_setinteger(HSQUIRRELVM v, const SQChar* name, const SQInteger& value) {
     sq_pushstring(v, name, -1);
     sq_pushinteger(v, value);
@@ -175,69 +159,6 @@ static inline void sq_createclass(HSQUIRRELVM v, const SQChar* name, const L& la
     sq_newclass(v, SQFalse);
     lambda(v);
     sq_newslot(v, -3, SQFalse);
-}
-
-static FILE* debug;
-
-SQInteger CompileBuffer(HSQUIRRELVM v) {
-    const SQChar* filename;
-    SQObject* pObject;
-
-    if (
-        sq_gettop(v) != 3 || 
-        SQ_FAILED(sq_getstring(v, 2, &filename)) || 
-        SQ_FAILED(sq_getuserdata(v, 3, (SQUserPointer *)&pObject, NULL))
-    ) {
-        return sq_throwerror(v, _SC("invalid arguments...expected: <filename> <*pObject>.\n"));
-    }
-
-    if (EmbedData embed = get_new_file_data(filename)) {
-        if (SQ_FAILED(sq_compilebuffer(v, (const SQChar*)embed.data, embed.length, _SC("compiled from buffer"), SQFalse))) {
-            sq_throwexception(v, "CompileBuffer");
-            return sq_throwerror(v, _SC("Failed to compile script from buffer.\n"));
-        }
-
-        sq_getstackobj(v, -1, pObject);
-
-        sq_pop(v, 1);
-    }
-
-    return SQ_OK;
-}
-
-SQInteger sq_print(HSQUIRRELVM v) {
-    const SQChar* str;
-    if (sq_gettop(v) != 2 || 
-        SQ_FAILED(sq_getstring(v, 2, &str))
-    ) {
-        return sq_throwerror(v, "Invalid arguments,expected:<string>");
-    }
-
-    log_printf("%s", str);
-    return 0;
-}
-
-SQInteger sq_fprint(HSQUIRRELVM v) {
-    const SQChar* str;
-    const SQChar* path;
-    if (sq_gettop(v) != 3 ||
-        SQ_FAILED(sq_getstring(v, 2, &path)) ||
-        SQ_FAILED(sq_getstring(v, 3, &str))
-    ) {
-        return sq_throwerror(v, _SC("invalid arguments...expected: <file> <string>.\n"));
-    }
-#if SQUNICODE
-    if (FILE* file = _wfopen(path, L"a")) {
-        log_fprintf(file, "%ls", str);
-        fclose(file);
-    }
-#else
-    if (FILE* file = fopen(path, "a")) {
-        log_fprintf(file, "%s", str);
-        fclose(file);
-    }
-#endif
-    return 0;
 }
 
 SQInteger r_resync_get(HSQUIRRELVM v) {
@@ -419,19 +340,12 @@ extern "C" {
             sq_createtable(v, _SC("debug"), [](HSQUIRRELVM v) {
                 sq_setfunc(v, _SC("print"), sq_print);
                 sq_setfunc(v, _SC("fprint"), sq_fprint);
-                // if (EmbedData embed = get_new_file_data("debug.nut")) {
-                //     if (
-                //         SQ_FAILED(sq_compilebuffer(v, (const SQChar *)embed.data, embed.length, _SC("embed"), SQTrue)) ||
-                //         SQ_FAILED(sq_call(v, 1, SQFalse, SQTrue))
-                //     ) {
-                //         sq_throwexception(v, "debug buffer");
-                //     }
-                // }
+                sq_setfunc(v, _SC("showtree"), sq_show_tree);
             });
 
             // modifications to the manbow table
             sq_edit(v, _SC("manbow"), [](HSQUIRRELVM v) {
-                sq_setfunc(v, _SC("CompileBuffer"), CompileBuffer);
+                sq_setfunc(v, _SC("compilebuffer"), sq_compile_buffer);
             });
 
             // custom lobby table

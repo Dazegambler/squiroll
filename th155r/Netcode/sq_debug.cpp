@@ -21,10 +21,145 @@ void SQCompilerErrorHandler(HSQUIRRELVM vm, const SQChar* desc, const SQChar* sr
     );
 }
 
-static void show_tree(HSQUIRRELVM v, SQObject Root) {
+static void print_object(HSQUIRRELVM v, HSQOBJECT obj, int depth);
+
+static void print_stack_top_value(HSQUIRRELVM v, int depth) {
+    union {
+        SQInteger val_int;
+        SQFloat val_float;
+        SQBool val_bool;
+        HSQOBJECT val_obj;
+        struct {
+            SQUserPointer val_user_ptr;
+            SQUserPointer val_type_tag;
+        };
+        struct {
+            const SQChar* val_string;
+            SQUnsignedInteger val_closure_params;
+            SQUnsignedInteger val_closure_free_vars;
+        };
+        HSQUIRRELVM val_thread;
+    };
+
+    switch (uint32_t val_type = _RAW_TYPE(sq_gettype(v, -1))) {
+        case _RT_NULL:
+            log_printf("null");
+            break;
+        case _RT_INTEGER:
+            sq_getinteger(v, -1, &val_int);
+            log_printf("%" _PRINT_INT_PREC "d", val_int);
+            break;
+        case _RT_FLOAT:
+            sq_getfloat(v, -1, &val_float);
+            log_printf("%f", val_float);
+            break;
+        case _RT_BOOL:
+            sq_getbool(v, -1, &val_bool);
+            log_printf(val_bool ? "true" : "false");
+            break;
+        case _RT_STRING:
+            sq_getstring(v, -1, &val_string);
+            log_printf("\"%s\"", val_string);
+            break;
+        case _RT_TABLE: case _RT_ARRAY:
+            sq_getstackobj(v, -1, &val_obj);
+            print_object(v, val_obj, depth + 1);
+            break;
+        case _RT_USERDATA:
+            sq_getuserdata(v, -1, &val_user_ptr, &val_type_tag);
+            log_printf("UserData %p (%p type, %" _PRINT_INT_PREC "d bytes)", val_user_ptr, val_type_tag, sq_getsize(v, -1));
+            break;
+        case _RT_CLOSURE: case _RT_NATIVECLOSURE:
+            sq_getclosureinfo(v, -1, &val_closure_params, &val_closure_free_vars);
+            sq_getclosurename(v, -1);
+            if (_RAW_TYPE(sq_gettype(v, -1)) == _RT_STRING) {
+                sq_getstring(v, -1, &val_string);
+                log_printf(
+                    val_type == _RT_CLOSURE
+                        ? "Closure \"%s\" (%" _PRINT_INT_PREC "u params, %" _PRINT_INT_PREC "u free)"
+                        : "NativeClosure \"%s\" (%" _PRINT_INT_PREC "u params, %" _PRINT_INT_PREC "u free)"
+                    , val_string, val_closure_params, val_closure_free_vars
+                );
+            } else {
+                log_printf(
+                    val_type == _RT_CLOSURE
+                        ? "Closure (%" _PRINT_INT_PREC "u params, %" _PRINT_INT_PREC "u free)"
+                        : "NativeClosure (%" _PRINT_INT_PREC "u params, %" _PRINT_INT_PREC "u free)"
+                    , val_closure_params, val_closure_free_vars
+                );
+            }
+            sq_pop(v, 1);
+            break;
+        case _RT_GENERATOR:
+            log_printf("Generator");
+            break;
+        case _RT_USERPOINTER:
+            sq_getuserpointer(v, -1, &val_user_ptr);
+            log_printf("UserPointer (%p)", val_user_ptr);
+            break;
+        case _RT_THREAD:
+            sq_getthread(v, -1, &val_thread);
+            log_printf("Thread (%p)", val_thread);
+            break;
+        case _RT_FUNCPROTO:
+            log_printf("FuncProto");
+            break;
+        case _RT_CLASS: case _RT_INSTANCE:
+            sq_gettypetag(v, -1, &val_type_tag);
+            log_printf(val_type == _RT_CLASS ? "Class (%p type)" : "Instance (%p type)", val_type_tag);
+            break;
+        case _RT_WEAKREF:
+            sq_getweakrefval(v, -1);
+            log_printf("(WeakRef) ");
+            print_stack_top_value(v, depth);
+            sq_pop(v, 1);
+            break;
+        case _RT_OUTER:
+            log_printf("Outer");
+            break;
+        default:
+            unreachable;
+    }
+}
+
+static void print_object(HSQUIRRELVM v, HSQOBJECT obj, int depth) {
+    sq_pushobject(v, obj);
+    SQObjectType obj_type = sq_gettype(v, -1);
+
+    bool main_type_is_array = _RAW_TYPE(obj_type) == _RT_ARRAY;
+
+    if (sq_getsize(v, -1)) {
+        log_printf(!main_type_is_array ? "{\n" : "[\n");
+
+        sq_pushnull(v);
+        while (SQ_SUCCEEDED(sq_next(v, -2))) {
+            //Key|value
+            // -2|-1
+            const SQChar* key;
+            sq_getstring(v, -2, &key);
+            log_printf("%*s\"%s\": ", depth, "", key);
+
+            print_stack_top_value(v, depth);
+
+            log_printf(",\n");
+
+            sq_pop(v, 2);
+        }
+        sq_pop(v, 1);
+
+        log_printf(!main_type_is_array ? "%*s}" : "%*s]", depth - 1, "");
+    } else {
+        log_printf(!main_type_is_array ? "{}" : "[]");
+    }
+
+    sq_pop(v, 1);
+}
+
+/*
+static void show_tree(HSQUIRRELVM v, HSQOBJECT Root) {
     sq_pushobject(v, Root);
-    if (SQ_FAILED(sq_gettype(v, -1))){
-        //sq_throwerror(v, _SC("Invalid arguments... expected: <object>.\n"));
+    SQObjectType obj_type = sq_gettype(v, -1);
+    if (!(obj_type & SQOBJECT_DELEGABLE)){
         log_printf("root object is not delegable\n");
         return;
     }
@@ -53,23 +188,21 @@ static void show_tree(HSQUIRRELVM v, SQObject Root) {
         }
         switch (sq_gettype(v, -1)) {
             //All Value types
-            /*
-            NULL,
-            INTEGER,
-            FLOAT,
-            STRING,
-            CLOSURE(SQUIRREL FUNCTION),
-            NATIVECLOSURE(C++ FUNCTION),
-            BOOL,
-            INSTANCE,
-            CLASS,
-            ARRAY,
-            TABLE,
-            USERDATA,
-            USERPOINTER,
-            GENERATOR,
-            WEAKREF
-            */
+            //NULL,
+            //INTEGER,
+            //FLOAT,
+            //STRING,
+            //CLOSURE(SQUIRREL FUNCTION),
+            //NATIVECLOSURE(C++ FUNCTION),
+            //BOOL,
+            //INSTANCE,
+            //CLASS,
+            //ARRAY,
+            //TABLE,
+            //USERDATA,
+            //USERPOINTER,
+            //GENERATOR,
+            //WEAKREF
             case OT_NULL: {
                 log_printf(">%s : %s : NULL\n", key, valstr);
                 break;
@@ -113,7 +246,7 @@ static void show_tree(HSQUIRRELVM v, SQObject Root) {
             case OT_BOOL: {
                 SQBool val;
                 sq_getbool(v, -1, &val);
-                log_printf(">%s : %s : %s\n", key, valstr, val ? "true" : "false");
+                log_printf(">%s : %s : %s\n", key, valstr, bool_str(val));
                 break;
             }
 
@@ -157,8 +290,9 @@ static void show_tree(HSQUIRRELVM v, SQObject Root) {
     sq_pop(v, 1);
     log_printf("<<<<<<>>>>>>\n");
 }
+*/
 
-static void CompileScriptBuffer(HSQUIRRELVM v, const char *Src, SQObject root) {
+static void CompileScriptBuffer(HSQUIRRELVM v, const char *Src, HSQOBJECT root) {
     if (EmbedData embed = get_new_file_data(Src)) {
         if (SQ_SUCCEEDED(sq_compilebuffer(v, (const SQChar*)embed.data, embed.length, Src, SQTrue))) {
             sq_pushobject(v, root);
@@ -232,19 +366,21 @@ SQInteger sq_fprint(HSQUIRRELVM v) {
 }
 
 SQInteger sq_show_tree(HSQUIRRELVM v) {
-    SQObject pObj;
+    HSQOBJECT obj;
     if (sq_gettop(v) != 2 || 
-        SQ_FAILED(sq_getstackobj(v, 2, &pObj))
+        SQ_FAILED(sq_getstackobj(v, 2, &obj))
     ) {
         return sq_throwerror(v, _SC("Invalid arguments... expected: <object>.\n"));
     }
-    show_tree(v, pObj);
+    //show_tree(v, obj);
+    print_object(v, obj, 1);
+    log_printf("\n");
     return 0;
 }
 
 SQInteger sq_compile_buffer(HSQUIRRELVM v){
     const SQChar* src;
-    SQObject root;
+    HSQOBJECT root;
     if (sq_gettop(v) != 3                       ||
         SQ_FAILED(sq_getstring(v, 2, &src))     ||
         SQ_FAILED(sq_getstackobj(v, 3, &root))

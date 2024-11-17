@@ -8,6 +8,10 @@
 
 #include <squirrel.h>
 
+#ifndef _PRINT_INT_PREC
+#define _PRINT_INT_PREC
+#endif
+
 // size: 0xC
 struct KiteSquirrelAPIVftable {
 	void *const __validate_api; // 0x0
@@ -177,24 +181,43 @@ struct KiteSquirrelAPI {
 
 extern const KiteSquirrelAPI* KITE;
 
+// HSQUIRRELVM sq_open(SQInteger initialstacksize);
 #define sq_open(...) KITE->sq_open(__VA_ARGS__)
+// HSQUIRRELVM sq_newthread(HSQUIRRELVM friendvm, SQInteger initialstacksize);
 #define sq_newthread(...) KITE->sq_newthread(__VA_ARGS__)
+// void sq_seterrorhandler(HSQUIRRELVM v);
 #define sq_seterrorhandler(...) KITE->sq_seterrorhandler(__VA_ARGS__)
+// void sq_close(HSQUIRRELVM v);
 #define sq_close(...) KITE->sq_close(__VA_ARGS__)
+// void sq_setforeignptr(HSQUIRRELVM v,SQUserPointer p);
 #define sq_setforeignptr(...) KITE->sq_setforeignptr(__VA_ARGS__)
+// SQUserPointer sq_getforeignptr(HSQUIRRELVM v);
 #define sq_getforeignptr(...) KITE->sq_getforeignptr(__VA_ARGS__)
+// void sq_setprintfunc(HSQUIRRELVM v, SQPRINTFUNCTION printfunc, SQPRINTFUNCTION errfunc);
 #define sq_setprintfunc(...) KITE->sq_setprintfunc(__VA_ARGS__)
+// SQPRINTFUNCTION sq_getprintfunc(HSQUIRRELVM v);
 #define sq_getprintfunc(...) KITE->sq_getprintfunc(__VA_ARGS__)
+// SQPRINTFUNCTION sq_geterrorfunc(HSQUIRRELVM v);
 #define sq_geterrorfunc(...) KITE->sq_geterrorfunc(__VA_ARGS__)
+// SQRESULT sq_suspendvm(HSQUIRRELVM v);
 #define sq_suspendvm(...) KITE->sq_suspendvm(__VA_ARGS__)
+// SQRESULT sq_wakeupvm(HSQUIRRELVM v, SQBool resumedret, SQBool retval, SQBool raiseerror, SQBool throwerror);
 #define sq_wakeupvm(...) KITE->sq_wakeupvm(__VA_ARGS__)
+// SQInteger sq_getvmstate(HSQUIRRELVM v);
 #define sq_getvmstate(...) KITE->sq_getvmstate(__VA_ARGS__)
+// SQInteger sq_getversion();
 #define sq_getversion(...) KITE->sq_getversion(__VA_ARGS__)
+// SQRESULT sq_compile(HSQUIRRELVM v, SQLEXREADFUNC read, SQUserPointer p, const SQChar* sourcename, SQBool raiseerror);
 #define sq_compile(...) KITE->sq_compile(__VA_ARGS__)
+// SQRESULT sq_compilebuffer(HSQUIRRELVM v, const SQChar* s, SQInteger size, const SQChar* sourcename, SQBool raiseerror);
 #define sq_compilebuffer(...) KITE->sq_compilebuffer(__VA_ARGS__)
+// void sq_enabledebuginfo(HSQUIRRELVM v, SQBool enable);
 #define sq_enabledebuginfo(...) KITE->sq_enabledebuginfo(__VA_ARGS__)
+// void sq_notifyallexceptions(HSQUIRRELVM v, SQBool enable);
 #define sq_notifyallexceptions(...) KITE->sq_notifyallexceptions(__VA_ARGS__)
+// void sq_setcompilererrorhandler(HSQUIRRELVM v, SQCOMPILERERROR f);
 #define sq_setcompilererrorhandler(...) KITE->sq_setcompilererrorhandler(__VA_ARGS__)
+// void sq_push(HSQUIRRELVM v, SQInteger idx);
 #define sq_push(...) KITE->sq_push(__VA_ARGS__)
 #define sq_pop(...) KITE->sq_pop(__VA_ARGS__)
 #define sq_poptop(...) KITE->sq_poptop(__VA_ARGS__)
@@ -231,6 +254,7 @@ extern const KiteSquirrelAPI* KITE;
 #define sq_getbool(...) KITE->sq_getbool(__VA_ARGS__)
 #define sq_getthread(...) KITE->sq_getthread(__VA_ARGS__)
 #define sq_getuserpointer(...) KITE->sq_getuserpointer(__VA_ARGS__)
+// SQRESULT sq_getuserdata(HSQUIRRELVM v, SQInteger idx, SQUserPointer* p, SQUserPointer* typetag);
 #define sq_getuserdata(...) KITE->sq_getuserdata(__VA_ARGS__)
 #define sq_settypetag(...) KITE->sq_settypetag(__VA_ARGS__)
 #define sq_gettypetag(...) KITE->sq_gettypetag(__VA_ARGS__)

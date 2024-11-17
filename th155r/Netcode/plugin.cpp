@@ -344,7 +344,7 @@ extern "C" {
             sq_createtable(v, _SC("debug"), [](HSQUIRRELVM v) {
                 sq_setfunc(v, _SC("print"), sq_print);
                 sq_setfunc(v, _SC("fprint"), sq_fprint);
-                sq_setfunc(v, _SC("showtree"), sq_show_tree);
+                sq_setfunc(v, _SC("print_value"), sq_print_value);
             });
 
             // modifications to the manbow table

@@ -14,7 +14,7 @@ void SQCompilerErrorHandler(HSQUIRRELVM vm, const SQChar* Desc, const SQChar* Sr
 //SQUIRREL FUNCTIONS
 SQInteger sq_print(HSQUIRRELVM v);
 SQInteger sq_fprint(HSQUIRRELVM v);
-SQInteger sq_show_tree(HSQUIRRELVM v);
+SQInteger sq_print_value(HSQUIRRELVM v);
 SQInteger sq_compile_buffer(HSQUIRRELVM v);
 SQInteger sq_throwexception(HSQUIRRELVM v);
 

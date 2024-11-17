@@ -24,6 +24,7 @@ this.gauge <- {};
 this.game_mode <- -1;
 this.ping_task <- null;
 this.input_task <- null;
+this.ping_obj <- null;
 class this.InitializeParam
 {
 	game_mode = 1;
@@ -148,16 +149,16 @@ function Create( param )
 	if (::network.IsActive()) {
 		::setting.ping.update_consts();
 		if (::setting.ping.enabled) {
-			local ping = {};
-			ping.text <- ::font.CreateSystemString("");
-			ping.text.sx = ::setting.ping.SX;
-			ping.text.sy = ::setting.ping.SY;
-			ping.text.red = ::setting.ping.red;
-			ping.text.green = ::setting.ping.green;
-			ping.text.blue = ::setting.ping.blue;
-			ping.text.alpha = ::setting.ping.alpha;
-			ping.text.ConnectRenderSlot(::graphics.slot.ui, 60000);
-			ping.Update <- function() {
+			this.ping_obj = {};
+			this.ping_obj.text <- ::font.CreateSystemString("");
+			this.ping_obj.text.sx = ::setting.ping.SX;
+			this.ping_obj.text.sy = ::setting.ping.SY;
+			this.ping_obj.text.red = ::setting.ping.red;
+			this.ping_obj.text.green = ::setting.ping.green;
+			this.ping_obj.text.blue = ::setting.ping.blue;
+			this.ping_obj.text.alpha = ::setting.ping.alpha;
+			this.ping_obj.text.ConnectRenderSlot(::graphics.slot.ui, 60000);
+			this.ping_obj.Update <- function() {
 				local delay = ::network.GetDelay();
 				local str = "ping:" + delay;
 				if (::setting.ping.ping_in_frames) str += "[" + ((delay + 15) / 16) + "f]";
@@ -166,8 +167,8 @@ function Create( param )
 				this.text.x = ::setting.ping.X - (this.text.width / 2);
 				this.text.y = (::setting.ping.Y - this.text.height);
 			};
-			this.ping_task = ping;
-			::loop.AddTask(ping);
+			this.ping_task = this.ping_obj;
+			::loop.AddTask(this.ping_obj);
 		}
 	}
 	//end of additions
@@ -291,6 +292,7 @@ function Release()
 	if (this.ping_task != null) {
 		::loop.DeleteTask(this.ping_task);
 		this.ping_task = null;
+		this.ping_obj = null;
 	}
 	if (this.input_task != null) {
 		DeleteTask(this.input_task);
@@ -330,6 +332,11 @@ function Begin()
 
 function End()
 {
+	if (this.ping_task != null) {
+		::loop.DeleteTask(this.ping_task);
+		this.ping_task = null;
+		this.ping_obj = null;
+	}
 	::sound.StopBGM(500);
 	::loop.EndWithFade();
 }

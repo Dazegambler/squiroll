@@ -108,8 +108,8 @@ static const std::unordered_map<std::string_view, const EmbedData> replacements 
 	{"data/script/version.nut"sv, version_nut},
 	{"data/script/battle/battle.nut"sv, battle_nut},
 	{"data/system/title/title.nut"sv, title_nut},
-	//{"data/system/config/config.nut"sv, config_nut},
-	//{"data/system/config/config_animation.nut"sv, config_animation_nut},
+	{"data/system/config/config.nut"sv, config_nut},
+	{"data/system/config/config_animation.nut"sv, config_animation_nut},
 	{"data/system/network/dialog_wait.nut"sv, dialog_wait_nut}
 };
 

@@ -74,7 +74,7 @@ function Initialize( enable_lang = false )
 			"replay_save",
 			"replay_save_online",
 			"lang",
-			"misc"
+			"mods"
 			null,
 			"exit"
 		];
@@ -356,7 +356,7 @@ this.proc.lang <- function ()
 		this.cursor_lang.val = ::config.lang;
 	};
 };
-this.proc.misc <- function ()
+this.proc.mods <- function ()
 {
 	if (this.cursor_item.ok)
 	{

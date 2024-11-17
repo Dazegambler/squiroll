@@ -9,9 +9,6 @@
 #include "kite_api.h"
 
 //NATIVE FUNCTIONS
-bool CompileScriptBuffer(HSQUIRRELVM v, const char *Src, const char *to);
-void show_tree(HSQUIRRELVM v, SQObject Root);
-HSQOBJECT SQGetObjectByName(HSQUIRRELVM v, const SQChar *name);
 void SQCompilerErrorHandler(HSQUIRRELVM vm, const SQChar* Desc, const SQChar* Src, SQInteger line, SQInteger col);
 
 //SQUIRREL FUNCTIONS

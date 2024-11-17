@@ -331,15 +331,7 @@ function Begin()
 function End()
 {
 	::sound.StopBGM(500);
-
-	//if (::network.IsPlaying() && ::network.use_lobby)
-	//{
-		//::network.Disconnect();
-	//}
-	//else
-	//{
-		::loop.EndWithFade();
-	//}
+	::loop.EndWithFade();
 }
 
 function AddTask( actor )

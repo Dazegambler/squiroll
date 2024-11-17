@@ -1,15 +1,13 @@
+#if __INTELLISENSE__
+#undef _HAS_CXX20
+#define _HAS_CXX20 0
+#endif
+
 #include "kite_api.h"
-#if __has_builtin(__builtin_offsetof)
-#ifdef offsetof
-#undef offsetof
-#endif
-#define offsetof(s, m) __builtin_offsetof(s, m)
-#endif
 
 #include "file_replacement.h"
 #include "log.h"
 #include "util.h"
-#include "sq_debug.h"
 #include "patch_utils.h"
 
 //NATIVE FUNCTIONS
@@ -23,7 +21,7 @@ void SQCompilerErrorHandler(HSQUIRRELVM vm, const SQChar* desc, const SQChar* sr
     );
 }
 
-void show_tree(HSQUIRRELVM v, SQObject Root) {
+static void show_tree(HSQUIRRELVM v, SQObject Root) {
     sq_pushobject(v, Root);
     if (SQ_FAILED(sq_gettype(v, -1))){
         //sq_throwerror(v, _SC("Invalid arguments... expected: <object>.\n"));
@@ -160,7 +158,7 @@ void show_tree(HSQUIRRELVM v, SQObject Root) {
     log_printf("<<<<<<>>>>>>\n");
 }
 
-void CompileScriptBuffer(HSQUIRRELVM v, const char *Src, SQObject root) {
+static void CompileScriptBuffer(HSQUIRRELVM v, const char *Src, SQObject root) {
     if (EmbedData embed = get_new_file_data(Src)) {
         if (SQ_SUCCEEDED(sq_compilebuffer(v, (const SQChar*)embed.data, embed.length, Src, SQTrue))) {
             sq_pushobject(v, root);
@@ -186,6 +184,7 @@ void CompileScriptBuffer(HSQUIRRELVM v, const char *Src, SQObject root) {
   }
 }*/
 
+/*
 HSQOBJECT SQGetObjectByName(HSQUIRRELVM v, const SQChar *name) {
     sq_pushstring(v, name, -1);
     sq_get(v, -2);
@@ -194,6 +193,7 @@ HSQOBJECT SQGetObjectByName(HSQUIRRELVM v, const SQChar *name) {
     sq_pop(v, 1);
     return ret;
 }
+*/
 
 //SQUIRREL FUNCTIONS
 SQInteger sq_print(HSQUIRRELVM v) {
@@ -235,7 +235,7 @@ SQInteger sq_show_tree(HSQUIRRELVM v) {
     SQObject pObj;
     if (sq_gettop(v) != 2 || 
         SQ_FAILED(sq_getstackobj(v, 2, &pObj))
-    ){
+    ) {
         return sq_throwerror(v, _SC("Invalid arguments... expected: <object>.\n"));
     }
     show_tree(v, pObj);
@@ -248,7 +248,7 @@ SQInteger sq_compile_buffer(HSQUIRRELVM v){
     if (sq_gettop(v) != 3                       ||
         SQ_FAILED(sq_getstring(v, 2, &src))     ||
         SQ_FAILED(sq_getstackobj(v, 3, &root))
-    ){
+    ) {
         return sq_throwerror(v, _SC("Invalid arguments...\n"
                              "usage: compilebuffer <src> <root>\n"));
     }

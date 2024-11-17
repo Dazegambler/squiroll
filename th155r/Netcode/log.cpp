@@ -1,3 +1,7 @@
+#if __INTELLISENSE__
+#undef _HAS_CXX20
+#define _HAS_CXX20 0
+#endif
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -76,12 +80,14 @@ void stdcall cxx_throw_exception_string_hook(
     void* throw_info
 ) {
     log_printf(
-        "EXCEPTION: \"%s\"\n"
+        "Squirrel C++ exception: \"%s\"\n"
         "Turn on ScrollLock to continue...\n"
         , str->data()
     );
+    bool prev_scroll_state = ScrollLockOn();
     SetScrollLockState(false);
     WaitForScrollLock();
+    SetScrollLockState(prev_scroll_state);
     return ((cxx_throw_exception_string_hook_t*)(0x2FB5DD_R))(str, throw_info);
 }
 

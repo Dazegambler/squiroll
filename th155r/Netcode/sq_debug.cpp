@@ -14,8 +14,8 @@
 
 void SQCompilerErrorHandler(HSQUIRRELVM vm, const SQChar* desc, const SQChar* src, SQInteger line, SQInteger col) {
     log_printf( 
-        "Squirrel compiler exception:%s\n"
-        "<%d,%d>%s\n",
+        "Squirrel compiler exception: %s\n"
+        "<%d,%d> \"%s\"\n",
         src,
         line, col, desc
     );
@@ -260,7 +260,7 @@ SQInteger sq_throwexception(HSQUIRRELVM v) {
     if (sq_gettop(v) > 0) {
         const SQChar* error_msg;
         if (SQ_SUCCEEDED(sq_getstring(v, 2, &error_msg))) {
-            log_printf("Squirrel runtime exception: %s\n", error_msg);
+            log_printf("Squirrel runtime exception: \"%s\"\n", error_msg);
             SQStackInfos sqstack;
             for (
                 SQInteger i = 1;

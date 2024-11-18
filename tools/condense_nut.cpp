@@ -33,6 +33,9 @@ using namespace std::literals::string_view_literals;
     return std::make_pair(buffer, file_size);
 }
 
+// Workaround for a parsing bug of some sort...?
+#define REMOVE_SEMICOLONS 1
+
 int main(int argc, char* argv[]) {
     if (argc <= 1) {
         error_exit(
@@ -75,6 +78,9 @@ int main(int argc, char* argv[]) {
     bool can_fold = false;
     bool pre_comment = false;
     bool pre_namespace = false;
+#if REMOVE_SEMICOLONS
+    bool pre_semicolon = false;
+#endif
     uint8_t comment_type = 0; // 1 = single, 2 = multi
 
     std::string_view prev_token = ""sv;
@@ -83,6 +89,13 @@ int main(int argc, char* argv[]) {
     char prev_c = '\0';
 
     char* current;
+
+    auto start_token = [&]() {
+        if (!is_token) {
+            is_token = true;
+            token_start = current;
+        }
+    };
 
     auto end_token = [&]() {
         if (is_token) {
@@ -106,91 +119,133 @@ int main(int argc, char* argv[]) {
                 is_string = true;
             }
         }
-        else if (!is_string) {
+        else if (comment_type) {
             switch (c) {
-                    if (0) {
                 case '\n':
-                        if (comment_type == 1) {
-                            comment_type = 0;
-                        }
-                    } else {
-                case '\t':
+                    if (comment_type == 1) {
+                        comment_type = 0;
                         c = ' ';
-                case ' ': 
-                        if (
-                            current[1] == 'i' && current[2] == 'n' &&
-                            (current[3] == ' ' || current[3] == '\t')
-                        ) {
-                            end_token();
-                            break;
+                        goto handle_whitespace;
+                    }
+                    c = prev_c;
+                    continue;
+                case '\\':
+                    if (comment_type == 2) {
+                        if (prev_c == '*') {
+                            comment_type = 0;
+                            c = ' ';
+                            goto handle_whitespace;
                         }
                     }
-                case ';': case '\0':
+                    c = prev_c;
+                    continue;
+                default:
+                    c = prev_c;
+                    continue;
+            }
+        }
+        else if (!is_string) {
+            switch (c) {
+                case '\r':
                     end_token();
+                    c = prev_c;
+                    continue;
+                case '\n':
+#if REMOVE_SEMICOLONS
+                    if (pre_semicolon) {
+                        pre_semicolon = false;
+                        *out_buf_write++ = '\n';
+                    }
+                    if (prev_c == '}') {
+                        end_token();
+                        //continue;
+                        break;
+                    }
+#endif
+                    goto handle_whitespace;
+                case ';':
+#if REMOVE_SEMICOLONS
+                    pre_semicolon = true;
+                    continue;
+#else
+                    goto handle_whitespace;
+#endif
+                case '\t':
+                    c = ' ';
+                    [[fallthrough]];
+                case ' ': 
+                    if (
+                        current[1] == 'i' && current[2] == 'n' &&
+                        (current[3] == ' ' || current[3] == '\t')
+                    ) {
+                        end_token();
+                        break;
+                    }
+                    [[fallthrough]];
+                case '\0': handle_whitespace: {
+                    end_token();
+#if !REMOVE_SEMICOLONS
                     if (c != ';') {
+#endif
+                        bool prev_is_function = prev_token == "function"sv;
+                        bool prev_is_else = false;
                         if (
-                            prev_token == "function"sv || prev_token == "else"sv || prev_token == "local"sv ||
-                            prev_token == "in"sv || prev_token == "case"sv || prev_token == "return"sv || prev_token == "class"sv
+                            prev_is_function || prev_token == "local"sv || prev_token == "in"sv || prev_token == "case"sv ||
+                            prev_token == "return"sv || prev_token == "class"sv || prev_token == "delete"sv ||
+                            (prev_is_else = prev_token == "else"sv)
                         ) {
                             if (!can_fold) {
                                 can_fold = true;
-                                if (prev_token == "else"sv) {
+                                if (prev_is_else) {
                                     c = ' ';
                                 }
                                 break;
                             }
                         }
-                case '\r':
                         continue;
-                    } else {
-                        can_fold = true;
+#if !REMOVE_SEMICOLONS
                     }
+                    can_fold = true;
                     break;
+#endif
+                }
                 case '/':
+                    end_token();
                     pre_comment = true;
-                    if (comment_type == 2) {
-                        if (prev_c == '*') {
-                            comment_type = 0;
-                        }
-                        continue;
-                    }
                     [[fallthrough]];
                 case '*':
                     if (prev_c == '/') {
                         pre_comment = false;
                         comment_type = 1 + (c == '*');
-                        end_token();
                         continue;
                     }
                     if (pre_comment) {
                         continue;
                     }
                     break;
-                    /*
                 case ':':
-                    if (prev_token == "}"sv) {
+                    if (!pre_namespace) {
                         pre_namespace = true;
+                        end_token();
+                        start_token();
                         continue;
                     }
-                    if (pre_namespace) {
+                    if (prev_token == ":"sv) {
+                        pre_namespace = false;
+                        *out_buf_write++ = ':';
                         *out_buf_write++ = ' ';
                     }
                     break;
-                case 'i':
-                    if (current[1] == 'f' && prev_token == "}"sv) {
-                        *out_buf_write++ = ' ';
-                    }
+                case '(': case ')': case '{': case '}': case '[': case ']':
+                    end_token();
                     break;
-                    */
-                default:
+                default: default_char:
                     can_fold = false;
-                    if (!is_token) {
-                        is_token = true;
-                        token_start = current;
-                    }
+                    start_token();
                     break;
             }
         }
+    print_char:
         if (comment_type == 0) {
             if (pre_comment) {
                 pre_comment = false;
@@ -200,6 +255,12 @@ int main(int argc, char* argv[]) {
                 pre_namespace = false;
                 *out_buf_write++ = ':';
             }
+#if REMOVE_SEMICOLONS
+            if (pre_semicolon) {
+                pre_semicolon = false;
+                *out_buf_write++ = ';';
+            }
+#endif
             *out_buf_write++ = c;
         }
     }

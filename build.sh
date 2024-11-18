@@ -1,24 +1,41 @@
-TOOLS_PATH="./tools/make_embed_linux.run"
+MAKE_EMBED_PATH="./tools/make_embed_linux.run"
+CONDENSE_NUT_PATH="./tools/condense_nut_linux.run"
+
 REPLACEMENT_FILES_DIR="replacement_files"
+REPLAVEMENT_COMPRESSED_DIR="compressed_nuts/replacement_files"
 REPLACEMENT_DESTINATION_DIR="th155r/Netcode/replacement_files"
 
 NEW_FILES_DIR="new_files"
+NEW_COMPRESSED_DIR="compressed_nuts/new_files"
 NEW_DESTINATION_DIR="th155r/Netcode/new_files"
 
+mkdir -p "$REPLACEMENT_COMPRESSED_DIR"
 mkdir -p "$REPLACEMENT_DESTINATION_DIR"
+mkdir -p "$NEW_COMPRESSED_DIR_DIR"
 mkdir -p "$NEW_DESTINATION_DIR"
-
 
 for FILE in "$REPLACEMENT_FILES_DIR"/*; do
     FILENAME=$(basename "$FILE")
+    DEST_FILE="$REPLAVEMENT_COMPRESSED_DIR/$FILENAME"
+    $CONDENSE_NUT_PATH "$FILE" "$DEST_FILE"
+done
+
+for FILE in "$REPLAVEMENT_COMPRESSED_DIR"/*; do
+    FILENAME=$(basename "$FILE")
     DEST_FILE="$REPLACEMENT_DESTINATION_DIR/$FILENAME.h"
-    $TOOLS_PATH "$FILE" "$DEST_FILE"
+    $MAKE_EMBED_PATH "$FILE" "$DEST_FILE"
 done
 
 for FILE in "$NEW_FILES_DIR"/*; do
     FILENAME=$(basename "$FILE")
+    DEST_FILE="$NEW_COMPRESSED_DIR/$FILENAME"
+    $CONDENSE_NUT_PATH "$FILE" "$DEST_FILE"
+done
+
+for FILE in "$NEW_COMPRESSED_DIR"/*; do
+    FILENAME=$(basename "$FILE")
     DEST_FILE="$NEW_DESTINATION_DIR/$FILENAME.h"
-    $TOOLS_PATH "$FILE" "$DEST_FILE"
+    $MAKE_EMBED_PATH "$FILE" "$DEST_FILE"
 done
 
 

@@ -446,7 +446,7 @@ static WSABUF PUNCH_BUF = {
 
 static void send_punch_packets(SOCKET sock, const sockaddr* addr, int addr_len) {
     
-    sync_to_milliseconds(1000, 1000);
+    sync_to_milliseconds(0, 2000);
 
     DWORD idc;
     for (size_t i = 0; i < 30; ++i) {
@@ -464,8 +464,12 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
 ) {
     SOCKET sock = get_or_create_punch_socket(self->local_port);
     if (sock != INVALID_SOCKET) {
+        //sync_to_milliseconds(0, 2000);
+        //sync_to_milliseconds(100, 1);
         send_lobby_name_packet<true>(sock, current_nickname, current_nickname_length);
     }
+    sync_to_milliseconds(0, 2000);
+    sync_to_milliseconds(100, 1);
     int ret = based_pointer<lobby_send_string_t>(lobby_base_address, 0x20820)(
         self,
         thisfastcall_edx(0,)
@@ -477,7 +481,6 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
         client_addr.ss_family = AF_INET;
         ((sockaddr_in*)&client_addr)->sin_port = bswap(port);
         inet_pton(AF_INET, host, &((sockaddr_in*)&client_addr)->sin_addr);
-
         send_punch_packets(sock, (const sockaddr*)&client_addr, sizeof(sockaddr));
     }
     return ret;

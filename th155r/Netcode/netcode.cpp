@@ -136,6 +136,10 @@ struct BoostSockAddr {
     }
 };
 
+static inline bool addr_is_lobby(BoostSockAddr& addr) {
+    return addr_is_lobby(&addr.addr_any(), addr.length());
+}
+
 // size: 0x8
 struct BoostMutex {
     std::atomic<uint32_t> active_count; // 0x0
@@ -392,10 +396,17 @@ void thisfastcall packet_parser_hook(
             //sendto(self->socket, (const char*)&PUNCH_PING_PACKET, sizeof(PUNCH_PING_PACKET), 0, &self->recv_addr.addr_any(), self->recv_addr.length());
             break;
         case PACKET_TYPE_PUNCH_SELF: {
-            if (addr_is_lobby(&self->recv_addr.addr_any(), self->recv_addr.length())) {
+            if (addr_is_lobby(self->recv_addr)) {
                 PacketPunchPeer* packet = (PacketPunchPeer*)packet_raw;
                 punch_ip_len = sprint_ip_and_port(punch_ip_buffer, packet->is_ipv6, packet->ip, packet->remote_port);
                 punch_ip_updated = true;
+            }
+            break;
+        }
+        case PACKET_TYPE_PUNCH_PEER: {
+            if (addr_is_lobby(self->recv_addr)) {
+                PacketPunchPeer* packet = (PacketPunchPeer*)packet_raw;
+                send_punch_response(packet->is_ipv6, packet->ip, packet->remote_port);
             }
             break;
         }

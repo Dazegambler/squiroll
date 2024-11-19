@@ -43,6 +43,7 @@ void recvfrom_log(
 #endif
 
 void send_lobby_punch_wait();
+void send_punch_response(bool is_ipv6, const void* ip, uint16_t port);
 
 bool addr_is_lobby(const sockaddr* addr, int addr_len);
 

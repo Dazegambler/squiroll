@@ -32,6 +32,26 @@
 #define lobby_debug_printf(...) EVAL_NOOP(__VA_ARGS__)
 #endif
 
+#if !MINGW_COMPAT
+#define SOCKADDR_IN4_LITERAL(ip, port) (sockaddr_in){ .sin_family = AF_INET, .sin_port = port, .sin_addr = ip }
+#define SOCKADDR_IN6_LITERAL(ip, port) (sockaddr_in6){ .sin6_family = AF_INET6, .sin6_port = port, .sin6_addr = ip }
+#else
+#define SOCKADDR_IN4_LITERAL(ip, port) (sockaddr_in){ AF_INET, port, ip }
+#define SOCKADDR_IN6_LITERAL(ip, port) (sockaddr_in6){ AF_INET6, port, 0, ip }
+#endif
+
+#define INIT_SOCKADDR_IN4(sockaddr, ip, port) \
+PUSH_WARNINGS() \
+IGNORE_DESIGNATED_INITIALIZER_WARNING() \
+*(sockaddr_in*)&sockaddr = SOCKADDR_IN4_LITERAL(ip, port); \
+POP_WARNINGS()
+
+#define INIT_SOCKADDR_IN6(sockaddr, ip, port) \
+PUSH_WARNINGS() \
+IGNORE_DESIGNATED_INITIALIZER_WARNING() \
+*(sockaddr_in6*)&sockaddr = SOCKADDR_IN6_LITERAL(ip, port); \
+POP_WARNINGS()
+
 // size: 0x4F4
 struct AsyncLobbyClient {
 
@@ -230,42 +250,29 @@ inline SOCKET create_punch_socket_no_lock(uint16_t port) {
         sockaddr_storage bind_addr;
         int bind_addr_length;
         switch (lobby_addr.ss_family) {
-                if (0) {
             case AF_INET:
-                    *(sockaddr_in*)&bind_addr = (sockaddr_in){
-#if !MINGW_COMPAT
-                        .sin_family = AF_INET,
-                        .sin_port = bswap(port),
-                        .sin_addr = INADDR_ANY
-#else
-                        AF_INET,
-                        bswap(port),
-                        INADDR_ANY
-#endif
-                    };
-                    bind_addr_length = sizeof(sockaddr_in);
-                }
-                else {
+                INIT_SOCKADDR_IN4(bind_addr, INADDR_ANY, bswap(port));
+                bind_addr_length = sizeof(sockaddr_in);
+                break;
             case AF_INET6:
-                    *(sockaddr_in6*)&bind_addr = (sockaddr_in6){
-                        .sin6_family = AF_INET6,
-                        .sin6_port = bswap(port),
-                        .sin6_addr = IN6ADDR_ANY_INIT
-                    };
-                    bind_addr_length = sizeof(sockaddr_in6);
-                }
-                //enable_addr_reuse(sock);
-                lobby_debug_printf("BNDA:%u\n", port);
-                if (!bind(sock, (const sockaddr*)&bind_addr, bind_addr_length)) {
+                INIT_SOCKADDR_IN6(bind_addr, IN6ADDR_ANY_INIT, bswap(port));
+                bind_addr_length = sizeof(sockaddr_in6);
+                break;
+            default:
+                goto fail;
+        };
+        //enable_addr_reuse(sock);
+        lobby_debug_printf("BNDA:%u\n", port);
+        if (!bind(sock, (const sockaddr*)&bind_addr, bind_addr_length)) {
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_LOBBY_DEBUG
-                    bind_addr_length = sizeof(sockaddr_storage);
-                    getsockname(sock, (sockaddr*)&bind_addr, &bind_addr_length);
-                    lobby_debug_printf("BNDC:%u\n", bswap<uint16_t>(((sockaddr_in*)&bind_addr)->sin_port));
+            bind_addr_length = sizeof(sockaddr_storage);
+            getsockname(sock, (sockaddr*)&bind_addr, &bind_addr_length);
+            lobby_debug_printf("BNDC:%u\n", bswap<uint16_t>(((sockaddr_in*)&bind_addr)->sin_port));
 #endif
-                    punch_socket = sock;
-                    return sock;
-                }
+            punch_socket = sock;
+            return sock;
         }
+    fail:
         lobby_debug_printf("UDP bindA fail (%u):%u\n", port, WSAGetLastError());
         closesocket(sock);
         sock = INVALID_SOCKET;
@@ -468,6 +475,20 @@ static void send_punch_packets(SOCKET sock, const sockaddr* addr, int addr_len) 
     DWORD idc;
     for (size_t i = 0; i < 30; ++i) {
         WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, addr, addr_len, NULL, NULL);
+    }
+}
+
+void send_punch_response(bool is_ipv6, const void* ip, uint16_t port) {
+    sockaddr_storage addr;
+    if (!is_ipv6) {
+        INIT_SOCKADDR_IN4(addr, *(in_addr*)ip, bswap(port));
+    } else {
+        INIT_SOCKADDR_IN6(addr, *(in6_addr*)ip, bswap(port));
+    }
+    
+    SOCKET sock = punch_socket;
+    if (sock != INVALID_SOCKET) {
+        send_punch_packets(sock, (const sockaddr*)&addr, !is_ipv6 ? sizeof(sockaddr_in) : sizeof(sockaddr_in6));
     }
 }
 

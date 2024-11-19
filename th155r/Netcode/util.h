@@ -238,6 +238,24 @@ static inline const uintptr_t dummy_ip = 0;
 #define nounroll
 #endif
 
+#if CLANG_COMPAT
+#define PUSH_WARNINGS() _Pragma("clang diagnostic push")
+#define POP_WARNINGS() _Pragma("clang diagnostic pop")
+#define IGNORE_DESIGNATED_INITIALIZER_WARNING() _Pragma("clang diagnostic ignored \"-Wc99-designator\"")
+#elif GCC_COMPAT
+#define PUSH_WARNINGS() _Pragma("GCC diagnostic push")
+#define POP_WARNINGS() _Pragma("GCC diagnostic pop")
+#define IGNORE_DESIGNATED_INITIALIZER_WARNING()
+#elif MSVC_COMPAT
+#define PUSH_WARNINGS() _Pragma("warning(push)")
+#define POP_WARNINGS() _Pragma("warning(pop)")
+#define IGNORE_DESIGNATED_INITIALIZER_WARNING()
+#else
+#define PUSH_WARNINGS()
+#define POP_WARNINGS()
+#define IGNORE_DESIGNATED_INITIALIZER_WARNING()
+#endif
+
 
 #define countof(array_type) \
 (sizeof(array_type) / sizeof(array_type[0]))

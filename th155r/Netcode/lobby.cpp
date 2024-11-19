@@ -140,6 +140,9 @@ static uint8_t SENDTO_TYPE = UINT8_MAX;
 static uint8_t RECVFROM_TYPE = UINT8_MAX;
 #endif
 
+// Function for telling the server what the external port of this
+// client is for a lobby based match. This should not be delayed
+// relative to the start of the hooks.
 template<bool is_welcome = false>
 static void send_lobby_name_packet(SOCKET sock, const char* nickname, size_t length) {
     PacketLobbyName* name_packet = (PacketLobbyName*)_alloca(LOBBY_NAME_PACKET_SIZE(length));
@@ -154,6 +157,10 @@ static void send_lobby_name_packet(SOCKET sock, const char* nickname, size_t len
     }
 }
 
+// Function for telling the server what the external port of this
+// client is for a direct connect match. The server also sends
+// extra packets periodically so that it can remove a client that
+// left the waiting menu from the internal data structures.
 void send_lobby_punch_wait() {
     PacketPunchWait packet;
     new (&packet) PacketPunchWait(local_addr, local_addr_length);
@@ -407,6 +414,10 @@ typedef int thisfastcall lobby_send_string_t(
     const char* str
 );
 
+// Function for joining clients to request a match via a
+// REQUEST_MATCH message in the lobby.
+// Do *not* block in this function, because the host could
+// receive multiple match requests and will only acknowledge one.
 int thisfastcall lobby_send_string_udp_send_hook_REQUEST(
     AsyncLobbyClient* self,
     thisfastcall_edx(int dummy_edx,)
@@ -423,6 +434,11 @@ int thisfastcall lobby_send_string_udp_send_hook_REQUEST(
     );
 }
 
+// Outdated function for a hosting client to acknowledge a match
+// request. Replaced to avoid relying on std::string ABI, but kept
+// around just incase the large binary patches of the new version
+// end up being an issue.
+/*
 int thisfastcall lobby_send_string_udp_send_hook_WELCOME(
     AsyncLobbyClient* self,
     thisfastcall_edx(int dummy_edx,)
@@ -438,6 +454,7 @@ int thisfastcall lobby_send_string_udp_send_hook_WELCOME(
         str
     );
 }
+*/
 
 static WSABUF PUNCH_BUF = {
     .len = sizeof(PUNCH_PACKET),
@@ -454,6 +471,11 @@ static void send_punch_packets(SOCKET sock, const sockaddr* addr, int addr_len) 
     }
 }
 
+// Function for a hosting client to acknowledge a REQUEST_MATCH
+// message with a WELCOME message. Any code for hole punching
+// host->client should happen here.
+// The regular match hosting code runs after this function, so
+// it's okay to block.
 int fastcall lobby_send_string_udp_send_hook_WELCOME2(
     AsyncLobbyClient* self,
     size_t current_nickname_length,
@@ -464,12 +486,8 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
 ) {
     SOCKET sock = get_or_create_punch_socket(self->local_port);
     if (sock != INVALID_SOCKET) {
-        //sync_to_milliseconds(0, 2000);
-        //sync_to_milliseconds(100, 1);
         send_lobby_name_packet<true>(sock, current_nickname, current_nickname_length);
     }
-    sync_to_milliseconds(0, 2000);
-    sync_to_milliseconds(100, 1);
     int ret = based_pointer<lobby_send_string_t>(lobby_base_address, 0x20820)(
         self,
         thisfastcall_edx(0,)
@@ -481,6 +499,9 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
         client_addr.ss_family = AF_INET;
         ((sockaddr_in*)&client_addr)->sin_port = bswap(port);
         inet_pton(AF_INET, host, &((sockaddr_in*)&client_addr)->sin_addr);
+
+        sync_to_milliseconds(0, 2000);
+        sync_to_milliseconds(100, 1);
         send_punch_packets(sock, (const sockaddr*)&client_addr, sizeof(sockaddr));
     }
     return ret;
@@ -548,7 +569,10 @@ static constexpr uint8_t lobby_send_welcome_patchC[] = {
 
 typedef msvc_string* cdecl lobby_std_string_concat_t(msvc_string*, msvc_string*, msvc_string*);
 
-
+// Function for a joining client to acknowledge a WELCOME
+// message. Any code for hole punching client->host should happen here.
+// The regular match joining code runs after this function, so
+// it's okay to block.
 msvc_string* fastcall lobby_recv_welcome_hook(
     const char* host,
     msvc_string* port,

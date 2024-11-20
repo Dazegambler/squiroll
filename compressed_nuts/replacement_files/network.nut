@@ -307,10 +307,7 @@ if(::input_all.b1==1){if(this.cursor_item.val==0){::lobby.dec_user_count()
 this.update=this.UpdateMain
 return
 }
-if(::config.network.upnp){if(::LOBBY.GetLobbyUserState()==::LOBBY.NO_OPERATION){if(::UPnP.GetAsyncState()==2){if(::UPnP.GetExternalIP()!=""){::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING)
-}
-else {::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING)
-}
+if(::config.network.upnp){if(::LOBBY.GetLobbyUserState()==::LOBBY.NO_OPERATION){if(::UPnP.GetAsyncState()==2){::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING)
 }
 }
 }

@@ -573,14 +573,14 @@ function UpdateMatch()
 		{
 			if (::UPnP.GetAsyncState() == 2)
 			{
-				if (::UPnP.GetExternalIP() != "")
-				{
+				//if (::UPnP.GetExternalIP() != "")
+				//{
+					//::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING);
+				//}
+				//else
+				//{
 					::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING);
-				}
-				else
-				{
-					::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING);
-				}
+				//}
 			}
 		}
 	}

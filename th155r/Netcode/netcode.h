@@ -124,6 +124,7 @@ static inline constexpr uint8_t LOCAL_IS_IPV6_MASK = 0b01;
 static inline constexpr uint8_t DEST_IS_IPV6_MASK = 0b10;
 
 // size: 0x8+
+/*
 struct PacketPunchConnect {
     PacketType type; // 0x0
     uint8_t is_ipv6; // 0x1
@@ -133,6 +134,23 @@ struct PacketPunchConnect {
     alignas(4) unsigned char local_ip[sizeof(IP6_ADDRESS)]; // 0x8
     alignas(4) unsigned char dest_ip[sizeof(IP6_ADDRESS)]; // 0x18
     // 0x28
+};
+*/
+
+struct PacketPunchConnect {
+    PacketType type; // 0x0
+    uint8_t is_ipv6; // 0x1
+    uint16_t dest_port; // 0x2
+    alignas(4) unsigned char dest_ip[sizeof(IP6_ADDRESS)]; // 0x4
+
+    PacketPunchConnect() = default;
+
+    PacketPunchConnect(bool is_ipv6, const char* ip, uint16_t port)
+        : type(PACKET_TYPE_PUNCH_CONNECT), is_ipv6(is_ipv6), dest_port(port)
+    
+    {
+        inet_pton(!is_ipv6 ? AF_INET : AF_INET6, ip, &this->dest_ip);
+    }
 };
 
 // size: 0x4

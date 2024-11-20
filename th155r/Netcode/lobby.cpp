@@ -132,6 +132,20 @@ static_assert(__builtin_offsetof(AsyncLobbyClient, current_nickname) == 0x308);
 
 static_assert(__builtin_offsetof(PacketLobbyName, type) == 0);
 
+static int init_sockaddr(sockaddr_storage& out, bool is_ipv6, const char* ip, uint16_t port) {
+    if (!is_ipv6) {
+        out.ss_family = AF_INET;
+        ((sockaddr_in*)&out)->sin_port = bswap(port);
+        inet_pton(AF_INET, ip, &((sockaddr_in*)&out)->sin_addr);
+        return sizeof(sockaddr_in);
+    } else {
+        out.ss_family = AF_INET6;
+        ((sockaddr_in6*)&out)->sin6_port = bswap(port);
+        inet_pton(AF_INET6, ip, &((sockaddr_in6*)&out)->sin6_addr);
+        return sizeof(sockaddr_in6);
+    }
+}
+
 uintptr_t lobby_base_address = 0;
 
 static SpinLock punch_lock;
@@ -188,6 +202,19 @@ void send_lobby_punch_wait() {
     int ret = sendto(punch_socket, (const char*)&packet, sizeof(PacketPunchWait), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
     if (ret <= 0) {
         lobby_debug_printf("FAILED wait:%u\n", WSAGetLastError());
+    }
+}
+
+void send_lobby_punch_connect(bool is_ipv6, const char* ip, uint16_t port) {
+    PacketPunchConnect packet;
+    new (&packet) PacketPunchConnect(is_ipv6, ip, port);
+
+    int ret = sendto(punch_socket, (const char*)&packet, sizeof(PacketPunchConnect), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
+    if (ret <= 0) {
+        lobby_debug_printf("FAILED connect:%u\n", WSAGetLastError());
+    }
+    else {
+        Sleep(500);
     }
 }
 
@@ -517,13 +544,11 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
 
     if (sock != INVALID_SOCKET) {
         sockaddr_storage client_addr;
-        client_addr.ss_family = AF_INET;
-        ((sockaddr_in*)&client_addr)->sin_port = bswap(port);
-        inet_pton(AF_INET, host, &((sockaddr_in*)&client_addr)->sin_addr);
+        int client_addr_len = init_sockaddr(client_addr, false, host, bswap(port));
 
         sync_to_milliseconds(0, 2000);
         sync_to_milliseconds(100, 1);
-        send_punch_packets(sock, (const sockaddr*)&client_addr, sizeof(sockaddr));
+        send_punch_packets(sock, (const sockaddr*)&client_addr, client_addr_len);
     }
     return ret;
 }
@@ -604,11 +629,9 @@ msvc_string* fastcall lobby_recv_welcome_hook(
     SOCKET sock = get_punch_socket();
     if (sock != INVALID_SOCKET) {
         sockaddr_storage client_addr;
-        client_addr.ss_family = AF_INET;
-        ((sockaddr_in*)&client_addr)->sin_port = bswap<uint16_t>(atoi(port->data()));
-        inet_pton(AF_INET, host, &((sockaddr_in*)&client_addr)->sin_addr);
+        int client_addr_len = init_sockaddr(client_addr, false, host, bswap<uint16_t>(atoi(port->data())));
 
-        send_punch_packets(sock, (const sockaddr*)&client_addr, sizeof(sockaddr));
+        send_punch_packets(sock, (const sockaddr*)&client_addr, client_addr_len);
     }
 
     return based_pointer<lobby_std_string_concat_t>(lobby_base_address, 0x12920)(out_str, strB, port);
@@ -805,11 +828,6 @@ int WSAAPI lobby_socket_close_hook(SOCKET s) {
         punch_socket_is_inherited = false;
     }
     return ret;
-}
-
-hostent* WSAAPI my_gethostbyname(const char* name) {
-    lobby_debug_printf("LOBBY HOST: %s\n", name);
-    return gethostbyname(name);
 }
 
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
@@ -1015,7 +1033,6 @@ void patch_se_lobby(void* base_address) {
     hotpatch_jump(based_pointer(base_address, 0x4DCF1), my_recalloc);
     hotpatch_jump(based_pointer(base_address, 0x53F76), my_msize);
 #endif
-    //hotpatch_import(based_pointer(base_address, 0x1292AC), my_gethostbyname);
 
     //mem_write(based_pointer(base_address, 0x206F8), NOP_BYTES(2));
     //mem_write(based_pointer(base_address, 0x20872), NOP_BYTES(2));

@@ -392,9 +392,12 @@ void thisfastcall packet_parser_hook(
             not_in_match = false;
             break;
 #endif
-        case PACKET_TYPE_PUNCH_PING:
-            //sendto(self->socket, (const char*)&PUNCH_PING_PACKET, sizeof(PUNCH_PING_PACKET), 0, &self->recv_addr.addr_any(), self->recv_addr.length());
+        case PACKET_TYPE_PUNCH_PING: {
+            if (addr_is_lobby(self->recv_addr)) {
+                sendto(self->socket, (const char*)&PUNCH_PING_PACKET, sizeof(PUNCH_PING_PACKET), 0, &self->recv_addr.addr_any(), self->recv_addr.length());
+            }
             break;
+        }
         case PACKET_TYPE_PUNCH_SELF: {
             if (addr_is_lobby(self->recv_addr)) {
                 PacketPunchPeer* packet = (PacketPunchPeer*)packet_raw;

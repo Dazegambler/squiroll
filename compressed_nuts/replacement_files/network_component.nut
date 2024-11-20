@@ -125,7 +125,7 @@ mb_server.ReceiveFromChild=function (id,table){}.bindenv(this)
 this.client_num=2
 this.inst_connect=mb_server
 local ret=mb_server.Init(port,this.client_num)
-if(mode&1){::punch.init_wait()
+if(mode&1&&::LOBBY.GetNetworkState()==2){::punch.init_wait()
 }
 return ret
 }
@@ -223,7 +223,8 @@ connect_param.extra<-this.icon[1]
 connect_param.battle_num<-1
 if(mode&1){connect_param.is_watch<-false
 }
-if(mode&2){}
+if(mode&2&&::LOBBY.GetNetworkState()==2){::punch.init_connect(addr,port)
+}
 this.inst_connect=mb_client
 return mb_client.Connect(addr,port,connect_param)
 }

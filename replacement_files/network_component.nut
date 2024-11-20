@@ -222,7 +222,7 @@ function StartupServer( port, mode )
 	local ret = mb_server.Init(port, this.client_num);
 	//::debug.print("mb_server.Init end\n");
 	//::debug.fprint("network.log","mb_server.Init end\n");
-	if (mode & 1) {
+	if (mode & 1 && ::LOBBY.GetNetworkState() == 2) {
 		::punch.init_wait();
 	}
 	return ret;
@@ -400,8 +400,8 @@ function StartupClient( addr, port, mode )
 	{
 		connect_param.is_watch <- false;
 	}
-	if (mode & 2) {
-
+	if (mode & 2 && ::LOBBY.GetNetworkState() == 2) {
+		::punch.init_connect(addr, port);
 	}
 
 	this.inst_connect = mb_client;

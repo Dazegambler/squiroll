@@ -248,6 +248,19 @@ SQInteger start_direct_punch_wait(HSQUIRRELVM v) {
     return 0;
 }
 
+SQInteger start_direct_punch_connect(HSQUIRRELVM v) {
+    const SQChar* ip;
+    SQInteger port;
+    if (
+        sq_gettop(v) == 3 &&
+        SQ_SUCCEEDED(sq_getstring(v, 2, &ip)) &&
+        SQ_SUCCEEDED(sq_getinteger(v, 3, &port))
+    ) {
+        send_lobby_punch_connect(false, ip, port);
+    }
+    return 0;
+}
+
 SQInteger get_users_in_room(HSQUIRRELVM v) {
     sq_pushinteger(v, users_in_room);
     //log_printf("Users in room: %u\n", users_in_room.load());
@@ -334,6 +347,7 @@ extern "C" {
 
             sq_createtable(v, _SC("punch"), [](HSQUIRRELVM v) {
                 sq_setfunc(v, _SC("init_wait"), start_direct_punch_wait);
+                sq_setfunc(v, _SC("init_connect"), start_direct_punch_connect);
                 sq_setfunc(v, _SC("get_ip"), get_punch_ip);
                 sq_setfunc(v, _SC("reset_ip"), reset_punch_ip);
                 sq_setfunc(v, _SC("ip_available"), is_punch_ip_available);

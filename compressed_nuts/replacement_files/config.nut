@@ -41,7 +41,8 @@ this.cursor_fps.val=::config.graphics.fps
 this.cursor_replay_save.val=::config.replay.save_mode
 this.cursor_replay_save_online.val=::config.replay.save_mode_online
 this.cursor_lang.val=::config.lang
-this.BeginAnime();this.Update=this.UpdateMain
+this.BeginAnime()
+this.Update=this.UpdateMain
 ::loop.Begin(this)
 }
 function Terminate(){this.state=-1
@@ -176,7 +177,7 @@ this.common_callback_cancel=function (){this.cursor_lang.val=::config.lang
 }
 }
 this.proc.mods<-function (){if(this.cursor_item.ok){this.Suspend()
-::menu.key_config.Initialize(1)
+::menu.key_config.Initialize(0)
 return
 }
 }

@@ -107,6 +107,11 @@ static constexpr uint8_t character_select_animation_nut[] = {
 #endif
 };
 
+static constexpr uint8_t menu_nut[] = {
+#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+#include "replacement_files/menu.nut.h"
+#endif
+};
 
 static const std::unordered_map<std::string_view, const EmbedData> replacements = {
 	{"data/system/network/network.nut"sv, network_nut},
@@ -119,6 +124,7 @@ static const std::unordered_map<std::string_view, const EmbedData> replacements 
 	{"data/system/config/config_animation.nut"sv, config_animation_nut},
 	{"data/system/network/dialog_wait.nut"sv, dialog_wait_nut},
 	{"data/system/select/script/character_select_animation.nut"sv, character_select_animation_nut},
+	{"data/script/menu.nut"sv, menu_nut},
 };
 
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
@@ -198,8 +204,18 @@ static constexpr uint8_t debug_nut[] = {
 #include "new_files/debug.nut.h"
 };
 
+static constexpr uint8_t mod_config_nut[] = {
+#include "new_files/mod_config.nut.h"
+};
+
+static constexpr uint8_t mod_config_animation_nut[] = {
+#include "new_files/mod_config_animation.nut.h"
+};
+
 static const std::unordered_map<std::string_view, const EmbedData> new_files = {
-	{"debug.nut"sv, debug_nut},
+    {"debug.nut"sv, debug_nut},
+    //{"mod_config.nut"sv, mod_config_nut},
+    //{"mod_config_animation.nut"sv, mod_config_animation_nut},
 };
 
 EmbedData get_new_file_data(const char* name) {

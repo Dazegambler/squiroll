@@ -16,6 +16,7 @@
 #include "log.h"
 #include "lobby.h"
 #include "config.h"
+#include <synchapi.h>
 
 char punch_ip_buffer[INET6_ADDRSTRLEN] = "";
 size_t punch_ip_len = 0;
@@ -370,6 +371,8 @@ typedef void thisfastcall packet_parser_t(
     size_t packet_size
 );
 
+std::atomic<HANDLE> start_punch = NULL;
+
 void thisfastcall packet_parser_hook(
     TF4UDP* self,
     thisfastcall_edx(int dummy_edx,)
@@ -412,6 +415,40 @@ void thisfastcall packet_parser_hook(
                 send_punch_response(packet->is_ipv6, packet->ip, packet->remote_port);
             }
             break;
+        }
+        case PACKET_TYPE_PUNCH_PINGPONG: {
+            if (packet_size < sizeof(PacketPunchPingPong)) {
+                break;
+            }
+            PacketPunchPingPong* packet = (PacketPunchPingPong*)packet_raw;
+            if (!packet->request_echo) {
+                break;
+	    }
+            sockaddr_in to = { AF_INET };
+            if (packet->use_payload_address) {
+                to.sin_port = packet->sin_port;
+                to.sin_addr = packet->sin_addr;
+            } else {
+                to.sin_port = self->recv_addr.addr_v4().sin_port;
+                to.sin_addr = self->recv_addr.addr_v4().sin_addr;
+            }
+            PacketPunchPingPong response_ = {PACKET_TYPE_PUNCH_PINGPONG,
+                packet->sin_port,
+                packet->sin_addr,
+                false,
+                packet->use_payload_address,
+                packet->index
+            };
+            WSABUF response = { sizeof(response_), (CHAR*)&response_ };
+            DWORD idc;
+            WSASendTo_log(self->socket, &response, 1, &idc, 0, (const sockaddr *)&to, sizeof(to), NULL, NULL);
+            if (packet->use_payload_address) {
+                HANDLE start_punch_ = start_punch;
+                if (start_punch_ != NULL) {
+                    SetEvent(start_punch_);
+                    log_printf("start punching!\n");
+                }
+            }
         }
     }
     

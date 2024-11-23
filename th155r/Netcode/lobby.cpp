@@ -12,11 +12,14 @@
 #include <charconv>
 #include <system_error>
 #include <bit>
+#include <chrono>
+#include <thread>
 
 #include <winsock2.h>
 #include <ws2tcpip.h>
 //#include <MSWSock.h>
 #include <windns.h>
+#include <synchapi.h>
 
 #include "util.h"
 #include "config.h"
@@ -135,12 +138,12 @@ static_assert(__builtin_offsetof(PacketLobbyName, type) == 0);
 static int init_sockaddr(sockaddr_storage& out, bool is_ipv6, const char* ip, uint16_t port) {
     if (!is_ipv6) {
         out.ss_family = AF_INET;
-        ((sockaddr_in*)&out)->sin_port = bswap(port);
+        ((sockaddr_in*)&out)->sin_port = htons(port);
         inet_pton(AF_INET, ip, &((sockaddr_in*)&out)->sin_addr);
         return sizeof(sockaddr_in);
     } else {
         out.ss_family = AF_INET6;
-        ((sockaddr_in6*)&out)->sin6_port = bswap(port);
+        ((sockaddr_in6*)&out)->sin6_port = htons(port);
         inet_pton(AF_INET6, ip, &((sockaddr_in6*)&out)->sin6_addr);
         return sizeof(sockaddr_in6);
     }
@@ -496,9 +499,6 @@ static WSABUF PUNCH_BUF = {
 };
 
 static void send_punch_packets(SOCKET sock, const sockaddr* addr, int addr_len) {
-    
-    sync_to_milliseconds(0, 2000);
-
     DWORD idc;
     for (size_t i = 0; i < 30; ++i) {
         WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, addr, addr_len, NULL, NULL);
@@ -519,6 +519,13 @@ void send_punch_response(bool is_ipv6, const void* ip, uint16_t port) {
     }
 }
 
+const sockaddr_in TMP_PUNCH_SERVER = {
+    AF_INET,
+    htons(23433),
+    {8,134,239,136},
+    {0}
+};
+
 // Function for a hosting client to acknowledge a REQUEST_MATCH
 // message with a WELCOME message. Any code for hole punching
 // host->client should happen here.
@@ -534,7 +541,13 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
 ) {
     SOCKET sock = get_or_create_punch_socket(self->local_port);
     if (sock != INVALID_SOCKET) {
+        start_punch = CreateEventA(NULL, FALSE, FALSE, NULL);
         send_lobby_name_packet<true>(sock, current_nickname, current_nickname_length);
+    }
+    DWORD idc;
+    for (int i = 0; i < 2; i++) {
+        Sleep(16);
+        WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, (const sockaddr *)&TMP_PUNCH_SERVER, sizeof(TMP_PUNCH_SERVER), NULL, NULL);
     }
     int ret = based_pointer<lobby_send_string_t>(lobby_base_address, 0x20820)(
         self,
@@ -544,10 +557,10 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
 
     if (sock != INVALID_SOCKET) {
         sockaddr_storage client_addr;
-        int client_addr_len = init_sockaddr(client_addr, false, host, bswap(port));
+        int client_addr_len = init_sockaddr(client_addr, false, host, port);
 
-        sync_to_milliseconds(0, 2000);
-        sync_to_milliseconds(100, 1);
+        WaitForSingleObject(start_punch, 3000);
+
         send_punch_packets(sock, (const sockaddr*)&client_addr, client_addr_len);
     }
     return ret;
@@ -628,8 +641,56 @@ msvc_string* fastcall lobby_recv_welcome_hook(
 
     SOCKET sock = get_punch_socket();
     if (sock != INVALID_SOCKET) {
-        sockaddr_storage client_addr;
-        int client_addr_len = init_sockaddr(client_addr, false, host, bswap<uint16_t>(atoi(port->data())));
+        union { sockaddr_in sockaddr_in; sockaddr_storage sockaddr_storage; } client_addr;
+        int client_addr_len = init_sockaddr(client_addr.sockaddr_storage, false, host, atoi(port->data()));
+
+        std::chrono::system_clock::time_point sending_time[40];
+        std::chrono::system_clock::duration rtt_via_server = std::chrono::system_clock::duration::zero();
+        int received_number = 0;
+
+        int old_timeout = 0;
+        size_t old_timeout_len = sizeof(old_timeout);
+        getsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&old_timeout, &old_timeout);
+        const int timeout_ms = 25;
+        setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout_ms, sizeof(timeout_ms));
+
+        for (int i = 0; i < sizeof(sending_time) / sizeof(*sending_time); i++){
+            PacketPunchPingPong packet = {PACKET_TYPE_PUNCH_PINGPONG, client_addr.sockaddr_in.sin_port, client_addr.sockaddr_in.sin_addr, true, false, i};
+            WSABUF request_echo = { sizeof(packet), (CHAR *)&packet};
+            DWORD idc;
+            WSASendTo_log(sock, &request_echo, 1, &idc, 0, (const sockaddr *)&TMP_PUNCH_SERVER, sizeof(TMP_PUNCH_SERVER), NULL, NULL);
+            sending_time[i] = std::chrono::system_clock::now();
+
+            union { PacketPunchPingPong packet; char buf[64]; } buf;
+            DWORD lenRecvd;
+            sockaddr_in recvFrom;
+            int recvFromLen = sizeof(recvFrom);
+            int ret = recvfrom(sock, buf.buf, sizeof(buf), 0, (sockaddr *)&recvFrom, &recvFromLen);
+            if (ret < 0) {
+		//log_printf("recvfrom returned %d, error %d\n", ret, WSAGetLastError());
+                continue;
+            }
+            if (ret >= sizeof(PacketPunchPingPong) && buf.packet.type == PACKET_TYPE_PUNCH_PINGPONG && !buf.packet.request_echo) {
+                if (buf.packet.index < sizeof(sending_time) / sizeof(*sending_time)) {
+                    rtt_via_server += std::chrono::system_clock::now() - sending_time[buf.packet.index];
+                    received_number ++;
+                }
+            }
+            recvfrom_log(buf.buf, ret, (sockaddr*)&recvFrom, recvFromLen);
+        }
+        if (received_number != 0) {
+            rtt_via_server /= received_number;
+        }
+        log_printf("get %d responses; rtt via server: %f ms\n", received_number, (rtt_via_server / std::chrono::microseconds(1)) / 1000.0);
+
+        setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&old_timeout, sizeof(old_timeout));
+
+        PacketPunchPingPong packet = {PACKET_TYPE_PUNCH_PINGPONG, client_addr.sockaddr_in.sin_port, client_addr.sockaddr_in.sin_addr, true, true, 0};
+        WSABUF request_echo = { sizeof(packet), (CHAR *)&packet};
+        DWORD idc;
+        WSASendTo_log(sock, &request_echo, 1, &idc, 0, (const sockaddr *)&TMP_PUNCH_SERVER, sizeof(TMP_PUNCH_SERVER), NULL, NULL);
+	
+        std::this_thread::sleep_for(rtt_via_server / 2);
 
         send_punch_packets(sock, (const sockaddr*)&client_addr, client_addr_len);
     }
@@ -907,7 +968,7 @@ void recvfrom_log(
 
             char ip_buffer[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &((sockaddr_in*)from)->sin_addr, ip_buffer, countof(ip_buffer));
-            uint16_t port = bswap<uint16_t>(((sockaddr_in*)from)->sin_port);
+            uint16_t port = ntohs(((sockaddr_in*)from)->sin_port);
             lobby_debug_printf("RECVFROM: %s:%u type %hhu\n", ip_buffer, port, from_type);
         }
     }

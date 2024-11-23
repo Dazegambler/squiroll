@@ -42,8 +42,8 @@ scene.append(this.key_config);
 this.help <- {};
 ::manbow.CompileFile("data/system/help/help.nut", this.help);
 scene.append(this.help);
-this.mod_config <- {};
-::manbow.compilebuffer("mod_config.nut", this.mod_config);
+//this.mod_config <- {};
+//::manbow.compilebuffer("mod_config.nut", this.mod_config);
 function BeginAct()
 {
 	this.act.pl.BeginStage(0);

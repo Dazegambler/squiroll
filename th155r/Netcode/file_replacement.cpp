@@ -12,7 +12,7 @@
 #include <unordered_map>
 
 #include "util.h"
-#include "PatchUtils.h"
+#include "patch_utils.h"
 #include "file_replacement.h"
 
 //patchhook_register_t* patchhook_register = NULL;
@@ -71,14 +71,6 @@ static constexpr uint8_t version_nut[] = {
 #endif
 };
 
-/*
-static constexpr uint8_t menu_nut[] = {
-#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include <replacement_files/menu.nut.h>
-#endif
-};
-*/
-
 static constexpr uint8_t title_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
 #include <replacement_files/title.nut.h>
@@ -103,27 +95,21 @@ static constexpr uint8_t battle_nut[] = {
 #endif
 };
 
-static constexpr uint8_t battle_practice_nut[] = {
-#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include <replacement_files/battle_practice.nut.h>
-#endif
-};
-
-static constexpr uint8_t vs_nut[] = {
-#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include <replacement_files/vs.nut.h>
-#endif
-};
-
-static constexpr uint8_t item_csv[] = {
-#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include <replacement_files/item.csv.h>
-#endif
-};
-
 static constexpr uint8_t dialog_wait_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
 #include <replacement_files/dialog_wait.nut.h>
+#endif
+};
+
+static constexpr uint8_t character_select_animation_nut[] = {
+#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+#include <replacement_files/character_select_animation.nut.h>
+#endif
+};
+
+static constexpr uint8_t menu_nut[] = {
+#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+#include <replacement_files/menu.nut.h>
 #endif
 };
 
@@ -133,14 +119,12 @@ static const std::unordered_map<std::string_view, const EmbedData> replacements 
 	{"data/system/network/network_animation.nut"sv, network_animation_nut},
 	{"data/script/version.nut"sv, version_nut},
 	{"data/script/battle/battle.nut"sv, battle_nut},
-	{"data/script/battle/battle_practice.nut"sv, battle_practice_nut},
 	{"data/system/title/title.nut"sv, title_nut},
-	//{"data/script/scene/vs.nut"sv, vs_nut},
-	//{"data/system/config/config.nut"sv, config_nut},
-	//{"data/system/config/config_animation.nut"sv, config_animation_nut},
-	//{"data/system/config/item.csv"sv, item_csv},
-	//{"data/script/menu.nut"sv, menu_nut},
-	{"data/system/network/dialog_wait.nut"sv, dialog_wait_nut}
+	{"data/system/config/config.nut"sv, config_nut},
+	{"data/system/config/config_animation.nut"sv, config_animation_nut},
+	{"data/system/network/dialog_wait.nut"sv, dialog_wait_nut},
+	{"data/system/select/script/character_select_animation.nut"sv, character_select_animation_nut},
+	{"data/script/menu.nut"sv, menu_nut},
 };
 
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
@@ -216,19 +200,22 @@ naked void file_replacement_hook() {
 
 #endif
 
-
-
-static constexpr uint8_t misc_nut[] = {
-#include <new_files/misc_config.nut.h>
-};
-
 static constexpr uint8_t debug_nut[] = {
 #include <new_files/debug.nut.h>
 };
 
+static constexpr uint8_t mod_config_nut[] = {
+#include "new_files/mod_config.nut.h"
+};
+
+static constexpr uint8_t mod_config_animation_nut[] = {
+#include "new_files/mod_config_animation.nut.h"
+};
+
 static const std::unordered_map<std::string_view, const EmbedData> new_files = {
-	{"misc_config.nut"sv, misc_nut},
-	{"debug.nut"sv, debug_nut},
+    {"debug.nut"sv, debug_nut},
+    //{"mod_config.nut"sv, mod_config_nut},
+    //{"mod_config_animation.nut"sv, mod_config_animation_nut},
 };
 
 EmbedData get_new_file_data(const char* name) {

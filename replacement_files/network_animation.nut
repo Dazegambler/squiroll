@@ -89,7 +89,6 @@ function Initialize()
 	this.lobby_user_str <- ::font.CreateSystemString("Users: ");
 	this.lobby_user_str.x = 670;
 	this.lobby_user_str.y = 222;
-	//this.lobby_user_str.ConnectRenderSlot(::graphics.slot.overlay, 0);
 	this.lobby_user_str.visible = false;
 	this.item.push(this.lobby_user_str);
 

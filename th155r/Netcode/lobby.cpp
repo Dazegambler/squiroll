@@ -12,32 +12,48 @@
 #include <charconv>
 #include <system_error>
 #include <bit>
+#include <chrono>
+#include <thread>
 
 #include <winsock2.h>
 #include <ws2tcpip.h>
 //#include <MSWSock.h>
 #include <windns.h>
-
-#include <ip2string.h>
+#include <synchapi.h>
 
 #include "util.h"
 #include "config.h"
-#include "PatchUtils.h"
-#include "AllocMan.h"
+#include "patch_utils.h"
+#include "alloc_man.h"
 #include "log.h"
 #include "netcode.h"
 #include "lobby.h"
 
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_LOBBY_DEBUG
-#define lobby_debug_printf(...)\
-    log_printf(__VA_ARGS__);\
-    if (FILE* file = fopen("network.log", "a")) {\
-        log_fprintf(file, __VA_ARGS__);\
-        fclose(file);\
-    }
+#define lobby_debug_printf(...) log_printf(__VA_ARGS__)
 #else
 #define lobby_debug_printf(...) EVAL_NOOP(__VA_ARGS__)
 #endif
+
+#if !MINGW_COMPAT
+#define SOCKADDR_IN4_LITERAL(ip, port) (sockaddr_in){ .sin_family = AF_INET, .sin_port = port, .sin_addr = ip }
+#define SOCKADDR_IN6_LITERAL(ip, port) (sockaddr_in6){ .sin6_family = AF_INET6, .sin6_port = port, .sin6_addr = ip }
+#else
+#define SOCKADDR_IN4_LITERAL(ip, port) (sockaddr_in){ AF_INET, port, ip }
+#define SOCKADDR_IN6_LITERAL(ip, port) (sockaddr_in6){ AF_INET6, port, 0, ip }
+#endif
+
+#define INIT_SOCKADDR_IN4(sockaddr, ip, port) \
+PUSH_WARNINGS() \
+IGNORE_DESIGNATED_INITIALIZER_WARNING() \
+*(sockaddr_in*)&sockaddr = SOCKADDR_IN4_LITERAL(ip, port); \
+POP_WARNINGS()
+
+#define INIT_SOCKADDR_IN6(sockaddr, ip, port) \
+PUSH_WARNINGS() \
+IGNORE_DESIGNATED_INITIALIZER_WARNING() \
+*(sockaddr_in6*)&sockaddr = SOCKADDR_IN6_LITERAL(ip, port); \
+POP_WARNINGS()
 
 // size: 0x4F4
 struct AsyncLobbyClient {
@@ -119,6 +135,20 @@ static_assert(__builtin_offsetof(AsyncLobbyClient, current_nickname) == 0x308);
 
 static_assert(__builtin_offsetof(PacketLobbyName, type) == 0);
 
+static int init_sockaddr(sockaddr_storage& out, bool is_ipv6, const char* ip, uint16_t port) {
+    if (!is_ipv6) {
+        out.ss_family = AF_INET;
+        ((sockaddr_in*)&out)->sin_port = htons(port);
+        inet_pton(AF_INET, ip, &((sockaddr_in*)&out)->sin_addr);
+        return sizeof(sockaddr_in);
+    } else {
+        out.ss_family = AF_INET6;
+        ((sockaddr_in6*)&out)->sin6_port = htons(port);
+        inet_pton(AF_INET6, ip, &((sockaddr_in6*)&out)->sin6_addr);
+        return sizeof(sockaddr_in6);
+    }
+}
+
 uintptr_t lobby_base_address = 0;
 
 static SpinLock punch_lock;
@@ -147,6 +177,9 @@ static uint8_t SENDTO_TYPE = UINT8_MAX;
 static uint8_t RECVFROM_TYPE = UINT8_MAX;
 #endif
 
+// Function for telling the server what the external port of this
+// client is for a lobby based match. This should not be delayed
+// relative to the start of the hooks.
 template<bool is_welcome = false>
 static void send_lobby_name_packet(SOCKET sock, const char* nickname, size_t length) {
     PacketLobbyName* name_packet = (PacketLobbyName*)_alloca(LOBBY_NAME_PACKET_SIZE(length));
@@ -161,6 +194,10 @@ static void send_lobby_name_packet(SOCKET sock, const char* nickname, size_t len
     }
 }
 
+// Function for telling the server what the external port of this
+// client is for a direct connect match. The server also sends
+// extra packets periodically so that it can remove a client that
+// left the waiting menu from the internal data structures.
 void send_lobby_punch_wait() {
     PacketPunchWait packet;
     new (&packet) PacketPunchWait(local_addr, local_addr_length);
@@ -168,6 +205,19 @@ void send_lobby_punch_wait() {
     int ret = sendto(punch_socket, (const char*)&packet, sizeof(PacketPunchWait), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
     if (ret <= 0) {
         lobby_debug_printf("FAILED wait:%u\n", WSAGetLastError());
+    }
+}
+
+void send_lobby_punch_connect(bool is_ipv6, const char* ip, uint16_t port) {
+    PacketPunchConnect packet;
+    new (&packet) PacketPunchConnect(is_ipv6, ip, port);
+
+    int ret = sendto(punch_socket, (const char*)&packet, sizeof(PacketPunchConnect), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
+    if (ret <= 0) {
+        lobby_debug_printf("FAILED connect:%u\n", WSAGetLastError());
+    }
+    else {
+        Sleep(500);
     }
 }
 
@@ -230,42 +280,29 @@ inline SOCKET create_punch_socket_no_lock(uint16_t port) {
         sockaddr_storage bind_addr;
         int bind_addr_length;
         switch (lobby_addr.ss_family) {
-                if (0) {
             case AF_INET:
-                    *(sockaddr_in*)&bind_addr = (sockaddr_in){
-#if !MINGW_COMPAT
-                        .sin_family = AF_INET,
-                        .sin_port = bswap(port),
-                        .sin_addr = INADDR_ANY
-#else
-                        AF_INET,
-                        bswap(port),
-                        INADDR_ANY
-#endif
-                    };
-                    bind_addr_length = sizeof(sockaddr_in);
-                }
-                else {
+                INIT_SOCKADDR_IN4(bind_addr, INADDR_ANY, bswap(port));
+                bind_addr_length = sizeof(sockaddr_in);
+                break;
             case AF_INET6:
-                    *(sockaddr_in6*)&bind_addr = (sockaddr_in6){
-                        .sin6_family = AF_INET6,
-                        .sin6_port = bswap(port),
-                        .sin6_addr = IN6ADDR_ANY_INIT
-                    };
-                    bind_addr_length = sizeof(sockaddr_in6);
-                }
-                //enable_addr_reuse(sock);
-                lobby_debug_printf("BNDA:%u\n", port);
-                if (!bind(sock, (const sockaddr*)&bind_addr, bind_addr_length)) {
+                INIT_SOCKADDR_IN6(bind_addr, IN6ADDR_ANY_INIT, bswap(port));
+                bind_addr_length = sizeof(sockaddr_in6);
+                break;
+            default:
+                goto fail;
+        };
+        //enable_addr_reuse(sock);
+        lobby_debug_printf("BNDA:%u\n", port);
+        if (!bind(sock, (const sockaddr*)&bind_addr, bind_addr_length)) {
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_LOBBY_DEBUG
-                    bind_addr_length = sizeof(sockaddr_storage);
-                    getsockname(sock, (sockaddr*)&bind_addr, &bind_addr_length);
-                    lobby_debug_printf("BNDC:%u\n", bswap<uint16_t>(((sockaddr_in*)&bind_addr)->sin_port));
+            bind_addr_length = sizeof(sockaddr_storage);
+            getsockname(sock, (sockaddr*)&bind_addr, &bind_addr_length);
+            lobby_debug_printf("BNDC:%u\n", bswap<uint16_t>(((sockaddr_in*)&bind_addr)->sin_port));
 #endif
-                    punch_socket = sock;
-                    return sock;
-                }
+            punch_socket = sock;
+            return sock;
         }
+    fail:
         lobby_debug_printf("UDP bindA fail (%u):%u\n", port, WSAGetLastError());
         closesocket(sock);
         sock = INVALID_SOCKET;
@@ -414,6 +451,10 @@ typedef int thisfastcall lobby_send_string_t(
     const char* str
 );
 
+// Function for joining clients to request a match via a
+// REQUEST_MATCH message in the lobby.
+// Do *not* block in this function, because the host could
+// receive multiple match requests and will only acknowledge one.
 int thisfastcall lobby_send_string_udp_send_hook_REQUEST(
     AsyncLobbyClient* self,
     thisfastcall_edx(int dummy_edx,)
@@ -430,6 +471,11 @@ int thisfastcall lobby_send_string_udp_send_hook_REQUEST(
     );
 }
 
+// Outdated function for a hosting client to acknowledge a match
+// request. Replaced to avoid relying on std::string ABI, but kept
+// around just incase the large binary patches of the new version
+// end up being an issue.
+/*
 int thisfastcall lobby_send_string_udp_send_hook_WELCOME(
     AsyncLobbyClient* self,
     thisfastcall_edx(int dummy_edx,)
@@ -445,12 +491,46 @@ int thisfastcall lobby_send_string_udp_send_hook_WELCOME(
         str
     );
 }
+*/
 
 static WSABUF PUNCH_BUF = {
     .len = sizeof(PUNCH_PACKET),
     .buf = (CHAR*)&PUNCH_PACKET
 };
 
+static void send_punch_packets(SOCKET sock, const sockaddr* addr, int addr_len) {
+    DWORD idc;
+    for (size_t i = 0; i < 30; ++i) {
+        WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, addr, addr_len, NULL, NULL);
+    }
+}
+
+void send_punch_response(bool is_ipv6, const void* ip, uint16_t port) {
+    sockaddr_storage addr;
+    if (!is_ipv6) {
+        INIT_SOCKADDR_IN4(addr, *(in_addr*)ip, bswap(port));
+    } else {
+        INIT_SOCKADDR_IN6(addr, *(in6_addr*)ip, bswap(port));
+    }
+    
+    SOCKET sock = punch_socket;
+    if (sock != INVALID_SOCKET) {
+        send_punch_packets(sock, (const sockaddr*)&addr, !is_ipv6 ? sizeof(sockaddr_in) : sizeof(sockaddr_in6));
+    }
+}
+
+const sockaddr_in TMP_PUNCH_SERVER = {
+    AF_INET,
+    htons(23433),
+    {8,134,239,136},
+    {0}
+};
+
+// Function for a hosting client to acknowledge a REQUEST_MATCH
+// message with a WELCOME message. Any code for hole punching
+// host->client should happen here.
+// The regular match hosting code runs after this function, so
+// it's okay to block.
 int fastcall lobby_send_string_udp_send_hook_WELCOME2(
     AsyncLobbyClient* self,
     size_t current_nickname_length,
@@ -461,7 +541,13 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
 ) {
     SOCKET sock = get_or_create_punch_socket(self->local_port);
     if (sock != INVALID_SOCKET) {
+        start_punch = CreateEventA(NULL, FALSE, FALSE, NULL);
         send_lobby_name_packet<true>(sock, current_nickname, current_nickname_length);
+    }
+    DWORD idc;
+    for (int i = 0; i < 2; i++) {
+        Sleep(16);
+        WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, (const sockaddr *)&TMP_PUNCH_SERVER, sizeof(TMP_PUNCH_SERVER), NULL, NULL);
     }
     int ret = based_pointer<lobby_send_string_t>(lobby_base_address, 0x20820)(
         self,
@@ -471,22 +557,11 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
 
     if (sock != INVALID_SOCKET) {
         sockaddr_storage client_addr;
-        client_addr.ss_family = AF_INET;
-        ((sockaddr_in*)&client_addr)->sin_port = bswap(port);
-        inet_pton(AF_INET, host, &((sockaddr_in*)&client_addr)->sin_addr);
+        int client_addr_len = init_sockaddr(client_addr, false, host, port);
 
-        DWORD idc;
-        auto now = std::chrono::high_resolution_clock::now();
-        auto duration = now.time_since_epoch();
-        auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-        while(now_ms % 1000 != 0){
-            now = std::chrono::high_resolution_clock::now();
-            duration = now.time_since_epoch();
-            now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-        }
-        for (size_t i = 0; i < 30; ++i) {
-            WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, (const sockaddr*)&client_addr, sizeof(sockaddr), NULL, NULL);
-        }
+        WaitForSingleObject(start_punch, 3000);
+
+        send_punch_packets(sock, (const sockaddr*)&client_addr, client_addr_len);
     }
     return ret;
 }
@@ -553,7 +628,10 @@ static constexpr uint8_t lobby_send_welcome_patchC[] = {
 
 typedef msvc_string* cdecl lobby_std_string_concat_t(msvc_string*, msvc_string*, msvc_string*);
 
-
+// Function for a joining client to acknowledge a WELCOME
+// message. Any code for hole punching client->host should happen here.
+// The regular match joining code runs after this function, so
+// it's okay to block.
 msvc_string* fastcall lobby_recv_welcome_hook(
     const char* host,
     msvc_string* port,
@@ -563,23 +641,58 @@ msvc_string* fastcall lobby_recv_welcome_hook(
 
     SOCKET sock = get_punch_socket();
     if (sock != INVALID_SOCKET) {
-        sockaddr_storage client_addr;
-        client_addr.ss_family = AF_INET;
-        ((sockaddr_in*)&client_addr)->sin_port = bswap<uint16_t>(atoi(port->data()));
-        inet_pton(AF_INET, host, &((sockaddr_in*)&client_addr)->sin_addr);
+        union { sockaddr_in sockaddr_in; sockaddr_storage sockaddr_storage; } client_addr;
+        int client_addr_len = init_sockaddr(client_addr.sockaddr_storage, false, host, atoi(port->data()));
 
+        std::chrono::system_clock::time_point sending_time[40];
+        std::chrono::system_clock::duration rtt_via_server = std::chrono::system_clock::duration::zero();
+        int received_number = 0;
+
+        int old_timeout = 0;
+        size_t old_timeout_len = sizeof(old_timeout);
+        getsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&old_timeout, &old_timeout);
+        const int timeout_ms = 25;
+        setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout_ms, sizeof(timeout_ms));
+
+        for (int i = 0; i < sizeof(sending_time) / sizeof(*sending_time); i++){
+            PacketPunchPingPong packet = {PACKET_TYPE_PUNCH_PINGPONG, client_addr.sockaddr_in.sin_port, client_addr.sockaddr_in.sin_addr, true, false, i};
+            WSABUF request_echo = { sizeof(packet), (CHAR *)&packet};
+            DWORD idc;
+            WSASendTo_log(sock, &request_echo, 1, &idc, 0, (const sockaddr *)&TMP_PUNCH_SERVER, sizeof(TMP_PUNCH_SERVER), NULL, NULL);
+            sending_time[i] = std::chrono::system_clock::now();
+
+            union { PacketPunchPingPong packet; char buf[64]; } buf;
+            DWORD lenRecvd;
+            sockaddr_in recvFrom;
+            int recvFromLen = sizeof(recvFrom);
+            int ret = recvfrom(sock, buf.buf, sizeof(buf), 0, (sockaddr *)&recvFrom, &recvFromLen);
+            if (ret < 0) {
+		//log_printf("recvfrom returned %d, error %d\n", ret, WSAGetLastError());
+                continue;
+            }
+            if (ret >= sizeof(PacketPunchPingPong) && buf.packet.type == PACKET_TYPE_PUNCH_PINGPONG && !buf.packet.request_echo) {
+                if (buf.packet.index < sizeof(sending_time) / sizeof(*sending_time)) {
+                    rtt_via_server += std::chrono::system_clock::now() - sending_time[buf.packet.index];
+                    received_number ++;
+                }
+            }
+            recvfrom_log(buf.buf, ret, (sockaddr*)&recvFrom, recvFromLen);
+        }
+        if (received_number != 0) {
+            rtt_via_server /= received_number;
+        }
+        log_printf("get %d responses; rtt via server: %f ms\n", received_number, (rtt_via_server / std::chrono::microseconds(1)) / 1000.0);
+
+        setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&old_timeout, sizeof(old_timeout));
+
+        PacketPunchPingPong packet = {PACKET_TYPE_PUNCH_PINGPONG, client_addr.sockaddr_in.sin_port, client_addr.sockaddr_in.sin_addr, true, true, 0};
+        WSABUF request_echo = { sizeof(packet), (CHAR *)&packet};
         DWORD idc;
-        auto now = std::chrono::high_resolution_clock::now();
-        auto duration = now.time_since_epoch();
-        auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-        while(now_ms % 1000 != 0){
-            now = std::chrono::high_resolution_clock::now();
-            duration = now.time_since_epoch();
-            now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-        }
-        for (size_t i = 0; i < 30; ++i) {
-            WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, (const sockaddr*)&client_addr, sizeof(sockaddr), NULL, NULL);
-        }
+        WSASendTo_log(sock, &request_echo, 1, &idc, 0, (const sockaddr *)&TMP_PUNCH_SERVER, sizeof(TMP_PUNCH_SERVER), NULL, NULL);
+	
+        std::this_thread::sleep_for(rtt_via_server / 2);
+
+        send_punch_packets(sock, (const sockaddr*)&client_addr, client_addr_len);
     }
 
     return based_pointer<lobby_std_string_concat_t>(lobby_base_address, 0x12920)(out_str, strB, port);
@@ -778,11 +891,6 @@ int WSAAPI lobby_socket_close_hook(SOCKET s) {
     return ret;
 }
 
-hostent* WSAAPI my_gethostbyname(const char* name) {
-    lobby_debug_printf("LOBBY HOST: %s\n", name);
-    return gethostbyname(name);
-}
-
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
 
 #include "fake_lag.h"
@@ -860,7 +968,7 @@ void recvfrom_log(
 
             char ip_buffer[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &((sockaddr_in*)from)->sin_addr, ip_buffer, countof(ip_buffer));
-            uint16_t port = bswap<uint16_t>(((sockaddr_in*)from)->sin_port);
+            uint16_t port = ntohs(((sockaddr_in*)from)->sin_port);
             lobby_debug_printf("RECVFROM: %s:%u type %hhu\n", ip_buffer, port, from_type);
         }
     }
@@ -986,7 +1094,6 @@ void patch_se_lobby(void* base_address) {
     hotpatch_jump(based_pointer(base_address, 0x4DCF1), my_recalloc);
     hotpatch_jump(based_pointer(base_address, 0x53F76), my_msize);
 #endif
-    //hotpatch_import(based_pointer(base_address, 0x1292AC), my_gethostbyname);
 
     //mem_write(based_pointer(base_address, 0x206F8), NOP_BYTES(2));
     //mem_write(based_pointer(base_address, 0x20872), NOP_BYTES(2));

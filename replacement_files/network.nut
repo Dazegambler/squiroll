@@ -63,6 +63,8 @@ for( local i = 0; i < 5; i = ++i )
 	this.server_port_v.push(c);
 }
 
+this.display_ip_on_wait <- false;
+
 this.server_port_h <- this.Cursor(1, 5, ::input_all);
 this.cursor_upnp <- this.Cursor(1, 2, ::input_all);
 this.cursor_allow_watch <- this.Cursor(1, 2, ::input_all);
@@ -270,6 +272,7 @@ function UpdateMain()
 				::network.StartupServer(::config.network.hosting_port, 0);
 				::lobby.inc_user_count();
 				this.update = this.UpdateMatch;
+				this.display_ip_on_wait = false;
 				::Dialog(-1, this.item_table.wait_incomming[0], null, this.dialog_wait.InitializeWithUPnP);
 			}
 
@@ -283,6 +286,7 @@ function UpdateMain()
 				::LOBBY.SetLobbyUserState(::LOBBY.MATCHING);
 				this.lobby_user_state = ::LOBBY.MATCHING;
 				this.update = this.UpdateMatch;
+				this.display_ip_on_wait = false;
 				::Dialog(-1, this.item_table.find[0], null, this.dialog_wait.Initialize);
 			}
 
@@ -297,6 +301,7 @@ function UpdateMain()
 			::network.StartupServer(::config.network.hosting_port, 1);
 			this.update = this.UpdateWaitServer;
 			::punch.reset_ip();
+			this.display_ip_on_wait = true;
 			::Dialog(-1, this.item_table.wait_incomming[0], null, this.dialog_wait.InitializeWithUPnP);
 			break;
 
@@ -568,14 +573,14 @@ function UpdateMatch()
 		{
 			if (::UPnP.GetAsyncState() == 2)
 			{
-				if (::UPnP.GetExternalIP() != "")
-				{
+				//if (::UPnP.GetExternalIP() != "")
+				//{
+					//::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING);
+				//}
+				//else
+				//{
 					::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING);
-				}
-				else
-				{
-					::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING);
-				}
+				//}
 			}
 		}
 	}

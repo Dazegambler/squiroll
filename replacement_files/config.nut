@@ -74,7 +74,7 @@ function Initialize( enable_lang = false )
 			"replay_save",
 			"replay_save_online",
 			"lang",
-			"misc"
+			"mods"
 			null,
 			"exit"
 		];
@@ -110,7 +110,7 @@ function Initialize( enable_lang = false )
 	this.cursor_replay_save.val = ::config.replay.save_mode;
 	this.cursor_replay_save_online.val = ::config.replay.save_mode_online;
 	this.cursor_lang.val = ::config.lang;
-	this.BeginAnime();// current source of issues
+	this.BeginAnime();
 	this.Update = this.UpdateMain;
 	::loop.Begin(this);
 }
@@ -356,12 +356,12 @@ this.proc.lang <- function ()
 		this.cursor_lang.val = ::config.lang;
 	};
 };
-this.proc.misc <- function ()
+this.proc.mods <- function ()
 {
 	if (this.cursor_item.ok)
 	{
 		this.Suspend();
-		::menu.key_config.Initialize(1);
+		::menu.key_config.Initialize(0);
 		return;
 	}
 };

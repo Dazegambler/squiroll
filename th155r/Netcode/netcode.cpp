@@ -10,12 +10,13 @@
 #include <vector>
 
 #include "util.h"
-#include "PatchUtils.h"
+#include "patch_utils.h"
 #include "fake_lag.h"
 #include "netcode.h"
 #include "log.h"
 #include "lobby.h"
 #include "config.h"
+#include <synchapi.h>
 
 char punch_ip_buffer[INET6_ADDRSTRLEN] = "";
 size_t punch_ip_len = 0;
@@ -26,8 +27,10 @@ static inline constexpr bool is_ipv6_compatible_with_ipv4(const IP6_ADDRESS& add
 }
 
 template <typename T>
-int sprint_ipv4(T* buf, IP4_ADDRESS addr) {
+static int sprint_ipv4(T* buf, IP4_ADDRESS addr) {
     T* buf_write = buf;
+
+    /*
     buf_write += uint8_to_strbuf(addr, buf_write);
     *buf_write++ = (T)'.';
     addr >>= 8;
@@ -38,45 +41,66 @@ int sprint_ipv4(T* buf, IP4_ADDRESS addr) {
     *buf_write++ = (T)'.';
     addr >>= 8;
     buf_write += uint8_to_strbuf(addr, buf_write);
+    */
+
+    size_t i = 4;
+    while (true) {
+        buf_write += uint8_to_strbuf(addr, buf_write);
+        if (--i == 0) break;
+        *buf_write++ = (T)'.';
+        addr >>= 8;
+    }
     return buf_write - buf;
 }
 
 template <typename T>
-int sprint_ipv6(T* buf, const IP6_ADDRESS& addr) {
-    if (is_ipv6_compatible_with_ipv4(addr)) {
-        return sprint_ipv4(buf, addr.IP6Dword[3]);
-    } else {
-        T* buf_write = buf;
-        buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[0]), buf_write);
+static int sprint_ipv6(T* buf, const IP6_ADDRESS& addr) {
+    T* buf_write = buf;
+
+    /*
+    buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[0]), buf_write);
+    *buf_write++ = (T)':';
+    buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[1]), buf_write);
+    *buf_write++ = (T)':';
+    buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[2]), buf_write);
+    *buf_write++ = (T)':';
+    buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[3]), buf_write);
+    *buf_write++ = (T)':';
+    buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[4]), buf_write);
+    *buf_write++ = (T)':';
+    buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[5]), buf_write);
+    *buf_write++ = (T)':';
+    buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[6]), buf_write);
+    *buf_write++ = (T)':';
+    buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[7]), buf_write);
+    */
+
+    size_t i = 0;
+    nounroll while (true) {
+        buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[i]), buf_write);
+        if (++i == 8) break;
         *buf_write++ = (T)':';
-        buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[1]), buf_write);
-        *buf_write++ = (T)':';
-        buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[2]), buf_write);
-        *buf_write++ = (T)':';
-        buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[3]), buf_write);
-        *buf_write++ = (T)':';
-        buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[4]), buf_write);
-        *buf_write++ = (T)':';
-        buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[5]), buf_write);
-        *buf_write++ = (T)':';
-        buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[6]), buf_write);
-        *buf_write++ = (T)':';
-        buf_write += uint16_to_hex_strbuf(bswap(addr.IP6Word[7]), buf_write);
-        return buf_write - buf;
     }
+    return buf_write - buf;
 }
 
 template <typename T>
-int sprint_ip(T* buf, bool is_ipv6, const void* addr) {
+static int sprint_ip(T* buf, bool is_ipv6, const void* addr) {
+    IP4_ADDRESS ip4;
     if (is_ipv6) {
-        return sprint_ipv6(buf, *(IP6_ADDRESS*)addr);
+        const IP6_ADDRESS& ip6 = *(const IP6_ADDRESS*)addr;
+        if (!is_ipv6_compatible_with_ipv4(ip6)) {
+            return sprint_ipv6(buf, ip6);
+        }
+        ip4 = ip6.IP6Dword[3];
     } else {
-        return sprint_ipv4(buf, *(IP4_ADDRESS*)addr);
+        ip4 = *(IP4_ADDRESS*)addr;
     }
+    return sprint_ipv4(buf, ip4);
 }
 
 template <typename T>
-int sprint_ip_and_port(T* buf, bool is_ipv6, const void* addr, uint16_t port) {
+static int sprint_ip_and_port(T* buf, bool is_ipv6, const void* addr, uint16_t port) {
     int addr_len = sprint_ip(buf, is_ipv6, addr);
     buf[addr_len++] = (T)':';
     addr_len += uint16_to_strbuf(port, buf + addr_len);
@@ -112,6 +136,10 @@ struct BoostSockAddr {
         return *(sockaddr*)&this->addr;
     }
 };
+
+static inline bool addr_is_lobby(BoostSockAddr& addr) {
+    return addr_is_lobby(&addr.addr_any(), addr.length());
+}
 
 // size: 0x8
 struct BoostMutex {
@@ -244,7 +272,7 @@ after connection loss due to really bad connection
 
 //resync_logic
 //start
-void resync_patch(uint8_t value) {
+static void resync_patch(uint8_t value) {
     DWORD old_protect;
     uint8_t* patch_addr = (uint8_t*)resync_patch_addr;
     if (VirtualProtect(patch_addr, 1, PAGE_READWRITE, &old_protect)) {
@@ -261,7 +289,7 @@ void resync_patch(uint8_t value) {
 
 #define USE_ORIGINAL_RESYNC 1
 
-void run_resync_logic(uint64_t new_timestamp) {
+static void run_resync_logic(uint64_t new_timestamp) {
 #if USE_ORIGINAL_RESYNC
     if (!resyncing) {
         if (prev_timestamp != new_timestamp) {
@@ -343,6 +371,8 @@ typedef void thisfastcall packet_parser_t(
     size_t packet_size
 );
 
+std::atomic<HANDLE> start_punch = NULL;
+
 void thisfastcall packet_parser_hook(
     TF4UDP* self,
     thisfastcall_edx(int dummy_edx,)
@@ -365,16 +395,60 @@ void thisfastcall packet_parser_hook(
             not_in_match = false;
             break;
 #endif
-        case PACKET_TYPE_PUNCH_PING:
-            //sendto(self->socket, (const char*)&PUNCH_PING_PACKET, sizeof(PUNCH_PING_PACKET), 0, &self->recv_addr.addr_any(), self->recv_addr.length());
+        case PACKET_TYPE_PUNCH_PING: {
+            if (addr_is_lobby(self->recv_addr)) {
+                sendto(self->socket, (const char*)&PUNCH_PING_PACKET, sizeof(PUNCH_PING_PACKET), 0, &self->recv_addr.addr_any(), self->recv_addr.length());
+            }
             break;
+        }
         case PACKET_TYPE_PUNCH_SELF: {
-            if (addr_is_lobby(&self->recv_addr.addr_any(), self->recv_addr.length())) {
+            if (addr_is_lobby(self->recv_addr)) {
                 PacketPunchPeer* packet = (PacketPunchPeer*)packet_raw;
                 punch_ip_len = sprint_ip_and_port(punch_ip_buffer, packet->is_ipv6, packet->ip, packet->remote_port);
                 punch_ip_updated = true;
             }
             break;
+        }
+        case PACKET_TYPE_PUNCH_PEER: {
+            if (addr_is_lobby(self->recv_addr)) {
+                PacketPunchPeer* packet = (PacketPunchPeer*)packet_raw;
+                send_punch_response(packet->is_ipv6, packet->ip, packet->remote_port);
+            }
+            break;
+        }
+        case PACKET_TYPE_PUNCH_PINGPONG: {
+            if (packet_size < sizeof(PacketPunchPingPong)) {
+                break;
+            }
+            PacketPunchPingPong* packet = (PacketPunchPingPong*)packet_raw;
+            if (!packet->request_echo) {
+                break;
+	    }
+            sockaddr_in to = { AF_INET };
+            if (packet->use_payload_address) {
+                to.sin_port = packet->sin_port;
+                to.sin_addr = packet->sin_addr;
+            } else {
+                to.sin_port = self->recv_addr.addr_v4().sin_port;
+                to.sin_addr = self->recv_addr.addr_v4().sin_addr;
+            }
+            PacketPunchPingPong response_ = {PACKET_TYPE_PUNCH_PINGPONG,
+                packet->sin_port,
+                packet->sin_addr,
+                false,
+                packet->use_payload_address,
+                packet->index
+            };
+            WSABUF response = { sizeof(response_), (CHAR*)&response_ };
+            DWORD idc;
+            WSASendTo_log(self->socket, &response, 1, &idc, 0, (const sockaddr *)&to, sizeof(to), NULL, NULL);
+            if (packet->use_payload_address) {
+                HANDLE start_punch_ = start_punch;
+                if (start_punch_ != NULL) {
+                    SetEvent(start_punch_);
+                    log_printf("start punching!\n");
+                }
+            }
         }
     }
     

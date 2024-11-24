@@ -1,4 +1,3 @@
-#include <cstdint>
 #if __INTELLISENSE__
 #undef _HAS_CXX20
 #define _HAS_CXX20 0
@@ -11,9 +10,8 @@
 
 #include "netcode.h"
 #include "util.h"
-#include "AllocMan.h"
-#include "Autopunch.h"
-#include "PatchUtils.h"
+#include "alloc_man.h"
+#include "patch_utils.h"
 #include "log.h"
 #include "file_replacement.h"
 #include "config.h"
@@ -31,25 +29,123 @@ using namespace std::literals::string_view_literals;
 const uintptr_t base_address = (uintptr_t)GetModuleHandleA(NULL);
 uintptr_t libact_base_address = 0;
 
+#if SYNC_TYPE == SYNC_USE_QPC
+LARGE_INTEGERX qpc_ms_frequency;
+#endif
+
+/*
 void Cleanup() {
-    autopunch_cleanup();
 }
+*/
 
 struct ScriptAPI {
     uint8_t dummy[0xF8];
     bool load_plugins_from_pak;
 };
 
+static const auto patch_se_upnp = [](void* base_address) {
+#if ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS
+    hotpatch_jump(based_pointer(base_address, 0x1C4BB), my_malloc);
+    hotpatch_jump(based_pointer(base_address, 0x21229), my_calloc);
+    hotpatch_jump(based_pointer(base_address, 0x1C509), my_realloc);
+    hotpatch_jump(based_pointer(base_address, 0x215AD), my_free);
+    hotpatch_jump(based_pointer(base_address, 0x2D3BF), my_recalloc);
+    hotpatch_jump(based_pointer(base_address, 0x32413), my_msize);
+#endif
+};
+
+static auto patch_se_information = [](void* base_address) {
+#if ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS
+    hotpatch_jump(based_pointer(base_address, 0x1B853), my_malloc);
+    hotpatch_jump(based_pointer(base_address, 0x1BBE9), my_calloc);
+    hotpatch_jump(based_pointer(base_address, 0x1B8A1), my_realloc);
+    hotpatch_jump(based_pointer(base_address, 0x1BFAE), my_free);
+    hotpatch_jump(based_pointer(base_address, 0x25FF0), my_recalloc);
+    hotpatch_jump(based_pointer(base_address, 0x2B406), my_msize);
+#endif
+};
+
+static inline void patch_se_trust(void* base_address) {
+#if ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS
+    hotpatch_jump(based_pointer(base_address, 0x5BA7), my_malloc);
+    hotpatch_jump(based_pointer(base_address, 0x5C92), my_calloc);
+    hotpatch_jump(based_pointer(base_address, 0x936E), my_realloc);
+    hotpatch_jump(based_pointer(base_address, 0x5B6D), my_free);
+    hotpatch_jump(based_pointer(base_address, 0x78AB), my_recalloc);
+    hotpatch_jump(based_pointer(base_address, 0x933B), my_msize);
+#endif
+
+    static constexpr const uint8_t data[] = {
+        0xB8, 0x01, 0x00, 0x00, 0x00,   // MOV EAX, 1
+        0xC3,                           // RET
+        0xCC                            // INT3
+    };
+    mem_write(based_pointer(base_address, 0x13C0), data);
+};
+
 typedef void* thisfastcall act_script_plugin_load_t(
     void* self,
-    thisfastcall_edx(int dummy_edx,)
+    thisfastcall_edx(int dummy_edx, )
     const char* plugin_path
 );
 
-void patch_se_libact(void* base_address);
-void patch_se_upnp(void* base_address);
-void patch_se_information(void* base_address);
-void patch_se_trust(void* base_address);
+void* thisfastcall patch_act_script_plugin(
+    void* self,
+    thisfastcall_edx(int dummy_edx,)
+    const char* plugin_path
+) {
+    void* base_address = based_pointer<act_script_plugin_load_t>(libact_base_address, 0x1CC60)(
+        self,
+        thisfastcall_edx(dummy_edx,)
+        plugin_path
+    );
+
+    if (base_address) {
+        log_printf("Applying patches for \"%s\" at %p from ACT\n", plugin_path, base_address);
+        if (!strcmp(plugin_path, "data/plugin/se_lobby.dll")) {
+            patch_se_lobby(base_address);
+            goto plugin_load_end;
+        }
+        if constexpr (!IS_CONSTEXPR(patch_se_upnp(nullptr))) {
+            if (!strcmp(plugin_path, "data/plugin/se_upnp.dll")) {
+                patch_se_upnp(base_address);
+                goto plugin_load_end;
+            }
+        }
+        if constexpr (!IS_CONSTEXPR(patch_se_information(nullptr))) {
+            if (!strcmp(plugin_path, "data/plugin/se_information.dll")) {
+                patch_se_information(base_address);
+                goto plugin_load_end;
+            }
+        }
+        if (!strcmp(plugin_path, "data/plugin/se_trust.dll")) {
+            patch_se_trust(base_address);
+            goto plugin_load_end;
+        }
+    }
+
+plugin_load_end:
+    return base_address;
+}
+
+static void patch_se_libact(void* base_address) {
+    libact_base_address = (uintptr_t)base_address;
+
+#if ALLOCATION_PATCH_TYPE == PATCH_SQUIRREL_ALLOCS
+    //hotpatch_rel32(based_pointer(base_address, 0xC4BE5), my_malloc);
+    //hotpatch_rel32(based_pointer(base_address, 0xC4C89), my_realloc);
+    //hotpatch_rel32(based_pointer(base_address, 0xC4C75), my_free);
+#elif ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS
+    hotpatch_jump(based_pointer(base_address, 0x134632), my_malloc);
+    hotpatch_jump(based_pointer(base_address, 0x12C67B), my_calloc);
+    hotpatch_jump(based_pointer(base_address, 0x13BD53), my_realloc);
+    hotpatch_jump(based_pointer(base_address, 0x12C6D8), my_free);
+    hotpatch_jump(based_pointer(base_address, 0x138F44), my_recalloc);
+    hotpatch_jump(based_pointer(base_address, 0x141C26), my_msize);
+#endif
+
+    hotpatch_rel32(based_pointer(base_address, 0x15F7C), patch_act_script_plugin);
+};
 
 #define load_plugin_from_pak_addr (0x12DDD0_R)
 
@@ -68,18 +164,27 @@ void* thisfastcall patch_exe_script_plugin(
         log_printf("Applying patches for \"%s\" at %p from EXE\n", plugin_path, base_address);
         if (!strcmp(plugin_path, "data/plugin/se_libact.dll")) {
             patch_se_libact(base_address);
+            goto plugin_load_end;
         }
-        else if (!strcmp(plugin_path, "data/plugin/se_lobby.dll")) {
+        if (!strcmp(plugin_path, "data/plugin/se_lobby.dll")) {
             patch_se_lobby(base_address);
+            goto plugin_load_end;
         }
-        else if (!strcmp(plugin_path, "data/plugin/se_upnp.dll")) {
-            patch_se_upnp(base_address);
+        if constexpr (!IS_CONSTEXPR(patch_se_upnp(nullptr))) {
+            if (!strcmp(plugin_path, "data/plugin/se_upnp.dll")) {
+                patch_se_upnp(base_address);
+                goto plugin_load_end;
+            }
         }
-        else if (!strcmp(plugin_path, "data/plugin/se_information.dll")) {
-            patch_se_information(base_address);
+        if constexpr (!IS_CONSTEXPR(patch_se_information(nullptr))) {
+            if (!strcmp(plugin_path, "data/plugin/se_information.dll")) {
+                patch_se_information(base_address);
+                goto plugin_load_end;
+            }
         }
         else if (!strcmp(plugin_path, "data/plugin/se_trust.dll")) {
             patch_se_trust(base_address);
+            goto plugin_load_end;
         }
     }
     else {
@@ -88,96 +193,8 @@ void* thisfastcall patch_exe_script_plugin(
         }
     }
 
+plugin_load_end:
     return base_address;
-}
-
-void* thisfastcall patch_act_script_plugin(
-    void* self,
-    thisfastcall_edx(int dummy_edx,)
-    const char* plugin_path
-) {
-    void* base_address = based_pointer<act_script_plugin_load_t>(libact_base_address, 0x1CC60)(
-        self,
-        thisfastcall_edx(dummy_edx,)
-        plugin_path
-    );
-
-    if (base_address) {
-        log_printf("Applying patches for \"%s\" at %p from ACT\n", plugin_path, base_address);
-        if (!strcmp(plugin_path, "data/plugin/se_lobby.dll")) {
-            patch_se_lobby(base_address);
-        }
-        else if (!strcmp(plugin_path, "data/plugin/se_upnp.dll")) {
-            patch_se_upnp(base_address);
-        }
-        else if (!strcmp(plugin_path, "data/plugin/se_information.dll")) {
-            patch_se_information(base_address);
-        }
-        else if (!strcmp(plugin_path, "data/plugin/se_trust.dll")) {
-            patch_se_trust(base_address);
-        }
-    }
-
-    return base_address;
-}
-
-void patch_se_libact(void* base_address) {
-    libact_base_address = (uintptr_t)base_address;
-    
-#if ALLOCATION_PATCH_TYPE == PATCH_SQUIRREL_ALLOCS
-    //hotpatch_rel32(based_pointer(base_address, 0xC4BE5), my_malloc);
-    //hotpatch_rel32(based_pointer(base_address, 0xC4C89), my_realloc);
-    //hotpatch_rel32(based_pointer(base_address, 0xC4C75), my_free);
-#elif ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS
-    hotpatch_jump(based_pointer(base_address, 0x134632), my_malloc);
-    hotpatch_jump(based_pointer(base_address, 0x12C67B), my_calloc);
-    hotpatch_jump(based_pointer(base_address, 0x13BD53), my_realloc);
-    hotpatch_jump(based_pointer(base_address, 0x12C6D8), my_free);
-    hotpatch_jump(based_pointer(base_address, 0x138F44), my_recalloc);
-    hotpatch_jump(based_pointer(base_address, 0x141C26), my_msize);
-#endif
-
-    hotpatch_rel32(based_pointer(base_address, 0x15F7C), patch_act_script_plugin);
-}
-
-void patch_se_upnp(void* base_address) {
-#if ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS
-    hotpatch_jump(based_pointer(base_address, 0x1C4BB), my_malloc);
-    hotpatch_jump(based_pointer(base_address, 0x21229), my_calloc);
-    hotpatch_jump(based_pointer(base_address, 0x1C509), my_realloc);
-    hotpatch_jump(based_pointer(base_address, 0x215AD), my_free);
-    hotpatch_jump(based_pointer(base_address, 0x2D3BF), my_recalloc);
-    hotpatch_jump(based_pointer(base_address, 0x32413), my_msize);
-#endif
-}
-
-void patch_se_information(void* base_address) {
-#if ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS
-    hotpatch_jump(based_pointer(base_address, 0x1B853), my_malloc);
-    hotpatch_jump(based_pointer(base_address, 0x1BBE9), my_calloc);
-    hotpatch_jump(based_pointer(base_address, 0x1B8A1), my_realloc);
-    hotpatch_jump(based_pointer(base_address, 0x1BFAE), my_free);
-    hotpatch_jump(based_pointer(base_address, 0x25FF0), my_recalloc);
-    hotpatch_jump(based_pointer(base_address, 0x2B406), my_msize);
-#endif
-}
-
-void patch_se_trust(void* base_address) {
-#if ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS
-    hotpatch_jump(based_pointer(base_address, 0x5BA7), my_malloc);
-    hotpatch_jump(based_pointer(base_address, 0x5C92), my_calloc);
-    hotpatch_jump(based_pointer(base_address, 0x936E), my_realloc);
-    hotpatch_jump(based_pointer(base_address, 0x5B6D), my_free);
-    hotpatch_jump(based_pointer(base_address, 0x78AB), my_recalloc);
-    hotpatch_jump(based_pointer(base_address, 0x933B), my_msize);
-#endif
-
-    static constexpr const uint8_t data[] = {
-        0xB8, 0x01, 0x00, 0x00, 0x00,   // MOV EAX, 1
-        0xC3,                           // RET
-        0xCC                            // INT3
-    };
-    mem_write(based_pointer(base_address, 0x13C0), data);
 }
 
 #define sq_vm_malloc_call_addr (0x186745_R)
@@ -210,18 +227,10 @@ void patch_se_trust(void* base_address) {
 // No encryption replacement mode
 #define file_replacement_hook_addrB (0x23F98_R)
 
-void patch_autopunch() {
-    //hotpatch_import(WSARecvFrom_import_addr, my_WSARecvFrom);
-    //hotpatch_import(WSASendTo_import_addr, my_WSASendTo);
-    //hotpatch_import(WSASend_import_addr, my_WSASend);
-    //hotpatch_import(bind_import_addr, my_bind);
-    //hotpatch_import(closesocket_import_addr, my_closesocket);
-
+static void patch_sockets() {
 #if (NETPLAY_PATCH_TYPE == NETPLAY_DISABLE) && (CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS)
     hotpatch_icall(0x170501_R, WSASendTo_log);
 #endif
-
-    //autopunch_init();
 
     hotpatch_icall(0x1702F3_R, bind_inherited_socket);
     hotpatch_icall(0x170641_R, inherit_punch_socket);
@@ -236,7 +245,7 @@ void patch_autopunch() {
     //mem_write(0x170F44_R, INT3_BYTES);
 }
 
-void patch_allocman() {
+static void patch_allocman() {
 #if ALLOCATION_PATCH_TYPE == PATCH_SQUIRREL_ALLOCS
     hotpatch_rel32(sq_vm_malloc_call_addr, my_malloc);
     hotpatch_rel32(sq_vm_realloc_call_addr, my_realloc);
@@ -252,7 +261,7 @@ void patch_allocman() {
 }
 
 #if FILE_REPLACEMENT_TYPE != FILE_REPLACEMENT_NONE
-void patch_file_loading() {
+static void patch_file_loading() {
 
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
     hotpatch_call(file_replacement_hook_addrA, file_replacement_hook);
@@ -280,6 +289,7 @@ void patch_file_loading() {
 
 }
 #endif
+
 // Initialization code shared by th155r and thcrap use
 // Executes before the start of the process
 void common_init(LogType log_type) {
@@ -305,7 +315,13 @@ void common_init(LogType log_type) {
 
     patch_netplay();
 
-    patch_autopunch();
+#if SYNC_TYPE == SYNC_USE_QPC
+    LARGE_INTEGERX qpc_frequency;
+    QueryPerformanceFrequency(&qpc_frequency);
+    qpc_ms_frequency = qpc_frequency / 1000;
+#endif
+
+    patch_sockets();
 
     hotpatch_rel32(patch_act_script_plugin_hook_addr, patch_exe_script_plugin);
 
@@ -316,7 +332,7 @@ void common_init(LogType log_type) {
 #endif
 }
 
-void yes_tampering() {
+static void yes_tampering() {
     hotpatch_ret(0x12E820_R, 0);
     hotpatch_ret(0x130630_R, 0);
     hotpatch_ret(0x132AF0_R, 0);
@@ -370,7 +386,7 @@ extern "C" {
 
 BOOL WINAPI DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
     if (dwReason == DLL_PROCESS_DETACH) {
-        Cleanup();
+        //Cleanup();
     }
     return TRUE;
 }

@@ -217,12 +217,12 @@ function StartupServer( port, mode )
 	}.bindenv(this);
 	this.client_num = 2;
 	this.inst_connect = mb_server;
-	::debug.print("mb_server.Init("+port+","+this.client_num+") begin\n");
-	::debug.fprint("network.log","mb_server.Init("+port+","+this.client_num+") begin\n");
+	//::debug.print("mb_server.Init("+port+","+this.client_num+") begin\n");
+	//::debug.fprint("network.log","mb_server.Init("+port+","+this.client_num+") begin\n");
 	local ret = mb_server.Init(port, this.client_num);
-	::debug.print("mb_server.Init end\n");
-	::debug.fprint("network.log","mb_server.Init end\n");
-	if (mode & 1) {
+	//::debug.print("mb_server.Init end\n");
+	//::debug.fprint("network.log","mb_server.Init end\n");
+	if (mode & 1 && ::LOBBY.GetNetworkState() == 2) {
 		::punch.init_wait();
 	}
 	return ret;
@@ -400,13 +400,13 @@ function StartupClient( addr, port, mode )
 	{
 		connect_param.is_watch <- false;
 	}
-	if (mode & 2) {
-
+	if (mode & 2 && ::LOBBY.GetNetworkState() == 2) {
+		::punch.init_connect(addr, port);
 	}
 
 	this.inst_connect = mb_client;
-	::debug.print("mb_client.Connect("+addr+","+port+","+connect_param+") begin\n");
-	::debug.fprint("network.log","mb_client.Connect("+addr+","+port+","+connect_param+") begin\n");
+	//::debug.print("mb_client.Connect("+addr+","+port+","+connect_param+") begin\n");
+	//::debug.fprint("network.log","mb_client.Connect("+addr+","+port+","+connect_param+") begin\n");
 	return mb_client.Connect(addr, port, connect_param);
 }
 

@@ -293,7 +293,7 @@ static void resync_patch(uint8_t value) {
     }
 }
 
-#define USE_ORIGINAL_RESYNC 1
+#define USE_ORIGINAL_RESYNC 0
 
 static void run_resync_logic(uint64_t new_timestamp) {
 #if USE_ORIGINAL_RESYNC

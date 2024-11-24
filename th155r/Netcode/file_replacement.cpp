@@ -47,69 +47,69 @@ struct PackageReader : FileReader {
 
 static constexpr uint8_t network_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
-#include "replacement_files/network_encrypted.nut.h"
+#include <replacement_files/network_encrypted.nut.h>
 #elif FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/network.nut.h"
+#include <replacement_files/network.nut.h>
 #endif
 };
 
 static constexpr uint8_t network_component_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/network_component.nut.h"
+#include <replacement_files/network_component.nut.h>
 #endif
 };
 
 static constexpr uint8_t network_animation_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/network_animation.nut.h"
+#include <replacement_files/network_animation.nut.h>
 #endif
 };
 
 static constexpr uint8_t version_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/version.nut.h"
+#include <replacement_files/version.nut.h>
 #endif
 };
 
 static constexpr uint8_t title_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/title.nut.h"
+#include <replacement_files/title.nut.h>
 #endif
 };
 
 static constexpr uint8_t config_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/config.nut.h"
+#include <replacement_files/config.nut.h>
 #endif
 };
 
 static constexpr uint8_t config_animation_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/config_animation.nut.h"
+#include <replacement_files/config_animation.nut.h>
 #endif
 };
 
 static constexpr uint8_t battle_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/battle.nut.h"
+#include <replacement_files/battle.nut.h>
 #endif
 };
 
 static constexpr uint8_t dialog_wait_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/dialog_wait.nut.h"
+#include <replacement_files/dialog_wait.nut.h>
 #endif
 };
 
 static constexpr uint8_t character_select_animation_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/character_select_animation.nut.h"
+#include <replacement_files/character_select_animation.nut.h>
 #endif
 };
 
 static constexpr uint8_t menu_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/menu.nut.h"
+#include <replacement_files/menu.nut.h>
 #endif
 };
 
@@ -201,7 +201,7 @@ naked void file_replacement_hook() {
 #endif
 
 static constexpr uint8_t debug_nut[] = {
-#include "new_files/debug.nut.h"
+#include <new_files/debug.nut.h>
 };
 
 static constexpr uint8_t mod_config_nut[] = {

@@ -58,8 +58,11 @@ enum PacketType : uint8_t {
     PACKET_TYPE_PUNCH_PEER = 0x84,
     PACKET_TYPE_PUNCH = 0x85,
     PACKET_TYPE_PUNCH_SELF = 0x86, // Same format as PACKET_TYPE_PUNCH_PEER
-    PACKET_TYPE_PUNCH_PINGPONG = 0x87,
+    PACKET_TYPE_LOBBY_NAME_WAIT = 0x87,
     PACKET_TYPE_IPV6_TEST = 0x88,
+    PACKET_TYPE_PUNCH_DELAY_PING = 0x89,
+    PACKET_TYPE_PUNCH_DELAY_PONGA = 0x8A,
+    PACKET_TYPE_PUNCH_DELAY_PONGB = 0x8B,
 };
 
 struct PacketLayout {
@@ -96,18 +99,21 @@ static_assert(sizeof(PacketIPv6Test) == 0x10, "");
 // size: 0x4
 struct PacketPunchWait {
     PacketType type; // 0x0
-    uint8_t is_ipv6; // 0x1
-    uint16_t local_port; // 0x2
-    alignas(4) unsigned char ip[sizeof(IP6_ADDRESS)]; // 0x4
+    //uint8_t is_ipv6; // 0x1
+    //uint16_t local_port; // 0x2
+    //alignas(4) unsigned char ip[sizeof(IP6_ADDRESS)]; // 0x4
     // 0x14
 
-    PacketPunchWait() = default;
+    //PacketPunchWait() = default;
 
-    PacketPunchWait(const sockaddr_storage& addr, size_t addr_len)
+    PacketPunchWait(
+        //const sockaddr_storage& addr, size_t addr_len
+    )
         : type(PACKET_TYPE_PUNCH_WAIT)
     
     {
-        this->local_port = bswap<uint16_t>(((const sockaddr_in*)&addr)->sin_port);
+        /*
+        this->local_port = ntoh<uint16_t>(((const sockaddr_in*)&addr)->sin_port);
         switch (addr.ss_family) {
             default:
                 this->is_ipv6 = false;
@@ -118,6 +124,7 @@ struct PacketPunchWait {
                 *(IP6_ADDRESS*)this->ip = *(IP6_ADDRESS*)&((const sockaddr_in6*)&addr)->sin6_addr;
                 break;
         }
+        */
     }
 };
 
@@ -169,18 +176,31 @@ struct PacketPunch {
     // 0x1
 };
 
-#pragma pack(push, 1)
-struct PacketPunchPingPong {
-    PacketType type;
-    USHORT sin_port;
-    IN_ADDR sin_addr;
-    bool request_echo;
-    bool use_payload_address;
-    uint32_t index;
-};
-#pragma pack(pop)
+struct PacketPunchDelayPing {
+    PacketType type; // 0x0
+    uint8_t flags; // 0x1
+    uint16_t dest_port; // 0x2
+    alignas(4) unsigned char dest_ip[sizeof(IP6_ADDRESS)]; // 0x4
 
-extern std::atomic<HANDLE> start_punch;
+    PacketPunchDelayPing() = default;
+
+    PacketPunchDelayPing(const sockaddr_storage& addr)
+        : type(PACKET_TYPE_PUNCH_DELAY_PING)
+    {
+        this->dest_port = ntoh<uint16_t>(((sockaddr_in*)&addr)->sin_port);
+        if ((this->flags = addr.ss_family == AF_INET6 ? 0x80 : 0x00)) {
+            *(in_addr6*)&this->dest_ip = ((sockaddr_in6*)&addr)->sin6_addr;
+        } else {
+            *(in_addr*)&this->dest_ip = ((sockaddr_in*)&addr)->sin_addr;
+        }
+    }
+};
+
+struct PacketPunchDelayPong {
+    PacketType type; // 0x0
+    uint8_t index; // 0x1
+    // 0x2
+};
 
 static inline constexpr PacketPunch PUNCH_PACKET = {
     .type = PACKET_TYPE_PUNCH

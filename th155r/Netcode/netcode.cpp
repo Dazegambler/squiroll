@@ -273,17 +273,23 @@ after connection loss due to really bad connection
 //resync_logic
 //start
 static void resync_patch(uint8_t value) {
-    DWORD old_protect;
-    uint8_t* patch_addr = (uint8_t*)resync_patch_addr;
-    if (VirtualProtect(patch_addr, 1, PAGE_READWRITE, &old_protect)) {
-        
-        static constexpr int8_t value_table[] = {
-            5, 10, 15, 30, 45, 90, INT8_MAX, INT8_MAX
-        };
-        int8_t new_value = value_table[value / 32];
-        *patch_addr = new_value;//value_table[value / 16];
 
-        VirtualProtect(patch_addr, 1, old_protect, &old_protect);
+    static constexpr int8_t value_table[] = {
+        5, 10, 15, 30, 45, 90, INT8_MAX, INT8_MAX
+    };
+    constexpr uint8_t divisor = ((UINT8_MAX + 1) / countof(value_table));
+    uint8_t new_value = value_table[value / divisor];
+
+    uint8_t* patch_addr = (uint8_t*)resync_patch_addr;
+
+    if (*patch_addr != new_value) {
+
+        // Not using mem_write because it doesn't get inlined for some reason
+        DWORD old_protect;
+        if (VirtualProtect(patch_addr, 1, PAGE_READWRITE, &old_protect)) {
+            *patch_addr = new_value;
+            VirtualProtect(patch_addr, 1, old_protect, &old_protect);
+        }
     }
 }
 
@@ -371,8 +377,6 @@ typedef void thisfastcall packet_parser_t(
     size_t packet_size
 );
 
-std::atomic<HANDLE> start_punch = NULL;
-
 void thisfastcall packet_parser_hook(
     TF4UDP* self,
     thisfastcall_edx(int dummy_edx,)
@@ -416,39 +420,19 @@ void thisfastcall packet_parser_hook(
             }
             break;
         }
-        case PACKET_TYPE_PUNCH_PINGPONG: {
-            if (packet_size < sizeof(PacketPunchPingPong)) {
-                break;
+        case PACKET_TYPE_PUNCH_DELAY_PING: {
+            if (addr_is_lobby(self->recv_addr)) {
+                PacketPunchConnect* packet = (PacketPunchConnect*)packet_raw;
+                packet->type = PACKET_TYPE_PUNCH_DELAY_PONGA;
+                send_punch_delay_pong(self->socket, packet, packet_size);
             }
-            PacketPunchPingPong* packet = (PacketPunchPingPong*)packet_raw;
-            if (!packet->request_echo) {
-                break;
-	    }
-            sockaddr_in to = { AF_INET };
-            if (packet->use_payload_address) {
-                to.sin_port = packet->sin_port;
-                to.sin_addr = packet->sin_addr;
-            } else {
-                to.sin_port = self->recv_addr.addr_v4().sin_port;
-                to.sin_addr = self->recv_addr.addr_v4().sin_addr;
+            break;
+        }
+        case PACKET_TYPE_PUNCH_DELAY_PONGB: {
+            if (addr_is_lobby(self->recv_addr)) {
+                start_punch = true;
             }
-            PacketPunchPingPong response_ = {PACKET_TYPE_PUNCH_PINGPONG,
-                packet->sin_port,
-                packet->sin_addr,
-                false,
-                packet->use_payload_address,
-                packet->index
-            };
-            WSABUF response = { sizeof(response_), (CHAR*)&response_ };
-            DWORD idc;
-            WSASendTo_log(self->socket, &response, 1, &idc, 0, (const sockaddr *)&to, sizeof(to), NULL, NULL);
-            if (packet->use_payload_address) {
-                HANDLE start_punch_ = start_punch;
-                if (start_punch_ != NULL) {
-                    SetEvent(start_punch_);
-                    log_printf("start punching!\n");
-                }
-            }
+            break;
         }
     }
     

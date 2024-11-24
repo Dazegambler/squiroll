@@ -6,7 +6,7 @@
 #define SYNC_USE_CHRONO 0
 #define SYNC_USE_QPC 1
 
-#define SYNC_TYPE SYNC_USE_CHRONO
+#define SYNC_TYPE SYNC_USE_QPC
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -319,6 +319,28 @@ static inline T bswap(const T& value) {
     }
 }
 
+template<typename T>
+static inline constexpr T hton(T value) {
+    if constexpr (std::endian::native == std::endian::little) {
+        return bswap(value);
+    } else if constexpr (std::endian::native == std::endian::big) {
+        return value;
+    } else {
+        static_assert(false);
+    }
+}
+
+template<typename T>
+static inline constexpr T ntoh(T value) {
+    if constexpr (std::endian::native == std::endian::little) {
+        return bswap(value);
+    } else if constexpr (std::endian::native == std::endian::big) {
+        return value;
+    } else {
+        static_assert(false);
+    }
+}
+
 #if !__has_builtin(__builtin_add_overflow)
 #define __builtin_add_overflow __builtin_add_overflow_impl
 template<typename T>
@@ -620,6 +642,20 @@ static inline void sync_to_milliseconds(int64_t minimum_time, int64_t multiple) 
     int64_t current_time;
     do current_time = current_sync_time();
     while (current_time - initial_time >= minimum_time && current_time % multiple);
+}
+
+template <typename T>
+static inline bool wait_until_true(T& value) {
+    while (!value);
+    return true;
+}
+
+template <typename T>
+static inline bool wait_until_true(T& value, int64_t timeout_ms) {
+    int64_t initial_time = current_sync_time();
+    bool was_true;
+    while (!(was_true = value) && current_sync_time() - initial_time < timeout_ms);
+    return was_true;
 }
 
 #endif

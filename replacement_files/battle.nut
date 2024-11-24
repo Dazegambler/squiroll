@@ -145,8 +145,7 @@ function Create( param )
 	::camera.Reset();
 	this.gauge.Initialize();
 
-	//additions
-	if (::network.IsActive()) {
+	if (::network.IsPlaying()) {
 		::setting.ping.update_consts();
 		if (::setting.ping.enabled) {
 			this.ping_obj = {};
@@ -157,7 +156,7 @@ function Create( param )
 			this.ping_obj.text.green = ::setting.ping.green;
 			this.ping_obj.text.blue = ::setting.ping.blue;
 			this.ping_obj.text.alpha = ::setting.ping.alpha;
-			this.ping_obj.text.ConnectRenderSlot(::graphics.slot.ui, 60000);
+			this.ping_obj.text.ConnectRenderSlot(::graphics.slot.front, 1);
 			this.ping_obj.Update <- function() {
 				local delay = ::network.GetDelay();
 				local str = "ping:" + delay;
@@ -171,8 +170,6 @@ function Create( param )
 			::loop.AddTask(this.ping_obj);
 		}
 	}
-	//end of additions
-	//displayAllElements(this.team[0].master,"master.txt","");
 	if (!::network.IsActive())
 	{
 		if (param.game_mode == 10)
@@ -193,20 +190,6 @@ function Create( param )
 		}
 	}
 }
-
-// function displayAllElements(obj,file,indent) {
-// 	indent += " ";
-//     ::debug.fprint(file,indent+"----"+obj+"----\n");
-
-//     // foreach (key, value in obj) {
-//     //     ::debug.fprint(file,indent+key + " : " + typeof(value) + "\n");
-
-//     //     if (typeof(value) == "table") {
-//     //         displayAllElements(key,file,indent);
-//     //     }
-//     // }
-// 	::debug.fprint(file,indent+"---------------\n");
-// }
 
 function inputdisplaysetup(player) {
 	::setting.input_display.update_consts();
@@ -261,7 +244,6 @@ function inputdisplaysetup(player) {
 	}
 }
 
-//additions
 function getinputs(player,none)
 {
 	local str = "";
@@ -286,7 +268,7 @@ function getinputs(player,none)
 	str += input.b3 ? "E" : none;
 	return str;
 }
-//end of additions
+
 function Release()
 {
 	if (this.ping_task != null) {

@@ -10,7 +10,7 @@ this.item <- [
 	"replay_save",
 	"replay_save_online",
 	"lang",
-	"misc",
+	"mods",
 	null,
 	"exit"
 ];
@@ -59,43 +59,6 @@ function Initialize( enable_lang = false )
 	::menu.cursor.Activate();
 	::menu.back.Activate();
 	::menu.help.Set(this.help);
-
-	if (enable_lang)
-	{
-		this.item = [
-			"se",
-			"bgm",
-			"screen",
-			"vsync",
-			"background",
-			"fps",
-			"key1p",
-			"key2p",
-			"replay_save",
-			"replay_save_online",
-			"lang",
-			"mods"
-			null,
-			"exit"
-		];
-	}
-	else
-	{
-		this.item = [
-			"se",
-			"bgm",
-			"screen",
-			"vsync",
-			"background",
-			"fps",
-			"key1p",
-			"key2p",
-			"replay_save",
-			"replay_save_online",
-			null,
-			"exit"
-		];
-	}
 
 	this.cursor_item = ::menu.common.CreateCursor(this.item);
 	this.cursor_item.val = 0;

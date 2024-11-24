@@ -1,4 +1,4 @@
-this.item<-["se","bgm","screen","vsync","background","fps","key1p","key2p","replay_save","replay_save_online","lang","misc",null,"exit"]
+this.item<-["se","bgm","screen","vsync","background","fps","key1p","key2p","replay_save","replay_save_online","lang","mods",null,"exit"]
 this.proc<-{}
 this.cursor_item<-::menu.common.CreateCursor(this.item)
 this.cursor_se<-this.Cursor(1,11,::input_all)
@@ -24,10 +24,6 @@ this.anime<-{}
 function Initialize(enable_lang=false){::menu.cursor.Activate()
 ::menu.back.Activate()
 ::menu.help.Set(this.help)
-if(enable_lang){this.item=["se","bgm","screen","vsync","background","fps","key1p","key2p","replay_save","replay_save_online","lang","mods"null,"exit"]
-}
-else {this.item=["se","bgm","screen","vsync","background","fps","key1p","key2p","replay_save","replay_save_online",null,"exit"]
-}
 this.cursor_item=::menu.common.CreateCursor(this.item)
 this.cursor_item.val=0
 this.state<-0

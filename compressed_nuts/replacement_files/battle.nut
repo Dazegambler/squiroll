@@ -90,7 +90,7 @@ this.CreateTeam(1,param.team[1])
 this.InitializeUser()
 ::camera.Reset()
 this.gauge.Initialize()
-if(::network.IsActive()){::setting.ping.update_consts()
+if(::network.IsPlaying()){::setting.ping.update_consts()
 if(::setting.ping.enabled){this.ping_obj={}
 this.ping_obj.text<-::font.CreateSystemString("")
 this.ping_obj.text.sx=::setting.ping.SX
@@ -99,7 +99,7 @@ this.ping_obj.text.red=::setting.ping.red
 this.ping_obj.text.green=::setting.ping.green
 this.ping_obj.text.blue=::setting.ping.blue
 this.ping_obj.text.alpha=::setting.ping.alpha
-this.ping_obj.text.ConnectRenderSlot(::graphics.slot.ui,60000)
+this.ping_obj.text.ConnectRenderSlot(::graphics.slot.front,1)
 this.ping_obj.Update<-function() {local delay=::network.GetDelay()
 local str="ping:"+delay
 if(::setting.ping.ping_in_frames)str+="["+((delay+15)/16)+"f]"

@@ -550,7 +550,7 @@ static char pong_recv[sizeof(PacketPunchDelayPong) + 1];
 using delay_mask_t = UBitIntType<std::max(DELAY_PACKET_COUNT, (size_t)32)>;
 
 static constexpr uint64_t DELAY_PACKET_SPACING = 5;
-static constexpr uint64_t MAX_PACKET_END_DELAY = 1000;
+static constexpr uint64_t MAX_PACKET_END_DELAY = 2000;
 static constexpr uint64_t MAX_PUNCH_START_DELAY = 2000;
 
 // Function for a hosting client to acknowledge a REQUEST_MATCH

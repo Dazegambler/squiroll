@@ -273,8 +273,8 @@ after connection loss due to really bad connection
 //resync_logic
 //start
 static void resync_patch(uint8_t value) {
-
-    static constexpr int8_t value_table[] = {
+    //0-255
+    static constexpr int8_t value_table[] = {//0-6
         5, 10, 15, 30, 45, 90, INT8_MAX, INT8_MAX
     };
     constexpr uint8_t divisor = ((UINT8_MAX + 1) / countof(value_table));
@@ -293,9 +293,16 @@ static void resync_patch(uint8_t value) {
     }
 }
 
-#define USE_ORIGINAL_RESYNC 0
+#define USE_ORIGINAL_RESYNC 1
 
 static void run_resync_logic(uint64_t new_timestamp) {
+    /*
+    log_printf(
+    "ASM %3hhu, DIFF %d\n",
+    *(uint8_t*)resync_patch_addr,
+    (uint32_t)new_timestamp - (uint32_t)(new_timestamp >> 32)
+    );
+    */
 #if USE_ORIGINAL_RESYNC
     if (!resyncing) {
         if (prev_timestamp != new_timestamp) {
@@ -312,6 +319,7 @@ static void run_resync_logic(uint64_t new_timestamp) {
         if (lag_packets >= RESYNC_DURATION) {
             resyncing = SQFalse;
             lag_packets = 0;
+            resync_patch(lag_packets);
         }
         else {
             resync_patch(lag_packets);
@@ -323,7 +331,7 @@ static void run_resync_logic(uint64_t new_timestamp) {
     if (prev_timestamp != new_timestamp) {
         prev_timestamp = new_timestamp;
 
-        lag_packets = saturate_sub<uint8_t>(prev_lag_packets, 32u);
+        lag_packets = saturate_sub<uint8_t>(prev_lag_packets, 1u);
     }
     else {
         lag_packets = saturate_add<uint8_t>(prev_lag_packets, 1u);
@@ -358,11 +366,13 @@ int WSAAPI my_WSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWO
         case PACKET_TYPE_18:
             if (lpBuffers[0].len >= 25) {
                 run_resync_logic(*(uint64_t*)&packet->data[16]);
+                //resync_patch();
             }
             break;
         case PACKET_TYPE_19:
             if (lpBuffers[0].len >= 26) {
                 run_resync_logic(*(uint64_t*)&packet->data[17]);
+                //resync_patch();
             }
             break;
 #endif

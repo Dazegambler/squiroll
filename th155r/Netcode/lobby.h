@@ -11,6 +11,24 @@
 
 #include "log.h"
 
+#define PUNCH_BOOST_NONE                0b0000
+#define PUNCH_BOOST_PROCESS_PRIORITY    0b0001
+#define PUNCH_BOOST_THREAD_PRIORITY     0b0010
+#define PUNCH_BOOST_TIMER_PRECISION     0b0100
+#define PUNCH_BOOST_NO_OS_SLEEP         0b1000
+#define PUCNH_BOOST_FULL                0b1111
+
+#define PUNCH_BOOST_TYPE (PUNCH_BOOST_PROCESS_PRIORITY | PUNCH_BOOST_THREAD_PRIORITY | PUNCH_BOOST_TIMER_PRECISION)
+
+#define PUNCH_START_USE_ATOMIC 0
+#define PUNCH_START_USE_EVENT 1
+
+#if PUNCH_BOOST_TYPE == PUCNH_BOOST_FULL
+#define PUNCH_START_TYPE PUNCH_START_USE_ATOMIC
+#else
+#define PUNCH_START_TYPE PUNCH_START_USE_EVENT
+#endif
+
 extern uintptr_t lobby_base_address;
 
 void patch_se_lobby(void* base_address);
@@ -51,6 +69,16 @@ bool addr_is_lobby(const sockaddr* addr, int addr_len);
 
 extern std::atomic<uint32_t> users_in_room;
 
+#if PUNCH_START_TYPE == PUNCH_START_USE_ATOMIC
 extern std::atomic<bool> start_punch;
+#define START_PUNCH_SET_FLAG() start_punch = true
+#define START_PUNCH_RESET_FLAG() start_punch = false
+#define START_PUNCH_WAIT(timeout) wait_until_true(start_punch, (timeout))
+#elif PUNCH_START_TYPE == PUNCH_START_USE_EVENT
+extern WaitableEvent start_punch;
+#define START_PUNCH_SET_FLAG() start_punch.set()
+#define START_PUNCH_RESET_FLAG() start_punch.reset()
+#define START_PUNCH_WAIT(timeout) start_punch.wait(timeout)
+#endif
 
 #endif

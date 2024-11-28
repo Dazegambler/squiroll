@@ -34,8 +34,11 @@
 #define _MACRO_STR(arg) #arg
 #define MACRO_STR(arg) _MACRO_STR(arg)
 #define MACRO_EVAL(...) __VA_ARGS__
+#define MACRO_VOID(...)
 
 #define MACRO_FIRST(arg1, ...) arg1
+
+#define require_semicolon() do; while(0)
 
 #if defined(_MSC_VER) && !defined(MSVC_COMPAT)
 #define MSVC_COMPAT 1
@@ -64,8 +67,6 @@
 #if MSVC_COMPAT
 #include <malloc.h>
 #endif
-
-#define MACRO_VOID(...)
 
 template<class L, int = (L{}(), 0) >
 static inline constexpr bool is_constexpr(L) { return true; }
@@ -623,6 +624,48 @@ struct LARGE_INTEGERX {
     }
 };
 
+struct WaitableEvent {
+    HANDLE os_handle = INVALID_HANDLE_VALUE;
+
+    inline void initialize() {
+        this->os_handle = CreateEventExW(NULL, NULL, CREATE_EVENT_MANUAL_RESET, EVENT_ALL_ACCESS);
+    }
+
+    inline void set() const {
+        (void)SetEvent(this->os_handle);
+    }
+
+    inline void reset() const {
+        (void)ResetEvent(this->os_handle);
+    }
+
+    inline bool wait(uint32_t timeout = INFINITE) const {
+        return WaitForSingleObjectEx(this->os_handle, timeout, FALSE) == WAIT_OBJECT_0;
+    }
+};
+
+struct WaitableTimer {
+    HANDLE os_handle = INVALID_HANDLE_VALUE;
+
+    inline void initialize() {
+        this->os_handle = CreateWaitableTimerExW(NULL, NULL, CREATE_WAITABLE_TIMER_MANUAL_RESET, EVENT_ALL_ACCESS);
+    }
+
+    inline void wait(int64_t duration) const {
+        LARGE_INTEGER delay;
+        delay.QuadPart = -duration;
+        SetWaitableTimer(this->os_handle, &delay, 0, NULL, NULL, TRUE);
+        WaitForSingleObject(this->os_handle, INFINITE);
+    }
+
+    inline void wait_ms(int64_t duration) const {
+        return this->wait(duration * 10000);
+    }
+};
+
+#define CurrentProcessPseudoHandle() ((HANDLE)-1)
+#define CurrentThreadPseudoHandle() ((HANDLE)-2)
+
 #if SYNC_TYPE == SYNC_USE_QPC
 extern LARGE_INTEGERX qpc_ms_frequency;
 #endif
@@ -641,7 +684,7 @@ static inline void sync_to_milliseconds(int64_t minimum_time, int64_t multiple) 
     int64_t initial_time = current_sync_time();
     int64_t current_time;
     do current_time = current_sync_time();
-    while (current_time - initial_time >= minimum_time && current_time % multiple);
+    while (current_time - initial_time < minimum_time || current_time % multiple);
 }
 
 template <typename T>

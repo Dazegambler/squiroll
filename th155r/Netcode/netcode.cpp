@@ -440,7 +440,7 @@ void thisfastcall packet_parser_hook(
         }
         case PACKET_TYPE_PUNCH_DELAY_PONGB: {
             if (addr_is_lobby(self->recv_addr)) {
-                start_punch = true;
+                START_PUNCH_SET_FLAG();
             }
             break;
         }

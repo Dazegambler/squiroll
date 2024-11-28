@@ -33,6 +33,45 @@
 #define lobby_debug_printf(...) EVAL_NOOP(__VA_ARGS__)
 #endif
 
+#if PUNCH_BOOST_TYPE & PUNCH_BOOST_PROCESS_PRIORITY
+#define BOOST_PROCESS_PRIORITY_START() \
+DWORD prev_process_priority = GetPriorityClass(CurrentProcessPseudoHandle()); \
+SetPriorityClass(CurrentProcessPseudoHandle(), REALTIME_PRIORITY_CLASS)
+#define BOOST_PROCESS_PRIORITY_END() SetPriorityClass(CurrentProcessPseudoHandle(), prev_process_priority)
+#else
+#define BOOST_PROCESS_PRIORITY_START() require_semicolon()
+#define BOOST_PROCESS_PRIORITY_END() require_semicolon()
+#endif
+
+#if PUNCH_BOOST_TYPE & PUNCH_BOOST_THREAD_PRIORITY
+#define BOOST_THREAD_PRIORITY_START() \
+int prev_thread_priority = GetThreadPriority(CurrentThreadPseudoHandle()); \
+SetThreadPriority(CurrentThreadPseudoHandle(), THREAD_PRIORITY_TIME_CRITICAL)
+#define BOOST_THREAD_PRIORITY_END() SetThreadPriority(CurrentThreadPseudoHandle(), prev_thread_priority)
+#else
+#define BOOST_THREAD_PRIORITY_START() require_semicolon()
+#define BOOST_THREAD_PRIORITY_END() require_semicolon()
+#endif
+
+#if PUNCH_BOOST_TYPE & PUNCH_BOOST_TIMER_PRECISION
+static UINT minimum_timer_precision = 1;
+#define BOOST_TIMER_PRECISION_START() timeBeginPeriod(minimum_timer_precision)
+#define BOOST_TIMER_PRECISION_END() timeEndPeriod(minimum_timer_precision)
+#else
+#define BOOST_TIMER_PRECISION_START() require_semicolon()
+#define BOOST_TIMER_PRECISION_END() require_semicolon()
+#endif
+
+#define PUNCH_BOOST_START() \
+BOOST_PROCESS_PRIORITY_START(); \
+BOOST_THREAD_PRIORITY_START(); \
+BOOST_TIMER_PRECISION_START()
+
+#define PUNCH_BOOST_END() \
+BOOST_TIMER_PRECISION_END(); \
+BOOST_THREAD_PRIORITY_END(); \
+BOOST_PROCESS_PRIORITY_END()
+
 #if !MINGW_COMPAT
 #define SOCKADDR_IN4_LITERAL(ip, port) (sockaddr_in){ .sin_family = AF_INET, .sin_port = port, .sin_addr = ip }
 #define SOCKADDR_IN6_LITERAL(ip, port) (sockaddr_in6){ .sin6_family = AF_INET6, .sin6_port = port, .sin6_addr = ip }
@@ -173,7 +212,13 @@ static size_t lobby_addr_length = 0;
 
 std::atomic<uint32_t> users_in_room = {};
 
+#if PUNCH_START_TYPE == PUNCH_START_USE_ATOMIC
 std::atomic<bool> start_punch = {};
+#elif PUNCH_START_TYPE == PUNCH_START_USE_EVENT
+WaitableEvent start_punch;
+#endif
+
+WaitableTimer punch_timer;
 
 bool addr_is_lobby(const sockaddr* addr, int addr_len) {
     return addr_len == lobby_addr_length && !memcmp(addr, &lobby_addr, addr_len);
@@ -476,7 +521,7 @@ int thisfastcall lobby_send_string_udp_send_hook_REQUEST(
     thisfastcall_edx(int dummy_edx,)
     const char* str
 ) {
-    SOCKET sock = get_or_create_punch_socket(!ScrollLockOn() ? 0 : self->local_port);
+    SOCKET sock = get_or_recreate_punch_socket(!ScrollLockOn() ? 0 : self->local_port);
     if (sock != INVALID_SOCKET) {
         send_lobby_name_packet(sock, self->current_nickname.data(), self->current_nickname.length());
     }
@@ -531,7 +576,7 @@ void send_punch_response(bool is_ipv6, const void* ip, uint16_t port) {
     
     SOCKET sock = punch_socket;
     if (sock != INVALID_SOCKET) {
-        start_punch = true;
+        START_PUNCH_SET_FLAG();
         send_punch_packets(sock, (const sockaddr*)&addr, !is_ipv6 ? sizeof(sockaddr_in) : sizeof(sockaddr_in6));
     }
 }
@@ -545,11 +590,12 @@ static constexpr size_t DELAY_PACKET_COUNT = 5;
 static_assert(std::bit_width(DELAY_PACKET_COUNT - 1) <= 7 && DELAY_PACKET_COUNT <= 64);
 
 static int64_t sending_times[DELAY_PACKET_COUNT] = {};
-static char pong_recv[sizeof(PacketPunchDelayPong) + 1];
+static char pong_recv[sizeof(PacketPunchDelayPong) + 64];
 
 using delay_mask_t = UBitIntType<std::max(DELAY_PACKET_COUNT, (size_t)32)>;
 
 static constexpr uint64_t DELAY_PACKET_SPACING = 5;
+static constexpr uint64_t DELAY_RECV_SPACING = 1;
 static constexpr uint64_t MAX_PACKET_END_DELAY = 2000;
 static constexpr uint64_t MAX_PUNCH_START_DELAY = 2000;
 
@@ -566,11 +612,12 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
     const char* current_nickname,
     uint16_t port
 ) {
-    SOCKET sock = get_or_create_punch_socket(self->local_port);
+    SOCKET sock = get_or_create_punch_socket(!ScrollLockOn() ? self->local_port : 0);
     if (sock != INVALID_SOCKET) {
         send_lobby_name_packet<true>(sock, current_nickname, current_nickname_length);
-        start_punch = false;
+        START_PUNCH_RESET_FLAG();
     }
+
     int ret = based_pointer<lobby_send_string_t>(lobby_base_address, 0x20820)(
         self,
         thisfastcall_edx(0,)
@@ -581,9 +628,12 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
         sockaddr_storage client_addr;
         int client_addr_len = init_sockaddr(client_addr, false, host, port);
 
-        if (!wait_until_true(start_punch, MAX_PUNCH_START_DELAY)) {
-            send_punch_packets(sock, (const sockaddr*)&client_addr, client_addr_len);
-        }
+        PUNCH_BOOST_START();
+
+        START_PUNCH_WAIT(MAX_PUNCH_START_DELAY);
+        send_punch_packets(sock, (const sockaddr*)&client_addr, client_addr_len);
+
+        PUNCH_BOOST_END();
     }
     return ret;
 }
@@ -663,6 +713,8 @@ msvc_string* fastcall lobby_recv_welcome_hook(
 
     SOCKET sock = get_punch_socket();
     if (sock != INVALID_SOCKET) {
+        PUNCH_BOOST_START();
+
         sockaddr_storage client_addr;
         int client_addr_len = init_sockaddr(client_addr, false, host, atoi(port->data()));
 
@@ -671,77 +723,114 @@ msvc_string* fastcall lobby_recv_welcome_hook(
         PacketPunchDelayPing packet;
         new (&packet) PacketPunchDelayPing(client_addr);
 
-        int64_t most_recent_sync_time = current_sync_time();
-
         uint32_t received_number = 0;
         uint64_t total_delay = 0;
         delay_mask_t recv_mask = 0;
 
-        auto recv_delay_packet = [&]() {
-            sockaddr_storage recv_addr;
-            int recv_addr_len;
-            size_t index;
-            if (
-                recvfrom(sock, pong_recv, sizeof(pong_recv), 0, (sockaddr*)&recv_addr, &recv_addr_len) > 0 &&
-                ((PacketPunchDelayPong*)pong_recv)->type == PACKET_TYPE_PUNCH_DELAY_PONGB &&
-                (index = ((PacketPunchDelayPong*)pong_recv)->index) < countof(sending_times) &&
-                !(recv_mask & (delay_mask_t)1 << index) &&
-                addr_is_lobby((sockaddr*)&recv_addr, recv_addr_len)
-            ) {
-                ++received_number;
-                total_delay += most_recent_sync_time - sending_times[index];
-                recv_mask |= (delay_mask_t)1 << index;
-            }
-        };
+        int64_t most_recent_sync_time = current_sync_time();
+        int64_t initial_sync_time;
 
-        auto update_sync_time = [&]() {
-            int64_t cur_sync_time = current_sync_time();
-            int64_t sync_diff = DELAY_PACKET_SPACING - (cur_sync_time - most_recent_sync_time);
-            if (sync_diff > 0) {
-                Sleep(sync_diff);
-            }
-            most_recent_sync_time = cur_sync_time;
+        auto recv_multiple_delay_packets = [&](uint64_t sleep_time) {
+            do {
+                sockaddr_storage recv_addr;
+                int recv_addr_len = sizeof(sockaddr_storage);
+                size_t index;
+                int ret = recvfrom(sock, pong_recv, sizeof(pong_recv), 0, (sockaddr*)&recv_addr, &recv_addr_len);
+                if (ret > 0) {
+                    if (
+                        ((PacketPunchDelayPong*)pong_recv)->type == PACKET_TYPE_PUNCH_DELAY_PONGB &&
+                        (index = ((PacketPunchDelayPong*)pong_recv)->index) < countof(sending_times) &&
+                        !(recv_mask & (delay_mask_t)1 << index) &&
+                        addr_is_lobby((sockaddr*)&recv_addr, recv_addr_len)
+                    ) {
+                        total_delay += most_recent_sync_time - sending_times[index];
+                        recv_mask |= (delay_mask_t)1 << index;
+                        if (++received_number == countof(sending_times)) {
+                            return true;
+                        }
+                    }
+                }
+                //else if (ret < 0) {
+                    //log_printf("recvfrom error %d %d\n", ret, WSAGetLastError());
+                //}
+                int64_t cur_sync_time;
+                if constexpr (DELAY_RECV_SPACING == 1) {
+#if PUNCH_BOOST_TYPE & PUNCH_BOOST_NO_OS_SLEEP
+                    while (most_recent_sync_time == (cur_sync_time = current_sync_time()));
+                    most_recent_sync_time = cur_sync_time;
+#else
+                    cur_sync_time = current_sync_time();
+                    bool needs_sleep = most_recent_sync_time == cur_sync_time;
+                    most_recent_sync_time = cur_sync_time;
+                    if (needs_sleep) {
+                        //log_printf("SLEEP: 1\n");
+                        //SleepEx(1, FALSE);
+                        punch_timer.wait_ms(1);
+                        most_recent_sync_time = current_sync_time();
+                    }
+#endif
+                } else {
+#if PUNCH_BOOST_TYPE & PUNCH_BOOST_NO_OS_SLEEP
+                    do cur_sync_time = current_sync_time();
+                    while (cur_sync_time - most_recent_sync_time < DELAY_RECV_SPACING);
+                    most_recent_sync_time = cur_sync_time;
+#else
+                    cur_sync_time = current_sync_time();
+                    int64_t sync_diff = DELAY_RECV_SPACING - (cur_sync_time - most_recent_sync_time);
+                    most_recent_sync_time = cur_sync_time;
+                    if (sync_diff > 0) {
+                        //log_printf("SLEEP: %u\n", (uint32_t)sync_diff);
+                        //SleepEx(sync_diff, FALSE);
+                        punch_timer.wait_ms(sync_diff);
+                        most_recent_sync_time = current_sync_time();
+                    }
+#endif
+                }
+            } while (most_recent_sync_time - initial_sync_time < sleep_time);
+            return false;
         };
 
         size_t i = 0;
         while (true) {
+            initial_sync_time = most_recent_sync_time;
             sending_times[i] = most_recent_sync_time;
             sendto(sock, (const char*)&packet, sizeof(packet), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
+
+            if (recv_multiple_delay_packets(DELAY_PACKET_SPACING)) {
+                goto finished_receive;
+            }
 
             if (++i >= countof(sending_times)) {
                 break;
             }
 
-            recv_delay_packet();
-            update_sync_time();
+            // Increment the index in the send packet
             ++packet.flags;
         }
 
-        int64_t initial_sync_time = most_recent_sync_time;
-        do {
-            recv_delay_packet();
-            if (received_number >= countof(sending_times)) {
-                break;
-            }
-            update_sync_time();
-        } while (most_recent_sync_time - initial_sync_time < MAX_PACKET_END_DELAY);
+        initial_sync_time = most_recent_sync_time;
+        recv_multiple_delay_packets(MAX_PACKET_END_DELAY);
         
         if (received_number) {
+    finished_receive:
             total_delay /= received_number * 2;
-
-#if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
-            log_printf("DELAY: %llu ms (%zu responses)\n", total_delay, received_number);
-#endif
-
-            set_blocking_state<true>(sock);
 
             packet.type = PACKET_TYPE_PUNCH_DELAY_PONGA;
             sendto(sock, (const char*)&packet, sizeof(packet), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
 
-            Sleep(total_delay);
+            //SleepEx(total_delay, FALSE);
+            punch_timer.wait_ms(total_delay);
         }
 
         send_punch_packets(sock, (const sockaddr*)&client_addr, client_addr_len);
+
+#if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
+        log_printf("DELAY: %llu ms (%zu responses)\n", total_delay, received_number);
+#endif
+
+        set_blocking_state<true>(sock);
+
+        PUNCH_BOOST_END();
     }
 
     return based_pointer<lobby_std_string_concat_t>(lobby_base_address, 0x12920)(out_str, strB, port);
@@ -1213,4 +1302,16 @@ void patch_se_lobby(void* base_address) {
     mem_write(based_pointer(base_address, 0x79F4), lobby_user_count_patchE);
     hotpatch_rel32(based_pointer(base_address, 0x7A0D), lobby_user_count_from_str);
     mem_write(based_pointer(base_address, 0x7A11), lobby_user_count_patchF);
+
+#if PUNCH_START_TYPE == PUNCH_START_USE_EVENT
+    start_punch.initialize();
+#endif
+
+#if PUNCH_BOOST_TYPE & PUNCH_BOOST_TIMER_PRECISION
+    TIMECAPS time_caps;
+    timeGetDevCaps(&time_caps, sizeof(time_caps));
+    minimum_timer_precision = time_caps.wPeriodMin;
+#endif
+
+    punch_timer.initialize();
 }

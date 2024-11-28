@@ -56,6 +56,7 @@ enum IPv6State : int8_t {
 };
 
 IPv6State get_ipv6_state();
+bool get_netplay_state();
 
 void set_ipv6_state(bool state);
 

@@ -129,6 +129,9 @@ static constexpr char CONFIG_FILE_NAME[] = "\\netcode.ini";
 #define NETWORK_IPV6_KEY "enable_ipv6"
 #define NETWORK_IPV6_DEFAULT "maybe"
 #define NETWORK_IPV6_DEFAULT_STR NETWORK_IPV6_DEFAULT
+#define NETWORK_NETPLAY_KEY "netplay"
+#define NETWORK_NETPLAY_DEFAULT true
+#define NETWORK_NETPLAY_DEFAULT_STR MACRO_STR(NETWORK_NETPLAY_DEFAULT)
 
 static inline bool create_dummy_file(const char* path) {
 	HANDLE handle = CreateFileA(
@@ -306,8 +309,7 @@ uint32_t get_ping_color() {
 }
 
 static char PING_FRAMES_BUFFER[8]{ '\0' };
-bool get_ping_frames()
-{
+bool get_ping_frames() {
 	return GET_BOOL_CONFIG(PING, FRAMES);
 }
 
@@ -361,14 +363,12 @@ bool get_inputp1_spacing() {
 }
 
 static char INPUT1_TIMER_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
-int32_t get_inputp1_timer()
-{
+int32_t get_inputp1_timer() {
 	return GET_INT_CONFIG(INPUT1, TIMER);
 }
 
 static char INPUT1_RAW_INPUT_BUFFER[8]{'\0'};
-bool get_inputp1_raw_input()
-{
+bool get_inputp1_raw_input() {
 	return GET_BOOL_CONFIG(INPUT1, RAW_INPUT);
 }
 
@@ -456,6 +456,11 @@ IPv6State get_ipv6_state() {
 	return ret;
 }
 
+static char NETWORK_NETPLAY_BUFFER[8]{ '\0' };
+bool get_netplay_state() {
+	return GET_BOOL_CONFIG(NETWORK, NETPLAY);
+}
+
 void set_ipv6_state(bool state) {
 	set_config_string(NETWORK_SECTION_NAME, NETWORK_IPV6_KEY, bool_str(state));
 }
@@ -520,6 +525,7 @@ void init_config_file() {
 			CONFIG_DEFAULT(INPUT2, RAW_INPUT);
 
 			CONFIG_DEFAULT(NETWORK, IPV6);
+			CONFIG_DEFAULT(NETWORK, NETPLAY);
 		}
 	}
 }

@@ -18,6 +18,8 @@
 #include "config.h"
 #include <synchapi.h>
 
+static bool enable_netplay = true;
+
 char punch_ip_buffer[INET6_ADDRSTRLEN] = "";
 size_t punch_ip_len = 0;
 bool punch_ip_updated = false;
@@ -360,12 +362,18 @@ int WSAAPI my_WSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWO
             not_in_match = false;
             break;
         case PACKET_TYPE_18:
-            if (lpBuffers[0].len >= 25) {
+            if (
+                enable_netplay &&
+                lpBuffers[0].len >= 25
+            ) {
                 run_resync_logic(*(uint64_t*)&packet->data[16]);
             }
             break;
         case PACKET_TYPE_19:
-            if (lpBuffers[0].len >= 26) {
+            if (
+                enable_netplay &&
+                lpBuffers[0].len >= 26
+            ) {
                 run_resync_logic(*(uint64_t*)&packet->data[17]);
             }
             break;
@@ -625,6 +633,7 @@ static constexpr uint8_t unlock_fixB11[] = {
 #endif
 
 void patch_netplay() {
+
     mem_write(patchA_addr, PATCH_BYTES<INT8_MAX>);
 
 #if BETTER_BLACK_SCREEN_FIX
@@ -636,7 +645,9 @@ void patch_netplay() {
     mem_write(0x171F64_R, PATCH_BYTES<0x89>);
 #endif
 
-    resync_patch(160);
+    if ((enable_netplay = get_netplay_state())) {
+        resync_patch(160);
+    }
 
     // This may seem redundant, but it helps prevent
     // conflicts with the original netplay patch
@@ -645,7 +656,6 @@ void patch_netplay() {
 
     hotpatch_rel32(0x176B8A_R, packet_parser_hook);
     hotpatch_import(wsasendto_import_addr, my_WSASendTo);
-
 
 #if BETTER_BLACK_SCREEN_FIX
     mem_write(0x172FF1_R, unlock_fixB1);

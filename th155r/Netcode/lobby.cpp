@@ -27,6 +27,8 @@
 #include "netcode.h"
 #include "lobby.h"
 
+#define ONLY_LOG_CUSTOM_PACKETS 0
+
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_LOBBY_DEBUG
 #define lobby_debug_printf(...) log_printf(__VA_ARGS__)
 #else
@@ -218,7 +220,9 @@ std::atomic<bool> start_punch = {};
 WaitableEvent start_punch;
 #endif
 
+#if PUNCH_SLEEP_TYPE == PUNCH_SLEEP_USE_TIMER
 WaitableTimer punch_timer;
+#endif
 
 bool addr_is_lobby(const sockaddr* addr, int addr_len) {
     return addr_len == lobby_addr_length && !memcmp(addr, &lobby_addr, addr_len);
@@ -232,55 +236,6 @@ static int RECVFROM_ADDR_LEN = 0;
 static uint8_t SENDTO_TYPE = UINT8_MAX;
 static uint8_t RECVFROM_TYPE = UINT8_MAX;
 #endif
-
-// Function for telling the server what the external port of this
-// client is for a lobby based match. This should not be delayed
-// relative to the start of the hooks.
-template<bool is_welcome = false>
-static void send_lobby_name_packet(SOCKET sock, const char* nickname, size_t length) {
-    PacketLobbyName* name_packet = (PacketLobbyName*)_alloca(LOBBY_NAME_PACKET_SIZE(length));
-    if constexpr (is_welcome) {
-        name_packet->type = PACKET_TYPE_LOBBY_NAME_WAIT;
-    } else {
-        name_packet->type = PACKET_TYPE_LOBBY_NAME;
-    }
-    name_packet->length = length;
-    memcpy(name_packet->name, nickname, length);
-
-    int success = sendto(sock, (const char*)name_packet, LOBBY_NAME_PACKET_SIZE(length), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
-    lobby_debug_printf(!is_welcome ? "Sending nickA (%zu):%s\n" : "Sending nickB (%zu):%s\n", length, nickname);
-    if (success == SOCKET_ERROR) {
-        lobby_debug_printf("FAILED nick:%u\n", WSAGetLastError());
-    }
-}
-
-// Function for telling the server what the external port of this
-// client is for a direct connect match. The server also sends
-// extra packets periodically so that it can remove a client that
-// left the waiting menu from the internal data structures.
-void send_lobby_punch_wait() {
-    PacketPunchWait packet;
-    //new (&packet) PacketPunchWait(local_addr, local_addr_length);
-    new (&packet) PacketPunchWait();
-
-    int ret = sendto(punch_socket, (const char*)&packet, sizeof(PacketPunchWait), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
-    if (ret <= 0) {
-        lobby_debug_printf("FAILED wait:%u\n", WSAGetLastError());
-    }
-}
-
-void send_lobby_punch_connect(bool is_ipv6, const char* ip, uint16_t port) {
-    PacketPunchConnect packet;
-    new (&packet) PacketPunchConnect(is_ipv6, ip, port);
-
-    int ret = sendto(punch_socket, (const char*)&packet, sizeof(PacketPunchConnect), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
-    if (ret <= 0) {
-        lobby_debug_printf("FAILED connect:%u\n", WSAGetLastError());
-    }
-    else {
-        Sleep(500);
-    }
-}
 
 template<bool abandon_message = true>
 inline void abandon_punch_socket_no_lock() {
@@ -484,6 +439,254 @@ int WSAAPI bind_inherited_socket(SOCKET s, const sockaddr* name, int namelen) {
     return ret;
 }
 
+static constexpr size_t DELAY_PACKET_COUNT = 5;
+
+static_assert(std::bit_width(DELAY_PACKET_COUNT - 1) <= 7 && DELAY_PACKET_COUNT <= 64);
+
+static int64_t sending_times[DELAY_PACKET_COUNT] = {};
+static char pong_recv[sizeof(PacketPunchDelayPong) + 64];
+
+using delay_mask_t = UBitIntType<std::max(DELAY_PACKET_COUNT, (size_t)32)>;
+
+static constexpr uint64_t DELAY_PACKET_SPACING_MS = 5;
+static constexpr uint64_t DELAY_RECV_SPACING_MS = 1;
+static constexpr uint64_t MAX_PACKET_END_DELAY_MS = 2000;
+static constexpr uint64_t MAX_PUNCH_START_DELAY_MS = 2000;
+
+#if SYNC_TYPE == SYNC_USE_MILLISECONDS
+static constexpr uint64_t DELAY_PACKET_SPACING = DELAY_PACKET_SPACING_MS;
+static constexpr uint64_t DELAY_RECV_SPACING = DELAY_RECV_SPACING_MS;
+static constexpr uint64_t MAX_PACKET_END_DELAY = MAX_PACKET_END_DELAY_MS;
+static constexpr uint64_t MAX_PUNCH_START_DELAY = MAX_PUNCH_START_DELAY_MS;
+#elif SYNC_TYPE == SYNC_USE_MICROSECONDS
+static constexpr uint64_t DELAY_PACKET_SPACING = DELAY_PACKET_SPACING_MS * 1000;
+static constexpr uint64_t DELAY_RECV_SPACING = 100;
+static constexpr uint64_t MAX_PACKET_END_DELAY = MAX_PACKET_END_DELAY_MS * 1000;
+static constexpr uint64_t MAX_PUNCH_START_DELAY = MAX_PUNCH_START_DELAY_MS * 1000;
+#endif
+
+// Function for telling the server what the external port of this
+// client is for a lobby based match. This should not be delayed
+// relative to the start of the hooks.
+template<bool is_welcome = false>
+static void send_lobby_name_packet(SOCKET sock, const char* nickname, size_t length) {
+    PacketLobbyName* name_packet = (PacketLobbyName*)_alloca(LOBBY_NAME_PACKET_SIZE(length));
+    if constexpr (is_welcome) {
+        name_packet->type = PACKET_TYPE_LOBBY_NAME_WAIT;
+    } else {
+        name_packet->type = PACKET_TYPE_LOBBY_NAME;
+    }
+    name_packet->length = length;
+    memcpy(name_packet->name, nickname, length);
+
+    int success = sendto(sock, (const char*)name_packet, LOBBY_NAME_PACKET_SIZE(length), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
+    lobby_debug_printf(!is_welcome ? "Sending nickA (%zu):%s\n" : "Sending nickB (%zu):%s\n", length, nickname);
+    if (success != SOCKET_ERROR) {
+        if constexpr (is_welcome) {
+            respond_to_punch_ping = true;
+        }
+    } else {
+        lobby_debug_printf("FAILED nick:%u\n", WSAGetLastError());
+    }
+}
+
+// Function for telling the server what the external port of this
+// client is for a direct connect match. The server also sends
+// extra packets periodically so that it can remove a client that
+// left the waiting menu from the internal data structures.
+void send_lobby_punch_wait() {
+    PacketPunchWait packet;
+    //new (&packet) PacketPunchWait(local_addr, local_addr_length);
+    new (&packet) PacketPunchWait();
+
+    int ret = sendto(punch_socket, (const char*)&packet, sizeof(PacketPunchWait), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
+    if (ret > 0) {
+        respond_to_punch_ping = true;
+    } else {
+        lobby_debug_printf("FAILED wait:%u\n", WSAGetLastError());
+    }
+}
+
+static WSABUF PUNCH_BUF = {
+    .len = sizeof(PUNCH_PACKET),
+    .buf = (CHAR*)&PUNCH_PACKET
+};
+
+static void send_punch_packets(SOCKET sock, const sockaddr* addr, int addr_len) {
+    DWORD idc;
+    for (size_t i = 0; i < 30; ++i) {
+        WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, addr, addr_len, NULL, NULL);
+    }
+}
+
+void send_punch_response(bool is_ipv6, const void* ip, uint16_t port) {
+    sockaddr_storage addr;
+    if (!is_ipv6) {
+        INIT_SOCKADDR_IN4(addr, *(in_addr*)ip, hton(port));
+    } else {
+        INIT_SOCKADDR_IN6(addr, *(in6_addr*)ip, hton(port));
+    }
+    
+    SOCKET sock = punch_socket;
+    if (sock != INVALID_SOCKET) {
+        START_PUNCH_SET_FLAG();
+        send_punch_packets(sock, (const sockaddr*)&addr, !is_ipv6 ? sizeof(sockaddr_in) : sizeof(sockaddr_in6));
+    }
+}
+
+void send_punch_delay_pong(SOCKET sock, const void* buf, size_t length) {
+    sendto(sock, (const char*)buf, length, 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
+}
+
+template <bool is_lobby>
+static inline void send_delayed_punch_packets(SOCKET sock, const sockaddr_storage& addr, int addr_len) {
+    PUNCH_BOOST_START();
+
+    set_blocking_state<false>(sock);
+
+    PacketPunchDelayPing packet;
+    new (&packet) PacketPunchDelayPing(addr);
+
+    uint32_t received_number = 0;
+    uint64_t total_delay = 0;
+    delay_mask_t recv_mask = 0;
+
+    int64_t most_recent_sync_time = current_sync_time();
+    int64_t initial_sync_time;
+        
+    auto recv_multiple_delay_packets = [&](uint64_t sleep_time) lambda_forceinline {
+        do {
+            sockaddr_storage recv_addr;
+            int recv_addr_len = sizeof(sockaddr_storage);
+            size_t index;
+            int ret = recvfrom(sock, pong_recv, sizeof(pong_recv), 0, (sockaddr*)&recv_addr, &recv_addr_len);
+            if (ret > 0) {
+                if (
+                    ((PacketPunchDelayPong*)pong_recv)->type == PACKET_TYPE_PUNCH_DELAY_PONGB &&
+                    (index = ((PacketPunchDelayPong*)pong_recv)->index) < countof(sending_times) &&
+                    !(recv_mask & (delay_mask_t)1 << index) &&
+                    addr_is_lobby((sockaddr*)&recv_addr, recv_addr_len)
+                ) {
+                    total_delay += most_recent_sync_time - sending_times[index];
+                    recv_mask |= (delay_mask_t)1 << index;
+                    if (++received_number == countof(sending_times)) {
+                        return true;
+                    }
+                }
+            }
+            //else if (ret < 0) {
+                //log_printf("recvfrom error %d %d\n", ret, WSAGetLastError());
+            //}
+            int64_t cur_sync_time;
+            if constexpr (DELAY_RECV_SPACING == 1) {
+#if PUNCH_SLEEP_TYPE == PUNCH_SLEEP_USE_SPIN
+                while (most_recent_sync_time == (cur_sync_time = current_sync_time()));
+                most_recent_sync_time = cur_sync_time;
+#elif PUNCH_SLEEP_TYPE == PUNCH_SLEEP_USE_TIMER
+                cur_sync_time = current_sync_time();
+                bool needs_sleep = most_recent_sync_time == cur_sync_time;
+                most_recent_sync_time = cur_sync_time;
+                if (needs_sleep) {
+                    punch_timer.wait_sync(1);
+                    most_recent_sync_time = current_sync_time();
+                }
+#endif
+            } else {
+#if PUNCH_SLEEP_TYPE == PUNCH_SLEEP_USE_SPIN
+                do cur_sync_time = current_sync_time();
+                while (cur_sync_time - most_recent_sync_time < DELAY_RECV_SPACING);
+                most_recent_sync_time = cur_sync_time;
+#elif PUNCH_SLEEP_TYPE == PUNCH_SLEEP_USE_TIMER
+                cur_sync_time = current_sync_time();
+                int64_t sync_diff = DELAY_RECV_SPACING - (cur_sync_time - most_recent_sync_time);
+                most_recent_sync_time = cur_sync_time;
+                if (sync_diff > 0) {
+                    punch_timer.wait_sync(sync_diff);
+                    most_recent_sync_time = current_sync_time();
+                }
+#endif
+            }
+        } while (most_recent_sync_time - initial_sync_time < sleep_time);
+        return false;
+    };
+
+    size_t i = 0;
+    while (true) {
+        initial_sync_time = most_recent_sync_time;
+        sending_times[i] = most_recent_sync_time;
+        sendto(sock, (const char*)&packet, sizeof(packet), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
+
+        if (recv_multiple_delay_packets(DELAY_PACKET_SPACING)) {
+            goto finished_receive;
+        }
+
+        if (++i >= countof(sending_times)) {
+            break;
+        }
+
+        // Increment the index in the send packet
+        ++packet.flags;
+    }
+
+    initial_sync_time = most_recent_sync_time;
+    recv_multiple_delay_packets(MAX_PACKET_END_DELAY);
+        
+    if (received_number) {
+finished_receive:
+        total_delay /= received_number * 2;
+
+        if constexpr (is_lobby) {
+            packet.type = PACKET_TYPE_PUNCH_DELAY_PONGA;
+        } else {
+            packet.type = PACKET_TYPE_PUNCH_CONNECT;
+        }
+        sendto(sock, (const char*)&packet, sizeof(packet), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
+
+#if PUNCH_SLEEP_TYPE == PUNCH_SLEEP_USE_SPIN
+        spin_for_sync_time(total_delay);
+#elif PUNCH_SLEEP_TYPE == PUNCH_SLEEP_USE_TIMER
+        punch_timer.wait_sync(total_delay);
+#endif
+    }
+
+    send_punch_packets(sock, (const sockaddr*)&addr, addr_len);
+
+#if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
+    log_printf(
+#if SYNC_TYPE == SYNC_USE_MILLISECONDS
+        "DELAY: %llu ms (%zu responses)\n"
+#elif SYNC_TYPE == SYNC_USE_MICROSECONDS
+        "DELAY: %llu microseconds (%zu responses)\n"
+#endif
+        , total_delay, received_number
+    );
+#endif
+
+    set_blocking_state<true>(sock);
+
+    PUNCH_BOOST_END();
+}
+
+void send_lobby_punch_connect(bool is_ipv6, const char* ip, uint16_t port) {
+    sockaddr_storage addr = {};
+    int addr_len;
+    if (!is_ipv6) {
+        addr.ss_family = AF_INET;
+        ((sockaddr_in*)&addr)->sin_port = hton(port);
+        inet_pton(AF_INET, ip, &((sockaddr_in*)&addr)->sin_addr);
+        addr_len = sizeof(sockaddr_in);
+    } else {
+        addr.ss_family = AF_INET6;
+        ((sockaddr_in6*)&addr)->sin6_port = hton(port);
+        inet_pton(AF_INET6, ip, &((sockaddr_in6*)&addr)->sin6_addr);
+        addr_len = sizeof(sockaddr_in6);
+    }
+
+    // This ends up blocking the GUI thread, but it's only the direct
+    // connect menu, so it's probably fine?
+    send_delayed_punch_packets<false>(punch_socket, addr, addr_len);
+}
+
 /*
 typedef int thisfastcall send_text_t(
     void* self,
@@ -504,7 +707,6 @@ int thisfastcall log_sent_text(
     );
 }
 */
-
 
 typedef int thisfastcall lobby_send_string_t(
     AsyncLobbyClient* self,
@@ -553,51 +755,6 @@ int thisfastcall lobby_send_string_udp_send_hook_WELCOME(
     );
 }
 */
-
-static WSABUF PUNCH_BUF = {
-    .len = sizeof(PUNCH_PACKET),
-    .buf = (CHAR*)&PUNCH_PACKET
-};
-
-static void send_punch_packets(SOCKET sock, const sockaddr* addr, int addr_len) {
-    DWORD idc;
-    for (size_t i = 0; i < 30; ++i) {
-        WSASendTo_log(sock, &PUNCH_BUF, 1, &idc, 0, addr, addr_len, NULL, NULL);
-    }
-}
-
-void send_punch_response(bool is_ipv6, const void* ip, uint16_t port) {
-    sockaddr_storage addr;
-    if (!is_ipv6) {
-        INIT_SOCKADDR_IN4(addr, *(in_addr*)ip, hton(port));
-    } else {
-        INIT_SOCKADDR_IN6(addr, *(in6_addr*)ip, hton(port));
-    }
-    
-    SOCKET sock = punch_socket;
-    if (sock != INVALID_SOCKET) {
-        START_PUNCH_SET_FLAG();
-        send_punch_packets(sock, (const sockaddr*)&addr, !is_ipv6 ? sizeof(sockaddr_in) : sizeof(sockaddr_in6));
-    }
-}
-
-void send_punch_delay_pong(SOCKET sock, const void* buf, size_t length) {
-    sendto(sock, (const char*)buf, length, 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
-}
-
-static constexpr size_t DELAY_PACKET_COUNT = 5;
-
-static_assert(std::bit_width(DELAY_PACKET_COUNT - 1) <= 7 && DELAY_PACKET_COUNT <= 64);
-
-static int64_t sending_times[DELAY_PACKET_COUNT] = {};
-static char pong_recv[sizeof(PacketPunchDelayPong) + 64];
-
-using delay_mask_t = UBitIntType<std::max(DELAY_PACKET_COUNT, (size_t)32)>;
-
-static constexpr uint64_t DELAY_PACKET_SPACING = 5;
-static constexpr uint64_t DELAY_RECV_SPACING = 1;
-static constexpr uint64_t MAX_PACKET_END_DELAY = 2000;
-static constexpr uint64_t MAX_PUNCH_START_DELAY = 2000;
 
 // Function for a hosting client to acknowledge a REQUEST_MATCH
 // message with a WELCOME message. Any code for hole punching
@@ -713,124 +870,10 @@ msvc_string* fastcall lobby_recv_welcome_hook(
 
     SOCKET sock = get_punch_socket();
     if (sock != INVALID_SOCKET) {
-        PUNCH_BOOST_START();
-
         sockaddr_storage client_addr;
         int client_addr_len = init_sockaddr(client_addr, false, host, atoi(port->data()));
 
-        set_blocking_state<false>(sock);
-
-        PacketPunchDelayPing packet;
-        new (&packet) PacketPunchDelayPing(client_addr);
-
-        uint32_t received_number = 0;
-        uint64_t total_delay = 0;
-        delay_mask_t recv_mask = 0;
-
-        int64_t most_recent_sync_time = current_sync_time();
-        int64_t initial_sync_time;
-
-        auto recv_multiple_delay_packets = [&](uint64_t sleep_time) {
-            do {
-                sockaddr_storage recv_addr;
-                int recv_addr_len = sizeof(sockaddr_storage);
-                size_t index;
-                int ret = recvfrom(sock, pong_recv, sizeof(pong_recv), 0, (sockaddr*)&recv_addr, &recv_addr_len);
-                if (ret > 0) {
-                    if (
-                        ((PacketPunchDelayPong*)pong_recv)->type == PACKET_TYPE_PUNCH_DELAY_PONGB &&
-                        (index = ((PacketPunchDelayPong*)pong_recv)->index) < countof(sending_times) &&
-                        !(recv_mask & (delay_mask_t)1 << index) &&
-                        addr_is_lobby((sockaddr*)&recv_addr, recv_addr_len)
-                    ) {
-                        total_delay += most_recent_sync_time - sending_times[index];
-                        recv_mask |= (delay_mask_t)1 << index;
-                        if (++received_number == countof(sending_times)) {
-                            return true;
-                        }
-                    }
-                }
-                //else if (ret < 0) {
-                    //log_printf("recvfrom error %d %d\n", ret, WSAGetLastError());
-                //}
-                int64_t cur_sync_time;
-                if constexpr (DELAY_RECV_SPACING == 1) {
-#if PUNCH_BOOST_TYPE & PUNCH_BOOST_NO_OS_SLEEP
-                    while (most_recent_sync_time == (cur_sync_time = current_sync_time()));
-                    most_recent_sync_time = cur_sync_time;
-#else
-                    cur_sync_time = current_sync_time();
-                    bool needs_sleep = most_recent_sync_time == cur_sync_time;
-                    most_recent_sync_time = cur_sync_time;
-                    if (needs_sleep) {
-                        //log_printf("SLEEP: 1\n");
-                        //SleepEx(1, FALSE);
-                        punch_timer.wait_ms(1);
-                        most_recent_sync_time = current_sync_time();
-                    }
-#endif
-                } else {
-#if PUNCH_BOOST_TYPE & PUNCH_BOOST_NO_OS_SLEEP
-                    do cur_sync_time = current_sync_time();
-                    while (cur_sync_time - most_recent_sync_time < DELAY_RECV_SPACING);
-                    most_recent_sync_time = cur_sync_time;
-#else
-                    cur_sync_time = current_sync_time();
-                    int64_t sync_diff = DELAY_RECV_SPACING - (cur_sync_time - most_recent_sync_time);
-                    most_recent_sync_time = cur_sync_time;
-                    if (sync_diff > 0) {
-                        //log_printf("SLEEP: %u\n", (uint32_t)sync_diff);
-                        //SleepEx(sync_diff, FALSE);
-                        punch_timer.wait_ms(sync_diff);
-                        most_recent_sync_time = current_sync_time();
-                    }
-#endif
-                }
-            } while (most_recent_sync_time - initial_sync_time < sleep_time);
-            return false;
-        };
-
-        size_t i = 0;
-        while (true) {
-            initial_sync_time = most_recent_sync_time;
-            sending_times[i] = most_recent_sync_time;
-            sendto(sock, (const char*)&packet, sizeof(packet), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
-
-            if (recv_multiple_delay_packets(DELAY_PACKET_SPACING)) {
-                goto finished_receive;
-            }
-
-            if (++i >= countof(sending_times)) {
-                break;
-            }
-
-            // Increment the index in the send packet
-            ++packet.flags;
-        }
-
-        initial_sync_time = most_recent_sync_time;
-        recv_multiple_delay_packets(MAX_PACKET_END_DELAY);
-        
-        if (received_number) {
-    finished_receive:
-            total_delay /= received_number * 2;
-
-            packet.type = PACKET_TYPE_PUNCH_DELAY_PONGA;
-            sendto(sock, (const char*)&packet, sizeof(packet), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
-
-            //SleepEx(total_delay, FALSE);
-            punch_timer.wait_ms(total_delay);
-        }
-
-        send_punch_packets(sock, (const sockaddr*)&client_addr, client_addr_len);
-
-#if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
-        log_printf("DELAY: %llu ms (%zu responses)\n", total_delay, received_number);
-#endif
-
-        set_blocking_state<true>(sock);
-
-        PUNCH_BOOST_END();
+        send_delayed_punch_packets<true>(sock, client_addr, client_addr_len);
     }
 
     return based_pointer<lobby_std_string_concat_t>(lobby_base_address, 0x12920)(out_str, strB, port);
@@ -1057,9 +1100,14 @@ int WSAAPI WSASendTo_log(
 
         uint8_t send_type = *(uint8_t*)lpBuffers[0].buf;
         if (
-            iTolen != SENDTO_ADDR_LEN ||
-            send_type != SENDTO_TYPE ||
-            memcmp(lpTo, &SENDTO_ADDR, iTolen)
+#if ONLY_LOG_CUSTOM_PACKETS
+            send_type >= 0x80 &&
+#endif
+            (
+                iTolen != SENDTO_ADDR_LEN ||
+                send_type != SENDTO_TYPE ||
+                memcmp(lpTo, &SENDTO_ADDR, iTolen)
+            )
         ) {
             SENDTO_TYPE = send_type;
             SENDTO_ADDR_LEN = iTolen;
@@ -1096,9 +1144,14 @@ void recvfrom_log(
     if (from->sa_family == AF_INET) {
         uint8_t from_type = *(uint8_t*)data;
         if (
-            from_length != RECVFROM_ADDR_LEN ||
-            from_type != RECVFROM_TYPE ||
-            memcmp(from, &RECVFROM_ADDR, from_length)
+#if ONLY_LOG_CUSTOM_PACKETS
+            from_type >= 0x80 &&
+#endif
+            (
+                from_length != RECVFROM_ADDR_LEN ||
+                from_type != RECVFROM_TYPE ||
+                memcmp(from, &RECVFROM_ADDR, from_length)
+            )
         ) {
             RECVFROM_TYPE = from_type;
             RECVFROM_ADDR_LEN = from_length;
@@ -1313,5 +1366,7 @@ void patch_se_lobby(void* base_address) {
     minimum_timer_precision = time_caps.wPeriodMin;
 #endif
 
+#if PUNCH_SLEEP_TYPE == PUNCH_SLEEP_USE_TIMER
     punch_timer.initialize();
+#endif
 }

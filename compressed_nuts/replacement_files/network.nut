@@ -126,6 +126,7 @@ if(this.update){this.update()
 }
 function UpdateMain(){::menu.help.Set(this.help)
 this.cursor_item.Update()
+::punch.ignore_ping()
 if(::input_all.b0==1){::input_all.Lock()
 ::network.local_device_id=::input_all.GetLastDevice()
 switch(this.cursor_item.val){case 0:if(::LOBBY.GetNetworkState()==2){::LOBBY.SetExternalPort(::config.network.hosting_port)

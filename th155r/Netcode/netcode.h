@@ -210,4 +210,6 @@ extern char punch_ip_buffer[INET6_ADDRSTRLEN];
 extern size_t punch_ip_len;
 extern bool punch_ip_updated;
 
+extern std::atomic<bool> respond_to_punch_ping;
+
 #endif

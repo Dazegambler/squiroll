@@ -311,6 +311,11 @@ SQInteger copy_punch_ip(HSQUIRRELVM v) {
     return 0;
 }
 
+SQInteger ignore_lobby_punch_ping(HSQUIRRELVM v) {
+    respond_to_punch_ping = false;
+    return 0;
+}
+
 extern "C" {
     dll_export int stdcall init_instance_v2(HostEnvironment* environment) {
         if (
@@ -352,6 +357,7 @@ extern "C" {
                 sq_setfunc(v, _SC("reset_ip"), reset_punch_ip);
                 sq_setfunc(v, _SC("ip_available"), is_punch_ip_available);
                 sq_setfunc(v, _SC("copy_ip_to_clipboard"), copy_punch_ip);
+                sq_setfunc(v, _SC("ignore_ping"), ignore_lobby_punch_ping);
             });
 
             // debug table setup

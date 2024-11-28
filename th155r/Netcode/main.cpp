@@ -29,9 +29,7 @@ using namespace std::literals::string_view_literals;
 const uintptr_t base_address = (uintptr_t)GetModuleHandleA(NULL);
 uintptr_t libact_base_address = 0;
 
-#if SYNC_TYPE == SYNC_USE_QPC
-LARGE_INTEGERX qpc_ms_frequency;
-#endif
+LARGE_INTEGERX qpc_timer_frequency;
 
 /*
 void Cleanup() {
@@ -315,10 +313,13 @@ void common_init(LogType log_type) {
 
     patch_netplay();
 
-#if SYNC_TYPE == SYNC_USE_QPC
     LARGE_INTEGERX qpc_frequency;
     QueryPerformanceFrequency(&qpc_frequency);
-    qpc_ms_frequency = qpc_frequency / 1000;
+
+#if SYNC_TYPE == SYNC_USE_MILLISECONDS
+    qpc_timer_frequency = qpc_frequency / 1000; // millisecond per second
+#elif SYNC_TYPE == SYNC_USE_MICROSECONDS
+    qpc_timer_frequency = qpc_frequency / 1000000; // microsecond per second
 #endif
 
     patch_sockets();

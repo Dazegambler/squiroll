@@ -3,10 +3,10 @@
 #ifndef UTIL_H
 #define UTIL_H 1
 
-#define SYNC_USE_CHRONO 0
-#define SYNC_USE_QPC 1
+#define SYNC_USE_MILLISECONDS 0
+#define SYNC_USE_MICROSECONDS 1
 
-#define SYNC_TYPE SYNC_USE_QPC
+#define SYNC_TYPE SYNC_USE_MICROSECONDS
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -15,10 +15,6 @@
 #include <limits>
 #include <atomic>
 #include <bit>
-
-#if SYNC_TYPE == SYNC_USE_CHRONO
-#include <chrono>
-#endif
 
 #include <winsock2.h>
 #include <windows.h>
@@ -162,6 +158,12 @@ static inline constexpr bool is_constexpr(...) { return false; }
 #define naked __attribute__((naked))
 #endif
 
+#if GCC_COMPAT || CLANG_COMPAT
+#define lambda_forceinline __attribute__((always_inline))
+#else
+#define lambda_forceinline
+#endif
+
 #ifdef EVAL_NOOP
 #undef EVAL_NOOP
 #endif
@@ -177,6 +179,14 @@ static inline constexpr bool is_constexpr(...) { return false; }
 #endif
 
 #define dll_export __declspec(dllexport)
+
+#ifdef gnu_used
+#undef gnu_used
+#endif
+
+#if GCC_COMPAT || CLANG_COMPAT
+#define gnu_used __attribute__((used))
+#endif
 
 #if GCC_COMPAT || CLANG_COMPAT
 #define expect(...) __builtin_expect(__VA_ARGS__)
@@ -642,13 +652,39 @@ struct WaitableEvent {
     inline bool wait(uint32_t timeout = INFINITE) const {
         return WaitForSingleObjectEx(this->os_handle, timeout, FALSE) == WAIT_OBJECT_0;
     }
+
+    inline bool wait_milliseconds(uint64_t timeout) const {
+        return this->wait(timeout);
+    }
+
+    inline bool wait_microseconds(uint64_t timeout) const {
+        return this->wait(timeout / 1000);
+    }
+
+    inline bool wait_sync(uint64_t timeout) const {
+#if SYNC_TYPE == SYNC_USE_MILLISECONDS
+        return this->wait_milliseconds(timeout);
+#elif SYNC_TYPE == SYNC_USE_MICROSECONDS
+        return this->wait_microseconds(timeout);
+#endif
+    }
 };
 
 struct WaitableTimer {
     HANDLE os_handle = INVALID_HANDLE_VALUE;
 
     inline void initialize() {
-        this->os_handle = CreateWaitableTimerExW(NULL, NULL, CREATE_WAITABLE_TIMER_MANUAL_RESET, EVENT_ALL_ACCESS);
+        using func_t = decltype(CreateWaitableTimerExW);
+        if (func_t* create_func = (func_t*)GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "CreateWaitableTimerExW")) {
+            HANDLE timer = create_func(NULL, NULL, CREATE_WAITABLE_TIMER_MANUAL_RESET | CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, EVENT_ALL_ACCESS);
+            if (!timer) {
+                timer = create_func(NULL, NULL, CREATE_WAITABLE_TIMER_MANUAL_RESET, EVENT_ALL_ACCESS);
+            }
+            this->os_handle = timer;
+        }
+        else {
+            this->os_handle = CreateWaitableTimerW(NULL, TRUE, NULL);
+        }
     }
 
     inline void wait(int64_t duration) const {
@@ -658,29 +694,40 @@ struct WaitableTimer {
         WaitForSingleObject(this->os_handle, INFINITE);
     }
 
-    inline void wait_ms(int64_t duration) const {
+    inline void wait_milliseconds(int64_t duration) const {
         return this->wait(duration * 10000);
+    }
+
+    inline void wait_microseconds(int64_t duration) const {
+        return this->wait(duration * 10);
+    }
+
+    inline void wait_sync(int64_t duration) const {
+#if SYNC_TYPE == SYNC_USE_MILLISECONDS
+        return this->wait_milliseconds(duration);
+#elif SYNC_TYPE == SYNC_USE_MICROSECONDS
+        return this->wait_microseconds(duration);
+#endif
     }
 };
 
 #define CurrentProcessPseudoHandle() ((HANDLE)-1)
 #define CurrentThreadPseudoHandle() ((HANDLE)-2)
 
-#if SYNC_TYPE == SYNC_USE_QPC
-extern LARGE_INTEGERX qpc_ms_frequency;
-#endif
+extern LARGE_INTEGERX qpc_timer_frequency;
 
 static inline int64_t current_sync_time() {
-#if SYNC_TYPE == SYNC_USE_CHRONO
-    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-#elif SYNC_TYPE == SYNC_USE_QPC
     LARGE_INTEGERX now;
     QueryPerformanceCounter(&now);
-    return now / qpc_ms_frequency;
-#endif
+    return now / qpc_timer_frequency;
 }
 
-static inline void sync_to_milliseconds(int64_t minimum_time, int64_t multiple) {
+static inline void spin_for_sync_time(int64_t duration) {
+    int64_t initial_time = current_sync_time();
+    while (current_sync_time() - initial_time < duration);
+}
+
+static inline void sync_to_microseconds(int64_t minimum_time, int64_t multiple) {
     int64_t initial_time = current_sync_time();
     int64_t current_time;
     do current_time = current_sync_time();

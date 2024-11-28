@@ -11,23 +11,23 @@
 
 #include "log.h"
 
-#define PUNCH_BOOST_NONE                0b0000
-#define PUNCH_BOOST_PROCESS_PRIORITY    0b0001
-#define PUNCH_BOOST_THREAD_PRIORITY     0b0010
-#define PUNCH_BOOST_TIMER_PRECISION     0b0100
-#define PUNCH_BOOST_NO_OS_SLEEP         0b1000
-#define PUCNH_BOOST_FULL                0b1111
+#define PUNCH_BOOST_NONE                0b000
+#define PUNCH_BOOST_PROCESS_PRIORITY    0b001
+#define PUNCH_BOOST_THREAD_PRIORITY     0b010
+#define PUNCH_BOOST_TIMER_PRECISION     0b100
+#define PUCNH_BOOST_FULL                0b111
 
-#define PUNCH_BOOST_TYPE (PUNCH_BOOST_PROCESS_PRIORITY | PUNCH_BOOST_THREAD_PRIORITY | PUNCH_BOOST_TIMER_PRECISION)
+#define PUNCH_BOOST_TYPE PUCNH_BOOST_FULL
 
 #define PUNCH_START_USE_ATOMIC 0
 #define PUNCH_START_USE_EVENT 1
 
-#if PUNCH_BOOST_TYPE == PUCNH_BOOST_FULL
-#define PUNCH_START_TYPE PUNCH_START_USE_ATOMIC
-#else
 #define PUNCH_START_TYPE PUNCH_START_USE_EVENT
-#endif
+
+#define PUNCH_SLEEP_USE_SPIN 0
+#define PUNCH_SLEEP_USE_TIMER 1
+
+#define PUNCH_SLEEP_TYPE PUNCH_SLEEP_USE_SPIN
 
 extern uintptr_t lobby_base_address;
 
@@ -78,7 +78,7 @@ extern std::atomic<bool> start_punch;
 extern WaitableEvent start_punch;
 #define START_PUNCH_SET_FLAG() start_punch.set()
 #define START_PUNCH_RESET_FLAG() start_punch.reset()
-#define START_PUNCH_WAIT(timeout) start_punch.wait(timeout)
+#define START_PUNCH_WAIT(timeout) start_punch.wait_sync(timeout)
 #endif
 
 #endif

@@ -248,6 +248,7 @@ function UpdateMain()
 {
 	::menu.help.Set(this.help);
 	this.cursor_item.Update();
+	::punch.ignore_ping();
 
 	if (::input_all.b0 == 1)
 	{

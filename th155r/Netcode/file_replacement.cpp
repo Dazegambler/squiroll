@@ -166,7 +166,7 @@ BOOL WINAPI close_handle_hook(HANDLE handle) {
 #elif FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
 
 extern "C" {
-	uint64_t fastcall file_replacement_impl(PackageReader* file_reader, const char* file_name) {
+	uint64_t gnu_used fastcall file_replacement_impl(PackageReader* file_reader, const char* file_name) {
 		//file_reader->buffer_filled = 0;
 		auto replacement = replacements.find(file_name);
 		bool replaced;

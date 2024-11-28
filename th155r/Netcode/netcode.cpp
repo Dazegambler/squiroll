@@ -248,6 +248,8 @@ static_assert(sizeof(TF4UDP) == 0x24C);
 #define wsarecvfrom_import_addr (0x3884D8_R)
 #define packet_parser_addr (0x176BB0_R)
 
+static std::atomic<bool> respond_to_punch_ping = {};
+
 // TODO: Is this variable name inverted?
 static bool not_in_match = false;
 
@@ -283,13 +285,7 @@ static void resync_patch(uint8_t value) {
     uint8_t* patch_addr = (uint8_t*)resync_patch_addr;
 
     if (*patch_addr != new_value) {
-
-        // Not using mem_write because it doesn't get inlined for some reason
-        DWORD old_protect;
-        if (VirtualProtect(patch_addr, 1, PAGE_READWRITE, &old_protect)) {
-            *patch_addr = new_value;
-            VirtualProtect(patch_addr, 1, old_protect, &old_protect);
-        }
+        mem_write(patch_addr, new_value);
     }
 }
 
@@ -366,13 +362,11 @@ int WSAAPI my_WSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWO
         case PACKET_TYPE_18:
             if (lpBuffers[0].len >= 25) {
                 run_resync_logic(*(uint64_t*)&packet->data[16]);
-                //resync_patch();
             }
             break;
         case PACKET_TYPE_19:
             if (lpBuffers[0].len >= 26) {
                 run_resync_logic(*(uint64_t*)&packet->data[17]);
-                //resync_patch();
             }
             break;
 #endif
@@ -410,7 +404,10 @@ void thisfastcall packet_parser_hook(
             break;
 #endif
         case PACKET_TYPE_PUNCH_PING: {
-            if (addr_is_lobby(self->recv_addr)) {
+            if (
+                respond_to_punch_ping &&
+                addr_is_lobby(self->recv_addr)
+            ) {
                 sendto(self->socket, (const char*)&PUNCH_PING_PACKET, sizeof(PUNCH_PING_PACKET), 0, &self->recv_addr.addr_any(), self->recv_addr.length());
             }
             break;

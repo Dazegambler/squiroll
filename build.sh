@@ -46,4 +46,4 @@ DEFINES="-D_CRT_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -DNOMINMAX 
 WARNINGS="-Wno-cpp -Wno-narrowing"
 
 clang-cl-18 -m32 -fuse-ld=lld /EHsc $WARNINGS $DEFINES $INCLUDES /Ith155r/shared th155r/main.cpp -O2 /link $LIBPATHS /OUT:th155r.exe
-clang-cl-18 -m32 -fuse-ld=lld /EHsc $WARNINGS $DEFINES $INCLUDES /Ith155r/shared /Ith155r/Netcode/include th155r/Netcode/*.cpp /std:c++20 -static -flto=full -O3 /link /DLL $LIBPATHS user32.lib WS2_32.lib dbghelp.lib Winmm.lib -exclude-all-symbols -kill-at /DEF:Netcode.def /OUT:Netcode.dll
+clang-cl-18 -m32 -fuse-ld=lld /EHsc $WARNINGS $DEFINES $INCLUDES /Ith155r/shared /Ith155r/Netcode/include th155r/Netcode/*.cpp /std:c++20 -static -flto=full -O2 /link /DLL $LIBPATHS user32.lib WS2_32.lib dbghelp.lib winmm.lib -exclude-all-symbols -kill-at /DEF:Netcode.def /OUT:Netcode.dll

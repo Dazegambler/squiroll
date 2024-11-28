@@ -439,6 +439,8 @@ int WSAAPI bind_inherited_socket(SOCKET s, const sockaddr* name, int namelen) {
     return ret;
 }
 
+// Number of packets to use for averaging the delay measurement.
+// NOTE: 10 packets seemed to be worse somehow
 static constexpr size_t DELAY_PACKET_COUNT = 5;
 
 static_assert(std::bit_width(DELAY_PACKET_COUNT - 1) <= 7 && DELAY_PACKET_COUNT <= 64);
@@ -966,58 +968,58 @@ neverinline void lobby_test_ipv6() {
                 ipv6_ptr = (IP6_ADDRESS*)&((sockaddr_in6*)&lobby_addr)->sin6_addr;
                 break;
         }
+        {
+            char ip_str[INET6_ADDRSTRLEN];
+            inet_ntop(AF_INET6, ipv6_ptr, ip_str, countof(ip_str));
 
-        char ip_str[INET6_ADDRSTRLEN];
-        inet_ntop(AF_INET6, ipv6_ptr, ip_str, countof(ip_str));
+            char port_str[INTEGER_BUFFER_SIZE<uint16_t>]{};
+            uint16_to_strbuf(ntoh<uint16_t>(((sockaddr_in*)&lobby_addr)->sin_port), port_str);
 
-        char port_str[INTEGER_BUFFER_SIZE<uint16_t>]{};
-        uint16_to_strbuf(ntoh<uint16_t>(((sockaddr_in*)&lobby_addr)->sin_port), port_str);
+            //log_printf("IPv6: Connecting to %s:%s\n", ip_str, port_str);
 
-        //log_printf("IPv6: Connecting to %s:%s\n", ip_str, port_str);
+            addrinfo* addrs;
+            if (getaddrinfo(ip_str, port_str, &udp_addr_hint, &addrs) == 0) {
+                addrinfo* cur_addr = addrs;
+                do {
+                    if (cur_addr->ai_family == AF_INET6) {
+                        if (connect(sock, (const sockaddr*)cur_addr->ai_addr, cur_addr->ai_addrlen) == 0) {
+                            freeaddrinfo(addrs);
 
-        addrinfo* addrs;
-        if (getaddrinfo(ip_str, port_str, &udp_addr_hint, &addrs) == 0) {
-            addrinfo* cur_addr = addrs;
-            do {
-                if (cur_addr->ai_family == AF_INET6) {
-                    if (connect(sock, (const sockaddr*)cur_addr->ai_addr, cur_addr->ai_addrlen) == 0) {
-                        freeaddrinfo(addrs);
+                            PacketIPv6Test test_packet = {};
+                            test_packet.type = PACKET_TYPE_IPV6_TEST;
+                            QueryPerformanceCounter(&test_packet.tsc);
+                            uint64_t tsc = test_packet.tsc.QuadPart;
 
-                        PacketIPv6Test test_packet = {};
-                        test_packet.type = PACKET_TYPE_IPV6_TEST;
-                        QueryPerformanceCounter(&test_packet.tsc);
-                        uint64_t tsc = test_packet.tsc.QuadPart;
+                            DWORD timeout = 5000;
+                            setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(DWORD));
 
-                        DWORD timeout = 5000;
-                        setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(DWORD));
+                            u_long nonblocking_state = true;
+                            ioctlsocket(sock, FIONBIO, &nonblocking_state);
 
-                        u_long nonblocking_state = true;
-                        ioctlsocket(sock, FIONBIO, &nonblocking_state);
+                            send(sock, (const char*)&test_packet, sizeof(test_packet), 0);
 
-                        send(sock, (const char*)&test_packet, sizeof(test_packet), 0);
+                            test_packet = {};
 
-                        test_packet = {};
-
-                        int recv_ret = recv(sock, (char*)&test_packet, sizeof(test_packet), 0);
-                        if (
-                            recv_ret == sizeof(test_packet) &&
-                            test_packet.type == PACKET_TYPE_IPV6_TEST &&
-                            tsc == test_packet.tsc.QuadPart
-                        ) {
-                            closesocket(sock);
+                            int recv_ret = recv(sock, (char*)&test_packet, sizeof(test_packet), 0);
+                            if (
+                                recv_ret == sizeof(test_packet) &&
+                                test_packet.type == PACKET_TYPE_IPV6_TEST &&
+                                tsc == test_packet.tsc.QuadPart
+                                ) {
+                                closesocket(sock);
+                                //log_printf("IPv6: Timed out\n");
+                                set_ipv6_state(true);
+                                return;
+                            }
                             //log_printf("IPv6: Timed out\n");
-                            set_ipv6_state(true);
-                            return;
+                            goto ipv6_fail;
                         }
-                        //log_printf("IPv6: Timed out\n");
-                        goto ipv6_fail;
                     }
-                }
-            } while ((cur_addr = cur_addr->ai_next));
-            freeaddrinfo(addrs);
-            //log_printf("IPv6: Failed to find addr\n");
+                } while ((cur_addr = cur_addr->ai_next));
+                freeaddrinfo(addrs);
+                //log_printf("IPv6: Failed to find addr\n");
+            }
         }
-
 ipv6_fail:
         closesocket(sock);
     }

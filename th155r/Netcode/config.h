@@ -17,6 +17,8 @@ const char* get_lobby_host(const char* host);
 const char* get_lobby_port(const char* port);
 const char* get_lobby_pass(const char* pass);
 
+bool get_hide_ip_enabled();
+
 bool get_ping_enabled();
 int32_t get_ping_x();
 int32_t get_ping_y();

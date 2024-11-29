@@ -334,6 +334,12 @@ extern "C" {
             // setting table setup
             sq_createtable(v, _SC("setting"), [](HSQUIRRELVM v) {
                 sq_setinteger(v, _SC("version"), PLUGIN_VERSION);
+                sq_createtable(v, _SC("misc"), [](HSQUIRRELVM v){
+                    sq_setbool(v,_SC("hide_ip"), get_hide_ip_enabled());
+                    //only add to config file if needed
+                    sq_setbool(v, _SC("hide_name"), false);
+                    sq_setbool(v, _SC("hide_lobby"), false);//more useful once we get custom lobbies
+                });
                 sq_createtable(v, _SC("ping"), [](HSQUIRRELVM v) {
                     sq_setfunc(v, _SC("update_consts"), update_ping_constants);
                     set_ping_constants(v);

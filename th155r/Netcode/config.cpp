@@ -32,6 +32,11 @@ static constexpr char CONFIG_FILE_NAME[] = "\\netcode.ini";
 #define LOBBY_PASS_DEFAULT "kzxmckfqbpqieh8rw<rczuturKfnsjxhauhybttboiuuzmWdmnt5mnlczpythaxf"
 #define LOBBY_PASS_DEFAULT_STR LOBBY_PASS_DEFAULT
 
+#define MISC_SECTION_NAME "misc"
+#define MISC_HIDE_IP_KEY "hide_ip"
+#define MISC_HIDE_IP_DEFAULT false
+#define MISC_HIDE_IP_DEFAULT_STR MACRO_STR(MISC_HIDE_IP_DEFAULT)
+
 #define PING_SECTION_NAME "ping"
 #define PING_ENABLED_KEY "enabled"
 #define PING_ENABLED_DEFAULT true
@@ -272,6 +277,15 @@ const char* get_lobby_pass(const char* pass) {
 		pass = LOBBY_PASS_BUFFER;
 	}
 	return pass;
+}
+
+// ====================
+// MISC
+// ====================
+
+static char MISC_HIDE_IP_BUFFER[8]{ '\0' };
+bool get_hide_ip_enabled() {
+	return GET_BOOL_CONFIG(MISC, HIDE_IP);
 }
 
 // ====================

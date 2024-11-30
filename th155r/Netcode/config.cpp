@@ -32,11 +32,6 @@ static constexpr char CONFIG_FILE_NAME[] = "\\netcode.ini";
 #define LOBBY_PASS_DEFAULT "kzxmckfqbpqieh8rw<rczuturKfnsjxhauhybttboiuuzmWdmnt5mnlczpythaxf"
 #define LOBBY_PASS_DEFAULT_STR LOBBY_PASS_DEFAULT
 
-#define MISC_SECTION_NAME "misc"
-#define MISC_HIDE_IP_KEY "hide_ip"
-#define MISC_HIDE_IP_DEFAULT false
-#define MISC_HIDE_IP_DEFAULT_STR MACRO_STR(MISC_HIDE_IP_DEFAULT)
-
 #define PING_SECTION_NAME "ping"
 #define PING_ENABLED_KEY "enabled"
 #define PING_ENABLED_DEFAULT true
@@ -137,6 +132,9 @@ static constexpr char CONFIG_FILE_NAME[] = "\\netcode.ini";
 #define NETWORK_NETPLAY_KEY "netplay"
 #define NETWORK_NETPLAY_DEFAULT true
 #define NETWORK_NETPLAY_DEFAULT_STR MACRO_STR(NETWORK_NETPLAY_DEFAULT)
+#define NETWORK_HIDE_IP_KEY "hide_ip"
+#define NETWORK_HIDE_IP_DEFAULT false
+#define NETWORK_HIDE_IP_DEFAULT_STR MACRO_STR(NETWORK_HIDE_IP_DEFAULT)
 
 static inline bool create_dummy_file(const char* path) {
 	HANDLE handle = CreateFileA(
@@ -277,15 +275,6 @@ const char* get_lobby_pass(const char* pass) {
 		pass = LOBBY_PASS_BUFFER;
 	}
 	return pass;
-}
-
-// ====================
-// MISC
-// ====================
-
-static char MISC_HIDE_IP_BUFFER[8]{ '\0' };
-bool get_hide_ip_enabled() {
-	return GET_BOOL_CONFIG(MISC, HIDE_IP);
 }
 
 // ====================
@@ -475,11 +464,16 @@ bool get_netplay_state() {
 	return GET_BOOL_CONFIG(NETWORK, NETPLAY);
 }
 
+static char NETWORK_HIDE_IP_BUFFER[8]{ '\0' };
+bool get_hide_ip_enabled() {
+	return GET_BOOL_CONFIG(NETWORK, HIDE_IP);
+}
+
 void set_ipv6_state(bool state) {
 	set_config_string(NETWORK_SECTION_NAME, NETWORK_IPV6_KEY, bool_str(state));
 }
 
-#define CONFIG_DEFAULT(SECTION, KEY) fill_default_config_string(MACRO_CAT(SECTION,_SECTION_NAME), MACRO_CAT4(SECTION,_,KEY,_KEY), MACRO_CAT4(SECTION,_,KEY,_DEFAULT_STR))
+#define CONFIG_DEFAULT(SECTION, KEY) { MACRO_CAT(SECTION,_SECTION_NAME), MACRO_CAT4(SECTION,_,KEY,_KEY), MACRO_CAT4(SECTION,_,KEY,_DEFAULT_STR) }
 
 void init_config_file() {
 	size_t directory_length = GetCurrentDirectoryA(countof(CONFIG_FILE_PATH), CONFIG_FILE_PATH);
@@ -489,59 +483,56 @@ void init_config_file() {
 	) {
 		memcpy(&CONFIG_FILE_PATH[directory_length], CONFIG_FILE_NAME, sizeof(CONFIG_FILE_NAME));
 
-		/*
-		if (
-			file_exists(CONFIG_FILE_PATH) || create_default_file(CONFIG_FILE_PATH)
-		) {
-			use_config = true;
-		}
-		*/
 		if (
 			file_exists(CONFIG_FILE_PATH) || create_dummy_file(CONFIG_FILE_PATH)
 		) {
 			use_config = true;
 
+			constexpr const char* default_configs[][3] = {
+				CONFIG_DEFAULT(LOBBY, HOST),
+				CONFIG_DEFAULT(LOBBY, PORT),
+				CONFIG_DEFAULT(LOBBY, PASS),
 
-			CONFIG_DEFAULT(LOBBY, HOST);
-			CONFIG_DEFAULT(LOBBY, PORT);
-			CONFIG_DEFAULT(LOBBY, PASS);
+				CONFIG_DEFAULT(PING, ENABLED),
+				CONFIG_DEFAULT(PING, X),
+				CONFIG_DEFAULT(PING, Y),
+				CONFIG_DEFAULT(PING, SCALE_X),
+				CONFIG_DEFAULT(PING, SCALE_Y),
+				CONFIG_DEFAULT(PING, COLOR),
+				CONFIG_DEFAULT(PING, FRAMES),
 
-			CONFIG_DEFAULT(MISC,HIDE_IP);
+				CONFIG_DEFAULT(INPUT1, ENABLED),
+				CONFIG_DEFAULT(INPUT1, X),
+				CONFIG_DEFAULT(INPUT1, Y),
+				CONFIG_DEFAULT(INPUT1, SCALE_X),
+				CONFIG_DEFAULT(INPUT1, SCALE_Y),
+				CONFIG_DEFAULT(INPUT1, OFFSET),
+				CONFIG_DEFAULT(INPUT1, COUNT),
+				CONFIG_DEFAULT(INPUT1, COLOR),
+				CONFIG_DEFAULT(INPUT1, SPACING),
+				CONFIG_DEFAULT(INPUT1, TIMER),
+				CONFIG_DEFAULT(INPUT1, RAW_INPUT),
 
-			CONFIG_DEFAULT(PING, ENABLED);
-			CONFIG_DEFAULT(PING, X);
-			CONFIG_DEFAULT(PING, Y);
-			CONFIG_DEFAULT(PING, SCALE_X);
-			CONFIG_DEFAULT(PING, SCALE_Y);
-			CONFIG_DEFAULT(PING, COLOR);
-			CONFIG_DEFAULT(PING, FRAMES);
+				CONFIG_DEFAULT(INPUT2, ENABLED),
+				CONFIG_DEFAULT(INPUT2, X),
+				CONFIG_DEFAULT(INPUT2, Y),
+				CONFIG_DEFAULT(INPUT2, SCALE_X),
+				CONFIG_DEFAULT(INPUT2, SCALE_Y),
+				CONFIG_DEFAULT(INPUT2, OFFSET),
+				CONFIG_DEFAULT(INPUT2, COUNT),
+				CONFIG_DEFAULT(INPUT2, COLOR),
+				CONFIG_DEFAULT(INPUT2, SPACING),
+				CONFIG_DEFAULT(INPUT2, TIMER),
+				CONFIG_DEFAULT(INPUT2, RAW_INPUT),
 
-			CONFIG_DEFAULT(INPUT1, ENABLED);
-			CONFIG_DEFAULT(INPUT1, X);
-			CONFIG_DEFAULT(INPUT1, Y);
-			CONFIG_DEFAULT(INPUT1, SCALE_X);
-			CONFIG_DEFAULT(INPUT1, SCALE_Y);
-			CONFIG_DEFAULT(INPUT1, OFFSET);
-			CONFIG_DEFAULT(INPUT1, COUNT);
-			CONFIG_DEFAULT(INPUT1, COLOR);
-			CONFIG_DEFAULT(INPUT1, SPACING);
-			CONFIG_DEFAULT(INPUT1, TIMER);
-			CONFIG_DEFAULT(INPUT1, RAW_INPUT);
+				CONFIG_DEFAULT(NETWORK, IPV6),
+				CONFIG_DEFAULT(NETWORK, NETPLAY),
+				CONFIG_DEFAULT(NETWORK, HIDE_IP),
+			};
 
-			CONFIG_DEFAULT(INPUT2, ENABLED);
-			CONFIG_DEFAULT(INPUT2, X);
-			CONFIG_DEFAULT(INPUT2, Y);
-			CONFIG_DEFAULT(INPUT2, SCALE_X);
-			CONFIG_DEFAULT(INPUT2, SCALE_Y);
-			CONFIG_DEFAULT(INPUT2, OFFSET);
-			CONFIG_DEFAULT(INPUT2, COUNT);
-			CONFIG_DEFAULT(INPUT2, COLOR);
-			CONFIG_DEFAULT(INPUT2, SPACING);
-			CONFIG_DEFAULT(INPUT2, TIMER);
-			CONFIG_DEFAULT(INPUT2, RAW_INPUT);
-
-			CONFIG_DEFAULT(NETWORK, IPV6);
-			CONFIG_DEFAULT(NETWORK, NETPLAY);
+			nounroll for (size_t i = 0; i < countof(default_configs); ++i) {
+				fill_default_config_string(default_configs[i][0], default_configs[i][1], default_configs[i][2]);
+			}
 		}
 	}
 }

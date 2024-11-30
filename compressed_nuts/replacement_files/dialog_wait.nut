@@ -16,7 +16,7 @@ this.obj[5].red=0
 this.Update=::menu.network.dialog_wait.Update2
 }
 }
-function Update(){if(::menu.network.display_ip_on_wait&&::punch.ip_available()){this.obj[1].Set(::setting.misc.hide_ip?::menu.network.item_table.wait_incomming[0]+" "+"press C to copy the ip": ::menu.network.item_table.wait_incomming[0]+" "+::punch.get_ip())
+function Update(){if(::menu.network.display_ip_on_wait&&::punch.ip_available()){this.obj[1].Set(::menu.network.item_table.wait_incomming[0]+" "+(!::setting.misc.hide_ip?::punch.get_ip():"press C to copy hosting IP/port"))
 this.obj[1].x=20+-this.obj[1].width/2
 }
 ::menu.cursor.SetTarget(this.obj[1].x-20+::graphics.width/2,this.obj[1].y+24+::graphics.height/2,0.69999999)

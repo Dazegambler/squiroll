@@ -12,6 +12,8 @@
 #include "util.h"
 #include "patch_utils.h"
 
+#if !DISABLE_ALL_LOGGING_FOR_BUILD
+
 typedef void cdecl vprintf_t(const char* format, va_list va);
 typedef void cdecl vfprintf_t(FILE* stream, const char* format, va_list va);
 
@@ -21,11 +23,6 @@ printf_t* log_printf = (printf_t*)&printf;
 fprintf_t* log_fprintf = (fprintf_t*)&fprintf;
 
 #else
-
-static void cdecl printf_dummy(const char* format, ...) {
-}
-static void cdecl fprintf_dummy(FILE* stream, const char* format, va_list va) {
-}
 
 void cdecl printf_lookup(const char* format, ...) {
     printf_t* printf_func = (printf_t*)printf_dummy;
@@ -92,8 +89,9 @@ void stdcall cxx_throw_exception_string_hook(
 }
 
 void patch_throw_logs() {
-    uintptr_t base = base_address;
-    for (size_t i = 0; i < countof(cxx_string_exception_throws); ++i) {
-        hotpatch_rel32(based_pointer(base, cxx_string_exception_throws[i]), cxx_throw_exception_string_hook);
+    nounroll for (size_t i = 0; i < countof(cxx_string_exception_throws); ++i) {
+        hotpatch_rel32(based_pointer(base_address, cxx_string_exception_throws[i]), cxx_throw_exception_string_hook);
     }
 }
+
+#endif

@@ -577,7 +577,7 @@ static inline void send_delayed_punch_packets(SOCKET sock, const sockaddr_storag
                 }
             }
             //else if (ret < 0) {
-                //log_printf("recvfrom error %d %d\n", ret, WSAGetLastError());
+                //lobby_debug_printf("recvfrom error %d %d\n", ret, WSAGetLastError());
             //}
             int64_t cur_sync_time;
             if constexpr (DELAY_RECV_SPACING == 1) {
@@ -654,7 +654,7 @@ finished_receive:
     send_punch_packets(sock, (const sockaddr*)&addr, addr_len);
 
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
-    log_printf(
+    lobby_debug_printf(
 #if SYNC_TYPE == SYNC_USE_MILLISECONDS
         "DELAY: %llu ms (%zu responses)\n"
 #elif SYNC_TYPE == SYNC_USE_MICROSECONDS
@@ -975,7 +975,7 @@ neverinline void lobby_test_ipv6() {
             char port_str[INTEGER_BUFFER_SIZE<uint16_t>]{};
             uint16_to_strbuf(ntoh<uint16_t>(((sockaddr_in*)&lobby_addr)->sin_port), port_str);
 
-            //log_printf("IPv6: Connecting to %s:%s\n", ip_str, port_str);
+            //lobby_debug_printf("IPv6: Connecting to %s:%s\n", ip_str, port_str);
 
             addrinfo* addrs;
             if (getaddrinfo(ip_str, port_str, &udp_addr_hint, &addrs) == 0) {
@@ -1007,17 +1007,17 @@ neverinline void lobby_test_ipv6() {
                                 tsc == test_packet.tsc.QuadPart
                                 ) {
                                 closesocket(sock);
-                                //log_printf("IPv6: Timed out\n");
+                                //lobby_debug_printf("IPv6: Timed out\n");
                                 set_ipv6_state(true);
                                 return;
                             }
-                            //log_printf("IPv6: Timed out\n");
+                            //lobby_debug_printf("IPv6: Timed out\n");
                             goto ipv6_fail;
                         }
                     }
                 } while ((cur_addr = cur_addr->ai_next));
                 freeaddrinfo(addrs);
-                //log_printf("IPv6: Failed to find addr\n");
+                //lobby_debug_printf("IPv6: Failed to find addr\n");
             }
         }
 ipv6_fail:
@@ -1034,9 +1034,9 @@ int WSAAPI lobby_socket_connect_hook(SOCKET s, const sockaddr* name, int namelen
         //local_addr_length = sizeof(sockaddr_storage);
         //getsockname(s, (sockaddr*)&local_addr, (int*)&local_addr_length);
 
-        //log_printf("Local IP: ");
+        //lobby_debug_printf("Local IP: ");
         //print_sockaddr((sockaddr*)&local_addr);
-        //log_printf("\n");
+        //lobby_debug_printf("\n");
 
         if (get_ipv6_state() == IPv6NeedsTest) {
             lobby_test_ipv6();
@@ -1090,16 +1090,6 @@ int WSAAPI WSASendTo_log(
     LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
 ) {
     if (lpTo->sa_family == AF_INET) {
-
-        /*
-        char sendto_buff[countof(SENDTO_STR)];
-        snprintf(sendto_buff, countof(sendto_buff), "SENDTO: %s:%u\n", ip_buffer, port);
-        if (strcmp(sendto_buff, SENDTO_STR)) {
-            memcpy(SENDTO_STR, sendto_buff, sizeof(SENDTO_STR));
-            log_printf("%s", SENDTO_STR);
-        }
-        */
-
         uint8_t send_type = *(uint8_t*)lpBuffers[0].buf;
         if (
 #if ONLY_LOG_CUSTOM_PACKETS
@@ -1120,8 +1110,6 @@ int WSAAPI WSASendTo_log(
             uint16_t port = ntoh<uint16_t>(((sockaddr_in*)lpTo)->sin_port);
             lobby_debug_printf("SENDTO: %s:%u type %hhu (PUNCH: %s)\n", ip_buffer, port, send_type, bool_str(s == punch_socket));
         }
-
-        //log_printf("SENDTO: %s:%u\n", ip_buffer, port);
     }
     int ret = WSASendTo(s, lpBuffers, dwBufferCount, lpNumberOfBytesSent, dwFlags, lpTo, iTolen, lpOverlapped, lpCompletionRoutine);
     if (ret == SOCKET_ERROR) {

@@ -5,11 +5,18 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <windows.h>
 
 #include "util.h"
 
-void mem_write(void* address, const void* data, size_t size);
+static inline void mem_write(void* address, const void* data, size_t size) {
+    DWORD oldProtect;
+    if (VirtualProtect(address, size, PAGE_READWRITE, &oldProtect)) {
+        memcpy(address, data, size);
+        VirtualProtect(address, size, oldProtect, &oldProtect);
+    }
+}
 
 template <typename T>
 static forceinline void mem_write(T address, const void* data, size_t size) {

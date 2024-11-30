@@ -3,6 +3,11 @@
 #ifndef SHARED_HEADER_H
 #define SHARED_HEADER_H 1
 
+// Disable:
+// - Squirrel C++ error hooks
+// - Thcrap log hooks
+#define DISABLE_ALL_LOGGING_FOR_BUILD 0
+
 #include <stdio.h>
 #include <windows.h>
 

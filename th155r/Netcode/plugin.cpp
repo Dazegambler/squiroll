@@ -134,6 +134,43 @@ static inline void sq_setfunc(HSQUIRRELVM v, const SQChar* name, const SQFUNCTIO
     sq_newslot(v, -3, SQFalse);
 }
 
+static inline bool sq_readinteger(HSQUIRRELVM v, const SQChar* name, SQInteger* out) {
+    sq_pushstring(v, name, -1);
+    if (SQ_SUCCEEDED(sq_get(v, -2))) {
+        bool success = SQ_SUCCEEDED(sq_getinteger(v, 1, out));
+        sq_pop(v, 1);
+        return success;
+    }
+    return false;
+}
+static inline bool sq_readfloat(HSQUIRRELVM v, const SQChar* name, SQFloat* out) {
+    sq_pushstring(v, name, -1);
+    if (SQ_SUCCEEDED(sq_get(v, -2))) {
+        bool success = SQ_SUCCEEDED(sq_getfloat(v, 1, out));
+        sq_pop(v, 1);
+        return success;
+    }
+    return false;
+}
+static inline bool sq_readbool(HSQUIRRELVM v, const SQChar* name, SQBool* out) {
+    sq_pushstring(v, name, -1);
+    if (SQ_SUCCEEDED(sq_get(v, -2))) {
+        bool success = SQ_SUCCEEDED(sq_getbool(v, 1, out));
+        sq_pop(v, 1);
+        return success;
+    }
+    return false;
+}
+static inline bool sq_readstring(HSQUIRRELVM v, const SQChar* name, const SQChar** out) {
+    sq_pushstring(v, name, -1);
+    if (SQ_SUCCEEDED(sq_get(v, -2))) {
+        bool success = SQ_SUCCEEDED(sq_getstring(v, 1, out));
+        sq_pop(v, 1);
+        return success;
+    }
+    return false;
+}
+
 template <typename L>
 static inline bool sq_edit(HSQUIRRELVM v, const SQChar* name, const L& lambda) {
     sq_pushstring(v, name, -1);
@@ -162,7 +199,7 @@ static inline void sq_createclass(HSQUIRRELVM v, const SQChar* name, const L& la
 }
 
 SQInteger r_resync_get(HSQUIRRELVM v) {
-    sq_pushbool(v, resyncing);
+    sq_pushbool(v, (SQBool)resyncing);
     return 1;
 }
 
@@ -327,9 +364,37 @@ extern "C" {
             // like adding squirrel globals/funcs/etc.
             sq_pushroottable(v);
 
-            sq_setcompilererrorhandler(v, SQCompilerErrorHandler);
-            sq_newclosure(v, sq_throwexception, 0);
+#if !DISABLE_ALL_LOGGING_FOR_BUILD
+            sq_setcompilererrorhandler(v, [](HSQUIRRELVM v, const SQChar* desc, const SQChar* src, SQInteger line, SQInteger col) {
+                log_printf(
+                    "Squirrel compiler exception: %s\n"
+                    "<%d,%d> \"%s\"\n",
+                    src,
+                    line, col, desc
+                );
+            });
+            sq_newclosure(v, [](HSQUIRRELVM v) -> SQInteger {
+                if (sq_gettop(v) > 0) {
+                    const SQChar* error_msg;
+                    if (SQ_SUCCEEDED(sq_getstring(v, 2, &error_msg))) {
+                        log_printf("Squirrel runtime exception: \"%s\"\n", error_msg);
+                        SQStackInfos sqstack;
+                        for (
+                            SQInteger i = 1;
+                            SQ_SUCCEEDED(sq_stackinfos(v, i, &sqstack));
+                            ++i
+                        ) {
+                            log_printf(
+                                *sqstack.source ? " %d | %s (%s)\n" : " %d | %s\n"
+                                , sqstack.line, sqstack.funcname ? sqstack.funcname : "Anonymous function", sqstack.source
+                            );
+                        }
+                    }
+                }
+                return 0;
+            }, 0);
             sq_seterrorhandler(v);
+#endif
 
             // setting table setup
             sq_createtable(v, _SC("setting"), [](HSQUIRRELVM v) {
@@ -409,26 +474,19 @@ extern "C" {
     }
 
     dll_export int stdcall update_frame() {
+        /*
         sq_pushroottable(v);
 
         //saving ::network.IsPlaying to a variable
-        //getting the network table
-        sq_pushstring(v, _SC("network"), -1);
-        if (SQ_SUCCEEDED(sq_get(v, -2))) {
-            //Getting the variable
-            sq_pushstring(v, _SC("IsPlaying"), -1);
-            if (SQ_SUCCEEDED(sq_get(v, -2))) {
-                if (sq_gettype(v, -1) == OT_BOOL) {
-                    sq_getbool(v, -1, &isplaying);
-                }
-                //pop the variable
-                sq_pop(v, 1);
+        sq_edit(v, _SC("network"), [](HSQUIRRELVM v) {
+            SQBool is_playing_sq;
+            if (sq_readbool(v, _SC("IsPlaying"), &is_playing_sq)) {
+                isplaying = is_playing_sq;
             }
-            //pop the network table
-            sq_pop(v, 1);
-        }
-        //pop the roottable
+        });
+
         sq_pop(v, 1);
+        */
 
 #if ALLOCATION_PATCH_TYPE != PATCH_NO_ALLOCS
         update_allocs();

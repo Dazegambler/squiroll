@@ -4,14 +4,6 @@
 #include "patch_utils.h"
 #include "log.h"
 
-void mem_write(void* address, const void* data, size_t size) {
-    DWORD oldProtect;
-    if (VirtualProtect(address, size, PAGE_READWRITE, &oldProtect)) {
-        memcpy(address, data, size);
-        VirtualProtect(address, size, oldProtect, &oldProtect);
-    }
-}
-
 void hotpatch_call(void* target, void* replacement) {
     uint8_t bytes[] = { 0xE8, 0, 0, 0, 0 };
     *(uint32_t*)&bytes[1] = (uintptr_t)replacement - (uintptr_t)target - 5;

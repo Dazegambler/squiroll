@@ -20,9 +20,8 @@
 
 #define BETTER_BLACK_SCREEN_FIX 1
 
-extern SQBool resyncing;
-
-extern SQBool isplaying;
+extern bool resyncing;
+//extern bool isplaying;
 
 void patch_netplay();
 

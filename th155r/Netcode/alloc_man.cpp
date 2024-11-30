@@ -214,6 +214,7 @@ struct AllocManager {
     }
     
     void print_buffer_sizes() const {
+#if !DISABLE_ALL_LOGGING_FOR_BUILD
         size_t total_filled = 0;
         size_t total_buffer = 0;
         for (size_t i = 0; i < SAVED_FRAMES; ++i) {
@@ -230,6 +231,7 @@ struct AllocManager {
             "Total (%zu): %zu/%zu (%.3f)\n"
             , SAVED_FRAMES, total_filled, total_buffer, (double)total_filled / (double)total_buffer
         );
+#endif
     }
 
     template <typename L>

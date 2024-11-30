@@ -257,8 +257,8 @@ static bool not_in_match = false;
 
 
 static uint8_t lag_packets = 0;
-SQBool resyncing = SQFalse;
-SQBool isplaying = SQFalse;
+bool resyncing = SQFalse;
+//bool isplaying = SQFalse;
 static uint64_t prev_timestamp = 0;
 
 static inline constexpr uint8_t RESYNC_THRESHOLD = UINT8_MAX;
@@ -278,7 +278,7 @@ after connection loss due to really bad connection
 //start
 static void resync_patch(uint8_t value) {
     //0-255
-    static constexpr int8_t value_table[] = {//0-6
+    static constexpr int8_t value_table[] = {//0-8
         5, 10, 15, 30, 45, 90, INT8_MAX, INT8_MAX
     };
     constexpr uint8_t divisor = ((UINT8_MAX + 1) / countof(value_table));
@@ -296,9 +296,9 @@ static void resync_patch(uint8_t value) {
 static void run_resync_logic(uint64_t new_timestamp) {
     /*
     log_printf(
-    "ASM %3hhu, DIFF %d\n",
-    *(uint8_t*)resync_patch_addr,
-    (uint32_t)new_timestamp - (uint32_t)(new_timestamp >> 32)
+        "ASM %3hhu, DIFF %d\n",
+        *(uint8_t*)resync_patch_addr,
+        (uint32_t)new_timestamp - (uint32_t)(new_timestamp >> 32)
     );
     */
 #if USE_ORIGINAL_RESYNC
@@ -309,15 +309,15 @@ static void run_resync_logic(uint64_t new_timestamp) {
         }
         else {
             if (++lag_packets >= RESYNC_THRESHOLD) {
-                resyncing = SQTrue;
+                resyncing = true;
                 lag_packets = 0;
             }
         }
     } else {
         if (lag_packets >= RESYNC_DURATION) {
-            resyncing = SQFalse;
+            resyncing = false;
             lag_packets = 0;
-            resync_patch(lag_packets);
+            //resync_patch(lag_packets);
         }
         else {
             resync_patch(lag_packets);
@@ -645,9 +645,10 @@ void patch_netplay() {
     mem_write(0x171F64_R, PATCH_BYTES<0x89>);
 #endif
 
-    if ((enable_netplay = get_netplay_state())) {
-        resync_patch(160);
-    }
+    enable_netplay = get_netplay_state();
+    //if ((enable_netplay = get_netplay_state())) {
+        //resync_patch(160);
+    //}
 
     // This may seem redundant, but it helps prevent
     // conflicts with the original netplay patch
@@ -675,10 +676,10 @@ void patch_netplay() {
     mem_write(0x17D706_R, unlock_fixB8);
 
     uintptr_t base = base_address;
-    for (size_t i = 0; i < countof(lock_fix_addrs); ++i) {
+    nounroll for (size_t i = 0; i < countof(lock_fix_addrs); ++i) {
         hotpatch_rel32(based_pointer(base, lock_fix_addrs[i]), fix_black_screen_lock);
     }
-    for (size_t i = 0; i < countof(unlock_fixA_addrs); ++i) {
+    nounroll for (size_t i = 0; i < countof(unlock_fixA_addrs); ++i) {
         hotpatch_rel32(based_pointer(base, unlock_fixA_addrs[i]), fix_black_screen_unlock);
     }
 #endif

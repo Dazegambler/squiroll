@@ -290,16 +290,26 @@ static void patch_file_loading() {
 
 // Initialization code shared by th155r and thcrap use
 // Executes before the start of the process
-void common_init(LogType log_type) {
+void common_init(
+#if !DISABLE_ALL_LOGGING_FOR_BUILD
+    LogType log_type
+#endif
+) {
+#if !DISABLE_ALL_LOGGING_FOR_BUILD
     if (log_type != NO_LOGGING) {
         enable_debug_console(log_type == LOG_TO_PARENT_CONSOLE);
         patch_throw_logs();
     }
     else {
+        log_printf = printf_dummy;
+        log_fprintf = fprintf_dummy;
+#endif
         // Disable the original game's printf use
         // when logging is disabled
         hotpatch_ret(0x25270_R, 0);
+#if !DISABLE_ALL_LOGGING_FOR_BUILD
     }
+#endif
 
     // Turn off scroll lock to simplify static management for the toggle func
     SetScrollLockState(false);
@@ -334,21 +344,32 @@ void common_init(LogType log_type) {
 }
 
 static void yes_tampering() {
-    hotpatch_ret(0x12E820_R, 0);
-    hotpatch_ret(0x130630_R, 0);
-    hotpatch_ret(0x132AF0_R, 0);
+    static constexpr uintptr_t tamper_patch_addrs[] = {
+        0x12E820, 0x130630, 0x132AF0
+    };
+    
+    uintptr_t base = base_address;
+    nounroll for (size_t i = 0; i < countof(tamper_patch_addrs); ++i) {
+        hotpatch_ret(based_pointer(base, tamper_patch_addrs[i]), 0);
+    }
 }
 
 typedef BOOL cdecl globalconfig_get_boolean_t(const char* key, const BOOL default_value);
 
+#if !DISABLE_ALL_LOGGING_FOR_BUILD
 static bool enable_thcrap_console = false;
+#endif
 
 extern "C" {
     // FUNCTION REQUIRED FOR THE LIBRARY
     // th155r init function
     dll_export int stdcall netcode_init(InitFuncData* init_data) {
         yes_tampering();
-        common_init(init_data->log_type);
+        common_init(
+#if !DISABLE_ALL_LOGGING_FOR_BUILD
+            init_data->log_type
+#endif
+        );
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
         patch_file_loading();
 #endif
@@ -359,7 +380,11 @@ extern "C" {
     // Thcrap already removes the tamper protection,
     // so that code is unnecessary to include here.
     dll_export void cdecl netcode_mod_init(void* param) {
-        common_init(enable_thcrap_console ? LOG_TO_PARENT_CONSOLE : NO_LOGGING);
+        common_init(
+#if !DISABLE_ALL_LOGGING_FOR_BUILD
+            enable_thcrap_console ? LOG_TO_PARENT_CONSOLE : NO_LOGGING
+#endif
+        );
     }
     
     // thcrap plugin init
@@ -368,15 +393,19 @@ extern "C" {
             if (auto runconfig_game_get = (const char*(*)())GetProcAddress(thcrap_handle, "runconfig_game_get")) {
                 const char* game_str = runconfig_game_get();
                 if (game_str && !strcmp(game_str, "th155")) {
+#if !DISABLE_ALL_LOGGING_FOR_BUILD
                     if (printf_t* log_func = (printf_t*)GetProcAddress(thcrap_handle, "log_printf")) {
                         log_printf = log_func;
                     }
+#endif
                     //if (patchhook_register_t* patchhook_register_func = (patchhook_register_t*)GetProcAddress(thcrap_handle, "patchhook_register")) {
                         //patchhook_register = patchhook_register_func;
                     //}
+#if !DISABLE_ALL_LOGGING_FOR_BUILD
                     if (globalconfig_get_boolean_t* globalconfig_get_boolean = (globalconfig_get_boolean_t*)GetProcAddress(thcrap_handle, "globalconfig_get_boolean")) {
                         enable_thcrap_console = globalconfig_get_boolean("console", false);
                     }
+#endif
                     return 0;
                 }
             }

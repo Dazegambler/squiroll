@@ -12,15 +12,7 @@
 
 //NATIVE FUNCTIONS
 
-void SQCompilerErrorHandler(HSQUIRRELVM vm, const SQChar* desc, const SQChar* src, SQInteger line, SQInteger col) {
-    log_printf( 
-        "Squirrel compiler exception: %s\n"
-        "<%d,%d> \"%s\"\n",
-        src,
-        line, col, desc
-    );
-}
-
+#if !DISABLE_ALL_LOGGING_FOR_BUILD
 static void print_stack_top_value(HSQUIRRELVM v, int depth) {
     union {
         SQInteger val_int;
@@ -185,6 +177,8 @@ static void print_stack_top_value(HSQUIRRELVM v, int depth) {
             unreachable;
     }
 }
+#endif
+
  /*
 static void show_tree(HSQUIRRELVM v, HSQOBJECT Root) {
     sq_pushobject(v, Root);
@@ -361,6 +355,21 @@ HSQOBJECT SQGetObjectByName(HSQUIRRELVM v, const SQChar *name) {
 */
 
 //SQUIRREL FUNCTIONS
+SQInteger sq_compile_buffer(HSQUIRRELVM v){
+    const SQChar* src;
+    HSQOBJECT root;
+    if (sq_gettop(v) != 3                       ||
+        SQ_FAILED(sq_getstring(v, 2, &src))     ||
+        SQ_FAILED(sq_getstackobj(v, 3, &root))
+    ) {
+        return sq_throwerror(v, _SC("Invalid arguments...\n"
+                             "usage: compilebuffer <src> <root>\n"));
+    }
+    CompileScriptBuffer(v, src, root);
+    return 0;
+}
+
+#if !DISABLE_ALL_LOGGING_FOR_BUILD
 SQInteger sq_print(HSQUIRRELVM v) {
     const SQChar* str;
     if (sq_gettop(v) != 2 || 
@@ -410,38 +419,4 @@ SQInteger sq_print_value(HSQUIRRELVM v) {
     log_printf("\n");
     return 0;
 }
-
-SQInteger sq_compile_buffer(HSQUIRRELVM v){
-    const SQChar* src;
-    HSQOBJECT root;
-    if (sq_gettop(v) != 3                       ||
-        SQ_FAILED(sq_getstring(v, 2, &src))     ||
-        SQ_FAILED(sq_getstackobj(v, 3, &root))
-    ) {
-        return sq_throwerror(v, _SC("Invalid arguments...\n"
-                             "usage: compilebuffer <src> <root>\n"));
-    }
-    CompileScriptBuffer(v, src, root);
-    return 0;
-}
-
-SQInteger sq_throwexception(HSQUIRRELVM v) {
-    if (sq_gettop(v) > 0) {
-        const SQChar* error_msg;
-        if (SQ_SUCCEEDED(sq_getstring(v, 2, &error_msg))) {
-            log_printf("Squirrel runtime exception: \"%s\"\n", error_msg);
-            SQStackInfos sqstack;
-            for (
-                SQInteger i = 1;
-                SQ_SUCCEEDED(sq_stackinfos(v, i, &sqstack));
-                ++i
-            ) {
-                log_printf(
-                    *sqstack.source ? " %d | %s (%s)\n" : " %d | %s\n"
-                    , sqstack.line, sqstack.funcname ? sqstack.funcname : "Anonymous function", sqstack.source
-                );
-            }
-        }
-    }
-    return 0;
-}
+#endif

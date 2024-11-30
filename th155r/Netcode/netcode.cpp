@@ -259,7 +259,8 @@ static bool not_in_match = false;
 static uint8_t lag_packets = 0;
 bool resyncing = SQFalse;
 //bool isplaying = SQFalse;
-static uint64_t prev_timestamp = 0;
+static uint32_t prev_timestampA = 0;
+static uint32_t prev_timestampB = 0;
 
 static inline constexpr uint8_t RESYNC_THRESHOLD = UINT8_MAX;
 static inline constexpr uint8_t RESYNC_DURATION = UINT8_MAX;
@@ -293,18 +294,22 @@ static void resync_patch(uint8_t value) {
 
 #define USE_ORIGINAL_RESYNC 1
 
-static void run_resync_logic(uint64_t new_timestamp) {
+static void run_resync_logic(uint32_t new_timestampA, uint32_t new_timestampB) {
     /*
     log_printf(
         "ASM %3hhu, DIFF %d\n",
         *(uint8_t*)resync_patch_addr,
-        (uint32_t)new_timestamp - (uint32_t)(new_timestamp >> 32)
+        new_timestampA - new_timestampB
     );
     */
 #if USE_ORIGINAL_RESYNC
     if (!resyncing) {
-        if (prev_timestamp != new_timestamp) {
-            prev_timestamp = new_timestamp;
+        if (
+            prev_timestampA != new_timestampA ||
+            prev_timestampB != new_timestampB
+        ) {
+            prev_timestampA = new_timestampA;
+            prev_timestampB = new_timestampB;
             lag_packets = 0;
         }
         else {
@@ -340,6 +345,47 @@ static void run_resync_logic(uint64_t new_timestamp) {
 #endif
 }
 
+#define DETAILED_NETPLAY_PACKET_LOGGING 0
+
+#if DETAILED_NETPLAY_PACKET_LOGGING
+
+void print_hex_byte(uint16_t* buffer, uint8_t value) {
+    uint32_t temp = (value & 0x0F) << 8 | value >> 4;
+    *buffer = temp + 0x3030 + (temp + 0x7676 >> 7 & 0x0101) * 7;
+}
+
+void log_packet_18(const uint8_t* data, size_t size) {
+    size_t text_len = (size - 1) * 2;
+    char* text = (char*)_alloca(text_len + 1);
+    text[text_len] = '\0';
+
+    uint16_t* text_write = (uint16_t*)text;
+    for (size_t i = 1; i < size; ++i) {
+        print_hex_byte(text_write++, data[i]);
+    }
+    
+    log_printf(
+        "18.%hhu %s\n"
+        , data[0], text
+    );
+}
+
+void log_packet_19(const uint8_t* data, size_t size) {
+    size_t text_len = (size - 1) * 2;
+    char* text = (char*)_alloca(text_len + 1);
+    text[text_len] = '\0';
+
+    uint16_t* text_write = (uint16_t*)text;
+    for (size_t i = 1; i < size; ++i) {
+        print_hex_byte(text_write++, data[i]);
+    }
+
+    log_printf(
+        "19.%hhu %s\n"
+        , data[0], text
+    );
+}
+#endif
 
 int WSAAPI my_WSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWORD lpNumberOfBytesSent, DWORD dwFlags, const sockaddr* lpTo, int iTolen, LPWSAOVERLAPPED lpOverlapped, LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine) {
 
@@ -366,7 +412,10 @@ int WSAAPI my_WSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWO
                 enable_netplay &&
                 lpBuffers[0].len >= 25
             ) {
-                run_resync_logic(*(uint64_t*)&packet->data[16]);
+#if DETAILED_NETPLAY_PACKET_LOGGING
+                log_packet_18(packet->data, lpBuffers[0].len - 1);
+#endif
+                run_resync_logic(*(uint32_t*)&packet->data[16], *(uint32_t*)&packet->data[20]);
             }
             break;
         case PACKET_TYPE_19:
@@ -374,7 +423,10 @@ int WSAAPI my_WSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWO
                 enable_netplay &&
                 lpBuffers[0].len >= 26
             ) {
-                run_resync_logic(*(uint64_t*)&packet->data[17]);
+#if DETAILED_NETPLAY_PACKET_LOGGING
+                log_packet_19(packet->data, lpBuffers[0].len - 1);
+#endif
+                run_resync_logic(*(uint32_t*)&packet->data[17], *(uint32_t*)&packet->data[21]);
             }
             break;
 #endif
@@ -647,7 +699,7 @@ void patch_netplay() {
 
     enable_netplay = get_netplay_state();
     //if ((enable_netplay = get_netplay_state())) {
-        //resync_patch(160);
+        //resync_patch(32);
     //}
 
     // This may seem redundant, but it helps prevent

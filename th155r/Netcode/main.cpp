@@ -288,6 +288,10 @@ static void patch_file_loading() {
 }
 #endif
 
+static inline void disable_original_game_logging() {
+    hotpatch_ret(0x25270_R, 0);
+}
+
 // Initialization code shared by th155r and thcrap use
 // Executes before the start of the process
 void common_init(
@@ -303,12 +307,16 @@ void common_init(
     else {
         log_printf = printf_dummy;
         log_fprintf = fprintf_dummy;
-#endif
+#if !ALWAYS_DISABLE_ORIGINAL_GAME_LOGGING
         // Disable the original game's printf use
         // when logging is disabled
-        hotpatch_ret(0x25270_R, 0);
-#if !DISABLE_ALL_LOGGING_FOR_BUILD
+        disable_original_game_logging();
+#endif
     }
+#endif
+
+#if !DISABLE_ALL_LOGGING_FOR_BUILD || ALWAYS_DISABLE_ORIGINAL_GAME_LOGGING
+    disable_original_game_logging();
 #endif
 
     // Turn off scroll lock to simplify static management for the toggle func

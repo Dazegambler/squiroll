@@ -1,4 +1,3 @@
-#include <cstdint>
 #if __INTELLISENSE__
 #undef _HAS_CXX20
 #define _HAS_CXX20 0
@@ -256,11 +255,12 @@ static std::atomic<bool> respond_to_punch_ping = {};
 // TODO: Is this variable name inverted?
 static bool not_in_match = false;
 
+static constexpr int8_t LAG_OP_DEFAULT_AMOUNT = 4;
 
 static uint8_t lag_packets = 0;
 static int8_t lag_offset = 0;
-static int8_t lag_dur = 0;
-static int8_t lag_op = 1;
+static uint8_t lag_dur = 0;
+static int8_t lag_op = LAG_OP_DEFAULT_AMOUNT;
 bool resyncing = SQFalse;
 //bool isplaying = SQFalse;
 static uint32_t prev_timestampA = 0;
@@ -274,7 +274,7 @@ static inline constexpr PacketPunchPing PUNCH_PING_PACKET = {
 };
 
 /*
-The netplay patch changes how many ms the game waits to send/process/wait(not sure yet) the next packet
+The netplay patch changes how many packets the game waits to send/process/wait(not sure yet) the next packet
 */
 
 //resync_logic
@@ -285,7 +285,7 @@ static void resync_patch(uint8_t value) {
 #if USE_ORIGINAL_RESYNC
     //start strong and quick
     //0-255
-    //packet wait from 0 to 127 ms
+    //packet wait from 0 to 127 packets
     static constexpr int8_t value_table[] = {//0-8
         5, 10, 15, 30, 45, 90, INT8_MAX, INT8_MAX
     };
@@ -299,7 +299,7 @@ static void resync_patch(uint8_t value) {
     }
 #else
     //start strong and quick
-    //packet wait from 0 to 127 ms
+    //packet wait from 0 to 127 packets
     uint8_t* patch_addr = (uint8_t*)resync_patch_addr;
 
     if (*patch_addr != value) {
@@ -349,7 +349,6 @@ static void run_resync_logic(uint32_t new_timestampA, uint32_t new_timestampB) {
     slowdown is caused by repetition in packets received
     under extreme desync restore patch value to 5 to fix it
     */
-    uint8_t prev_lag_packets = lag_packets;
     if (prev_timestampA != new_timestampA ||
         prev_timestampB != new_timestampB
     ) {
@@ -358,28 +357,31 @@ static void run_resync_logic(uint32_t new_timestampA, uint32_t new_timestampB) {
 
         lag_offset = 0;
         lag_dur = 0;
-        lag_op = 1;
-    } else {
-        lag_dur = saturate_add<int8_t>(lag_dur,1u);
-        if (lag_offset == 0){
-        lag_offset = lag_op * 4;
-        lag_op *= -1;
-        }else if ( lag_offset > 0){
-            lag_packets =  lag_dur > 4 ? 5 : saturate_add<int8_t>(prev_lag_packets, std::abs(lag_offset--));
-            if (lag_packets == 127){
-                lag_offset = 0;
-                lag_op *= -1;
-            }
-        }else {
-            lag_packets = lag_dur > 4 ? 5 : saturate_sub<int8_t>(prev_lag_packets, std::abs(lag_offset++));
-            if (lag_packets == 0){
-                lag_offset = 0;
-                lag_op *= -1;
-            }
-        }
+        lag_op = LAG_OP_DEFAULT_AMOUNT;
     }
-    if (lag_packets != prev_lag_packets) {
-        resync_patch(lag_packets);
+    else {
+        lag_dur = saturate_add<uint8_t>(lag_dur, 1u);
+        if (lag_offset == 0) {
+            lag_offset = lag_op;
+            lag_op = -lag_op;
+        }
+        else {
+            if (lag_offset > 0) {
+                lag_packets = lag_dur > 4 ? 5 : saturate_add<int8_t>(lag_packets, lag_offset--);
+                if (lag_packets == RESYNC_THRESHOLD) {
+                    lag_offset = 0;
+                    lag_op = -lag_op;
+                }
+            }
+            else {
+                lag_packets = lag_dur > 4 ? 5 : saturate_sub<uint8_t>(lag_packets, -(lag_offset++));
+                if (lag_packets == 0) {
+                    lag_offset = 0;
+                    lag_op = -lag_op;
+                }
+            }
+            resync_patch(lag_packets);
+        }
     }
 #endif
 }
@@ -725,8 +727,6 @@ static constexpr uint8_t unlock_fixB11[] = {
 
 void patch_netplay() {
 
-    mem_write(patchA_addr, PATCH_BYTES<INT8_MAX>);
-
 #if BETTER_BLACK_SCREEN_FIX
     //mem_write(0x171F66_R, PATCH_BYTES<0x1E>);
     mem_write(0x17C6E6_R, PATCH_BYTES<0x1E>);
@@ -736,24 +736,23 @@ void patch_netplay() {
     mem_write(0x171F64_R, PATCH_BYTES<0x89>);
 #endif
 
-    enable_netplay = get_netplay_state();
+    if ((enable_netplay = get_netplay_state())) {
+        mem_write(patchA_addr, PATCH_BYTES<INT8_MAX>);
 #if USE_ORIGINAL_RESYNC
-    if ((enable_netplay = get_netplay_state())) {
         resync_patch(160);
-    }
 #else
-    if ((enable_netplay = get_netplay_state())) {
-      //resync_patch(63);
-    }
+        //resync_patch(63);
 #endif
+    }
 
     // This may seem redundant, but it helps prevent
     // conflicts with the original netplay patch
-    hotpatch_import(wsarecvfrom_import_addr, WSARecvFrom);
-
+    //hotpatch_import(wsarecvfrom_import_addr, WSARecvFrom);
+    hotpatch_icall(0x170E5A_R, WSARecvFrom);
 
     hotpatch_rel32(0x176B8A_R, packet_parser_hook);
-    hotpatch_import(wsasendto_import_addr, my_WSASendTo);
+    //hotpatch_import(wsasendto_import_addr, my_WSASendTo);
+    hotpatch_icall(0x170501, my_WSASendTo);
 
 #if BETTER_BLACK_SCREEN_FIX
     mem_write(0x172FF1_R, unlock_fixB1);

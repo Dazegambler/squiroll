@@ -2,7 +2,7 @@ Squiroll
 ---
 [![GitHub Release](https://img.shields.io/github/release/dazegambler/squiroll.svg)](https://github.com/Dazegambler/squiroll/releases)
 
-squiroll is a patcher made for Touhou 15.5 that adds missing QOL features to the game alongside adding rollback based netcode to the game(Future plan)
+Squiroll is a patcher made for Touhou 15.5 that adds missing QOL features to the game alongside adding rollback based netcode to the game(Future plan)
 
 Prerequisites
 ---
@@ -40,7 +40,7 @@ To build the project, follow these steps:
 1. Build the tools
     ```sh
     cd /path/to/squiroll/tools
-    ./build.pat
+    ./build.bat
     cd ..
     ```
 2. Run the `build.bat` script:

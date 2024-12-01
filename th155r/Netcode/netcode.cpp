@@ -259,13 +259,14 @@ static bool not_in_match = false;
 
 static uint8_t lag_packets = 0;
 static int8_t lag_offset = 0;
+static int8_t lag_dur = 0;
 static int8_t lag_op = 1;
 bool resyncing = SQFalse;
 //bool isplaying = SQFalse;
 static uint32_t prev_timestampA = 0;
 static uint32_t prev_timestampB = 0;
 
-static inline constexpr uint8_t RESYNC_THRESHOLD = UINT8_MAX;
+static inline constexpr uint8_t RESYNC_THRESHOLD = INT8_MAX;
 static inline constexpr uint8_t RESYNC_DURATION = UINT8_MAX;
 
 static inline constexpr PacketPunchPing PUNCH_PING_PACKET = {
@@ -278,7 +279,7 @@ The netplay patch changes how many ms the game waits to send/process/wait(not su
 
 //resync_logic
 //start
-#define USE_ORIGINAL_RESYNC 1
+#define USE_ORIGINAL_RESYNC 0
 
 static void resync_patch(uint8_t value) {
 #if USE_ORIGINAL_RESYNC
@@ -307,7 +308,6 @@ static void resync_patch(uint8_t value) {
 
 #endif
 }
-
 
 static void run_resync_logic(uint32_t new_timestampA, uint32_t new_timestampB) {
     /*
@@ -347,8 +347,7 @@ static void run_resync_logic(uint32_t new_timestampA, uint32_t new_timestampB) {
 #else
     /*
     slowdown is caused by repetition in packets received
-    current issues:
-    under high peak rate and loss rate it will fail to resync
+    under extreme desync restore patch value to 5 to fix it
     */
     uint8_t prev_lag_packets = lag_packets;
     if (prev_timestampA != new_timestampA ||
@@ -357,25 +356,22 @@ static void run_resync_logic(uint32_t new_timestampA, uint32_t new_timestampB) {
         prev_timestampA = new_timestampA;
         prev_timestampB = new_timestampB;
 
-        //lag_packets = saturate_add<int8_t>(prev_lag_packets, 1u);
         lag_offset = 0;
+        lag_dur = 0;
         lag_op = 1;
-    }
-    else {
-        //lag_packets = saturate_sub<int8_t>(prev_lag_packets, 1u);
+    } else {
+        lag_dur = saturate_add<int8_t>(lag_dur,1u);
         if (lag_offset == 0){
-            lag_offset = lag_op * 4;
-            lag_op *= -1;
+        lag_offset = lag_op * 4;
+        lag_op *= -1;
         }else if ( lag_offset > 0){
-            lag_offset--;
-            lag_packets = saturate_add<int8_t>(prev_lag_packets, 1u);
-            if (lag_packets == INT8_MAX) {
+            lag_packets =  lag_dur > 4 ? 5 : saturate_add<int8_t>(prev_lag_packets, std::abs(lag_offset--));
+            if (lag_packets == 127){
                 lag_offset = 0;
                 lag_op *= -1;
             }
-        }else  if ( lag_offset < 0){
-            lag_offset++;
-            lag_packets = saturate_sub<int8_t>(prev_lag_packets, 1u);
+        }else {
+            lag_packets = lag_dur > 4 ? 5 : saturate_sub<int8_t>(prev_lag_packets, std::abs(lag_offset++));
             if (lag_packets == 0){
                 lag_offset = 0;
                 lag_op *= -1;

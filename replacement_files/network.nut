@@ -361,7 +361,7 @@ function UpdateSelectLobby()
 	{
 		::config.network.lobby_name = this.room_name[this.cursor_lobby.val];
 		::config.Save();
-		this.lobby_time_stamp = ::manbow.timeGetTime();
+		this.lobby_time_stamp = ::manbow.timeGetTime() - 9000;
 		::LOBBY.Close();
 		this.update = this.UpdateMain;
 	}

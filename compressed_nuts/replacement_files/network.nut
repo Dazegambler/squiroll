@@ -190,7 +190,7 @@ function UpdateSelectLobby(){::menu.help.Set(this.help_item)
 this.cursor_lobby.Update()
 if(this.cursor_lobby.ok){::config.network.lobby_name=this.room_name[this.cursor_lobby.val]
 ::config.Save()
-this.lobby_time_stamp=::manbow.timeGetTime()
+this.lobby_time_stamp=::manbow.timeGetTime()-9000
 ::LOBBY.Close()
 this.update=this.UpdateMain
 }

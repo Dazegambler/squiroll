@@ -1,9 +1,8 @@
 Squiroll
 ---
-[![Join the chat at https://discord.gg/kfJTRBq](https://discordapp.com/api/guilds/213769640852193282/widget.png)](https://discord.gg/kfJTRBq)
-[![GitHub Release](https://img.shields.io/github/release/thpatch/thcrap.svg)](https://github.com/Dazegambler/squiroll/releases)
+[![GitHub Release](https://img.shields.io/github/release/dazegambler/squiroll.svg)](https://github.com/Dazegambler/squiroll/releases)
 
-description
+squiroll is a patcher made for Touhou 15.5 that adds missing QOL features to the game alongside adding rollback based netcode to the game(Future plan)
 
 Prerequisites
 ---
@@ -15,41 +14,49 @@ Build
 Clone the repository:
 ```sh
 git clone --recursive https://github.com/Dazegambler/squiroll.git
-cd squiroll
 ```
 
 ### Linux
 To build the project, follow these steps:
-1. Build the tools
-    ```sh
-    cd tools
-    ./build.sh
-    ```
 1. Acquire the  windows SDK headers and libraries with xwin 
 
     ```sh
+    cd /path/to/xwin
     xwin --accept-license --arch x86 splat
     ```
-2. Run the `build.sh` script:
+2. Build the tools
+    ```sh
+    cd /path/to/squiroll/tools
+    ./build.sh
+    cd ..
+    ```
+3. Run the `build.sh` script:
 
     ```sh
     ./build.sh
     ```
 ### Windows
 
-1. Run the `build.bat` script:
+1. Build the tools
+    ```sh
+    cd /path/to/squiroll/tools
+    ./build.pat
+    cd ..
+    ```
+2. Run the `build.bat` script:
 
     ```batch
     build.bat
     ```
     
-## Usage
+Usage
+---
 
 ### Windows
 1. Put the following files on your game directory:
 - `th155r.exe`
 - `Netcode.dll`
-2. Run the game from the `th155r.exe` file
+2. Run the game from `th155r.exe`
 
 ### Linux
 1. Put the following files on your game directory:

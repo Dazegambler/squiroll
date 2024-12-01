@@ -270,15 +270,15 @@ static inline constexpr PacketPunchPing PUNCH_PING_PACKET = {
 };
 
 /*
-TO FIX:
-1.crash after attempting to host/connect
-after connection loss due to really bad connection
+The netplay patch changes how many ms the game waits to send/process/wait(not sure yet) the next packet
 */
 
 //resync_logic
 //start
 static void resync_patch(uint8_t value) {
+    //start strong and quick
     //0-255
+    //packet wait from 0 to 127 ms
     static constexpr int8_t value_table[] = {//0-8
         5, 10, 15, 30, 45, 90, INT8_MAX, INT8_MAX
     };
@@ -698,9 +698,9 @@ void patch_netplay() {
 #endif
 
     enable_netplay = get_netplay_state();
-    //if ((enable_netplay = get_netplay_state())) {
-        //resync_patch(32);
-    //}
+    if ((enable_netplay = get_netplay_state())) {
+        resync_patch(160);
+    }
 
     // This may seem redundant, but it helps prevent
     // conflicts with the original netplay patch

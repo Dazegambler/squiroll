@@ -1,56 +1,43 @@
-# Aocf_rollback
+Squiroll
+---
+[![Join the chat at https://discord.gg/kfJTRBq](https://discordapp.com/api/guilds/213769640852193282/widget.png)](https://discord.gg/kfJTRBq)
+[![GitHub Release](https://img.shields.io/github/release/thpatch/thcrap.svg)](https://github.com/Dazegambler/squiroll/releases)
 
-Aocf rollback aims to add rollback based netcode to touhou 15.5:Antinomy of Common Flowers
+description
 
-### As of now we only have a patcher working, we're currently working on making the netcode that is going to replace the currently existing one in the game
+Prerequisites
+---
+### - [clang](https://releases.llvm.org/download.html)
+### - [xwin(linux)](https://github.com/Jake-Shadle/xwin)
 
-# Progress Dashboard:
-### ~~Frame restoration/saving~~(WIP)
-### Input Management
-### ~~Memory Allocation hooking~~(WIP)
-### ~~Frame stepping~~(WIP)
-### ~~lobby~~(WIP)
-
-## Prerequisites
-
-- [i686-w64-mingw32-gcc](https://www.mingw-w64.org/downloads/)
-
-## Build
-
+Build
+---
 Clone the repository:
-
 ```sh
-git clone https://github.com/Dazegambler/Aocf_rollback
-cd Aocf_rollback
+git clone --recursive https://github.com/Dazegambler/squiroll.git
+cd squiroll
 ```
 
-
 ### Linux
-
 To build the project, follow these steps:
-
-
-1. Make sure you have `i686-w64-mingw32-gcc` installed. You can install it via your package manager:
+1. Build the tools
+    ```sh
+    cd tools
+    ./build.sh
+    ```
+1. Acquire the  windows SDK headers and libraries with xwin 
 
     ```sh
-    sudo apt-get install mingw-w64
+    xwin --accept-license --arch x86 splat
     ```
-
 2. Run the `build.sh` script:
 
     ```sh
     ./build.sh
     ```
-
-This will compile the source code and produce the following output files:
-- `th155r.exe`
-- `Netcode.dll`
-
 ### Windows
 
-1. Ensure you have [MinGW-w64](https://www.mingw-w64.org/downloads/) installed.
-2. Open a terminal and navigate to the project directory.
-3. Run the `build.bat` script:
+1. Run the `build.bat` script:
 
     ```batch
     build.bat

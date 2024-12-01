@@ -12,10 +12,10 @@
 
 #include "util.h"
 
-#define FAKE_SEND_LAG_AMOUNT 75          // Base lag miliseconds
-#define FAKE_SEND_JITTER_AMOUNT 35       // miliseconds
-#define FAKE_PACKET_LOSS_PERCENTAGE 5   // 0-100
-#define FAKE_SPIKE_PERCENTAGE 10        // 0-100
+#define FAKE_SEND_LAG_AMOUNT 0          // Base lag miliseconds
+#define FAKE_SEND_JITTER_AMOUNT 0       // miliseconds
+#define FAKE_PACKET_LOSS_PERCENTAGE 0   // 0-100
+#define FAKE_SPIKE_PERCENTAGE 0        // 0-100
 #define FAKE_SPIKE_MULTIPLIER 5
 
 #if FAKE_SEND_LAG_AMOUNT > 0 || FAKE_SEND_JITTER_AMOUNT > 0 || FAKE_PACKET_LOSS_PERCENTAGE > 0 || FAKE_SPIKE_PERCENTAGE > 0

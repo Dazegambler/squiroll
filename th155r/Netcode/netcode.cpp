@@ -1,3 +1,4 @@
+#include <cstdint>
 #if __INTELLISENSE__
 #undef _HAS_CXX20
 #define _HAS_CXX20 0
@@ -257,6 +258,8 @@ static bool not_in_match = false;
 
 
 static uint8_t lag_packets = 0;
+static int8_t lag_offset = 0;
+static int8_t lag_op = 1;
 bool resyncing = SQFalse;
 //bool isplaying = SQFalse;
 static uint32_t prev_timestampA = 0;
@@ -275,7 +278,10 @@ The netplay patch changes how many ms the game waits to send/process/wait(not su
 
 //resync_logic
 //start
+#define USE_ORIGINAL_RESYNC 1
+
 static void resync_patch(uint8_t value) {
+#if USE_ORIGINAL_RESYNC
     //start strong and quick
     //0-255
     //packet wait from 0 to 127 ms
@@ -290,9 +296,18 @@ static void resync_patch(uint8_t value) {
     if (*patch_addr != new_value) {
         mem_write(patch_addr, new_value);
     }
+#else
+    //start strong and quick
+    //packet wait from 0 to 127 ms
+    uint8_t* patch_addr = (uint8_t*)resync_patch_addr;
+
+    if (*patch_addr != value) {
+        mem_write(patch_addr, value);
+    }
+
+#endif
 }
 
-#define USE_ORIGINAL_RESYNC 1
 
 static void run_resync_logic(uint32_t new_timestampA, uint32_t new_timestampB) {
     /*
@@ -330,14 +345,42 @@ static void run_resync_logic(uint32_t new_timestampA, uint32_t new_timestampB) {
         }
     }
 #else
+    /*
+    slowdown is caused by repetition in packets received
+    current issues:
+    under high peak rate and loss rate it will fail to resync
+    */
     uint8_t prev_lag_packets = lag_packets;
-    if (prev_timestamp != new_timestamp) {
-        prev_timestamp = new_timestamp;
+    if (prev_timestampA != new_timestampA ||
+        prev_timestampB != new_timestampB
+    ) {
+        prev_timestampA = new_timestampA;
+        prev_timestampB = new_timestampB;
 
-        lag_packets = saturate_sub<uint8_t>(prev_lag_packets, 1u);
+        //lag_packets = saturate_add<int8_t>(prev_lag_packets, 1u);
+        lag_offset = 0;
+        lag_op = 1;
     }
     else {
-        lag_packets = saturate_add<uint8_t>(prev_lag_packets, 1u);
+        //lag_packets = saturate_sub<int8_t>(prev_lag_packets, 1u);
+        if (lag_offset == 0){
+            lag_offset = lag_op * 4;
+            lag_op *= -1;
+        }else if ( lag_offset > 0){
+            lag_offset--;
+            lag_packets = saturate_add<int8_t>(prev_lag_packets, 1u);
+            if (lag_packets == INT8_MAX) {
+                lag_offset = 0;
+                lag_op *= -1;
+            }
+        }else  if ( lag_offset < 0){
+            lag_offset++;
+            lag_packets = saturate_sub<int8_t>(prev_lag_packets, 1u);
+            if (lag_packets == 0){
+                lag_offset = 0;
+                lag_op *= -1;
+            }
+        }
     }
     if (lag_packets != prev_lag_packets) {
         resync_patch(lag_packets);
@@ -698,9 +741,15 @@ void patch_netplay() {
 #endif
 
     enable_netplay = get_netplay_state();
+#if USE_ORIGINAL_RESYNC
     if ((enable_netplay = get_netplay_state())) {
         resync_patch(160);
     }
+#else
+    if ((enable_netplay = get_netplay_state())) {
+      //resync_patch(63);
+    }
+#endif
 
     // This may seem redundant, but it helps prevent
     // conflicts with the original netplay patch

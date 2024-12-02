@@ -240,6 +240,14 @@ struct TF4UDP {
     int __dword_244; // 0x244
     void* __manbow_network_impl; // 0x248
     // 0x24C
+
+    inline int get_latency_host(size_t index) const {
+        return this->child_array[index].delay;
+    }
+
+    inline int get_latency_client() const {
+        return this->parent.delay;
+    }
 };
 
 static_assert(sizeof(TF4UDP) == 0x24C);
@@ -255,19 +263,26 @@ static std::atomic<bool> respond_to_punch_ping = {};
 // TODO: Is this variable name inverted?
 static bool not_in_match = false;
 
-static constexpr int8_t LAG_OP_DEFAULT_AMOUNT = 4;
+#define USE_ORIGINAL_RESYNC 0
+
+static inline constexpr uint8_t LAG_OFFSET_AMOUNT = 4;
 
 static uint8_t lag_packets = 0;
-static int8_t lag_offset = 0;
+bool resyncing = false;
 static uint8_t lag_dur = 0;
-static int8_t lag_op = LAG_OP_DEFAULT_AMOUNT;
-bool resyncing = SQFalse;
-//bool isplaying = SQFalse;
+static uint8_t lag_offset = LAG_OFFSET_AMOUNT;
+static bool lag_offset_subtract = false;
 static uint32_t prev_timestampA = 0;
 static uint32_t prev_timestampB = 0;
 
+#if USE_ORIGINAL_RESYNC
 static inline constexpr uint8_t RESYNC_THRESHOLD = INT8_MAX;
+#else
+static inline constexpr uint8_t RESYNC_THRESHOLD = 4;
+#endif
 static inline constexpr uint8_t RESYNC_DURATION = UINT8_MAX;
+
+static inline constexpr int8_t RESYNC_ASM_ORIGINAL_VALUE = 5;
 
 static inline constexpr PacketPunchPing PUNCH_PING_PACKET = {
     .type = PACKET_TYPE_PUNCH_PING
@@ -279,7 +294,8 @@ The netplay patch changes how many packets the game waits to send/process/wait(n
 
 //resync_logic
 //start
-#define USE_ORIGINAL_RESYNC 0
+
+#define LOG_RESYNC_ASM_CHANGES 0
 
 static void resync_patch(uint8_t value) {
 #if USE_ORIGINAL_RESYNC
@@ -295,6 +311,9 @@ static void resync_patch(uint8_t value) {
     uint8_t* patch_addr = (uint8_t*)resync_patch_addr;
 
     if (*patch_addr != new_value) {
+#if LOG_RESYNC_ASM_CHANGES
+        log_printf("Changing sync ASM to %hhu\n", new_value);
+#endif
         mem_write(patch_addr, new_value);
     }
 #else
@@ -303,6 +322,9 @@ static void resync_patch(uint8_t value) {
     uint8_t* patch_addr = (uint8_t*)resync_patch_addr;
 
     if (*patch_addr != value) {
+#if LOG_RESYNC_ASM_CHANGES
+        log_printf("Changing sync ASM to %hhu\n", value);
+#endif
         mem_write(patch_addr, value);
     }
 
@@ -355,33 +377,42 @@ static void run_resync_logic(uint32_t new_timestampA, uint32_t new_timestampB) {
         prev_timestampA = new_timestampA;
         prev_timestampB = new_timestampB;
 
-        lag_offset = 0;
+        resyncing = false;
         lag_dur = 0;
-        lag_op = LAG_OP_DEFAULT_AMOUNT;
+        lag_offset = 0;
+        lag_offset_subtract = false;
     }
     else {
         lag_dur = saturate_add<uint8_t>(lag_dur, 1u);
-        if (lag_offset == 0) {
-            lag_offset = lag_op;
-            lag_op = -lag_op;
-        }
-        else {
-            if (lag_offset > 0) {
-                lag_packets = lag_dur > 4 ? 5 : saturate_add<int8_t>(lag_packets, lag_offset--);
-                if (lag_packets == RESYNC_THRESHOLD) {
-                    lag_offset = 0;
-                    lag_op = -lag_op;
-                }
+        if (!(resyncing = lag_dur > RESYNC_THRESHOLD)) {
+            if (lag_offset == 0) {
+                lag_offset = LAG_OFFSET_AMOUNT;
+                lag_offset_subtract ^= true;
             }
             else {
-                lag_packets = lag_dur > 4 ? 5 : saturate_sub<uint8_t>(lag_packets, -(lag_offset++));
-                if (lag_packets == 0) {
-                    lag_offset = 0;
-                    lag_op = -lag_op;
+                if (!lag_offset_subtract) {
+                    // Signed saturating add to prevent going above INT8_MAX
+                    lag_packets = saturate_add<int8_t>(lag_packets, lag_offset--);
+                    if (lag_packets == INT8_MAX) {
+                        lag_offset = 0;
+                        lag_offset_subtract ^= true;
+                    }
+                }
+                else {
+                    // Unsigned saturating sub to prevent going below 0
+                    lag_packets = saturate_sub<uint8_t>(lag_packets, lag_offset--);
+                    if (lag_packets == 0) {
+                        lag_offset = 0;
+                        lag_offset_subtract ^= true;
+                    }
                 }
             }
-            resync_patch(lag_packets);
         }
+        else {
+            lag_packets = RESYNC_ASM_ORIGINAL_VALUE;
+        }
+        
+        resync_patch(lag_packets);
     }
 #endif
 }
@@ -412,18 +443,18 @@ void log_packet_18(const uint8_t* data, size_t size) {
 }
 
 void log_packet_19(const uint8_t* data, size_t size) {
-    size_t text_len = (size - 1) * 2;
+    size_t text_len = (size - 2) * 2;
     char* text = (char*)_alloca(text_len + 1);
     text[text_len] = '\0';
 
     uint16_t* text_write = (uint16_t*)text;
-    for (size_t i = 1; i < size; ++i) {
+    for (size_t i = 2; i < size; ++i) {
         print_hex_byte(text_write++, data[i]);
     }
 
     log_printf(
         "19.%hhu %s\n"
-        , data[0], text
+        , data[1], text
     );
 }
 #endif
@@ -487,7 +518,6 @@ void thisfastcall packet_parser_hook(
     thisfastcall_edx(int dummy_edx,)
     size_t packet_size
 ) {
-    
     PacketLayout* packet_raw = (PacketLayout*)self->recv_data.data();
 
     recvfrom_log(packet_raw, packet_size, &self->recv_addr.addr_any(), self->recv_addr.length());

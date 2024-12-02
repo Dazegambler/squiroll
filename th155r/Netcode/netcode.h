@@ -21,10 +21,8 @@
 #define BETTER_BLACK_SCREEN_FIX 1
 
 extern bool resyncing;
-//extern bool isplaying;
 
 void patch_netplay();
-
 
 enum PacketType : uint8_t {
 	// Original packets

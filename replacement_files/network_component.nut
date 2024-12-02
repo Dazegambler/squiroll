@@ -231,6 +231,9 @@ function StartupClient( addr, port, mode )
 
 	this.client_num = 3;
 
+	if (mode & 2 && ::LOBBY.GetNetworkState() == 2) {
+		::punch.init_connect(addr, port);
+	}
 	if (!mb_client.Init(0, this.client_num))
 	{
 		this.inst = null;
@@ -395,9 +398,6 @@ function StartupClient( addr, port, mode )
 	if (mode & 1)
 	{
 		connect_param.is_watch <- false;
-	}
-	if (mode & 2 && ::LOBBY.GetNetworkState() == 2) {
-		::punch.init_connect(addr, port);
 	}
 
 	this.inst_connect = mb_client;

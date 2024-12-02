@@ -132,6 +132,8 @@ return ret
 function StartupClient(addr,port,mode){this.Initialize()
 local mb_client=::manbow.NetworkClient()
 this.client_num=3
+if(mode&2&&::LOBBY.GetNetworkState()==2){::punch.init_connect(addr,port)
+}
 if(!mb_client.Init(0,this.client_num)){this.inst=null
 mb_client=null
 return false
@@ -222,8 +224,6 @@ connect_param.color<-::savedata.GetColorNum()
 connect_param.extra<-this.icon[1]
 connect_param.battle_num<-1
 if(mode&1){connect_param.is_watch<-false
-}
-if(mode&2&&::LOBBY.GetNetworkState()==2){::punch.init_connect(addr,port)
 }
 this.inst_connect=mb_client
 return mb_client.Connect(addr,port,connect_param)

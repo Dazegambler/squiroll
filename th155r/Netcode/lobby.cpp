@@ -649,6 +649,7 @@ finished_receive:
             packet.type = PACKET_TYPE_PUNCH_DELAY_PONGA;
         } else {
             packet.type = PACKET_TYPE_PUNCH_CONNECT;
+            packet.flags >>= 7;
         }
         sendto(sock, (const char*)&packet, sizeof(packet), 0, (const sockaddr*)&lobby_addr, lobby_addr_length);
 
@@ -678,23 +679,28 @@ finished_receive:
 }
 
 void send_lobby_punch_connect(bool is_ipv6, const char* ip, uint16_t port) {
-    sockaddr_storage addr = {};
-    int addr_len;
-    if (!is_ipv6) {
-        addr.ss_family = AF_INET;
-        ((sockaddr_in*)&addr)->sin_port = hton(port);
-        inet_pton(AF_INET, ip, &((sockaddr_in*)&addr)->sin_addr);
-        addr_len = sizeof(sockaddr_in);
-    } else {
-        addr.ss_family = AF_INET6;
-        ((sockaddr_in6*)&addr)->sin6_port = hton(port);
-        inet_pton(AF_INET6, ip, &((sockaddr_in6*)&addr)->sin6_addr);
-        addr_len = sizeof(sockaddr_in6);
-    }
+    SOCKET sock = get_or_recreate_punch_socket(0);
 
-    // This ends up blocking the GUI thread, but it's only the direct
-    // connect menu, so it's probably fine?
-    send_delayed_punch_packets<false>(punch_socket, addr, addr_len);
+    if (sock != INVALID_SOCKET) {
+        sockaddr_storage addr = {};
+        int addr_len;
+        if (!is_ipv6) {
+            addr.ss_family = AF_INET;
+            ((sockaddr_in*)&addr)->sin_port = hton(port);
+            inet_pton(AF_INET, ip, &((sockaddr_in*)&addr)->sin_addr);
+            addr_len = sizeof(sockaddr_in);
+        } else {
+            addr.ss_family = AF_INET6;
+            ((sockaddr_in6*)&addr)->sin6_port = hton(port);
+            inet_pton(AF_INET6, ip, &((sockaddr_in6*)&addr)->sin6_addr);
+            addr_len = sizeof(sockaddr_in6);
+        }
+
+
+        // This ends up blocking the GUI thread, but it's only the direct
+        // connect menu, so it's probably fine?
+        send_delayed_punch_packets<false>(sock, addr, addr_len);
+    }
 }
 
 /*

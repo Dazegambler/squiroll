@@ -23,6 +23,7 @@ static bool enable_netplay = true;
 char punch_ip_buffer[INET6_ADDRSTRLEN] = "";
 size_t punch_ip_len = 0;
 bool punch_ip_updated = false;
+int64_t latency = 0;
 
 static inline constexpr bool is_ipv6_compatible_with_ipv4(const IP6_ADDRESS& addr) {
     return addr.IP6Dword[0] == 0 && addr.IP6Dword[1] == 0 && addr.IP6Dword[2] == 0xFFFF0000;
@@ -240,14 +241,6 @@ struct TF4UDP {
     int __dword_244; // 0x244
     void* __manbow_network_impl; // 0x248
     // 0x24C
-
-    inline int get_latency_to_client(size_t index) const {
-        return this->child_array[index].delay;
-    }
-
-    inline int get_latency_to_host() const {
-        return this->parent.delay;
-    }
 };
 
 static_assert(sizeof(TF4UDP) == 0x24C);
@@ -265,17 +258,11 @@ static bool not_in_match = false;
 
 #define USE_ORIGINAL_RESYNC 0
 
-static inline constexpr uint8_t LAG_OFFSET_AMOUNT = 4;
-
 static uint8_t lag_packets = 0;
 bool resyncing = false;
-static uint8_t lag_dur = 0;
-static uint8_t lag_offset = LAG_OFFSET_AMOUNT;
-static bool lag_offset_subtract = false;
+static int64_t latency_threshhold = 700;
 static uint32_t prev_timestampA = 0;
 static uint32_t prev_timestampB = 0;
-
-static uint32_t latency = 0;
 
 #if USE_ORIGINAL_RESYNC
 static inline constexpr uint8_t RESYNC_THRESHOLD = INT8_MAX;
@@ -299,8 +286,8 @@ The netplay patch changes how many packets the game waits to send/process/wait(n
 
 #define LOG_RESYNC_ASM_CHANGES 0
 
-static void resync_patch(uint8_t value) {
 #if USE_ORIGINAL_RESYNC
+static void resync_patch(uint8_t value) {
     //start strong and quick
     //0-255
     //packet wait from 0 to 127 packets
@@ -318,8 +305,11 @@ static void resync_patch(uint8_t value) {
 #endif
         mem_write(patch_addr, new_value);
     }
+
+}
 #else
-    //start strong and quick
+static void resync_patch(int8_t value ){
+    //patch constantly and weak
     //packet wait from 0 to 127 packets
     uint8_t* patch_addr = (uint8_t*)resync_patch_addr;
 
@@ -328,10 +318,10 @@ static void resync_patch(uint8_t value) {
         log_printf("Changing sync ASM to %hhu\n", value);
 #endif
         mem_write(patch_addr, value);
+        //mem_write(patchA_addr, value); not sure patching this all the time is a good idea so far
     }
-
-#endif
 }
+#endif
 
 static void run_resync_logic(uint32_t new_timestampA, uint32_t new_timestampB) {
     /*
@@ -372,6 +362,9 @@ static void run_resync_logic(uint32_t new_timestampA, uint32_t new_timestampB) {
     /*
     slowdown is caused by repetition in packets received
     under extreme desync restore patch value to 5 to fix it
+    current issue:
+    not enough patch on high latency connections and low values work but are laggy
+    i.e weak patch and high tolerance
     */
     if (prev_timestampA != new_timestampA ||
         prev_timestampB != new_timestampB
@@ -380,36 +373,13 @@ static void run_resync_logic(uint32_t new_timestampA, uint32_t new_timestampB) {
         prev_timestampB = new_timestampB;
 
         resyncing = false;
-        lag_dur = 0;
-        lag_offset = LAG_OFFSET_AMOUNT;
-        lag_offset_subtract = false;
     }
     else {
-        lag_dur = saturate_add<uint8_t>(lag_dur, 1u);
-        if (!(resyncing = lag_dur > RESYNC_THRESHOLD)) {
-            if (!lag_offset_subtract) {
-                // Signed saturating add to prevent going above INT8_MAX
-                lag_packets = saturate_add<int8_t>(lag_packets, lag_offset--);
-                if (lag_packets == INT8_MAX) {
-                    goto toggle_lag_offset;
-                }
-            }
-            else {
-                // Unsigned saturating sub to prevent going below 0
-                lag_packets = saturate_sub<uint8_t>(lag_packets, lag_offset--);
-                if (lag_packets == 0) {
-                    goto toggle_lag_offset;
-                }
-            }
-            if (lag_offset == 0) {
-            toggle_lag_offset:
-                lag_offset = LAG_OFFSET_AMOUNT;
-                lag_offset_subtract ^= true;
-            }
-        }
-        else {
-            lag_packets = RESYNC_ASM_ORIGINAL_VALUE;
-        }
+        resyncing = true;
+        int8_t lag = static_cast<int8_t>((static_cast<float>(latency) / static_cast<float>(latency_threshhold)) * INT8_MAX);
+        int8_t diff = static_cast<int8_t>((lag-lag_packets) * .1);// linearly interpolating patched value
+        lag_packets = diff > 0 ? saturate_add<int8_t>(lag_packets, diff) : saturate_sub<int8_t>(lag_packets, diff);
+        log_printf("pak=%d,latency=%d,lag=%d\n", lag_packets, latency,lag);
         resync_patch(lag_packets);
     }
 #endif
@@ -529,11 +499,9 @@ void thisfastcall packet_parser_hook(
             not_in_match = false;
             break;
         case PACKET_TYPE_18:
-            latency = self->get_latency_to_host();
             not_in_match = false;
             break;
         case PACKET_TYPE_19:
-            latency = self->get_latency_to_client(packet_raw->data[1]);
             not_in_match = false;
             break;
         case PACKET_TYPE_PUNCH_PING: {
@@ -773,7 +741,7 @@ void patch_netplay() {
 #if USE_ORIGINAL_RESYNC
         resync_patch(160);
 #else
-        //resync_patch(63);
+        //resync_patch(-5);
 #endif
     }
 

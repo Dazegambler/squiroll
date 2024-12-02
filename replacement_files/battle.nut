@@ -159,6 +159,7 @@ function Create( param )
 			this.ping_obj.text.ConnectRenderSlot(::graphics.slot.front, 1);
 			this.ping_obj.Update <- function() {
 				local delay = ::network.GetDelay();
+				::rollback.update_delay(delay);
 				local str = "ping:" + delay;
 				if (::setting.ping.ping_in_frames) str += "[" + ((delay + 15) / 16) + "f]";
 				if (::rollback.resyncing()) str += "(resyncing)";

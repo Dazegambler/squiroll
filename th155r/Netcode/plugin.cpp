@@ -348,6 +348,17 @@ SQInteger copy_punch_ip(HSQUIRRELVM v) {
     return 0;
 }
 
+SQInteger update_delay(HSQUIRRELVM v){
+    SQInteger delay;
+    if (
+        sq_gettop(v) == 2 &&
+        SQ_SUCCEEDED(sq_getinteger(v, 2, &delay)))
+    {
+      latency = delay;
+    }
+    return 0;
+}
+
 SQInteger ignore_lobby_punch_ping(HSQUIRRELVM v) {
     respond_to_punch_ping = false;
     return 0;
@@ -418,6 +429,7 @@ extern "C" {
 
             // rollback table setup
             sq_createtable(v, _SC("rollback"), [](HSQUIRRELVM v) {
+                sq_setfunc(v, _SC("update_delay"),update_delay);
                 sq_setfunc(v, _SC("resyncing"), r_resync_get);
             });
 

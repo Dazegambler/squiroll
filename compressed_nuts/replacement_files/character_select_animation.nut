@@ -113,7 +113,9 @@ this.data.push(v)
 if(::network.IsPlaying()){v={}
 v.text<-::font.CreateSystemStringSmall("")
 v.text.ConnectRenderSlot(::graphics.slot.ui,60000)
-v.Update<-function (){this.text.Set("ping:"+::network.GetDelay())
+v.Update<-function (){local delay=::network.GetDelay()
+::rollback.update_delay(delay)
+this.text.Set("ping:"+delay)
 this.text.x=::graphics.width-this.text.width-2
 this.text.y=-4
 }

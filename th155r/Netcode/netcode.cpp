@@ -381,7 +381,7 @@ static void run_resync_logic(uint32_t new_timestampA, uint32_t new_timestampB) {
 
         resyncing = false;
         lag_dur = 0;
-        lag_offset = 0;
+        lag_offset = LAG_OFFSET_AMOUNT;
         lag_offset_subtract = false;
     }
     else {

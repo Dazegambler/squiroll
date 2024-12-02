@@ -212,7 +212,8 @@ bool execute_program_inject(InitFuncData* init_data, bool wait_for_exit) {
 int main(int argc, char* argv[]) {
 
     InitFuncData init_data;
-    init_data.log_type = LOG_TO_PARENT_CONSOLE;
+    //init_data.log_type = LOG_TO_PARENT_CONSOLE;
+    init_data.log_type = NO_LOGGING;
 
     if (argc > 1) {
         char* arg = argv[1];

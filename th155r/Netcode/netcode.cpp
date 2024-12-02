@@ -256,18 +256,19 @@ static std::atomic<bool> respond_to_punch_ping = {};
 // TODO: Is this variable name inverted?
 static bool not_in_match = false;
 
-#define USE_ORIGINAL_RESYNC 0
+#define USE_ORIGINAL_RESYNC 1
 
 static uint8_t lag_packets = 0;
 bool resyncing = false;
 static int64_t latency_threshhold = 700;
+static uint8_t lag_dur = 0;
 static uint32_t prev_timestampA = 0;
 static uint32_t prev_timestampB = 0;
 
 #if USE_ORIGINAL_RESYNC
 static inline constexpr uint8_t RESYNC_THRESHOLD = INT8_MAX;
 #else
-static inline constexpr uint8_t RESYNC_THRESHOLD = 4;
+static inline constexpr uint8_t RESYNC_THRESHOLD = 63;
 #endif
 static inline constexpr uint8_t RESYNC_DURATION = UINT8_MAX;
 
@@ -373,14 +374,20 @@ static void run_resync_logic(uint32_t new_timestampA, uint32_t new_timestampB) {
         prev_timestampB = new_timestampB;
 
         resyncing = false;
+        lag_dur = 0;
     }
     else {
-        resyncing = true;
-        int8_t lag = static_cast<int8_t>((static_cast<float>(latency) / static_cast<float>(latency_threshhold)) * INT8_MAX);
-        int8_t diff = static_cast<int8_t>((lag-lag_packets) * .1);// linearly interpolating patched value
-        lag_packets = diff > 0 ? saturate_add<int8_t>(lag_packets, diff) : saturate_sub<int8_t>(lag_packets, diff);
-        //log_printf("pak=%d,latency=%d,lag=%d\n", lag_packets, latency,lag);
-        resync_patch(lag_packets);
+        lag_dur = saturate_add<uint8_t>(lag_dur, 1u);
+        if (!(resyncing = lag_dur > RESYNC_THRESHOLD)) {
+            resyncing = true;
+            int8_t lag = static_cast<int8_t>((static_cast<float>(latency) / static_cast<float>(latency_threshhold)) * INT8_MAX);
+            int8_t diff = static_cast<int8_t>((lag-lag_packets) * .1);// linearly interpolating patched value
+            lag_packets = diff > 0 ? saturate_add<int8_t>(lag_packets, diff) : saturate_sub<int8_t>(lag_packets, diff);
+            //log_printf("pak=%d,latency=%d,lag=%d\n", lag_packets, latency,lag);
+            resync_patch(lag_packets);
+        }else {
+            lag_packets = RESYNC_ASM_ORIGINAL_VALUE;
+        }
     }
 #endif
 }

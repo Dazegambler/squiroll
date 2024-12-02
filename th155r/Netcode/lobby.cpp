@@ -69,9 +69,17 @@ BOOST_PROCESS_PRIORITY_START(); \
 BOOST_THREAD_PRIORITY_START(); \
 BOOST_TIMER_PRECISION_START()
 
+#define PUNCH_BOOST_NO_THREAD_START() \
+BOOST_PROCESS_PRIORITY_START(); \
+BOOST_TIMER_PRECISION_START()
+
 #define PUNCH_BOOST_END() \
 BOOST_TIMER_PRECISION_END(); \
 BOOST_THREAD_PRIORITY_END(); \
+BOOST_PROCESS_PRIORITY_END()
+
+#define PUNCH_BOOST_NO_THREAD_END() \
+BOOST_TIMER_PRECISION_END(); \
 BOOST_PROCESS_PRIORITY_END()
 
 #if !MINGW_COMPAT
@@ -787,12 +795,12 @@ int fastcall lobby_send_string_udp_send_hook_WELCOME2(
         sockaddr_storage client_addr;
         int client_addr_len = init_sockaddr(client_addr, false, host, port);
 
-        PUNCH_BOOST_START();
+        PUNCH_BOOST_NO_THREAD_START();
 
         START_PUNCH_WAIT(MAX_PUNCH_START_DELAY);
         send_punch_packets(sock, (const sockaddr*)&client_addr, client_addr_len);
 
-        PUNCH_BOOST_END();
+        PUNCH_BOOST_NO_THREAD_END();
     }
     return ret;
 }

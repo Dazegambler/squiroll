@@ -2,6 +2,8 @@
 *.dll
 /tools/*.exe
 /tools/*.run
+/lobby/*.run
+/lobby/*.exe
 .vs*
 out/
 *.lib

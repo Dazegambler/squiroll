@@ -15,7 +15,7 @@ function Initialize()
 	this.title.Initialize(texture, res.left, res.top, res.width, res.height);
 	this.item.push(this.title);
 	local item_table = ::menu.common.LoadItemTextArray("data/system/config/item.csv");
-	item_table.mods <- ["mods"];
+	//item_table.mods <- ["mods"];
 	::menu.common.InitializeLayout.call(this, null, item_table);//crashes here
 	local item_width = 548;
 	local left = ::menu.common.item_x - item_width / 2;

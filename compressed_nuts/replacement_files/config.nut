@@ -1,4 +1,4 @@
-this.item<-["se","bgm","screen","vsync","background","fps","key1p","key2p","replay_save","replay_save_online","lang","mods",null,"exit"]
+this.item<-["se","bgm","screen","vsync","background","fps","key1p","key2p","replay_save","replay_save_online","lang",null,"exit"]
 this.proc<-{}
 this.cursor_item<-::menu.common.CreateCursor(this.item)
 this.cursor_se<-this.Cursor(1,11,::input_all)

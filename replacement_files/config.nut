@@ -10,7 +10,7 @@ this.item <- [
 	"replay_save",
 	"replay_save_online",
 	"lang",
-	"mods",
+	//"mods",
 	null,
 	"exit"
 ];

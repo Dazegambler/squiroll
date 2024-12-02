@@ -13,11 +13,6 @@
 
 #include "util.h"
 
-#define NETPLAY_DISABLE 0
-#define NETPLAY_VER_103F 1
-
-#define NETPLAY_PATCH_TYPE NETPLAY_VER_103F
-
 #define BETTER_BLACK_SCREEN_FIX 1
 
 extern bool resyncing;

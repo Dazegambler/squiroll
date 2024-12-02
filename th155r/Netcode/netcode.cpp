@@ -241,11 +241,11 @@ struct TF4UDP {
     void* __manbow_network_impl; // 0x248
     // 0x24C
 
-    inline int get_latency_host(size_t index) const {
+    inline int get_latency_to_client(size_t index) const {
         return this->child_array[index].delay;
     }
 
-    inline int get_latency_client() const {
+    inline int get_latency_to_host() const {
         return this->parent.delay;
     }
 };
@@ -274,6 +274,8 @@ static uint8_t lag_offset = LAG_OFFSET_AMOUNT;
 static bool lag_offset_subtract = false;
 static uint32_t prev_timestampA = 0;
 static uint32_t prev_timestampB = 0;
+
+static uint32_t latency = 0;
 
 #if USE_ORIGINAL_RESYNC
 static inline constexpr uint8_t RESYNC_THRESHOLD = INT8_MAX;
@@ -466,7 +468,6 @@ int WSAAPI my_WSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWO
     switch (packet->type) {
         default:
             break;
-#if NETPLAY_PATCH_TYPE == NETPLAY_VER_103F
         case PACKET_TYPE_9:
             if (not_in_match) {
                 if (lpNumberOfBytesSent) {
@@ -501,7 +502,6 @@ int WSAAPI my_WSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWO
                 run_resync_logic(*(uint32_t*)&packet->data[17], *(uint32_t*)&packet->data[21]);
             }
             break;
-#endif
     }
 
     return WSASendTo_log(s, lpBuffers, dwBufferCount, lpNumberOfBytesSent, dwFlags, lpTo, iTolen, lpOverlapped, lpCompletionRoutine);
@@ -525,15 +525,21 @@ void thisfastcall packet_parser_hook(
     switch (packet_raw->type) {
         default:
             break;
-#if NETPLAY_PATCH_TYPE == NETPLAY_VER_103F
         // TODO: These packet numbers don't seem quite
         // right based on the variable name...
         case PACKET_TYPE_0: case PACKET_TYPE_12: case PACKET_TYPE_13:
         case PACKET_TYPE_14: case PACKET_TYPE_15: case PACKET_TYPE_16:
-        case PACKET_TYPE_17: case PACKET_TYPE_18: case PACKET_TYPE_19:
+        case PACKET_TYPE_17:
             not_in_match = false;
             break;
-#endif
+        case PACKET_TYPE_18:
+            latency = self->get_latency_to_host();
+            not_in_match = false;
+            break;
+        case PACKET_TYPE_19:
+            latency = self->get_latency_to_client(packet_raw->data[1]);
+            not_in_match = false;
+            break;
         case PACKET_TYPE_PUNCH_PING: {
             if (
                 respond_to_punch_ping &&
@@ -782,7 +788,7 @@ void patch_netplay() {
 
     hotpatch_rel32(0x176B8A_R, packet_parser_hook);
     //hotpatch_import(wsasendto_import_addr, my_WSASendTo);
-    hotpatch_icall(0x170501, my_WSASendTo);
+    hotpatch_icall(0x170501_R, my_WSASendTo);
 
 #if BETTER_BLACK_SCREEN_FIX
     mem_write(0x172FF1_R, unlock_fixB1);

@@ -387,33 +387,29 @@ static void run_resync_logic(uint32_t new_timestampA, uint32_t new_timestampB) {
     else {
         lag_dur = saturate_add<uint8_t>(lag_dur, 1u);
         if (!(resyncing = lag_dur > RESYNC_THRESHOLD)) {
-            if (lag_offset == 0) {
-                lag_offset = LAG_OFFSET_AMOUNT;
-                lag_offset_subtract ^= true;
+            if (!lag_offset_subtract) {
+                // Signed saturating add to prevent going above INT8_MAX
+                lag_packets = saturate_add<int8_t>(lag_packets, lag_offset--);
+                if (lag_packets == INT8_MAX) {
+                    goto toggle_lag_offset;
+                }
             }
             else {
-                if (!lag_offset_subtract) {
-                    // Signed saturating add to prevent going above INT8_MAX
-                    lag_packets = saturate_add<int8_t>(lag_packets, lag_offset--);
-                    if (lag_packets == INT8_MAX) {
-                        lag_offset = 0;
-                        lag_offset_subtract ^= true;
-                    }
+                // Unsigned saturating sub to prevent going below 0
+                lag_packets = saturate_sub<uint8_t>(lag_packets, lag_offset--);
+                if (lag_packets == 0) {
+                    goto toggle_lag_offset;
                 }
-                else {
-                    // Unsigned saturating sub to prevent going below 0
-                    lag_packets = saturate_sub<uint8_t>(lag_packets, lag_offset--);
-                    if (lag_packets == 0) {
-                        lag_offset = 0;
-                        lag_offset_subtract ^= true;
-                    }
-                }
+            }
+            if (lag_offset == 0) {
+            toggle_lag_offset:
+                lag_offset = LAG_OFFSET_AMOUNT;
+                lag_offset_subtract ^= true;
             }
         }
         else {
             lag_packets = RESYNC_ASM_ORIGINAL_VALUE;
         }
-        
         resync_patch(lag_packets);
     }
 #endif

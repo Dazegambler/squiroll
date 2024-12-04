@@ -485,63 +485,71 @@ void set_ipv6_state(bool state) {
 #define CONFIG_DEFAULT(SECTION, KEY) { MACRO_CAT(SECTION,_SECTION_NAME), MACRO_CAT4(SECTION,_,KEY,_KEY), MACRO_CAT4(SECTION,_,KEY,_DEFAULT_STR) }
 
 void init_config_file() {
-	size_t directory_length = GetCurrentDirectoryA(countof(CONFIG_FILE_PATH), CONFIG_FILE_PATH);
-	if (
-		directory_length != 0 &&
-		directory_length <= countof(CONFIG_FILE_PATH) - countof(CONFIG_FILE_NAME)
+	
+	for (
+		size_t filename_length = GetModuleFileNameA(NULL, CONFIG_FILE_PATH, countof(CONFIG_FILE_PATH));
+		filename_length;
+		--filename_length
 	) {
-		memcpy(&CONFIG_FILE_PATH[directory_length], CONFIG_FILE_NAME, sizeof(CONFIG_FILE_NAME));
+		switch (CONFIG_FILE_PATH[filename_length]) {
+			case '\\': case '/':
+				if (filename_length < countof(CONFIG_FILE_PATH) - countof(CONFIG_FILE_NAME)) {
 
-		if (
-			file_exists(CONFIG_FILE_PATH) || create_dummy_file(CONFIG_FILE_PATH)
-		) {
-			use_config = true;
+					memcpy(&CONFIG_FILE_PATH[filename_length + 1], CONFIG_FILE_NAME, sizeof(CONFIG_FILE_NAME));
 
-			constexpr const char* default_configs[][3] = {
-				CONFIG_DEFAULT(LOBBY, HOST),
-				CONFIG_DEFAULT(LOBBY, PORT),
-				CONFIG_DEFAULT(LOBBY, PASS),
+					if (
+						file_exists(CONFIG_FILE_PATH) || create_dummy_file(CONFIG_FILE_PATH)
+					) {
+						use_config = true;
 
-				CONFIG_DEFAULT(PING, ENABLED),
-				CONFIG_DEFAULT(PING, X),
-				CONFIG_DEFAULT(PING, Y),
-				CONFIG_DEFAULT(PING, SCALE_X),
-				CONFIG_DEFAULT(PING, SCALE_Y),
-				CONFIG_DEFAULT(PING, COLOR),
-				CONFIG_DEFAULT(PING, FRAMES),
+						constexpr const char* default_configs[][3] = {
+							CONFIG_DEFAULT(LOBBY, HOST),
+							CONFIG_DEFAULT(LOBBY, PORT),
+							CONFIG_DEFAULT(LOBBY, PASS),
 
-				CONFIG_DEFAULT(INPUT1, ENABLED),
-				CONFIG_DEFAULT(INPUT1, X),
-				CONFIG_DEFAULT(INPUT1, Y),
-				CONFIG_DEFAULT(INPUT1, SCALE_X),
-				CONFIG_DEFAULT(INPUT1, SCALE_Y),
-				CONFIG_DEFAULT(INPUT1, OFFSET),
-				CONFIG_DEFAULT(INPUT1, COUNT),
-				CONFIG_DEFAULT(INPUT1, COLOR),
-				CONFIG_DEFAULT(INPUT1, SPACING),
-				CONFIG_DEFAULT(INPUT1, TIMER),
-				CONFIG_DEFAULT(INPUT1, RAW_INPUT),
+							CONFIG_DEFAULT(PING, ENABLED),
+							CONFIG_DEFAULT(PING, X),
+							CONFIG_DEFAULT(PING, Y),
+							CONFIG_DEFAULT(PING, SCALE_X),
+							CONFIG_DEFAULT(PING, SCALE_Y),
+							CONFIG_DEFAULT(PING, COLOR),
+							CONFIG_DEFAULT(PING, FRAMES),
 
-				CONFIG_DEFAULT(INPUT2, ENABLED),
-				CONFIG_DEFAULT(INPUT2, X),
-				CONFIG_DEFAULT(INPUT2, Y),
-				CONFIG_DEFAULT(INPUT2, SCALE_X),
-				CONFIG_DEFAULT(INPUT2, SCALE_Y),
-				CONFIG_DEFAULT(INPUT2, OFFSET),
-				CONFIG_DEFAULT(INPUT2, COUNT),
-				CONFIG_DEFAULT(INPUT2, COLOR),
-				CONFIG_DEFAULT(INPUT2, SPACING),
-				CONFIG_DEFAULT(INPUT2, TIMER),
-				CONFIG_DEFAULT(INPUT2, RAW_INPUT),
+							CONFIG_DEFAULT(INPUT1, ENABLED),
+							CONFIG_DEFAULT(INPUT1, X),
+							CONFIG_DEFAULT(INPUT1, Y),
+							CONFIG_DEFAULT(INPUT1, SCALE_X),
+							CONFIG_DEFAULT(INPUT1, SCALE_Y),
+							CONFIG_DEFAULT(INPUT1, OFFSET),
+							CONFIG_DEFAULT(INPUT1, COUNT),
+							CONFIG_DEFAULT(INPUT1, COLOR),
+							CONFIG_DEFAULT(INPUT1, SPACING),
+							CONFIG_DEFAULT(INPUT1, TIMER),
+							CONFIG_DEFAULT(INPUT1, RAW_INPUT),
 
-				CONFIG_DEFAULT(NETWORK, IPV6),
-				CONFIG_DEFAULT(NETWORK, NETPLAY),
-				CONFIG_DEFAULT(NETWORK, HIDE_IP),
-			};
+							CONFIG_DEFAULT(INPUT2, ENABLED),
+							CONFIG_DEFAULT(INPUT2, X),
+							CONFIG_DEFAULT(INPUT2, Y),
+							CONFIG_DEFAULT(INPUT2, SCALE_X),
+							CONFIG_DEFAULT(INPUT2, SCALE_Y),
+							CONFIG_DEFAULT(INPUT2, OFFSET),
+							CONFIG_DEFAULT(INPUT2, COUNT),
+							CONFIG_DEFAULT(INPUT2, COLOR),
+							CONFIG_DEFAULT(INPUT2, SPACING),
+							CONFIG_DEFAULT(INPUT2, TIMER),
+							CONFIG_DEFAULT(INPUT2, RAW_INPUT),
 
-			nounroll for (size_t i = 0; i < countof(default_configs); ++i) {
-				fill_default_config_string(default_configs[i][0], default_configs[i][1], default_configs[i][2]);
-			}
+							CONFIG_DEFAULT(NETWORK, IPV6),
+							CONFIG_DEFAULT(NETWORK, NETPLAY),
+							CONFIG_DEFAULT(NETWORK, HIDE_IP),
+						};
+
+						nounroll for (size_t i = 0; i < countof(default_configs); ++i) {
+							fill_default_config_string(default_configs[i][0], default_configs[i][1], default_configs[i][2]);
+						}
+					}
+				}
+				return;
 		}
 	}
 }

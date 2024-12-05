@@ -15,11 +15,15 @@ building
     ./build.sh
     ```
 ### windows:
-build script will be added soon(haven't used windows in a long time, sorry)
+1. run `build.bat`
+    ```bash
+    cd lobby
+    build.bat
+    ```
 
 usage
 ---
 ```bash
 aocf_server(.exe/.run) <port>
 ```
-### selected port must be forwarded port
+### selected port must be a forwarded port

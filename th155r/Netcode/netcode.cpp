@@ -530,7 +530,7 @@ void thisfastcall packet_parser_hook(
         case PACKET_TYPE_PUNCH_PEER: {
             if (addr_is_lobby(self->recv_addr)) {
                 PacketPunchPeer* packet = (PacketPunchPeer*)packet_raw;
-                send_punch_response(packet->is_ipv6, packet->ip, packet->remote_port);
+                send_punch_response(self->socket, packet->is_ipv6, packet->ip, packet->remote_port);
             }
             break;
         }

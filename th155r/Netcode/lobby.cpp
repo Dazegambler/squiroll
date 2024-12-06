@@ -529,17 +529,15 @@ static void send_punch_packets(SOCKET sock, const sockaddr* addr, int addr_len) 
     }
 }
 
-void send_punch_response(bool is_ipv6, const void* ip, uint16_t port) {
-    sockaddr_storage addr;
-    if (!is_ipv6) {
-        INIT_SOCKADDR_IN4(addr, *(in_addr*)ip, hton(port));
-    } else {
-        INIT_SOCKADDR_IN6(addr, *(in6_addr*)ip, hton(port));
-    }
-    
-    SOCKET sock = punch_socket;
+void send_punch_response(SOCKET sock, bool is_ipv6, const void* ip, uint16_t port) {
     if (sock != INVALID_SOCKET) {
-        START_PUNCH_SET_FLAG();
+        sockaddr_storage addr;
+        if (!is_ipv6) {
+            INIT_SOCKADDR_IN4(addr, *(in_addr*)ip, hton(port));
+        } else {
+            INIT_SOCKADDR_IN6(addr, *(in6_addr*)ip, hton(port));
+        }
+    
         send_punch_packets(sock, (const sockaddr*)&addr, !is_ipv6 ? sizeof(sockaddr_in) : sizeof(sockaddr_in6));
     }
 }

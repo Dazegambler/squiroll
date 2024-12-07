@@ -1,0 +1,10 @@
+services:
+  squiroll-lobby:
+    image: squiroll-lobby
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 5001:5001
+

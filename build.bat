@@ -1,16 +1,29 @@
 @echo off
-REM Build the executable
-i686-w64-mingw32-gcc -o th155r.exe th155r/main.c
-IF ERRORLEVEL 1 (
-    echo Failed to build th155r.exe
-    exit /b 1
+
+set TOOLS_PATH=.\tools\make_embed_windows.exe
+set REPLACEMENT_FILES_DIR=replacement_files
+set REPLACEMENT_DESTINATION_DIR=th155r\Netcode\replacement_files
+
+set NEW_FILES_DIR=new_files
+set NEW_DESTINATION_DIR=th155r\Netcode\new_files
+
+mkdir "%REPLACEMENT_DESTINATION_DIR%"
+mkdir "%NEW_DESTINATION_DIR%"
+
+for %%F in (%REPLACEMENT_FILES_DIR%\*) do (
+    set FILENAME=%%~nxF
+    set DEST_FILE=%REPLACEMENT_DESTINATION_DIR%\%FILENAME%.h
+    %TOOLS_PATH% %%F %DEST_FILE%
 )
 
-REM Build the DLL
-i686-w64-mingw32-gcc -Wl,--exclude-all-symbols,--kill-at -shared -I th155r/Netcode/include -o  Netcode.dll th155r/Netcode/*.cpp -std=c++20 -lstdc++ -lws2_32 -Wno-narrowing 
-IF ERRORLEVEL 1 (
-    echo Failed to build Netcode.dll
-    exit /b 1
+for %%F in (%NEW_FILES_DIR%\*) do (
+    set FILENAME=%%~nxF
+    set DEST_FILE=%NEW_DESTINATION_DIR%\%FILENAME%.h
+    %TOOLS_PATH% %%F %DEST_FILE%
 )
 
-echo Build completed successfully.
+set DEFINES=-D_CRT_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -DNOMINMAX -D_WINSOCKAPI_
+set WARNINGS=-Wno-cpp -Wno-narrowing
+
+clang++ -m32 -std=c++20 %WARNINGS% %DEFINES% /Ith155r/shared th155r/main.cpp -O2 /link $LIBPATHS /OUT:th155r.exe
+clang++ -m32 -std=c++20 %WARNINGS% %DEFINES% /Ith155r/shared /Ith155r/Netcode/include th155r/Netcode/*.cpp /std:c++20 -static -O2 /link /DLL $LIBPATHS user32.lib WS2_32.lib dbghelp.lib -exclude-all-symbols -kill-at /DEF:Netcode.def /OUT:Netcode.dll

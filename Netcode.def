@@ -1,0 +1,10 @@
+LIBRARY Netcode
+EXPORTS
+    netcode_init
+    netcode_mod_init
+    thcrap_plugin_init
+    init_instance_v2
+    release_instance
+    update_frame
+    render_preproc
+    render

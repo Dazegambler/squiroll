@@ -1,70 +1,62 @@
-# Aocf_rollback
+Squiroll
+---
+[![GitHub Release](https://img.shields.io/github/release/dazegambler/squiroll.svg)](https://github.com/Dazegambler/squiroll/releases)
 
-Aocf rollback aims to add rollback based netcode to touhou 15.5:Antinomy of Common Flowers
+Squiroll is a patcher made for Touhou 15.5 that adds missing QOL features to the game alongside adding rollback based netcode to the game(Future plan)
 
-### As of now we only have a patcher working, we're currently working on making the netcode that is going to replace the currently existing one in the game
+Prerequisites
+---
+### - [clang](https://releases.llvm.org/download.html)
+### - [xwin(linux)](https://github.com/Jake-Shadle/xwin)
 
-# Progress Dashboard:
-### ~~Frame restoration/saving~~
-### Input Management
-### ~~Memory Allocation hooking~~
-### ~~Frame stepping~~
-
-# Work on later:
-### - Caster and matchmaking 
-
-## Prerequisites
-
-- [i686-w64-mingw32-gcc](https://www.mingw-w64.org/downloads/)
-
-## Build
-
+Build
+---
 Clone the repository:
-
 ```sh
-git clone https://github.com/Dazegambler/Aocf_rollback
-cd Aocf_rollback
+git clone --recursive https://github.com/Dazegambler/squiroll.git
 ```
 
-
 ### Linux
-
 To build the project, follow these steps:
-
-
-1. Make sure you have `i686-w64-mingw32-gcc` installed. You can install it via your package manager:
+1. Acquire the  windows SDK headers and libraries with xwin 
 
     ```sh
-    sudo apt-get install mingw-w64
+    cd /path/to/xwin
+    xwin --accept-license --arch x86 splat
     ```
-
-2. Run the `build.sh` script:
+2. Build the tools
+    ```sh
+    cd /path/to/squiroll/tools
+    ./build.sh
+    cd ..
+    ```
+3. Run the `build.sh` script:
 
     ```sh
     ./build.sh
     ```
-
-This will compile the source code and produce the following output files:
-- `th155r.exe`
-- `Netcode.dll`
-
 ### Windows
 
-1. Ensure you have [MinGW-w64](https://www.mingw-w64.org/downloads/) installed.
-2. Open a terminal and navigate to the project directory.
-3. Run the `build.bat` script:
+1. Build the tools
+    ```sh
+    cd /path/to/squiroll/tools
+    ./build.bat
+    cd ..
+    ```
+2. Run the `build.bat` script:
 
     ```batch
     build.bat
     ```
     
-## Usage
+Usage
+---
 
 ### Windows
 1. Put the following files on your game directory:
 - `th155r.exe`
 - `Netcode.dll`
-2. Run the game from the `th155r.exe` file
+2. Run the game from `th155r.exe`
 
 ### Linux
 1. Put the following files on your game directory:

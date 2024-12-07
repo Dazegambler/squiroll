@@ -410,6 +410,7 @@ extern "C" {
             // setting table setup
             sq_createtable(v, _SC("setting"), [](HSQUIRRELVM v) {
                 sq_setinteger(v, _SC("version"), PLUGIN_VERSION);
+                sq_setinteger(v, _SC("revision"), PLUGIN_REVISION);
                 sq_createtable(v, _SC("misc"), [](HSQUIRRELVM v){
                     sq_setbool(v,_SC("hide_ip"), get_hide_ip_enabled());
                     //only add to config file if needed

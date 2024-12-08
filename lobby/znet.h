@@ -599,6 +599,14 @@ struct sockaddr_any {
                 break;
         }
     }
+
+    bool is_ipv4() const {
+        return this->storage.ss_family == AF_INET;
+    }
+
+    bool is_ipv6() const {
+        return this->storage.ss_family == AF_INET6;
+    }
 };
 
 static inline bool ips_match(const sockaddr_any& lhs, const sockaddr_any& rhs) {

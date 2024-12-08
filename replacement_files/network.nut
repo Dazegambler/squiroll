@@ -69,6 +69,7 @@ this.server_port_h <- this.Cursor(1, 5, ::input_all);
 this.cursor_upnp <- this.Cursor(1, 2, ::input_all);
 this.cursor_allow_watch <- this.Cursor(1, 2, ::input_all);
 this.timeout <- 0;
+this.upnp_timeout <- 0;
 this.retry_count <- 0;
 this.lobby_user_state <- 0;
 this.lobby_interval <- 10 * 1000;
@@ -142,6 +143,7 @@ function Initialize()
 	this.state = 0;
 	this.is_suspend = false;
 	this.timeout = 0;
+	this.upnp_timeout = 0;
 
 	if (this.cursor_item.val != 0)
 	{
@@ -223,6 +225,7 @@ function Resume()
 	::network.Terminate();
 	this.update = this.UpdateMain;
 	this.timeout = 0;
+	this.upnp_timeout = 0;
 	::menu.cursor.Activate();
 	::menu.back.Activate();
 	this.BeginAnime();
@@ -263,6 +266,7 @@ function UpdateMain()
 				::LOBBY.SetExternalPort(::config.network.hosting_port);
 				::LOBBY.SetUserData("" + ::config.network.hosting_port);
 
+				this.upnp_timeout = 0;
 				if (!::config.network.upnp)
 				{
 					::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING);
@@ -572,16 +576,9 @@ function UpdateMatch()
 	{
 		if (::LOBBY.GetLobbyUserState() == ::LOBBY.NO_OPERATION)
 		{
-			if (::UPnP.GetAsyncState() == 2)
+			if (::UPnP.GetAsyncState() == 2 || this.upnp_timeout++ > 360)
 			{
-				//if (::UPnP.GetExternalIP() != "")
-				//{
-					//::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING);
-				//}
-				//else
-				//{
-					::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING);
-				//}
+				::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING);
 			}
 		}
 	}

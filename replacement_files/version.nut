@@ -16,7 +16,7 @@ function GetUpdaterVersion()
 
 function GetVersionString()
 {
-	return "Ver1.21b+squiroll ver."+::setting.version;
+	return "Ver1.21b+squiroll v"+::setting.version+"."+::setting.revision;
 }
 
 function GetVersionSignature()

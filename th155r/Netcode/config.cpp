@@ -99,6 +99,11 @@ static constexpr char CONFIG_FILE_NAME[] = "\\netcode.ini";
 #define INPUT1_RAW_INPUT_DEFAULT false
 #define INPUT1_RAW_INPUT_DEFAULT_STR MACRO_STR(INPUT1_RAW_INPUT_DEFAULT)
 
+#define MISC_SECTION_NAME "misc"
+#define MISC_HIDE_WIP_KEY "hide_wip"
+#define MISC_HIDE_WIP_DEFAULT true
+#define MISC_HIDE_WIP_DEFAULT_STR MACRO_STR(MISC_HIDE_WIP_DEFAULT)
+
 #define INPUT2_SECTION_NAME "input_display_p2"
 #define INPUT2_ENABLED_KEY "enabled"
 #define INPUT2_ENABLED_DEFAULT false
@@ -144,6 +149,9 @@ static constexpr char CONFIG_FILE_NAME[] = "\\netcode.ini";
 #define NETWORK_HIDE_IP_KEY "hide_ip"
 #define NETWORK_HIDE_IP_DEFAULT false
 #define NETWORK_HIDE_IP_DEFAULT_STR MACRO_STR(NETWORK_HIDE_IP_DEFAULT)
+#define NETWORK_HIDE_NAME_KEY "hide_name"
+#define NETWORK_HIDE_NAME_DEFAULT false
+#define NETWORK_HIDE_NAME_DEFAULT_STR MACRO_STR(NETWORK_HIDE_NAME_DEFAULT)
 
 static inline bool create_dummy_file(const char* path) {
 	HANDLE handle = CreateFileA(
@@ -478,8 +486,22 @@ bool get_hide_ip_enabled() {
 	return GET_BOOL_CONFIG(NETWORK, HIDE_IP);
 }
 
+static char NETWORK_HIDE_NAME_BUFFER[8]{ '\0' };
+bool get_hide_name_enabled() {
+	return GET_BOOL_CONFIG(NETWORK, HIDE_NAME);
+}
+
 void set_ipv6_state(bool state) {
 	set_config_string(NETWORK_SECTION_NAME, NETWORK_IPV6_KEY, bool_str(state));
+}
+
+//====================
+//MISC
+//====================
+
+static char MISC_HIDE_WIP_BUFFER[8]{ '\0' };
+bool get_hide_wip_enabled() {
+	return GET_BOOL_CONFIG(MISC, HIDE_WIP);
 }
 
 #define CONFIG_DEFAULT(SECTION, KEY) { MACRO_CAT(SECTION,_SECTION_NAME), MACRO_CAT4(SECTION,_,KEY,_KEY), MACRO_CAT4(SECTION,_,KEY,_DEFAULT_STR) }
@@ -506,6 +528,8 @@ void init_config_file() {
 							CONFIG_DEFAULT(LOBBY, HOST),
 							CONFIG_DEFAULT(LOBBY, PORT),
 							CONFIG_DEFAULT(LOBBY, PASS),
+
+							CONFIG_DEFAULT(MISC, HIDE_WIP),
 
 							CONFIG_DEFAULT(PING, ENABLED),
 							CONFIG_DEFAULT(PING, X),
@@ -542,6 +566,7 @@ void init_config_file() {
 							CONFIG_DEFAULT(NETWORK, IPV6),
 							CONFIG_DEFAULT(NETWORK, NETPLAY),
 							CONFIG_DEFAULT(NETWORK, HIDE_IP),
+							CONFIG_DEFAULT(NETWORK, HIDE_NAME),
 						};
 
 						nounroll for (size_t i = 0; i < countof(default_configs); ++i) {

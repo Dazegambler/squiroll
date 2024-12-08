@@ -33,6 +33,7 @@ this.server_port_h<-this.Cursor(1,5,::input_all)
 this.cursor_upnp<-this.Cursor(1,2,::input_all)
 this.cursor_allow_watch<-this.Cursor(1,2,::input_all)
 this.timeout<-0
+this.upnp_timeout<-0
 this.retry_count<-0
 this.lobby_user_state<-0
 this.lobby_interval<-10*1000
@@ -60,6 +61,7 @@ this.update=this.UpdateMain
 this.state=0
 this.is_suspend=false
 this.timeout=0
+this.upnp_timeout=0
 if(this.cursor_item.val!=0){this.cursor_item.val=0
 this.cursor_item.diff=-1
 }
@@ -112,6 +114,7 @@ else {}
 ::network.Terminate()
 this.update=this.UpdateMain
 this.timeout=0
+this.upnp_timeout=0
 ::menu.cursor.Activate()
 ::menu.back.Activate()
 this.BeginAnime()
@@ -131,6 +134,7 @@ if(::input_all.b0==1){::input_all.Lock()
 ::network.local_device_id=::input_all.GetLastDevice()
 switch(this.cursor_item.val){case 0:if(::LOBBY.GetNetworkState()==2){::LOBBY.SetExternalPort(::config.network.hosting_port)
 ::LOBBY.SetUserData(""+::config.network.hosting_port)
+this.upnp_timeout=0
 if(!::config.network.upnp){::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING)
 }
 this.lobby_user_state=::LOBBY.WAIT_INCOMMING
@@ -308,7 +312,7 @@ if(::input_all.b1==1){if(this.cursor_item.val==0){::lobby.dec_user_count()
 this.update=this.UpdateMain
 return
 }
-if(::config.network.upnp){if(::LOBBY.GetLobbyUserState()==::LOBBY.NO_OPERATION){if(::UPnP.GetAsyncState()==2){::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING)
+if(::config.network.upnp){if(::LOBBY.GetLobbyUserState()==::LOBBY.NO_OPERATION){if(::UPnP.GetAsyncState()==2||this.upnp_timeout++>360){::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING)
 }
 }
 }

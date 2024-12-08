@@ -149,6 +149,9 @@ static constexpr char CONFIG_FILE_NAME[] = "\\netcode.ini";
 #define NETWORK_HIDE_IP_KEY "hide_ip"
 #define NETWORK_HIDE_IP_DEFAULT false
 #define NETWORK_HIDE_IP_DEFAULT_STR MACRO_STR(NETWORK_HIDE_IP_DEFAULT)
+#define NETWORK_HIDE_NAME_KEY "hide_name"
+#define NETWORK_HIDE_NAME_DEFAULT false
+#define NETWORK_HIDE_NAME_DEFAULT_STR MACRO_STR(NETWORK_HIDE_NAME_DEFAULT)
 
 static inline bool create_dummy_file(const char* path) {
 	HANDLE handle = CreateFileA(
@@ -483,6 +486,11 @@ bool get_hide_ip_enabled() {
 	return GET_BOOL_CONFIG(NETWORK, HIDE_IP);
 }
 
+static char NETWORK_HIDE_NAME_BUFFER[8]{ '\0' };
+bool get_hide_name_enabled() {
+	return GET_BOOL_CONFIG(NETWORK, HIDE_NAME);
+}
+
 void set_ipv6_state(bool state) {
 	set_config_string(NETWORK_SECTION_NAME, NETWORK_IPV6_KEY, bool_str(state));
 }
@@ -492,7 +500,7 @@ void set_ipv6_state(bool state) {
 //====================
 
 static char MISC_HIDE_WIP_BUFFER[8]{ '\0' };
-bool get_hide_wip() {
+bool get_hide_wip_enabled() {
 	return GET_BOOL_CONFIG(MISC, HIDE_WIP);
 }
 
@@ -558,6 +566,7 @@ void init_config_file() {
 							CONFIG_DEFAULT(NETWORK, IPV6),
 							CONFIG_DEFAULT(NETWORK, NETPLAY),
 							CONFIG_DEFAULT(NETWORK, HIDE_IP),
+							CONFIG_DEFAULT(NETWORK, HIDE_NAME),
 						};
 
 						nounroll for (size_t i = 0; i < countof(default_configs); ++i) {

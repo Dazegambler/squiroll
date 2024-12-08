@@ -24,6 +24,7 @@ const char* get_lobby_port(const char* port);
 const char* get_lobby_pass(const char* pass);
 
 bool get_hide_ip_enabled();
+bool get_hide_name_enabled();
 
 bool get_ping_enabled();
 int32_t get_ping_x();
@@ -45,7 +46,7 @@ bool get_inputp1_spacing();
 int32_t get_inputp1_timer();
 bool get_inputp1_raw_input();
 
-bool get_hide_wip();
+bool get_hide_wip_enabled();
 
 bool get_inputp2_enabled();
 int32_t get_inputp2_x();

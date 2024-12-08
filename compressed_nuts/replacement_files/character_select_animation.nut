@@ -126,7 +126,7 @@ v.icon.Initialize(::menu.cursor.texture,160,i*32,32,32)
 v.icon.ConnectRenderSlot(::graphics.slot.ui,40000)
 v.icon.x=i==0?16:1280-16-32
 v.icon.y=36
-v.text<-::font.CreateSystemString(::network.player_name[i])
+v.text<-::font.CreateSystemString(::setting.misc.hide_name?"P"+(i+1): ::network.player_name[i])
 v.text.sx=v.text.sy=0.66000003
 v.text.x=i==0?v.icon.x+32:v.icon.x-v.text.width*v.text.sx
 v.text.y=v.icon.y+2

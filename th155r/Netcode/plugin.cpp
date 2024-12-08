@@ -426,9 +426,9 @@ extern "C" {
                 sq_setinteger(v, _SC("revision"), PLUGIN_REVISION);
                 sq_createtable(v, _SC("misc"), [](HSQUIRRELVM v){
                     sq_setbool(v,_SC("hide_ip"), get_hide_ip_enabled());
-                    sq_setbool(v, _SC("hide_wip"), get_hide_wip());
+                    sq_setbool(v, _SC("hide_wip"), get_hide_wip_enabled());
+                    sq_setbool(v, _SC("hide_name"), get_hide_name_enabled());
                     //only add to config file if needed
-                    sq_setbool(v, _SC("hide_name"), false);
                     sq_setbool(v, _SC("hide_lobby"), false);//more useful once we get custom lobbies
                 });
                 sq_createtable(v, _SC("ping"), [](HSQUIRRELVM v) {

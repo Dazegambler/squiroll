@@ -397,7 +397,14 @@ extern "C" {
             if (sq_gettop(v) > 0) {
                 const SQChar* error_msg;
                 if (SQ_SUCCEEDED(sq_getstring(v, 2, &error_msg))) {
+                    #if !DISABLE_ALL_LOGGING_FOR_BUILD
                     log_printf("Squirrel runtime exception: \"%s\"\n", error_msg);
+                    #else
+                    if (FILE* file = fopen("exception.log", "a")) {
+                        log_fprintf(file,"Squirrel runtime exception: \"%s\"\n", error_msg);
+                        fclose(file);
+                    }
+                    #endif
                     SQStackInfos sqstack;
                     for (
                         SQInteger i = 1;

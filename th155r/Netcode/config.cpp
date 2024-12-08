@@ -99,6 +99,11 @@ static constexpr char CONFIG_FILE_NAME[] = "\\netcode.ini";
 #define INPUT1_RAW_INPUT_DEFAULT false
 #define INPUT1_RAW_INPUT_DEFAULT_STR MACRO_STR(INPUT1_RAW_INPUT_DEFAULT)
 
+#define MISC_SECTION_NAME "misc"
+#define MISC_HIDE_WIP_KEY "hide_wip"
+#define MISC_HIDE_WIP_DEFAULT true
+#define MISC_HIDE_WIP_DEFAULT_STR MACRO_STR(MISC_HIDE_WIP_DEFAULT)
+
 #define INPUT2_SECTION_NAME "input_display_p2"
 #define INPUT2_ENABLED_KEY "enabled"
 #define INPUT2_ENABLED_DEFAULT false
@@ -482,6 +487,15 @@ void set_ipv6_state(bool state) {
 	set_config_string(NETWORK_SECTION_NAME, NETWORK_IPV6_KEY, bool_str(state));
 }
 
+//====================
+//MISC
+//====================
+
+static char MISC_HIDE_WIP_BUFFER[8]{ '\0' };
+bool get_hide_wip() {
+	return GET_BOOL_CONFIG(MISC, HIDE_WIP);
+}
+
 #define CONFIG_DEFAULT(SECTION, KEY) { MACRO_CAT(SECTION,_SECTION_NAME), MACRO_CAT4(SECTION,_,KEY,_KEY), MACRO_CAT4(SECTION,_,KEY,_DEFAULT_STR) }
 
 void init_config_file() {
@@ -506,6 +520,8 @@ void init_config_file() {
 							CONFIG_DEFAULT(LOBBY, HOST),
 							CONFIG_DEFAULT(LOBBY, PORT),
 							CONFIG_DEFAULT(LOBBY, PASS),
+
+							CONFIG_DEFAULT(MISC, HIDE_WIP),
 
 							CONFIG_DEFAULT(PING, ENABLED),
 							CONFIG_DEFAULT(PING, X),

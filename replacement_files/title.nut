@@ -1,4 +1,5 @@
-this.item <- [
+if (!::setting.misc.hide_wip){
+	this.item <- [
 	"story",
 	"tutorial",
 	"vs_com",
@@ -9,7 +10,20 @@ this.item <- [
 	"music",
 	"config",
 	"exit"
-];
+	];
+} else{
+	this.item <- [
+	"story",
+	"vs_com",
+	"vs_player",
+	"network",
+	"practice",
+	"replay",
+	"music",
+	"config",
+	"exit"
+	];
+}
 this.proc <- {};
 this.cursor <- this.Cursor(0, this.item.len(), ::input_all);
 this.cursor_difficulty <- this.Cursor(0, 4, ::input_all);

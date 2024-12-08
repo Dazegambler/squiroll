@@ -45,6 +45,8 @@ bool get_inputp1_spacing();
 int32_t get_inputp1_timer();
 bool get_inputp1_raw_input();
 
+bool get_hide_wip();
+
 bool get_inputp2_enabled();
 int32_t get_inputp2_x();
 int32_t get_inputp2_y();

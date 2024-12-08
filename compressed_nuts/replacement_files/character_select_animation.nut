@@ -136,8 +136,9 @@ this.data.push(v)
 }
 if(::network.allow_watch&&!::network.is_parent_vs){local ip_str={}
 ip_str.text<-::font.CreateSystemStringSmall(!::setting.misc.hide_ip?::punch.get_ip():"press C to copy ip")
-ip_str.text.x=(::graphics.width/2)-(ip_str.text.width/2)
+ip_str.text.x=10
 ip_str.text.y=10
+ip_str.text.sx=ip_str.text.sy=1.2
 ip_str.text.ConnectRenderSlot(::graphics.slot.front,-1)
 ip_str.Update<-function (){if(::input_all.b2==1){::punch.copy_ip_to_clipboard()
 }

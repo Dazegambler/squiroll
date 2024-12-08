@@ -375,50 +375,54 @@ extern "C" {
             // like adding squirrel globals/funcs/etc.
             sq_pushroottable(v);
 
-#if !DISABLE_ALL_LOGGING_FOR_BUILD
-            sq_setcompilererrorhandler(v, [](HSQUIRRELVM v, const SQChar* desc, const SQChar* src, SQInteger line, SQInteger col) {
-                log_printf(
-                    "Squirrel compiler exception: %s\n"
-                    "<%d,%d> \"%s\"\n",
-                    src,
-                    line, col, desc
-                );
-                if (FILE* file = fopen("compile.log", "a")) {
-                    log_fprintf(file, "Squirrel compiler exception: %s\n"
-                    "<%d,%d> \"%s\"\n",
-                    src,
-                    line, col, desc);
-                    fclose(file);
-                }
-            });
-            sq_newclosure(v, [](HSQUIRRELVM v) -> SQInteger {
-                if (sq_gettop(v) > 0) {
-                    const SQChar* error_msg;
-                    if (SQ_SUCCEEDED(sq_getstring(v, 2, &error_msg))) {
-                        log_printf("Squirrel runtime exception: \"%s\"\n", error_msg);
-                        SQStackInfos sqstack;
-                        for (
-                            SQInteger i = 1;
-                            SQ_SUCCEEDED(sq_stackinfos(v, i, &sqstack));
-                            ++i
-                        ) {
-                            log_printf(
-                                *sqstack.source ? " %d | %s (%s)\n" : " %d | %s\n"
-                                , sqstack.line, sqstack.funcname ? sqstack.funcname : "Anonymous function", sqstack.source
-                            );
-                            if (FILE* file = fopen("exception.log", "a")) {
-                                log_fprintf(file,*sqstack.source ? " %d | %s (%s)\n" : " %d | %s\n"
-                                , sqstack.line, sqstack.funcname ? sqstack.funcname : "Anonymous function", sqstack.source
-                            );
-                                fclose(file);
-                            }
+        sq_setcompilererrorhandler(v, [](HSQUIRRELVM v, const SQChar* desc, const SQChar* src, SQInteger line, SQInteger col) {
+            #if !DISABLE_ALL_LOGGING_FOR_BUILD
+            log_printf(
+                "Squirrel compiler exception: %s\n"
+                "<%d,%d> \"%s\"\n",
+                src,
+                line, col, desc
+            );
+            #else
+            if (FILE* file = fopen("compile.log", "a")) {
+                log_fprintf(file, "Squirrel compiler exception: %s\n"
+                "<%d,%d> \"%s\"\n",
+                src,
+                line, col, desc);
+                fclose(file);
+            }
+            #endif
+        });
+        sq_newclosure(v, [](HSQUIRRELVM v) -> SQInteger {
+            if (sq_gettop(v) > 0) {
+                const SQChar* error_msg;
+                if (SQ_SUCCEEDED(sq_getstring(v, 2, &error_msg))) {
+                    log_printf("Squirrel runtime exception: \"%s\"\n", error_msg);
+                    SQStackInfos sqstack;
+                    for (
+                        SQInteger i = 1;
+                        SQ_SUCCEEDED(sq_stackinfos(v, i, &sqstack));
+                        ++i
+                    ) {
+                        #if !DISABLE_ALL_LOGGING_FOR_BUILD
+                        log_printf(
+                            *sqstack.source ? " %d | %s (%s)\n" : " %d | %s\n"
+                            , sqstack.line, sqstack.funcname ? sqstack.funcname : "Anonymous function", sqstack.source
+                        );
+                        #else
+                        if (FILE* file = fopen("exception.log", "a")) {
+                            log_fprintf(file,*sqstack.source ? " %d | %s (%s)\n" : " %d | %s\n"
+                            , sqstack.line, sqstack.funcname ? sqstack.funcname : "Anonymous function", sqstack.source
+                        );
+                            fclose(file);
                         }
+                        #endif
                     }
                 }
-                return 0;
-            }, 0);
-            sq_seterrorhandler(v);
-#endif
+            }
+            return 0;
+        }, 0);
+        sq_seterrorhandler(v);
 
             // setting table setup
             sq_createtable(v, _SC("setting"), [](HSQUIRRELVM v) {

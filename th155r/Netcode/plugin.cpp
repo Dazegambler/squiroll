@@ -377,36 +377,29 @@ extern "C" {
             sq_pushroottable(v);
 
         sq_setcompilererrorhandler(v, [](HSQUIRRELVM v, const SQChar* desc, const SQChar* src, SQInteger line, SQInteger col) {
-            #if !DISABLE_ALL_LOGGING_FOR_BUILD
+#if !DISABLE_ALL_LOGGING_FOR_BUILD
             log_printf(
                 "Squirrel compiler exception: %s\n"
                 "<%d,%d> \"%s\"\n",
                 src,
                 line, col, desc
             );
-            #else
-            char buffer[512];
-            snprintf(
-                buffer,
-                sizeof(buffer),
-                "Squirrel compiler exception: %s\n"
-                "<%d,%d> \"%s\"\n",
-                src,
-                line,col,desc
-            );
-            MessageBox(
-                nullptr,
-                buffer,
-                "Squirrel Exception",
-                MB_OK | MB_ICONERROR
-            );
-            #endif
+#else
+            mboxf("Squirrel Exception", MB_OK | MB_ICONERROR, [=](auto add_text) {
+                add_text(
+                    "Squirrel compiler exception: %s\n"
+                    "<%d,%d> \"%s\"\n",
+                    src,
+                    line, col, desc
+                );
+            });
+#endif
         });
         sq_newclosure(v, [](HSQUIRRELVM v) -> SQInteger {
             if (sq_gettop(v) > 0) {
                 const SQChar* error_msg;
                 if (SQ_SUCCEEDED(sq_getstring(v, 2, &error_msg))) {
-                    #if !DISABLE_ALL_LOGGING_FOR_BUILD
+#if !DISABLE_ALL_LOGGING_FOR_BUILD
                     log_printf("Squirrel runtime exception: \"%s\"\n", error_msg);
                     SQStackInfos sqstack;
                     for (
@@ -419,36 +412,22 @@ extern "C" {
                             , sqstack.line, sqstack.funcname ? sqstack.funcname : "Anonymous function", sqstack.source
                         );
                     }
-                    #else
-                    char buffer[1024]; 
-                    snprintf(
-                        buffer,
-                        sizeof(buffer),
-                        "Squirrel runtime exception: \"%s\"\n",
-                        error_msg
-                    );
-                    SQStackInfos sqstack;
-                    for (
-                        SQInteger i = 1;
-                        SQ_SUCCEEDED(sq_stackinfos(v, i, &sqstack));
-                        ++i
-                    ) {
-                        snprintf(
-                            buffer + strlen(buffer),
-                            sizeof(buffer) - strlen(buffer),
-                            *sqstack.source ? " %d | %s (%s)\n" : " %d | %s\n",
-                            sqstack.line,
-                            sqstack.funcname ? sqstack.funcname : "Anonymous function",
-                            sqstack.source
-                        );
-                    }
-                    MessageBox(
-                        nullptr,
-                        buffer,
-                        "Squirrel Exception",
-                        MB_OK | MB_ICONERROR
-                    );
-                    #endif
+#else
+                    mboxf("Squirrel Exception", MB_OK | MB_ICONERROR, [=](auto add_text) {
+                        add_text("Squirrel runtime exception: \"%s\"\n", error_msg);
+                        SQStackInfos sqstack;
+                        for (
+                            SQInteger i = 1;
+                            SQ_SUCCEEDED(sq_stackinfos(v, i, &sqstack));
+                            ++i
+                        ) {
+                            add_text(
+                                *sqstack.source ? " %d | %s (%s)\n" : " %d | %s\n"
+                                , sqstack.line, sqstack.funcname ? sqstack.funcname : "Anonymous function", sqstack.source
+                            );
+                        }
+                    });
+#endif
                 }
             }
             return 0;

@@ -164,6 +164,12 @@ static inline constexpr bool is_constexpr(...) { return false; }
 #define lambda_forceinline
 #endif
 
+#if CLANG_COMPAT
+#define clang_noinline [[clang::noinline]]
+#else
+#define clang_noinline
+#endif
+
 #ifdef EVAL_NOOP
 #undef EVAL_NOOP
 #endif

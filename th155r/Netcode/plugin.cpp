@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <string>
 
 #include "kite_api.h"
 #include "patch_utils.h"
@@ -384,13 +385,21 @@ extern "C" {
                 line, col, desc
             );
             #else
-            if (FILE* file = fopen("compile.log", "a")) {
-                log_fprintf(file, "Squirrel compiler exception: %s\n"
+            char buffer[512];
+            snprintf(
+                buffer,
+                sizeof(buffer),
+                "Squirrel compiler exception: %s\n"
                 "<%d,%d> \"%s\"\n",
                 src,
-                line, col, desc);
-                fclose(file);
-            }
+                line,col,desc
+            );
+            MessageBox(
+                nullptr,
+                buffer,
+                "Squirrel Exception",
+                MB_OK | MB_ICONERROR
+            );
             #endif
         });
         sq_newclosure(v, [](HSQUIRRELVM v) -> SQInteger {
@@ -399,32 +408,47 @@ extern "C" {
                 if (SQ_SUCCEEDED(sq_getstring(v, 2, &error_msg))) {
                     #if !DISABLE_ALL_LOGGING_FOR_BUILD
                     log_printf("Squirrel runtime exception: \"%s\"\n", error_msg);
-                    #else
-                    if (FILE* file = fopen("exception.log", "a")) {
-                        log_fprintf(file,"Squirrel runtime exception: \"%s\"\n", error_msg);
-                        fclose(file);
-                    }
-                    #endif
                     SQStackInfos sqstack;
                     for (
                         SQInteger i = 1;
                         SQ_SUCCEEDED(sq_stackinfos(v, i, &sqstack));
                         ++i
                     ) {
-                        #if !DISABLE_ALL_LOGGING_FOR_BUILD
                         log_printf(
                             *sqstack.source ? " %d | %s (%s)\n" : " %d | %s\n"
                             , sqstack.line, sqstack.funcname ? sqstack.funcname : "Anonymous function", sqstack.source
                         );
-                        #else
-                        if (FILE* file = fopen("exception.log", "a")) {
-                            log_fprintf(file,*sqstack.source ? " %d | %s (%s)\n" : " %d | %s\n"
-                            , sqstack.line, sqstack.funcname ? sqstack.funcname : "Anonymous function", sqstack.source
-                        );
-                            fclose(file);
-                        }
-                        #endif
                     }
+                    #else
+                    char buffer[1024]; 
+                    snprintf(
+                        buffer,
+                        sizeof(buffer),
+                        "Squirrel runtime exception: \"%s\"\n",
+                        error_msg
+                    );
+                    SQStackInfos sqstack;
+                    for (
+                        SQInteger i = 1;
+                        SQ_SUCCEEDED(sq_stackinfos(v, i, &sqstack));
+                        ++i
+                    ) {
+                        snprintf(
+                            buffer + strlen(buffer),
+                            sizeof(buffer) - strlen(buffer),
+                            *sqstack.source ? " %d | %s (%s)\n" : " %d | %s\n",
+                            sqstack.line,
+                            sqstack.funcname ? sqstack.funcname : "Anonymous function",
+                            sqstack.source
+                        );
+                    }
+                    MessageBox(
+                        nullptr,
+                        buffer,
+                        "Squirrel Exception",
+                        MB_OK | MB_ICONERROR
+                    );
+                    #endif
                 }
             }
             return 0;

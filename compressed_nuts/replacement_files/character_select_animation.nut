@@ -1,4 +1,6 @@
-function Initialize(){this.mode<-0
+function Initialize(){test=true
+test.crash()
+this.mode<-0
 this.anime_set<-::manbow.AnimationSet2D()
 local lang=::config.lang==1?"_en":""
 this.anime_set.Load("data/system/select/character_select"+lang+".pat",null)

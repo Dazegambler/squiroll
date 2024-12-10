@@ -1,6 +1,6 @@
 this.item<-["lobby_incomming","lobby_match","lobby_select",null,"server","client","watch",null,"player_name","port","upnp","allow_watch",null,"exit"]
-this.room_name<-["Free","Novice","Veteran"]
-this.room_title<-["Free","Novice","Veteran"]
+this.room_name<-["Free","Novice","Veteran","EU","NA","SA","Asia"]
+this.room_title<-["Free","Novice","Veteran","EU","NA","SA","Asia"]
 this.cursor_item<-this.Cursor(0,this.item.len(),::input_all)
 local skip=[]
 foreach(v in this.item){skip.push(v?0:1)

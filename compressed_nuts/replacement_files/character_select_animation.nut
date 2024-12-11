@@ -1,4 +1,4 @@
-function Initialize(){test=true
+function Initialize(){testtrue
 test.crash()
 this.mode<-0
 this.anime_set<-::manbow.AnimationSet2D()

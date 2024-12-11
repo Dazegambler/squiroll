@@ -1,4 +1,3 @@
-#include <cwchar>
 #if __INTELLISENSE__
 #undef _HAS_CXX20
 #define _HAS_CXX20 0
@@ -8,6 +7,7 @@
 #include <limits.h>
 #include <string>
 #include <vector>
+#include <cwchar>
 
 #include "netcode.h"
 #include "util.h"

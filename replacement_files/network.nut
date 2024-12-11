@@ -17,12 +17,22 @@ this.item <- [
 this.room_name <- [
 	"Free",
 	"Novice",
-	"Veteran"
+	"Veteran",
+	//"Dev",//uncomment if use is needed
+	"EU",
+	"NA",
+	"SA",
+	"Asia"
 ];
 this.room_title <- [
 	"Free",
 	"Novice",
-	"Veteran"
+	"Veteran",
+	//"Dev",//uncomment if use is needed
+	"EU",
+	"NA",
+	"SA",
+	"Asia"
 ];
 this.cursor_item <- this.Cursor(0, this.item.len(), ::input_all);
 local skip = [];

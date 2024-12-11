@@ -15,7 +15,7 @@ static inline constexpr size_t PLUGIN_VERSION = 1;
 // Increase the revision number for bugfixing builds and
 // other sorts of changes that don't make the netcode
 // incompatible. Reset to 0 whenever increasing the main version.
-static inline constexpr size_t PLUGIN_REVISION = 1;
+static inline constexpr size_t PLUGIN_REVISION = 2;
 
 void init_config_file();
 
@@ -25,6 +25,7 @@ const char* get_lobby_pass(const char* pass);
 
 bool get_hide_ip_enabled();
 bool get_hide_name_enabled();
+bool get_skip_intro_enabled();
 
 bool get_ping_enabled();
 int32_t get_ping_x();

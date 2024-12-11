@@ -315,6 +315,11 @@ enum RoomType : uint8_t {
 	FREE_ROOM,
 	NOVICE_ROOM,
 	VETERAN_ROOM,
+	DEV_ROOM,
+	EU_ROOM,
+	NA_ROOM,
+	SA_ROOM,
+	ASIA_ROOM,
 	INVALID_ROOM = UINT8_MAX
 };
 
@@ -544,6 +549,8 @@ static inline constexpr char REQUEST_LOGIN_REPLY[] = "E\n";
 static inline constexpr char NICK_IN_USE_REPLY[] = ": 433 E\n";
 static inline constexpr char REQUEST_JOIN_REPLY[] = ": 422 E\n";
 
+static inline constexpr char JOIN_DEV_REPLY[] = "! JOIN #th155_Dev %u\n";
+
 //static inline constexpr char JOIN_FREE_REPLY[] = "! JOIN #th155_Free\n\0\0\0\0\0\0\0\0\0\0\0\0";
 static inline constexpr char JOIN_FREE_REPLY[] = "! JOIN #th155_Free %u\n";
 static inline constexpr size_t JOIN_FREE_REPLY_LEN = 19;
@@ -556,9 +563,20 @@ static inline constexpr size_t JOIN_NOVICE_REPLY_LEN = 21;
 static inline constexpr char JOIN_VETERAN_REPLY[] = "! JOIN #th155_Veteran %u\n";
 static inline constexpr size_t JOIN_VETERAN_REPLY_LEN = 22;
 
+static inline constexpr char JOIN_EU_REPLY[] =  "! JOIN #th155_EU %u\n";
+static inline constexpr char JOIN_NA_REPLY[] = "! JOIN #th155_NA %u\n";
+static inline constexpr char JOIN_SA_REPLY[] = "! JOIN #th155_SA %u\n";
+static inline constexpr char JOIN_ASIA_REPLY[] = "! JOIN #th155_Asia %u\n";
+
+static inline constexpr std::string_view JOIN_DEV_VIEW = "JOIN #th155_Dev Dev"sv;
 static inline constexpr std::string_view JOIN_FREE_VIEW = "JOIN #th155_Free Free"sv;
 static inline constexpr std::string_view JOIN_NOVICE_VIEW = "JOIN #th155_Novice Novice"sv;
 static inline constexpr std::string_view JOIN_VETERAN_VIEW = "JOIN #th155_Veteran Veteran"sv;
+
+static inline constexpr std::string_view JOIN_EU_VIEW = "JOIN #th155_EU EU"sv;
+static inline constexpr std::string_view JOIN_NA_VIEW = "JOIN #th155_NA NA"sv;
+static inline constexpr std::string_view JOIN_SA_VIEW = "JOIN #th155_SA SA"sv;
+static inline constexpr std::string_view JOIN_ASIA_VIEW = "JOIN #th155_Asia Asia"sv;
 
 #define CALC_JOIN_USERS_BUFFER(max_val) sizeof("! JOIN #th155_Veteran " MACRO_STR(max_val) "\n")
 
@@ -880,6 +898,26 @@ int main(int argc, char* argv[]) {
 													join_response_str = JOIN_VETERAN_REPLY;
 													//join_response_length = JOIN_VETERAN_REPLY_LEN;
 													room_type = VETERAN_ROOM;
+												}
+												else if (join_view == JOIN_DEV_VIEW) {
+													join_response_str = JOIN_DEV_REPLY;
+													room_type = DEV_ROOM;
+												}
+												else if (join_view == JOIN_EU_VIEW) {
+													join_response_str = JOIN_EU_REPLY;
+													room_type = EU_ROOM;
+												}
+												else if (join_view == JOIN_NA_VIEW) {
+													join_response_str = JOIN_NA_REPLY;
+													room_type = NA_ROOM;
+												}
+												else if (join_view == JOIN_SA_VIEW) {
+													join_response_str = JOIN_SA_REPLY;
+													room_type = SA_ROOM;
+												}
+												else if (join_view == JOIN_ASIA_VIEW) {
+													join_response_str = JOIN_ASIA_REPLY;
+													room_type = ASIA_ROOM;
 												}
 												else {
 													remove_user_data(nick_view);

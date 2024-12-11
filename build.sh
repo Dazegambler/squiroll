@@ -40,7 +40,7 @@ done
 
 
 PREFIX="$HOME/.xwin-cache/splat"
-INCLUDES="/external:I$PREFIX/crt/include /external:I$PREFIX/sdk/include/shared /external:I$PREFIX/sdk/include/ucrt /external:I$PREFIX/sdk/include/um"
+INCLUDES="/imsvc$PREFIX/crt/include /imsvc$PREFIX/sdk/include/shared /imsvc$PREFIX/sdk/include/ucrt /imsvc$PREFIX/sdk/include/um"
 LIBPATHS="/LIBPATH:$PREFIX/crt/lib/x86 /LIBPATH:$PREFIX/sdk/lib/ucrt/x86 /LIBPATH:$PREFIX/sdk/lib/um/x86"
 DEFINES="-D_CRT_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -DNOMINMAX -D_WINSOCKAPI_ -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -D_CRT_DECLARE_NONSTDC_NAMES"
 WARNINGS="-Wno-cpp -Wno-narrowing"

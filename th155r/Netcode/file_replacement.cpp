@@ -119,9 +119,9 @@ static constexpr uint8_t menu_nut[] = {
 #endif
 };
 
-static constexpr uint8_t gauge_vs_nut[] = {
+static constexpr uint8_t boot_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/gauge_vs.nut.h"
+#include "replacement_files/boot.nut.h"
 #endif
 };
 
@@ -138,7 +138,7 @@ static const std::unordered_map<std::string_view, const EmbedData> replacements 
 	{"data/system/network/dialog_wait.nut"sv, dialog_wait_nut},
 	{"data/system/select/script/character_select_animation.nut"sv, character_select_animation_nut},
 	{"data/script/menu.nut"sv, menu_nut},
-	{"data/actor/status/gauge_vs.nut"sv,gauge_vs_nut},
+	{"data/system/boot/boot.nut"sv, boot_nut},
 };
 
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP

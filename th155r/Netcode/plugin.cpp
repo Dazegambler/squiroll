@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <string>
 
 #include "kite_api.h"
 #include "patch_utils.h"
@@ -375,50 +376,63 @@ extern "C" {
             // like adding squirrel globals/funcs/etc.
             sq_pushroottable(v);
 
+        sq_setcompilererrorhandler(v, [](HSQUIRRELVM v, const SQChar* desc, const SQChar* src, SQInteger line, SQInteger col) {
 #if !DISABLE_ALL_LOGGING_FOR_BUILD
-            sq_setcompilererrorhandler(v, [](HSQUIRRELVM v, const SQChar* desc, const SQChar* src, SQInteger line, SQInteger col) {
-                log_printf(
+            log_printf(
+                "Squirrel compiler exception: %s\n"
+                "<%d,%d> \"%s\"\n",
+                src,
+                line, col, desc
+            );
+#else
+            mboxf("Squirrel Exception", MB_OK | MB_ICONERROR, [=](auto add_text) {
+                add_text(
                     "Squirrel compiler exception: %s\n"
                     "<%d,%d> \"%s\"\n",
                     src,
                     line, col, desc
                 );
-                if (FILE* file = fopen("compile.log", "a")) {
-                    log_fprintf(file, "Squirrel compiler exception: %s\n"
-                    "<%d,%d> \"%s\"\n",
-                    src,
-                    line, col, desc);
-                    fclose(file);
-                }
             });
-            sq_newclosure(v, [](HSQUIRRELVM v) -> SQInteger {
-                if (sq_gettop(v) > 0) {
-                    const SQChar* error_msg;
-                    if (SQ_SUCCEEDED(sq_getstring(v, 2, &error_msg))) {
-                        log_printf("Squirrel runtime exception: \"%s\"\n", error_msg);
+#endif
+        });
+        sq_newclosure(v, [](HSQUIRRELVM v) -> SQInteger {
+            if (sq_gettop(v) > 0) {
+                const SQChar* error_msg;
+                if (SQ_SUCCEEDED(sq_getstring(v, 2, &error_msg))) {
+#if !DISABLE_ALL_LOGGING_FOR_BUILD
+                    log_printf("Squirrel runtime exception: \"%s\"\n", error_msg);
+                    SQStackInfos sqstack;
+                    for (
+                        SQInteger i = 1;
+                        SQ_SUCCEEDED(sq_stackinfos(v, i, &sqstack));
+                        ++i
+                    ) {
+                        log_printf(
+                            *sqstack.source ? " %d | %s (%s)\n" : " %d | %s\n"
+                            , sqstack.line, sqstack.funcname ? sqstack.funcname : "Anonymous function", sqstack.source
+                        );
+                    }
+#else
+                    mboxf("Squirrel Exception", MB_OK | MB_ICONERROR, [=](auto add_text) {
+                        add_text("Squirrel runtime exception: \"%s\"\n", error_msg);
                         SQStackInfos sqstack;
                         for (
                             SQInteger i = 1;
                             SQ_SUCCEEDED(sq_stackinfos(v, i, &sqstack));
                             ++i
                         ) {
-                            log_printf(
+                            add_text(
                                 *sqstack.source ? " %d | %s (%s)\n" : " %d | %s\n"
                                 , sqstack.line, sqstack.funcname ? sqstack.funcname : "Anonymous function", sqstack.source
                             );
-                            if (FILE* file = fopen("exception.log", "a")) {
-                                log_fprintf(file,*sqstack.source ? " %d | %s (%s)\n" : " %d | %s\n"
-                                , sqstack.line, sqstack.funcname ? sqstack.funcname : "Anonymous function", sqstack.source
-                            );
-                                fclose(file);
-                            }
                         }
-                    }
-                }
-                return 0;
-            }, 0);
-            sq_seterrorhandler(v);
+                    });
 #endif
+                }
+            }
+            return 0;
+        }, 0);
+        sq_seterrorhandler(v);
 
             // setting table setup
             sq_createtable(v, _SC("setting"), [](HSQUIRRELVM v) {
@@ -430,6 +444,7 @@ extern "C" {
                     sq_setbool(v, _SC("hide_name"), get_hide_name_enabled());
                     //only add to config file if needed
                     sq_setbool(v, _SC("hide_lobby"), false);//more useful once we get custom lobbies
+                    sq_setbool(v, _SC("skip_intro"), get_skip_intro_enabled());
                 });
                 sq_createtable(v, _SC("ping"), [](HSQUIRRELVM v) {
                     sq_setfunc(v, _SC("update_consts"), update_ping_constants);

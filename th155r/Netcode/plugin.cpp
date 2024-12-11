@@ -444,6 +444,7 @@ extern "C" {
                     sq_setbool(v, _SC("hide_name"), get_hide_name_enabled());
                     //only add to config file if needed
                     sq_setbool(v, _SC("hide_lobby"), false);//more useful once we get custom lobbies
+                    sq_setbool(v, _SC("skip_intro"), get_skip_intro_enabled());
                 });
                 sq_createtable(v, _SC("ping"), [](HSQUIRRELVM v) {
                     sq_setfunc(v, _SC("update_consts"), update_ping_constants);

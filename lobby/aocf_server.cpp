@@ -320,10 +320,11 @@ enum RoomType : uint8_t {
 	NA_ROOM,
 	SA_ROOM,
 	ASIA_ROOM,
+	ROOM_COUNT, // This must be the final enum value before INVALID_ROOM
 	INVALID_ROOM = UINT8_MAX
 };
 
-static std::atomic<uint32_t> USER_COUNT[3] = {};
+static std::atomic<uint32_t> USER_COUNT[ROOM_COUNT] = {};
 #if LOBBY_STATISTICS
 static std::atomic<uint64_t> TOTAL_LOBBY_MATCHES = { 0 };
 #endif
@@ -549,30 +550,20 @@ static inline constexpr char REQUEST_LOGIN_REPLY[] = "E\n";
 static inline constexpr char NICK_IN_USE_REPLY[] = ": 433 E\n";
 static inline constexpr char REQUEST_JOIN_REPLY[] = ": 422 E\n";
 
-static inline constexpr char JOIN_DEV_REPLY[] = "! JOIN #th155_Dev %u\n";
 
-//static inline constexpr char JOIN_FREE_REPLY[] = "! JOIN #th155_Free\n\0\0\0\0\0\0\0\0\0\0\0\0";
 static inline constexpr char JOIN_FREE_REPLY[] = "! JOIN #th155_Free %u\n";
-static inline constexpr size_t JOIN_FREE_REPLY_LEN = 19;
-
-//static inline constexpr char JOIN_NOVICE_REPLY[] = "! JOIN #th155_Novice\n\0\0\0\0\0\0\0\0\0\0";
 static inline constexpr char JOIN_NOVICE_REPLY[] = "! JOIN #th155_Novice %u\n";
-static inline constexpr size_t JOIN_NOVICE_REPLY_LEN = 21;
-
-//static inline constexpr char JOIN_VETERAN_REPLY[] = "! JOIN #th155_Veteran\n\0\0\0\0\0\0\0\0\0";
 static inline constexpr char JOIN_VETERAN_REPLY[] = "! JOIN #th155_Veteran %u\n";
-static inline constexpr size_t JOIN_VETERAN_REPLY_LEN = 22;
-
+static inline constexpr char JOIN_DEV_REPLY[] = "! JOIN #th155_Dev %u\n";
 static inline constexpr char JOIN_EU_REPLY[] =  "! JOIN #th155_EU %u\n";
 static inline constexpr char JOIN_NA_REPLY[] = "! JOIN #th155_NA %u\n";
 static inline constexpr char JOIN_SA_REPLY[] = "! JOIN #th155_SA %u\n";
 static inline constexpr char JOIN_ASIA_REPLY[] = "! JOIN #th155_Asia %u\n";
 
-static inline constexpr std::string_view JOIN_DEV_VIEW = "JOIN #th155_Dev Dev"sv;
 static inline constexpr std::string_view JOIN_FREE_VIEW = "JOIN #th155_Free Free"sv;
 static inline constexpr std::string_view JOIN_NOVICE_VIEW = "JOIN #th155_Novice Novice"sv;
 static inline constexpr std::string_view JOIN_VETERAN_VIEW = "JOIN #th155_Veteran Veteran"sv;
-
+static inline constexpr std::string_view JOIN_DEV_VIEW = "JOIN #th155_Dev Dev"sv;
 static inline constexpr std::string_view JOIN_EU_VIEW = "JOIN #th155_EU EU"sv;
 static inline constexpr std::string_view JOIN_NA_VIEW = "JOIN #th155_NA NA"sv;
 static inline constexpr std::string_view JOIN_SA_VIEW = "JOIN #th155_SA SA"sv;
@@ -657,7 +648,7 @@ int main(int argc, char* argv[]) {
 							if (size_t receive_length = udp_socket.receive(buffer, peer_addr)) {
 
 								PacketLayout* raw_packet = (PacketLayout*)buffer;
-								udp_printf("UDP: %zu type %hhu\n", receive_length, raw_packet->type);
+								udp_debug_printf("UDP: %zu type %hhu\n", receive_length, raw_packet->type);
 								switch (raw_packet->type) {
 									case PACKET_TYPE_LOBBY_NAME: case PACKET_TYPE_LOBBY_NAME_WAIT: {
 
@@ -886,17 +877,14 @@ int main(int argc, char* argv[]) {
 												size_t join_response_length;
 												if (join_view == JOIN_FREE_VIEW) {
 													join_response_str = JOIN_FREE_REPLY;
-													//join_response_length = JOIN_FREE_REPLY_LEN;
 													room_type = FREE_ROOM;
 												}
 												else if (join_view == JOIN_NOVICE_VIEW) {
 													join_response_str = JOIN_NOVICE_REPLY;
-													//join_response_length = JOIN_NOVICE_REPLY_LEN;
 													room_type = NOVICE_ROOM;
 												}
 												else if (join_view == JOIN_VETERAN_VIEW) {
 													join_response_str = JOIN_VETERAN_REPLY;
-													//join_response_length = JOIN_VETERAN_REPLY_LEN;
 													room_type = VETERAN_ROOM;
 												}
 												else if (join_view == JOIN_DEV_VIEW) {
@@ -1010,7 +998,7 @@ int main(int argc, char* argv[]) {
 																}
 																else if (command_view.starts_with(WELCOME_COMMAND_VIEW)) {
 #if LOBBY_STATISTICS
-																	printf("Total matches: %llu\n", ++TOTAL_LOBBY_MATCHES);
+																	printf("!!!!! TOTAL MATCHES: %llu\n", ++TOTAL_LOBBY_MATCHES);
 #endif
 																	if (is_waiting) {
 																		send_user_count_packet<DEC_USER_COUNT>(join_and_users_buffer, room_type);

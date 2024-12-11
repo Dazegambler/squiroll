@@ -434,13 +434,13 @@ void D3DX11CreateShaderResourceViewFromMemory() {
 }
 
 static uint8_t orig_entrypoint[6];
-UINT entrypoint_hook() {
+static UINT __stdcall entrypoint_hook() {
     InitFuncData init_data = {
         .log_type = NO_LOGGING
     };
     netcode_init(&init_data);
     mem_write(entrypoint_base_addr, orig_entrypoint);
-    return ((UINT(*)())entrypoint_base_addr)();
+    __attribute__((musttail)) return ((UINT(__stdcall*)())entrypoint_base_addr)();
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {

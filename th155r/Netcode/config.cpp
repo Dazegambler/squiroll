@@ -103,6 +103,9 @@ static constexpr char CONFIG_FILE_NAME[] = "\\netcode.ini";
 #define MISC_HIDE_WIP_KEY "hide_wip"
 #define MISC_HIDE_WIP_DEFAULT true
 #define MISC_HIDE_WIP_DEFAULT_STR MACRO_STR(MISC_HIDE_WIP_DEFAULT)
+#define MISC_SKIP_INTRO_KEY "skip_intro"
+#define MISC_SKIP_INTRO_DEFAULT false
+#define MISC_SKIP_INTRO_DEFAULT_STR MACRO_STR(MISC_HIDE_WIP_DEFAULT)
 
 #define INPUT2_SECTION_NAME "input_display_p2"
 #define INPUT2_ENABLED_KEY "enabled"
@@ -504,6 +507,11 @@ bool get_hide_wip_enabled() {
 	return GET_BOOL_CONFIG(MISC, HIDE_WIP);
 }
 
+static char MISC_SKIP_INTRO_BUFFER[8]{ '\0' };
+bool get_skip_intro_enabled() {
+	return GET_BOOL_CONFIG(MISC, SKIP_INTRO);
+}
+
 #define CONFIG_DEFAULT(SECTION, KEY) { MACRO_CAT(SECTION,_SECTION_NAME), MACRO_CAT4(SECTION,_,KEY,_KEY), MACRO_CAT4(SECTION,_,KEY,_DEFAULT_STR) }
 
 void init_config_file() {
@@ -530,6 +538,7 @@ void init_config_file() {
 							CONFIG_DEFAULT(LOBBY, PASS),
 
 							CONFIG_DEFAULT(MISC, HIDE_WIP),
+							CONFIG_DEFAULT(MISC, SKIP_INTRO),
 
 							CONFIG_DEFAULT(PING, ENABLED),
 							CONFIG_DEFAULT(PING, X),

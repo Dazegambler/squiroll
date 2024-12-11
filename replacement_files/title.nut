@@ -37,8 +37,13 @@ function Initialize()
 {
 	::INFORMATION.UpdateNewestVersion("th155");
 	this.Show();
-	this.Update <- this.UpdateOP;
-	this.op.Initialize();
+	if (::setting.misc.skip_intro) {
+		this.Update <- this.UpdateMain;
+		::sound.PlayBGM(::savedata.GetTitleBGMID());
+	} else {
+		this.Update <- this.UpdateOP;
+		this.op.Initialize();
+	}
 	::loop.Begin(this);
 }
 

@@ -21,6 +21,9 @@
 #define CONNECTION_LOGGING_LOBBY_PACKETS	0b010
 #define CONNECTION_LOGGING_UDP_PACKETS		0b100
 
+typedef int cdecl mbox_t(const char* caption, const UINT type, const char* text);
+extern mbox_t* log_mbox;
+
 template <typename L>
 static void mboxf(const char* caption, UINT type, const L& generator) {
 	char* text = NULL;
@@ -29,13 +32,12 @@ static void mboxf(const char* caption, UINT type, const L& generator) {
 	generator([&](const char* format, ...) lambda_forceinline {
 		va_list va;
 		va_start(va, format);
-		int char_count;
-		clang_noinline char_count = vsnprintf(NULL, 0, format, va);
+		int char_count = vsnprintf(NULL, 0, format, va);
 		if (char_count > 0) {
 			size_t full_len = text_len + char_count;
 			if (char* new_text = (char*)realloc(text, full_len + 1)) {
 				text = new_text;
-				clang_noinline vsprintf(&text[text_len], format, va);
+				vsprintf(&text[text_len], format, va);
 				text_len = full_len;
 			}
 		}
@@ -47,7 +49,7 @@ static void mboxf(const char* caption, UINT type, const L& generator) {
 		if (text[text_len] == '\n') {
 			text[text_len] = '\0';
 		}
-		MessageBoxA(NULL, text, caption, type);
+		log_mbox(caption, type, text);
 		free(text);
 	}
 }

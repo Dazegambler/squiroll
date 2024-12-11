@@ -7,12 +7,6 @@
 
 #include <shared.h>
 
-typedef int cdecl printf_t(const char* format, ...);
-typedef int cdecl fprintf_t(FILE* stream, const char* format, ...);
-
-static printf_t *const volatile log_printf = (printf_t*)&printf;
-static fprintf_t *const volatile log_fprintf = (fprintf_t*)&fprintf;
-
 //Code provided by zero318
 static uint8_t inject_func[] = {
     0x53,             //   PUSH EBX
@@ -156,7 +150,7 @@ void bootstrap_program(HANDLE process, HANDLE thread) {
             ReadProcessMemory(process, (LPCVOID)(addr + offset + 0x28), &offset, sizeof(DWORD), NULL);
             addr += offset;
         } else {
-            log_printf("GetThreadSelectorEntry failed\n");
+            printf("GetThreadSelectorEntry failed\n");
         }
     }
     DWORD protection;
@@ -196,7 +190,7 @@ bool execute_program_inject(InitFuncData* init_data, bool wait_for_exit) {
             }
             ret = true;
         } else {
-            log_fprintf(stderr,
+            fprintf(stderr,
                 "Code Injection failed...(%X,%lX)\n"
                 "%s\n"
                 , inject_result, GetLastError()
@@ -242,13 +236,13 @@ int main(int argc, char* argv[]) {
         is_running_on_wine = true;
     }
     
-    log_printf(
+    printf(
         "Starting patcher\n"
         "OS Type: %s\n"
         , !is_running_on_wine ? "Windows" : "Wine"
     );
     if (execute_program_inject(&init_data, init_data.log_type == LOG_TO_PARENT_CONSOLE) != false) {
-        log_printf("Patch succesful, you can close this now\n");
+        printf("Patch succesful, you can close this now\n");
         return 0;
     }
     return 0;

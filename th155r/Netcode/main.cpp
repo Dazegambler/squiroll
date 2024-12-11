@@ -406,6 +406,9 @@ extern "C" {
                         log_printf = log_func;
                     }
 #endif
+                    if (mbox_t* log_func = (mbox_t*)GetProcAddress(thcrap_handle, "log_mbox")) {
+                        log_mbox = log_func;
+                    }
                     //if (patchhook_register_t* patchhook_register_func = (patchhook_register_t*)GetProcAddress(thcrap_handle, "patchhook_register")) {
                         //patchhook_register = patchhook_register_func;
                     //}

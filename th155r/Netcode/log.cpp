@@ -12,6 +12,13 @@
 #include "util.h"
 #include "patch_utils.h"
 
+
+static int cdecl normal_mbox(const char* caption, const UINT type, const char* text) {
+    return MessageBoxA(NULL, text, caption, type);
+}
+
+mbox_t* log_mbox = &normal_mbox;
+
 #if !DISABLE_ALL_LOGGING_FOR_BUILD
 
 typedef void cdecl vprintf_t(const char* format, va_list va);

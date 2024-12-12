@@ -16,6 +16,8 @@
 #include <atomic>
 #include <bit>
 
+#include <immintrin.h>
+
 #include <winsock2.h>
 #include <windows.h>
 
@@ -693,11 +695,39 @@ struct WaitableTimer {
         }
     }
 
-    inline void wait(int64_t duration) const {
+    inline void set(int64_t duration) const {
         LARGE_INTEGER delay;
         delay.QuadPart = -duration;
-        SetWaitableTimer(this->os_handle, &delay, 0, NULL, NULL, TRUE);
+
+        // MS documentation sucks for high resolution timers.
+        // All arguments except the first two must be 0.
+        // https://stackoverflow.com/questions/73647588/createwaitabletimerex-and-setwaitabletimerex-with-high-resolution-flag-name-and#comment130054268_73647588
+        SetWaitableTimer(this->os_handle, &delay, 0, NULL, NULL, FALSE);
+    }
+
+    inline void set_milliseconds(int64_t duration) const {
+        return this->set(duration * 10000);
+    }
+
+    inline void set_microseconds(int64_t duration) const {
+        return this->set(duration * 10);
+    }
+
+    inline void set_sync(int64_t duration) const {
+#if SYNC_TYPE == SYNC_USE_MILLISECONDS
+        return this->set_milliseconds(duration);
+#elif SYNC_TYPE == SYNC_USE_MICROSECONDS
+        return this->set_microseconds(duration);
+#endif
+    }
+
+    inline void wait() const {
         WaitForSingleObject(this->os_handle, INFINITE);
+    }
+
+    inline void wait(int64_t duration) const {
+        this->set(duration);
+        this->wait();
     }
 
     inline void wait_milliseconds(int64_t duration) const {
@@ -720,17 +750,36 @@ struct WaitableTimer {
 #define CurrentProcessPseudoHandle() ((HANDLE)-1)
 #define CurrentThreadPseudoHandle() ((HANDLE)-2)
 
+extern LARGE_INTEGERX qpc_frame_frequency;
 extern LARGE_INTEGERX qpc_timer_frequency;
 
-static inline int64_t current_sync_time() {
+static inline int64_t current_qpc() {
     LARGE_INTEGERX now;
     QueryPerformanceCounter(&now);
-    return now / qpc_timer_frequency;
+    return now;
 }
 
+static inline int64_t current_sync_time() {
+    return current_qpc() / qpc_timer_frequency;
+}
+
+template <bool use_pause = false>
+static inline void spin_until_qpc(int64_t stop) {
+    while (current_qpc() < stop) {
+        if constexpr (use_pause) {
+            _mm_pause();
+        }
+    }
+}
+
+template <bool use_pause = false>
 static inline void spin_for_sync_time(int64_t duration) {
     int64_t initial_time = current_sync_time();
-    while (current_sync_time() - initial_time < duration);
+    while (current_sync_time() - initial_time < duration) {
+        if constexpr (use_pause) {
+            _mm_pause();
+        }
+    }
 }
 
 static inline void sync_to_microseconds(int64_t minimum_time, int64_t multiple) {

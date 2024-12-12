@@ -457,6 +457,7 @@ bool common_init(
     LARGE_INTEGERX qpc_frequency;
     QueryPerformanceFrequency(&qpc_frequency);
 
+    qpc_frame_frequency = qpc_frequency / 60; // frames per second
 #if SYNC_TYPE == SYNC_USE_MILLISECONDS
     qpc_timer_frequency = qpc_frequency / 1000; // millisecond per second
 #elif SYNC_TYPE == SYNC_USE_MICROSECONDS

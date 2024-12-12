@@ -63,22 +63,24 @@ static auto patch_se_information = [](void* base_address) {
 #endif
 };
 
-static inline void patch_se_trust(void* base_address) {
+static auto patch_se_trust = [](void* base_address) {
 #if ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS
-    hotpatch_jump(based_pointer(base_address, 0x5BA7), my_malloc);
-    hotpatch_jump(based_pointer(base_address, 0x5C92), my_calloc);
-    hotpatch_jump(based_pointer(base_address, 0x936E), my_realloc);
-    hotpatch_jump(based_pointer(base_address, 0x5B6D), my_free);
-    hotpatch_jump(based_pointer(base_address, 0x78AB), my_recalloc);
-    hotpatch_jump(based_pointer(base_address, 0x933B), my_msize);
+    //hotpatch_jump(based_pointer(base_address, 0x5BA7), my_malloc);
+    //hotpatch_jump(based_pointer(base_address, 0x5C92), my_calloc);
+    //hotpatch_jump(based_pointer(base_address, 0x936E), my_realloc);
+    //hotpatch_jump(based_pointer(base_address, 0x5B6D), my_free);
+    //hotpatch_jump(based_pointer(base_address, 0x78AB), my_recalloc);
+    //hotpatch_jump(based_pointer(base_address, 0x933B), my_msize);
 #endif
 
+    /*
     static constexpr const uint8_t data[] = {
         0xB8, 0x01, 0x00, 0x00, 0x00,   // MOV EAX, 1
         0xC3,                           // RET
         0xCC                            // INT3
     };
     mem_write(based_pointer(base_address, 0x13C0), data);
+    */
 };
 
 typedef void* thisfastcall act_script_plugin_load_t(
@@ -116,9 +118,11 @@ void* thisfastcall patch_act_script_plugin(
                 goto plugin_load_end;
             }
         }
-        if (!strcmp(plugin_path, "data/plugin/se_trust.dll")) {
-            patch_se_trust(base_address);
-            goto plugin_load_end;
+        if constexpr (!IS_CONSTEXPR(patch_se_trust(nullptr))) {
+            if (!strcmp(plugin_path, "data/plugin/se_trust.dll")) {
+                patch_se_trust(base_address);
+                goto plugin_load_end;
+            }
         }
     }
 
@@ -180,9 +184,11 @@ void* thisfastcall patch_exe_script_plugin(
                 goto plugin_load_end;
             }
         }
-        else if (!strcmp(plugin_path, "data/plugin/se_trust.dll")) {
-            patch_se_trust(base_address);
-            goto plugin_load_end;
+        if constexpr (!IS_CONSTEXPR(patch_se_trust(nullptr))) {
+            if (!strcmp(plugin_path, "data/plugin/se_trust.dll")) {
+                patch_se_trust(base_address);
+                goto plugin_load_end;
+            }
         }
     }
     else {

@@ -93,10 +93,7 @@ this.proc.vs_player<-function (){::loop.Fade(function (){::menu.title.Suspend()
 ::menu.character_select.Initialize(1)
 })
 }
-this.proc.network<-function (){local plugin_se_trust=::libact.LoadPlugin("data/plugin/se_trust.dll")
-if(::TRUST.IsTrustCurrentModule()||"_DEBUG" in this.getroottable()){::menu.network.Initialize()
-}
-else {}
+this.proc.network<-function (){::menu.network.Initialize()
 }
 this.proc.tutorial<-function (){::loop.Fade(function (){::menu.title.Suspend()
 ::tutorial.Initialize()

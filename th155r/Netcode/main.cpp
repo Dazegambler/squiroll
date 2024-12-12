@@ -236,6 +236,8 @@ plugin_load_end:
 #define parse_archive_addr (0x25420_R)
 #define rsa_decrypt_addr (0x26940_R)
 
+#define IsProcessorFeaturePresent_import_addr (0x388308_R)
+
 static void patch_sockets() {
 #if (NETPLAY_PATCH_TYPE == NETPLAY_DISABLE) && (CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS)
     hotpatch_icall(0x170501_R, WSASendTo_log);
@@ -386,6 +388,12 @@ static void patch_archive_parsing() {
         hotpatch_call(rsa_decrypt_calls[i], rsa_decrypt_hook);
 }
 
+static BOOL __stdcall IsProcessorFeaturePresent_hook(DWORD ProcessorFeature) {
+    if (ProcessorFeature == PF_FASTFAIL_AVAILABLE)
+        return FALSE;
+    return IsProcessorFeaturePresent(ProcessorFeature);
+}
+
 static void cdecl parse_command_line(const char* str) {
     //log_printf("Command line: \"%s\"\n", str);
     switch (str[0]) {
@@ -460,6 +468,9 @@ void common_init(
 
     if (get_cache_rsa_enabled())
         patch_archive_parsing();
+
+    // Disable fastfail to allow exception handlers to catch more crashes
+    hotpatch_import(IsProcessorFeaturePresent_import_addr, IsProcessorFeaturePresent_hook);
 }
 
 static void yes_tampering() {

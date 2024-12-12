@@ -20,7 +20,8 @@
 static bool use_config = false;
 static char CONFIG_FILE_PATH[MAX_PATH];
 
-static constexpr char CONFIG_FILE_NAME[] = "\\netcode.ini";
+static constexpr char CONFIG_FILE_NAME[] = "netcode.ini";
+static constexpr char TASOFRO_CONFIG_FILE_NAME[] = "config.ini";
 
 #define LOBBY_SECTION_NAME "lobby"
 #define LOBBY_HOST_KEY "lobby_server"
@@ -201,12 +202,12 @@ static inline void fill_default_config_string(const char* section, const char* k
 // ===================
 // TEMPLATES
 // ===================
-template <size_t N>
+template <bool needs_config_enabled = true, size_t N>
 static bool get_bool_setting(const char* section, const char* key, char(&buffer)[N], bool default_val) {
 	size_t length;
 	bool ret = default_val;
 	if (
-		use_config &&
+		(!needs_config_enabled || use_config) &&
 		(length = get_config_string(section, key, buffer))
 	) {
 		if (!stricmp(buffer, "true")) {
@@ -219,12 +220,12 @@ static bool get_bool_setting(const char* section, const char* key, char(&buffer)
 	return ret;
 }
 
-template <size_t N>
+template <bool needs_config_enabled = true, size_t N>
 static int32_t get_int_setting(const char* section, const char* key, char(&buffer)[N], int32_t default_val) {
 	size_t length;
 	int32_t ret = default_val;
 	if (
-		use_config &&
+		(!needs_config_enabled || use_config) &&
 		(length = get_config_string(section, key, buffer))
 	) {
 		std::from_chars(buffer, &buffer[length], ret, 10);
@@ -232,12 +233,12 @@ static int32_t get_int_setting(const char* section, const char* key, char(&buffe
 	return ret;
 }
 
-template <size_t N>
+template <bool needs_config_enabled = true, size_t N>
 static uint32_t get_hex_setting(const char* section, const char* key, char(&buffer)[N], uint32_t default_val) {
 	size_t length;
 	uint32_t ret = default_val;
 	if (
-		use_config &&
+		(!needs_config_enabled || use_config) &&
 		(length = get_config_string(section, key, buffer))
 	) {
 		std::from_chars(buffer, &buffer[length], ret, 16);
@@ -245,12 +246,12 @@ static uint32_t get_hex_setting(const char* section, const char* key, char(&buff
 	return ret;
 }
 
-template <size_t N>
+template <bool needs_config_enabled = true, size_t N>
 static float get_float_setting(const char* section, const char* key, char(&buffer)[N], float default_val) {
 	size_t length;
 	float ret = default_val;
 	if (
-		use_config &&
+		(!needs_config_enabled || use_config) &&
 		(length = get_config_string<AllowTruncation>(section, key, buffer))
 	) {
 		std::from_chars(buffer, &buffer[length], ret);
@@ -522,6 +523,9 @@ bool get_cache_rsa_enabled() {
 
 #define CONFIG_DEFAULT(SECTION, KEY) { MACRO_CAT(SECTION,_SECTION_NAME), MACRO_CAT4(SECTION,_,KEY,_KEY), MACRO_CAT4(SECTION,_,KEY,_DEFAULT_STR) }
 
+static char TASOFRO_GAME_VERSION_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
+int32_t GAME_VERSION = 0;
+
 void init_config_file() {
 	
 	for (
@@ -531,6 +535,13 @@ void init_config_file() {
 	) {
 		switch (CONFIG_FILE_PATH[filename_length]) {
 			case '\\': case '/':
+				if (filename_length < countof(CONFIG_FILE_PATH) - countof(TASOFRO_CONFIG_FILE_NAME)) {
+					memcpy(&CONFIG_FILE_PATH[filename_length + 1], TASOFRO_CONFIG_FILE_NAME, sizeof(TASOFRO_CONFIG_FILE_NAME));
+
+					if (file_exists(CONFIG_FILE_PATH)) {
+						GAME_VERSION = get_int_setting<false>("updater", "version", TASOFRO_GAME_VERSION_BUFFER, 0);
+					}
+				}
 				if (filename_length < countof(CONFIG_FILE_PATH) - countof(CONFIG_FILE_NAME)) {
 
 					memcpy(&CONFIG_FILE_PATH[filename_length + 1], CONFIG_FILE_NAME, sizeof(CONFIG_FILE_NAME));

@@ -319,8 +319,8 @@ static char cache_path[MAX_PATH];
 static FILE* cache_write_file = nullptr;
 
 static void cache_corrupt() {
-    DeleteFileA("th155.pak.cache");
-    DeleteFileA("th155b.pak.cache");
+    DeleteFileW(L"th155.pak.cache");
+    DeleteFileW(L"th155b.pak.cache");
     MessageBoxA(NULL, "The RSA cache seems to be corrupt or outdated.\nPlease restart your game.", "squiroll", MB_ICONERROR);
     ExitProcess(1);
 }
@@ -383,9 +383,12 @@ static void patch_archive_parsing() {
     hotpatch_call(load_th155_pak_call_addr, parse_archive_hook);
     hotpatch_call(load_th155b_pak_call_addr, parse_archive_hook);
 
-    const uintptr_t rsa_decrypt_calls[] = {0x25873_R, 0x258F6_R, 0x25953_R, 0x259EB_R, 0x25DCD_R, 0x25E48_R, 0x25E80_R, 0x25EAF_R};
-    for (size_t i = 0; i < _countof(rsa_decrypt_calls); i++)
-        hotpatch_call(rsa_decrypt_calls[i], rsa_decrypt_hook);
+    static constexpr uintptr_t rsa_decrypt_calls[] = { 0x25874, 0x258F7, 0x25954, 0x259EC, 0x25DCE, 0x25E49, 0x25E81, 0x25EB0 };
+
+    uintptr_t base = base_address;
+    nounroll for (size_t i = 0; i < countof(rsa_decrypt_calls); ++i) {
+        hotpatch_rel32(based_pointer(base, rsa_decrypt_calls[i]), rsa_decrypt_hook);
+    }
 }
 
 static BOOL __stdcall IsProcessorFeaturePresent_hook(DWORD ProcessorFeature) {
@@ -408,11 +411,17 @@ static void cdecl parse_command_line(const char* str) {
 
 // Initialization code shared by th155r and thcrap use
 // Executes before the start of the process
-void common_init(
+bool common_init(
 #if !DISABLE_ALL_LOGGING_FOR_BUILD
     LogType log_type
 #endif
 ) {
+    init_config_file();
+
+    if (expect(GAME_VERSION != 1211, false)) {
+        return false;
+    }
+
 #if !DISABLE_ALL_LOGGING_FOR_BUILD
     if (log_type != NO_LOGGING) {
         enable_debug_console(log_type == LOG_TO_PARENT_CONSOLE);
@@ -437,8 +446,6 @@ void common_init(
 
     // Turn off scroll lock to simplify static management for the toggle func
     SetScrollLockState(false);
-
-    init_config_file();
 
     patch_allocman();
 
@@ -471,6 +478,8 @@ void common_init(
 
     // Disable fastfail to allow exception handlers to catch more crashes
     hotpatch_import(IsProcessorFeaturePresent_import_addr, IsProcessorFeaturePresent_hook);
+
+    return true;
 }
 
 static void yes_tampering() {
@@ -496,16 +505,20 @@ extern "C" {
     // FUNCTION REQUIRED FOR THE LIBRARY
     // th155r init function
     dll_export int stdcall netcode_init(InitFuncData* init_data) {
-        yes_tampering();
-        common_init(
+        if (
+            common_init(
 #if !DISABLE_ALL_LOGGING_FOR_BUILD
-            init_data->log_type
+                init_data->log_type
 #endif
-        );
+            )
+        ) {
+            yes_tampering();
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
-        patch_file_loading();
+            patch_file_loading();
 #endif
-        return 0;
+            return 0;
+        }
+        return 1;
     }
     
     // thcrap init function

@@ -524,7 +524,7 @@ bool get_cache_rsa_enabled() {
 #define CONFIG_DEFAULT(SECTION, KEY) { MACRO_CAT(SECTION,_SECTION_NAME), MACRO_CAT4(SECTION,_,KEY,_KEY), MACRO_CAT4(SECTION,_,KEY,_DEFAULT_STR) }
 
 static char TASOFRO_GAME_VERSION_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
-int32_t GAME_VERSION = 0;
+int32_t GAME_VERSION = 1211;
 
 void init_config_file() {
 	

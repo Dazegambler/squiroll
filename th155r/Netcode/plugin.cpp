@@ -388,6 +388,7 @@ extern "C" {
                 sq_setfunc(v, _SC("print"), sq_print);
                 sq_setfunc(v, _SC("fprint"), sq_fprint);
                 sq_setfunc(v, _SC("print_value"), sq_print_value);
+                sq_setfunc(v, _SC("fprint_value"), sq_fprint_value);
             });
 
             // modifications to the manbow table

@@ -20,10 +20,12 @@ SQInteger sq_compile_buffer(HSQUIRRELVM v);
 SQInteger sq_print(HSQUIRRELVM v);
 SQInteger sq_fprint(HSQUIRRELVM v);
 SQInteger sq_print_value(HSQUIRRELVM v);
+SQInteger sq_fprint_value(HSQUIRRELVM v);
 #else
 #define sq_print sq_dummy
 #define sq_fprint sq_dummy
 #define sq_print_value sq_dummy
+#define sq_fprint_value sq_dummy
 #endif
 
 #endif

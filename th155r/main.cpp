@@ -7,6 +7,9 @@
 
 #include <shared.h>
 
+#define countof(array_type) \
+(sizeof(array_type) / sizeof(array_type[0]))
+
 //Code provided by zero318
 static uint8_t inject_func[] = {
     0x53,             //   PUSH EBX
@@ -173,12 +176,15 @@ void bootstrap_program(HANDLE process, HANDLE thread) {
     FlushInstructionCache(process, (LPCVOID)addr, sizeof(old_bytes));
 }
 
+#define EXE_INVOKE_STR "th155.exe"
+static char COMMAND_LINE_INVOKE[128] = EXE_INVOKE_STR;
+
 bool execute_program_inject(InitFuncData* init_data, bool wait_for_exit) {
-    STARTUPINFOW si = { sizeof(STARTUPINFOW) };
+    STARTUPINFOA si = { sizeof(STARTUPINFOA) };
     PROCESS_INFORMATION pi = {};
     
     bool ret = false;
-    if (CreateProcessW(L"th155.exe", NULL, NULL, NULL, TRUE, CREATE_SUSPENDED, NULL, NULL, &si, &pi)) {
+    if (CreateProcessA(EXE_INVOKE_STR, COMMAND_LINE_INVOKE, NULL, NULL, TRUE, CREATE_SUSPENDED, NULL, NULL, &si, &pi)) {
         
         bootstrap_program(pi.hProcess, pi.hThread);
         
@@ -209,22 +215,28 @@ int main(int argc, char* argv[]) {
     //init_data.log_type = LOG_TO_PARENT_CONSOLE;
     init_data.log_type = NO_LOGGING;
 
-    if (argc > 1) {
-        char* arg = argv[1];
-        char* arg_end = arg;
-        unsigned long value = strtoul(arg, &arg_end, 10);
-        if (arg_end != arg) {
-            switch (value) {
-                case 0l:
-                    init_data.log_type = NO_LOGGING;
-                    break;
-                case 1l:
-                    init_data.log_type = LOG_TO_SEPARATE_CONSOLES;
-                    break;
-                case 2l:
-                    init_data.log_type = LOG_TO_PARENT_CONSOLE;
-                    break;
+    for (size_t i = 1; i < argc; ++i) {
+        char* arg = argv[i];
+        switch (*arg) {
+            case 'w': case 'W': // Watch
+            case 'c': case 'C': // Connect
+            {
+                size_t arg_len = strlen(arg);
+                if (sizeof(EXE_INVOKE_STR) + 1 + arg_len <= countof(COMMAND_LINE_INVOKE)) {
+                    COMMAND_LINE_INVOKE[sizeof(EXE_INVOKE_STR) - 1] = ' ';
+                    memcpy(&COMMAND_LINE_INVOKE[sizeof(EXE_INVOKE_STR)], arg, arg_len + 1);
+                }
+                break;
             }
+            case '0':
+                init_data.log_type = NO_LOGGING;
+                break;
+            case '1':
+                init_data.log_type = LOG_TO_SEPARATE_CONSOLES;
+                break;
+            case '2':
+                init_data.log_type = LOG_TO_PARENT_CONSOLE;
+                break;
         }
     }
 

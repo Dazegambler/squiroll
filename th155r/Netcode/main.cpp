@@ -298,6 +298,18 @@ static inline void disable_original_game_logging() {
     hotpatch_ret(0x25270_R, 0);
 }
 
+static void cdecl parse_command_line(const char* str) {
+    //log_printf("Command line: \"%s\"\n", str);
+    switch (str[0]) {
+        case 'w': case 'W':
+            log_printf("Watch from boot \"%s\"\n", str + 1);
+            break;
+        case 'c': case 'C':
+            log_printf("Connect from boot \"%s\"\n", str + 1);
+            break;
+    }
+}
+
 // Initialization code shared by th155r and thcrap use
 // Executes before the start of the process
 void common_init(
@@ -324,6 +336,8 @@ void common_init(
 #if !DISABLE_ALL_LOGGING_FOR_BUILD || ALWAYS_DISABLE_ORIGINAL_GAME_LOGGING
     disable_original_game_logging();
 #endif
+
+    hotpatch_rel32(0x1DC5A_R, parse_command_line);
 
     // Turn off scroll lock to simplify static management for the toggle func
     SetScrollLockState(false);
@@ -359,7 +373,9 @@ void common_init(
 
 static void yes_tampering() {
     static constexpr uintptr_t tamper_patch_addrs[] = {
-        0x12E820, 0x130630, 0x132AF0
+        0x12E820,
+        //0x130630,
+        0x132AF0
     };
     
     uintptr_t base = base_address;

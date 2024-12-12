@@ -231,6 +231,11 @@ plugin_load_end:
 // No encryption replacement mode
 #define file_replacement_hook_addrB (0x23F98_R)
 
+#define load_th155_pak_call_addr (0x1DE1D_R)
+#define load_th155b_pak_call_addr (0x1DE78_R)
+#define parse_archive_addr (0x25420_R)
+#define rsa_decrypt_addr (0x26940_R)
+
 static void patch_sockets() {
 #if (NETPLAY_PATCH_TYPE == NETPLAY_DISABLE) && (CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS)
     hotpatch_icall(0x170501_R, WSASendTo_log);
@@ -296,6 +301,89 @@ static void patch_file_loading() {
 
 static inline void disable_original_game_logging() {
     hotpatch_ret(0x25270_R, 0);
+}
+
+typedef bool thisfastcall parse_archive_t(
+    void* self,
+    thisfastcall_edx(int dummy_edx, )
+    const char* filename,
+    void* idk
+);
+
+static uint8_t* rsa_cache = nullptr;
+static uint8_t* rsa_cache_cur = nullptr;
+static size_t rsa_cache_len = 0;
+static char cache_path[MAX_PATH];
+static FILE* cache_write_file = nullptr;
+
+static void cache_corrupt() {
+    DeleteFileA("th155.pak.cache");
+    DeleteFileA("th155b.pak.cache");
+    MessageBoxA(NULL, "The RSA cache seems to be corrupt or outdated.\nPlease restart your game.", "squiroll", MB_ICONERROR);
+    ExitProcess(1);
+}
+
+static bool thisfastcall parse_archive_hook(void* self, thisfastcall_edx(int dummy_edx,) const char* filename, void* idk) {
+    snprintf(cache_path, sizeof(cache_path), "%s.cache", filename);
+    if (FILE* cache_file = fopen(cache_path, "rb")) {
+        fseek(cache_file, 0, SEEK_END);
+        rsa_cache_len = ftell(cache_file);
+        rewind(cache_file);
+        rsa_cache_cur = rsa_cache = (uint8_t*)malloc(rsa_cache_len);
+        fread(rsa_cache, 1, rsa_cache_len, cache_file);
+        fclose(cache_file);
+    } else {
+        cache_write_file = fopen(cache_path, "wb");
+    }
+
+    bool ret = ((parse_archive_t*)parse_archive_addr)(self, thisfastcall_edx(dummy_edx,) filename, idk);
+    if (cache_write_file) {
+        fclose(cache_write_file);
+        cache_write_file = nullptr;
+    } else {
+        if (rsa_cache_cur != rsa_cache + rsa_cache_len) {
+            log_printf("%s didn't use the whole cache! 0x%zX vs 0x%zX\n", filename, (size_t)(rsa_cache_cur - rsa_cache), rsa_cache_len);
+            cache_corrupt();
+        }
+        free(rsa_cache);
+        rsa_cache = nullptr;
+        rsa_cache_cur = nullptr;
+    }
+    return ret;
+}
+
+typedef int thisfastcall rsa_decrypt_t(
+    void* self,
+    thisfastcall_edx(int dummy_edx, )
+    void* src,
+    void* dst
+);
+
+static int thisfastcall rsa_decrypt_hook(void* self, thisfastcall_edx(int dummy_edx,) void* src, void* dst) {
+    if (cache_write_file) {
+        memset(dst, 0, 0x40); // rsa_decrypt doesn't always fill the whole buffer because src is padded
+        if (((rsa_decrypt_t*)rsa_decrypt_addr)(self, thisfastcall_edx(dummy_edx,) src, dst) == -1)
+            return -1;
+        fwrite(dst, 1, 0x40, cache_write_file);
+        return 0;
+    } else {
+        if (rsa_cache_cur + 0x40 > rsa_cache + rsa_cache_len) {
+            log_printf("%s is truncated!\n", cache_path);
+            cache_corrupt();
+        }
+        memcpy(dst, rsa_cache_cur, 0x40);
+        rsa_cache_cur += 0x40;
+        return 0;
+    }
+}
+
+static void patch_archive_parsing() {
+    hotpatch_call(load_th155_pak_call_addr, parse_archive_hook);
+    hotpatch_call(load_th155b_pak_call_addr, parse_archive_hook);
+
+    const uintptr_t rsa_decrypt_calls[] = {0x25873_R, 0x258F6_R, 0x25953_R, 0x259EB_R, 0x25DCD_R, 0x25E48_R, 0x25E80_R, 0x25EAF_R};
+    for (size_t i = 0; i < _countof(rsa_decrypt_calls); i++)
+        hotpatch_call(rsa_decrypt_calls[i], rsa_decrypt_hook);
 }
 
 static void cdecl parse_command_line(const char* str) {
@@ -369,6 +457,9 @@ void common_init(
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
     patch_file_loading();
 #endif
+
+    if (get_cache_rsa_enabled())
+        patch_archive_parsing();
 }
 
 static void yes_tampering() {

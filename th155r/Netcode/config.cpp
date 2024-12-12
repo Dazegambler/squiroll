@@ -106,6 +106,9 @@ static constexpr char CONFIG_FILE_NAME[] = "\\netcode.ini";
 #define MISC_SKIP_INTRO_KEY "skip_intro"
 #define MISC_SKIP_INTRO_DEFAULT true
 #define MISC_SKIP_INTRO_DEFAULT_STR MACRO_STR(MISC_SKIP_INTRO_DEFAULT)
+#define MISC_CACHE_RSA_KEY "cache_rsa"
+#define MISC_CACHE_RSA_DEFAULT true
+#define MISC_CACHE_RSA_DEFAULT_STR MACRO_STR(MISC_CACHE_RSA_DEFAULT)
 
 #define INPUT2_SECTION_NAME "input_display_p2"
 #define INPUT2_ENABLED_KEY "enabled"
@@ -510,6 +513,11 @@ bool get_hide_wip_enabled() {
 static char MISC_SKIP_INTRO_BUFFER[8]{ '\0' };
 bool get_skip_intro_enabled() {
 	return GET_BOOL_CONFIG(MISC, SKIP_INTRO);
+}
+
+static char MISC_CACHE_RSA_BUFFER[8]{ '\0' };
+bool get_cache_rsa_enabled() {
+	return GET_BOOL_CONFIG(MISC, CACHE_RSA);
 }
 
 #define CONFIG_DEFAULT(SECTION, KEY) { MACRO_CAT(SECTION,_SECTION_NAME), MACRO_CAT4(SECTION,_,KEY,_KEY), MACRO_CAT4(SECTION,_,KEY,_DEFAULT_STR) }

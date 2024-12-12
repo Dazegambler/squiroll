@@ -62,6 +62,10 @@ static auto patch_se_information = [](void* base_address) {
     hotpatch_jump(based_pointer(base_address, 0x25FF0), my_recalloc);
     hotpatch_jump(based_pointer(base_address, 0x2B406), my_msize);
 #endif
+
+    // Timeout for update to prevent lag on main menu
+    // Currently removed completely via squirrel instead
+    //mem_write(based_pointer(base_address, 0xED3B), 10000);
 };
 
 static auto patch_se_trust = [](void* base_address) {

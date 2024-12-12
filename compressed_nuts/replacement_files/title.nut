@@ -10,8 +10,7 @@ this.anime<-{}
 ::manbow.CompileFile("data/system/title/title_animation.nut",this.anime)
 this.new_version<-false
 this.visible<-false
-function Initialize(){::INFORMATION.UpdateNewestVersion("th155")
-this.Show()
+function Initialize(){this.Show()
 if(::setting.misc.skip_intro){this.Update<-this.UpdateMain
 ::sound.PlayBGM(::savedata.GetTitleBGMID())
 }else {this.Update<-this.UpdateOP
@@ -46,8 +45,7 @@ function UpdateOP(){if(::input_all.b0==1||::input_all.b1==1){::loop.Fade(functio
 this.Update=function (){}
 }
 }
-function UpdateMain(){this.new_version=::INFORMATION.GetNewestVersion()>this.GetUpdaterVersion()
-this.cursor.Update()
+function UpdateMain(){this.cursor.Update()
 if(this.cursor.ok){::input_all.Lock()
 if(this.item[this.cursor.val] in this.proc){this.proc[this.item[this.cursor.val]].call(this)
 }

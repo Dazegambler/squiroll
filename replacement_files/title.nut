@@ -35,7 +35,7 @@ this.new_version <- false;
 this.visible <- false;
 function Initialize()
 {
-	::INFORMATION.UpdateNewestVersion("th155");
+	//::INFORMATION.UpdateNewestVersion("th155");
 	this.Show();
 	if (::setting.misc.skip_intro) {
 		this.Update <- this.UpdateMain;
@@ -103,7 +103,7 @@ function UpdateOP()
 
 function UpdateMain()
 {
-	this.new_version = ::INFORMATION.GetNewestVersion() > this.GetUpdaterVersion();
+	//this.new_version = ::INFORMATION.GetNewestVersion() > this.GetUpdaterVersion();
 	this.cursor.Update();
 
 	if (this.cursor.ok)

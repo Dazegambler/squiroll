@@ -62,6 +62,7 @@ this.state=0
 this.is_suspend=false
 this.timeout=0
 this.upnp_timeout=0
+this.lobby_time_stamp=::manbow.timeGetTime()-9000
 if(this.cursor_item.val!=0){this.cursor_item.val=0
 this.cursor_item.diff=-1
 }

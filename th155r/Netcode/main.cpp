@@ -29,6 +29,7 @@ using namespace std::literals::string_view_literals;
 const uintptr_t base_address = (uintptr_t)GetModuleHandleA(NULL);
 uintptr_t libact_base_address = 0;
 
+LARGE_INTEGERX qpc_frame_frequency;
 LARGE_INTEGERX qpc_timer_frequency;
 
 /*

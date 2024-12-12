@@ -336,4 +336,96 @@ extern const KiteSquirrelAPI* KITE;
 #define sq_setdebughook(...) KITE->sq_setdebughook(__VA_ARGS__)
 #define sq_setnativedebughook(...) KITE->sq_setnativedebughook(__VA_ARGS__)
 
+#include "util.h"
+
+static inline void sq_setinteger(HSQUIRRELVM v, const SQChar* name, const SQInteger& value) {
+    sq_pushstring(v, name, -1);
+    sq_pushinteger(v, value);
+    sq_newslot(v, -3, SQFalse);
+}
+static inline void sq_setfloat(HSQUIRRELVM v, const SQChar* name, const SQFloat& value) {
+    sq_pushstring(v, name, -1);
+    sq_pushfloat(v, value);
+    sq_newslot(v, -3, SQFalse);
+}
+static inline void sq_setbool(HSQUIRRELVM v, const SQChar* name, const SQBool& value) {
+    sq_pushstring(v, name, -1);
+    sq_pushbool(v, value);
+    sq_newslot(v, -3, SQFalse);
+}
+static inline void sq_setstring(HSQUIRRELVM v, const SQChar* name, const SQChar* value) {
+    sq_pushstring(v, name, -1);
+    sq_pushstring(v, value, -1);
+    sq_newslot(v, -3, SQFalse);
+}
+static inline void sq_setfunc(HSQUIRRELVM v, const SQChar* name, const SQFUNCTION& func) {
+    sq_pushstring(v, name, -1);
+    sq_newclosure(v, func, 0);
+    sq_newslot(v, -3, SQFalse);
+}
+
+static inline bool sq_readinteger(HSQUIRRELVM v, const SQChar* name, SQInteger* out) {
+    sq_pushstring(v, name, -1);
+    if (SQ_SUCCEEDED(sq_get(v, -2))) {
+        bool success = SQ_SUCCEEDED(sq_getinteger(v, 1, out));
+        sq_pop(v, 1);
+        return success;
+    }
+    return false;
+}
+static inline bool sq_readfloat(HSQUIRRELVM v, const SQChar* name, SQFloat* out) {
+    sq_pushstring(v, name, -1);
+    if (SQ_SUCCEEDED(sq_get(v, -2))) {
+        bool success = SQ_SUCCEEDED(sq_getfloat(v, 1, out));
+        sq_pop(v, 1);
+        return success;
+    }
+    return false;
+}
+static inline bool sq_readbool(HSQUIRRELVM v, const SQChar* name, SQBool* out) {
+    sq_pushstring(v, name, -1);
+    if (SQ_SUCCEEDED(sq_get(v, -2))) {
+        bool success = SQ_SUCCEEDED(sq_getbool(v, 1, out));
+        sq_pop(v, 1);
+        return success;
+    }
+    return false;
+}
+static inline bool sq_readstring(HSQUIRRELVM v, const SQChar* name, const SQChar** out) {
+    sq_pushstring(v, name, -1);
+    if (SQ_SUCCEEDED(sq_get(v, -2))) {
+        bool success = SQ_SUCCEEDED(sq_getstring(v, 1, out));
+        sq_pop(v, 1);
+        return success;
+    }
+    return false;
+}
+
+template <typename L>
+static inline bool sq_edit(HSQUIRRELVM v, const SQChar* name, const L& lambda) {
+    sq_pushstring(v, name, -1);
+    if (expect(SQ_SUCCEEDED(sq_get(v, -2)), true)) {
+        lambda(v);
+        sq_pop(v, 1);
+        return true;
+    }
+    return false;
+}
+
+template <typename L>
+static inline void sq_createtable(HSQUIRRELVM v, const SQChar* name, const L& lambda) {
+    sq_pushstring(v, name, -1);
+    sq_newtable(v);
+    lambda(v);
+    sq_newslot(v, -3, SQFalse);
+}
+
+template <typename L>
+static inline void sq_createclass(HSQUIRRELVM v, const SQChar* name, const L& lambda) {
+    sq_pushstring(v, name, -1);
+    sq_newclass(v, SQFalse);
+    lambda(v);
+    sq_newslot(v, -3, SQFalse);
+}
+
 #endif

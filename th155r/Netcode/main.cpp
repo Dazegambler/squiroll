@@ -7,6 +7,7 @@
 #include <limits.h>
 #include <string>
 #include <vector>
+#include <cwchar>
 
 #include "netcode.h"
 #include "util.h"
@@ -25,6 +26,8 @@ using namespace std::literals::string_view_literals;
 #if !MINGW_COMPAT
 #pragma comment (lib, "Ws2_32.lib")
 #endif
+
+extern "C" IMAGE_DOS_HEADER __ImageBase;
 
 const uintptr_t base_address = (uintptr_t)GetModuleHandleA(NULL);
 uintptr_t libact_base_address = 0;
@@ -198,7 +201,7 @@ void* thisfastcall patch_exe_script_plugin(
     }
     else {
         if (!strcmp(plugin_path, "data/plugin\\data/plugin/se_libact.dll.dll")) {
-            base_address = (void*)GetModuleHandleW(L"Netcode.dll");
+            base_address = &__ImageBase;
         }
     }
 
@@ -226,6 +229,9 @@ plugin_load_end:
 #define patch_act_script_plugin_hook_addr (0x127ADC_R)
 
 #define createmutex_patch_addr (0x01DC61_R)
+
+#define entrypoint_base_addr (0x2E1B8C_R)
+#define D3DX11CreateShaderResourceViewFromMemory_import_addr (0x388534_R)
 
 // Basic thcrap style replacement mode
 #define file_replacement_hook_addrA (0x23FAA_R)
@@ -568,9 +574,54 @@ extern "C" {
     }
 }
 
+void D3DX11CreateShaderResourceViewFromMemory() {
+    // dummy export, will be overwritten with the real entry in the IAT
+    unreachable;
+}
+
+static uint8_t orig_entrypoint[6];
+static UINT __stdcall entrypoint_hook() {
+    InitFuncData init_data = {
+        .log_type = NO_LOGGING
+    };
+    netcode_init(&init_data);
+    mem_write(entrypoint_base_addr, orig_entrypoint);
+    __attribute__((musttail)) return ((UINT(__stdcall*)())entrypoint_base_addr)();
+}
+
 BOOL WINAPI DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
+    /*
     if (dwReason == DLL_PROCESS_DETACH) {
         //Cleanup();
+    }
+    */
+    if (dwReason == DLL_PROCESS_ATTACH) {
+        wchar_t dll_path[1024];
+        GetModuleFileNameW(hinst, dll_path, _countof(dll_path));
+
+        wchar_t* dll_name;
+        for (dll_name = &dll_path[wcslen(dll_path)]; dll_name != dll_path; dll_name--) {
+            if (*dll_name == '\\' || *dll_name == '/') {
+                dll_name++;
+                break;
+            }
+        }
+        if (_wcsicmp(dll_name, L"d3dx11_43.dll"))
+            return TRUE;
+
+        wchar_t d3dx_path[MAX_PATH] = {};
+        GetWindowsDirectoryW(d3dx_path, MAX_PATH);
+        wcscat_s(d3dx_path, L"\\System32\\d3dx11_43.dll");
+
+        HMODULE d3dx11_43 = LoadLibraryW(d3dx_path);
+        if (!d3dx11_43) {
+            MessageBoxA(NULL, "Failed to load original d3dx11_43.dll", NULL, MB_ICONERROR);
+            return FALSE;
+        }
+        hotpatch_import(D3DX11CreateShaderResourceViewFromMemory_import_addr, GetProcAddress(d3dx11_43, "D3DX11CreateShaderResourceViewFromMemory"));
+
+        memcpy(orig_entrypoint, (void*)entrypoint_base_addr, sizeof(orig_entrypoint));
+        hotpatch_jump(entrypoint_base_addr, entrypoint_hook);
     }
     return TRUE;
 }

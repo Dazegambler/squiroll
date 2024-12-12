@@ -8,3 +8,4 @@ EXPORTS
     update_frame
     render_preproc
     render
+    D3DX11CreateShaderResourceViewFromMemory

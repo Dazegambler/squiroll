@@ -141,27 +141,23 @@ static void print_stack_top_value(HSQUIRRELVM v, int depth) {
                 sq_pop(v, 1);
             }
 
-            if (sq_getsize(v, -1)) {
-                log_printf(val_type == _RT_TABLE ? "{\n" : "[\n");
-                sq_pushnull(v);
-                while (SQ_SUCCEEDED(sq_next(v, -2))) {
-                    //Key|value
-                    // -2|-1
-                    sq_getstring(v, -2, &val_string);
-                    log_printf("%*s\"%s\": ", depth, "", val_string);
+            log_printf("[\n");
+            sq_pushnull(v);
+            while (SQ_SUCCEEDED(sq_next(v, -2))) {
+                //Key|value
+                // -2|-1
+                sq_getstring(v, -2, &val_string);
+                log_printf("%*s\"%s\": ", depth, "", val_string);
 
-                    print_stack_top_value(v, depth + 1);
+                print_stack_top_value(v, depth + 1);
 
-                    log_printf(",\n");
+                log_printf(",\n");
 
-                    sq_pop(v, 2);
-                }
-                sq_pop(v, 1);
-
-                log_printf(val_type == _RT_TABLE ? "%*s}" : "%*s]", depth - 1, "");
-            } else {
-                log_printf(val_type == _RT_TABLE ? "{}" : "[]");
+                sq_pop(v, 2);
             }
+            sq_pop(v, 1);
+            log_printf("%*s]", depth - 1, "");
+
             sq_pop(v, 2);
             break;
         case _RT_WEAKREF:

@@ -319,11 +319,11 @@ typedef bool thisfastcall parse_archive_t(
 
 static uint8_t* rsa_cache = nullptr;
 static uint8_t* rsa_cache_cur = nullptr;
-static size_t rsa_cache_len = 0;
+static uint8_t* rsa_cache_end = nullptr;
 static char cache_path[MAX_PATH];
 static FILE* cache_write_file = nullptr;
 
-static void cache_corrupt() {
+[[noreturn]] static void cache_corrupt() {
     DeleteFileW(L"th155.pak.cache");
     DeleteFileW(L"th155b.pak.cache");
     MessageBoxA(NULL, "The RSA cache seems to be corrupt or outdated.\nPlease restart your game.", "squiroll", MB_ICONERROR);
@@ -332,29 +332,34 @@ static void cache_corrupt() {
 
 static bool thisfastcall parse_archive_hook(void* self, thisfastcall_edx(int dummy_edx,) const char* filename, void* idk) {
     snprintf(cache_path, sizeof(cache_path), "%s.cache", filename);
-    if (FILE* cache_file = fopen(cache_path, "rb")) {
+    FILE* cache_file = fopen(cache_path, "rb");
+    if (expect(cache_file != NULL, true)) {
         fseek(cache_file, 0, SEEK_END);
-        rsa_cache_len = ftell(cache_file);
+        size_t rsa_cache_len = ftell(cache_file);
         rewind(cache_file);
         rsa_cache_cur = rsa_cache = (uint8_t*)malloc(rsa_cache_len);
+        rsa_cache_end = rsa_cache + rsa_cache_len;
         fread(rsa_cache, 1, rsa_cache_len, cache_file);
         fclose(cache_file);
+        cache_file = NULL;
     } else {
-        cache_write_file = fopen(cache_path, "wb");
+        cache_write_file = cache_file = fopen(cache_path, "wb");
     }
 
     bool ret = ((parse_archive_t*)parse_archive_addr)(self, thisfastcall_edx(dummy_edx,) filename, idk);
-    if (cache_write_file) {
-        fclose(cache_write_file);
-        cache_write_file = nullptr;
-    } else {
-        if (rsa_cache_cur != rsa_cache + rsa_cache_len) {
-            log_printf("%s didn't use the whole cache! 0x%zX vs 0x%zX\n", filename, (size_t)(rsa_cache_cur - rsa_cache), rsa_cache_len);
+
+    if (expect(!cache_file, true)) {
+        if (expect(rsa_cache_cur != rsa_cache_end, false)) {
+            log_printf("%s didn't use the whole cache! 0x%zX vs 0x%zX\n", filename, (size_t)(rsa_cache_cur - rsa_cache), (size_t)(rsa_cache_end - rsa_cache));
             cache_corrupt();
         }
         free(rsa_cache);
         rsa_cache = nullptr;
         rsa_cache_cur = nullptr;
+        rsa_cache_end = nullptr;
+    } else {
+        fclose(cache_file);
+        cache_write_file = nullptr;
     }
     return ret;
 }
@@ -367,21 +372,22 @@ typedef int thisfastcall rsa_decrypt_t(
 );
 
 static int thisfastcall rsa_decrypt_hook(void* self, thisfastcall_edx(int dummy_edx,) void* src, void* dst) {
-    if (cache_write_file) {
-        memset(dst, 0, 0x40); // rsa_decrypt doesn't always fill the whole buffer because src is padded
-        if (((rsa_decrypt_t*)rsa_decrypt_addr)(self, thisfastcall_edx(dummy_edx,) src, dst) == -1)
-            return -1;
-        fwrite(dst, 1, 0x40, cache_write_file);
-        return 0;
-    } else {
-        if (rsa_cache_cur + 0x40 > rsa_cache + rsa_cache_len) {
+    FILE* cache_file = cache_write_file;
+    if (expect(!cache_file, true)) {
+        if (expect(rsa_cache_cur + 0x40 > rsa_cache_end, false)) {
             log_printf("%s is truncated!\n", cache_path);
             cache_corrupt();
         }
         memcpy(dst, rsa_cache_cur, 0x40);
         rsa_cache_cur += 0x40;
-        return 0;
+    } else {
+        memset(dst, 0, 0x40); // rsa_decrypt doesn't always fill the whole buffer because src is padded
+        if (((rsa_decrypt_t*)rsa_decrypt_addr)(self, thisfastcall_edx(dummy_edx, ) src, dst) == -1) {
+            return -1;
+        }
+        fwrite(dst, 0x40, 1, cache_file);
     }
+    return 0;
 }
 
 static void patch_archive_parsing() {

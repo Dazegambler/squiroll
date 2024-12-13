@@ -3,6 +3,8 @@
 #define _HAS_CXX20 0
 #endif
 
+#include <vector>
+
 #include "kite_api.h"
 
 #include "file_replacement.h"
@@ -13,7 +15,7 @@
 //NATIVE FUNCTIONS
 
 #if !DISABLE_ALL_LOGGING_FOR_BUILD
-static void print_stack_top_value(FILE* dest, HSQUIRRELVM v, int depth) {
+static void print_stack_top_value(FILE* dest, std::vector<HSQOBJECT>& recusion_vec, HSQUIRRELVM v, int depth) {
     union {
         SQInteger val_int;
         SQFloat val_float;
@@ -101,7 +103,17 @@ static void print_stack_top_value(FILE* dest, HSQUIRRELVM v, int depth) {
         case _RT_TABLE: case _RT_ARRAY:
             if (sq_getsize(v, -1)) {
 
-        skip_size_check:
+
+            skip_size_check:
+                sq_getstackobj(v, -1, &val_obj);
+                for (auto vec_obj : recusion_vec) {
+                    if (memcmp(&val_obj, &vec_obj, sizeof(HSQOBJECT))) {
+                        log_fprintf(dest, "RECURSION DETECTED");
+                        return;
+                    }
+                }
+                recusion_vec.push_back(val_obj);
+
                 log_fprintf(dest, val_type != _RT_ARRAY ? "{\n" : "[\n");
 
                 sq_pushnull(v);
@@ -111,13 +123,15 @@ static void print_stack_top_value(FILE* dest, HSQUIRRELVM v, int depth) {
                     sq_getstring(v, -2, &val_string);
                     log_fprintf(dest, "%*s\"%s\": ", depth, "", val_string);
 
-                    print_stack_top_value(dest, v, depth + 1);
+                    print_stack_top_value(dest, recusion_vec, v, depth + 1);
 
                     log_fprintf(dest, ",\n");
 
                     sq_pop(v, 2);
                 }
                 sq_pop(v, 1);
+
+                recusion_vec.pop_back();
 
                 log_fprintf(dest, val_type != _RT_ARRAY ? "%*s}" : "%*s]", depth - 1, "");
             } else {
@@ -127,7 +141,7 @@ static void print_stack_top_value(FILE* dest, HSQUIRRELVM v, int depth) {
         case _RT_WEAKREF:
             sq_getweakrefval(v, -1);
             log_fprintf(dest, "(WeakRef) ");
-            print_stack_top_value(dest, v, depth);
+            print_stack_top_value(dest, recusion_vec, v, depth);
             sq_pop(v, 1);
             break;
         case _RT_OUTER:
@@ -373,7 +387,8 @@ SQInteger sq_print_value(HSQUIRRELVM v) {
         return sq_throwerror(v, _SC("Invalid arguments... expected: <object>.\n"));
     }
     sq_pushobject(v, obj);
-    print_stack_top_value(stdout, v, 1);
+    std::vector<HSQOBJECT> recusion_vec;
+    print_stack_top_value(stdout, recusion_vec, v, 1);
     sq_pop(v, 1);
     log_printf("\n");
     return 0;
@@ -396,7 +411,8 @@ SQInteger sq_fprint_value(HSQUIRRELVM v) {
 #endif
     ) {
         sq_pushobject(v, obj);
-        print_stack_top_value(file, v, 1);
+        std::vector<HSQOBJECT> recusion_vec;
+        print_stack_top_value(file, recusion_vec, v, 1);
         sq_pop(v, 1);
         fclose(file);
     }

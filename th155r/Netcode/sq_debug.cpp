@@ -15,7 +15,7 @@
 //NATIVE FUNCTIONS
 
 #if !DISABLE_ALL_LOGGING_FOR_BUILD
-static void print_stack_top_value(FILE* dest, std::vector<HSQOBJECT>& recusion_vec, HSQUIRRELVM v, int depth) {
+static void print_stack_top_value(FILE* dest, std::vector<SQObjectValue>& recusion_vec, HSQUIRRELVM v, int depth) {
     union {
         SQInteger val_int;
         SQFloat val_float;
@@ -97,7 +97,7 @@ static void print_stack_top_value(FILE* dest, std::vector<HSQOBJECT>& recusion_v
             sq_remove(v, -2);
         case _RT_CLASS:
             sq_gettypetag(v, -1, &val_type_tag);
-            log_fprintf(dest, val_type == _RT_CLASS ? "Class (%p type)" : "Instance (%p type)", val_type_tag);
+            log_fprintf(dest, val_type == _RT_CLASS ? "Class (%p type) " : "Instance (%p type) ", val_type_tag);
             goto skip_size_check;
 
         case _RT_TABLE: case _RT_ARRAY:
@@ -106,13 +106,13 @@ static void print_stack_top_value(FILE* dest, std::vector<HSQOBJECT>& recusion_v
 
             skip_size_check:
                 sq_getstackobj(v, -1, &val_obj);
-                for (auto vec_obj : recusion_vec) {
-                    if (memcmp(&val_obj, &vec_obj, sizeof(HSQOBJECT))) {
+                for (const auto& vec_obj : recusion_vec) {
+                    if (!memcmp(&val_obj._unVal, &vec_obj, sizeof(SQObjectValue))) {
                         log_fprintf(dest, "RECURSION DETECTED");
                         return;
                     }
                 }
-                recusion_vec.push_back(val_obj);
+                recusion_vec.push_back(val_obj._unVal);
 
                 log_fprintf(dest, val_type != _RT_ARRAY ? "{\n" : "[\n");
 
@@ -387,7 +387,7 @@ SQInteger sq_print_value(HSQUIRRELVM v) {
         return sq_throwerror(v, _SC("Invalid arguments... expected: <object>.\n"));
     }
     sq_pushobject(v, obj);
-    std::vector<HSQOBJECT> recusion_vec;
+    std::vector<SQObjectValue> recusion_vec;
     print_stack_top_value(stdout, recusion_vec, v, 1);
     sq_pop(v, 1);
     log_printf("\n");
@@ -411,7 +411,7 @@ SQInteger sq_fprint_value(HSQUIRRELVM v) {
 #endif
     ) {
         sq_pushobject(v, obj);
-        std::vector<HSQOBJECT> recusion_vec;
+        std::vector<SQObjectValue> recusion_vec;
         print_stack_top_value(file, recusion_vec, v, 1);
         sq_pop(v, 1);
         fclose(file);

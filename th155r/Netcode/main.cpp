@@ -236,8 +236,8 @@ plugin_load_end:
 // No encryption replacement mode
 #define file_replacement_hook_addrB (0x23F98_R)
 
-#define load_th155_pak_call_addr (0x1DE1D_R)
-#define load_th155b_pak_call_addr (0x1DE78_R)
+#define load_th155_pak_call_addr (0x1DE1E_R)
+#define load_th155b_pak_call_addr (0x1DE79_R)
 #define parse_archive_addr (0x25420_R)
 #define rsa_decrypt_addr (0x26940_R)
 
@@ -391,8 +391,8 @@ static int thisfastcall rsa_decrypt_hook(void* self, thisfastcall_edx(int dummy_
 }
 
 static void patch_archive_parsing() {
-    hotpatch_call(load_th155_pak_call_addr, parse_archive_hook);
-    hotpatch_call(load_th155b_pak_call_addr, parse_archive_hook);
+    hotpatch_rel32(load_th155_pak_call_addr, parse_archive_hook);
+    hotpatch_rel32(load_th155b_pak_call_addr, parse_archive_hook);
 
     static constexpr uintptr_t rsa_decrypt_calls[] = { 0x25874, 0x258F7, 0x25954, 0x259EC, 0x25DCE, 0x25E49, 0x25E81, 0x25EB0 };
 

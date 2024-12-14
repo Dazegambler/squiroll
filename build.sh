@@ -38,7 +38,7 @@ for FILE in "$NEW_COMPRESSED_DIR"/*; do
     $MAKE_EMBED_PATH "$FILE" "$DEST_FILE"
 done
 
-windres th155r/th155r.rc -O coff -o th155r/th155r.res
+llvm-rc-18 th155r/th155r.rc
 
 PREFIX="$HOME/.xwin-cache/splat"
 INCLUDES="/imsvc$PREFIX/crt/include /imsvc$PREFIX/sdk/include/shared /imsvc$PREFIX/sdk/include/ucrt /imsvc$PREFIX/sdk/include/um"

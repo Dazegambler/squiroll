@@ -38,6 +38,7 @@ for FILE in "$NEW_COMPRESSED_DIR"/*; do
     $MAKE_EMBED_PATH "$FILE" "$DEST_FILE"
 done
 
+windres th155r/th155r.rc -O coff -o th155r/th155r.res
 
 PREFIX="$HOME/.xwin-cache/splat"
 INCLUDES="/imsvc$PREFIX/crt/include /imsvc$PREFIX/sdk/include/shared /imsvc$PREFIX/sdk/include/ucrt /imsvc$PREFIX/sdk/include/um"
@@ -46,5 +47,5 @@ DEFINES="-D_CRT_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -DNOMINMAX 
 WARNINGS="-Wno-cpp -Wno-narrowing"
 FLAGS="/Gs- /GS- /clang:-fwrapv /Zc:threadSafeInit- -mfpmath=sse -msse2 -msse -mstack-probe-size=1024 -flto=full -mstack-alignment=4 -mno-stackrealign /clang:-fomit-frame-pointer"
 
-clang-cl-18 -m32 -fuse-ld=lld /EHsc $WARNINGS $DEFINES $INCLUDES $FLAGS /Ith155r/shared th155r/main.cpp -O2 /link $LIBPATHS /OUT:th155r.exe
+clang-cl-18 -m32 -fuse-ld=lld /EHsc $WARNINGS $DEFINES $INCLUDES $FLAGS /Ith155r/shared th155r/main.cpp th155r/th155r.res -O2 /link $LIBPATHS /OUT:th155r.exe
 clang-cl-18 -m32 -fuse-ld=lld /EHsc $WARNINGS $DEFINES $INCLUDES $FLAGS /Ith155r/shared /Ith155r/Netcode/include th155r/Netcode/*.cpp /std:c++20 -static -O2 /link /DLL $LIBPATHS user32.lib WS2_32.lib dbghelp.lib winmm.lib -exclude-all-symbols -kill-at /DEF:Netcode.def /OUT:Netcode.dll

@@ -9,11 +9,13 @@
 
 typedef void stdcall window_update_frame_t();
 typedef bool stdcall window_render_t();
+typedef void thiscall run_update_list_t(void*);
 
 #define game_loop_call_addr (0x1A22C_R)
 #define wndproc_param_addr (0x23944_R)
 #define set_window_mode_param_addr (0xEAB6_R)
 #define no_gdi_compat_patch_addr (0xD687_R)
+#define no_input_thread_patch_addr (0x3175C_R)
 
 #define main_hwnd (*(HWND*)0x4DAD0C_R)
 #define exit_requested (*(bool*)0x4DAD02_R)
@@ -22,11 +24,12 @@ typedef bool stdcall window_render_t();
 #define window_present_interval ((bool*)0x4DAD2D_R)
 #define dxgi_swapchain_desc ((DXGI_SWAP_CHAIN_DESC*)0x4DAE4C_R)
 #define dxgi_swapchain ((IDXGISwapChain**)0x4DAEA0_R)
-#define d3d11_dev ((ID3D11Device**)0x4DAE9C_R)
+#define input_update_list ((void**)0x49AF8C_R)
 
 #define window_update_frame ((window_update_frame_t*)0xE1A0_R)
 #define window_render ((window_render_t*)0xE330_R)
 #define WndProc_orig ((WNDPROC)0x23A70_R)
+#define run_update_list ((run_update_list_t*)0x2FAD0_R)
 
 #if PROFILING
 typedef struct {
@@ -94,8 +97,8 @@ void stdcall better_game_loop() {
         uint64_t qpc_target = query_performance_counter() + qpc_frame_frequency;
         timer.set(166667 - 30000); // 3ms of leniency
 
+        run_update_list(*input_update_list);
         window_update_frame();
-
         // NOTE: Not handling "SkipRender" because that doesn't seem to be used in AoCF
         if (window_render())
             frames_this_sec++;
@@ -148,4 +151,5 @@ void init_better_game_loop() {
     mem_write(wndproc_param_addr, (void*)WndProc_custom);
     mem_write(set_window_mode_param_addr, (void*)set_window_mode_custom);
     mem_write(no_gdi_compat_patch_addr, PATCH_BYTES<0x00>); // Not used at all and it's probably better to turn it off
+    mem_write(no_input_thread_patch_addr, NOP_BYTES(5));
 }

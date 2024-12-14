@@ -750,6 +750,7 @@ struct WaitableTimer {
 #define CurrentProcessPseudoHandle() ((HANDLE)-1)
 #define CurrentThreadPseudoHandle() ((HANDLE)-2)
 
+extern LARGE_INTEGERX qpc_raw_frequency;
 extern LARGE_INTEGERX qpc_frame_frequency;
 extern LARGE_INTEGERX qpc_timer_frequency;
 

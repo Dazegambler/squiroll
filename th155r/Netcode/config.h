@@ -29,6 +29,7 @@ bool get_hide_ip_enabled();
 bool get_hide_name_enabled();
 bool get_skip_intro_enabled();
 bool get_cache_rsa_enabled();
+bool get_better_game_loop_enabled();
 
 bool get_ping_enabled();
 int32_t get_ping_x();

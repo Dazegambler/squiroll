@@ -16,6 +16,7 @@
 #include "file_replacement.h"
 #include "config.h"
 #include "lobby.h"
+#include "better_game_loop.h"
 
 #include <shared.h>
 
@@ -29,6 +30,7 @@ using namespace std::literals::string_view_literals;
 const uintptr_t base_address = (uintptr_t)GetModuleHandleA(NULL);
 uintptr_t libact_base_address = 0;
 
+LARGE_INTEGERX qpc_raw_frequency;
 LARGE_INTEGERX qpc_frame_frequency;
 LARGE_INTEGERX qpc_timer_frequency;
 
@@ -465,14 +467,13 @@ bool common_init(
 
     patch_netplay();
 
-    LARGE_INTEGERX qpc_frequency;
-    QueryPerformanceFrequency(&qpc_frequency);
+    QueryPerformanceFrequency(&qpc_raw_frequency);
 
-    qpc_frame_frequency = qpc_frequency / 60; // frames per second
+    qpc_frame_frequency = qpc_raw_frequency / 60; // frames per second
 #if SYNC_TYPE == SYNC_USE_MILLISECONDS
-    qpc_timer_frequency = qpc_frequency / 1000; // millisecond per second
+    qpc_timer_frequency = qpc_raw_frequency / 1000; // millisecond per second
 #elif SYNC_TYPE == SYNC_USE_MICROSECONDS
-    qpc_timer_frequency = qpc_frequency / 1000000; // microsecond per second
+    qpc_timer_frequency = qpc_raw_frequency / 1000000; // microsecond per second
 #endif
 
     patch_sockets();
@@ -490,6 +491,9 @@ bool common_init(
 
     // Disable fastfail to allow exception handlers to catch more crashes
     hotpatch_import(IsProcessorFeaturePresent_import_addr, IsProcessorFeaturePresent_hook);
+
+    if (get_better_game_loop_enabled())
+        init_better_game_loop();
 
     return true;
 }

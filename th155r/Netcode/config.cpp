@@ -110,6 +110,9 @@ static constexpr char TASOFRO_CONFIG_FILE_NAME[] = "config.ini";
 #define MISC_CACHE_RSA_KEY "cache_rsa"
 #define MISC_CACHE_RSA_DEFAULT true
 #define MISC_CACHE_RSA_DEFAULT_STR MACRO_STR(MISC_CACHE_RSA_DEFAULT)
+#define MISC_BETTER_GAME_LOOP_KEY "better_game_loop"
+#define MISC_BETTER_GAME_LOOP_DEFAULT true
+#define MISC_BETTER_GAME_LOOP_DEFAULT_STR MACRO_STR(MISC_BETTER_GAME_LOOP_DEFAULT)
 
 #define INPUT2_SECTION_NAME "input_display_p2"
 #define INPUT2_ENABLED_KEY "enabled"
@@ -519,6 +522,11 @@ bool get_skip_intro_enabled() {
 static char MISC_CACHE_RSA_BUFFER[8]{ '\0' };
 bool get_cache_rsa_enabled() {
 	return GET_BOOL_CONFIG(MISC, CACHE_RSA);
+}
+
+static char MISC_BETTER_GAME_LOOP_BUFFER[8]{ '\0' };
+bool get_better_game_loop_enabled() {
+	return GET_BOOL_CONFIG(MISC, BETTER_GAME_LOOP);
 }
 
 #define CONFIG_DEFAULT(SECTION, KEY) { MACRO_CAT(SECTION,_SECTION_NAME), MACRO_CAT4(SECTION,_,KEY,_KEY), MACRO_CAT4(SECTION,_,KEY,_DEFAULT_STR) }

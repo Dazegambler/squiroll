@@ -99,23 +99,6 @@ static constexpr char TASOFRO_CONFIG_FILE_NAME[] = "config.ini";
 #define INPUT1_RAW_INPUT_DEFAULT false
 #define INPUT1_RAW_INPUT_DEFAULT_STR MACRO_STR(INPUT1_RAW_INPUT_DEFAULT)
 
-#define MISC_SECTION_NAME "misc"
-#define MISC_HIDE_WIP_KEY "hide_wip"
-#define MISC_HIDE_WIP_DEFAULT true
-#define MISC_HIDE_WIP_DEFAULT_STR MACRO_STR(MISC_HIDE_WIP_DEFAULT)
-#define MISC_SKIP_INTRO_KEY "skip_intro"
-#define MISC_SKIP_INTRO_DEFAULT true
-#define MISC_SKIP_INTRO_DEFAULT_STR MACRO_STR(MISC_SKIP_INTRO_DEFAULT)
-#define MISC_CACHE_RSA_KEY "cache_rsa"
-#define MISC_CACHE_RSA_DEFAULT true
-#define MISC_CACHE_RSA_DEFAULT_STR MACRO_STR(MISC_CACHE_RSA_DEFAULT)
-#define MISC_BETTER_GAME_LOOP_KEY "better_game_loop"
-#define MISC_BETTER_GAME_LOOP_DEFAULT true
-#define MISC_BETTER_GAME_LOOP_DEFAULT_STR MACRO_STR(MISC_BETTER_GAME_LOOP_DEFAULT)
-#define MISC_TIMER_LENIENCY_KEY "timer_leniency"
-#define MISC_TIMER_LENIENCY_DEFAULT 4.0
-#define MISC_TIMER_LENIENCY_DEFAULT_STR MACRO_STR(MISC_TIMER_LENIENCY_DEFAULT)
-
 #define INPUT2_SECTION_NAME "input_display_p2"
 #define INPUT2_ENABLED_KEY "enabled"
 #define INPUT2_ENABLED_DEFAULT false
@@ -164,6 +147,25 @@ static constexpr char TASOFRO_CONFIG_FILE_NAME[] = "config.ini";
 #define NETWORK_HIDE_NAME_KEY "hide_name"
 #define NETWORK_HIDE_NAME_DEFAULT false
 #define NETWORK_HIDE_NAME_DEFAULT_STR MACRO_STR(NETWORK_HIDE_NAME_DEFAULT)
+
+#define PERF_SECTION_NAME "performance"
+#define PERF_CACHE_RSA_KEY "cache_rsa"
+#define PERF_CACHE_RSA_DEFAULT true
+#define PERF_CACHE_RSA_DEFAULT_STR MACRO_STR(PERF_CACHE_RSA_DEFAULT)
+#define PERF_BETTER_GAME_LOOP_KEY "better_game_loop"
+#define PERF_BETTER_GAME_LOOP_DEFAULT true
+#define PERF_BETTER_GAME_LOOP_DEFAULT_STR MACRO_STR(PERF_BETTER_GAME_LOOP_DEFAULT)
+#define PERF_TIMER_LENIENCY_KEY "timer_leniency"
+#define PERF_TIMER_LENIENCY_DEFAULT 4.0
+#define PERF_TIMER_LENIENCY_DEFAULT_STR MACRO_STR(PERF_TIMER_LENIENCY_DEFAULT)
+
+#define MISC_SECTION_NAME "misc"
+#define MISC_HIDE_WIP_KEY "hide_wip"
+#define MISC_HIDE_WIP_DEFAULT true
+#define MISC_HIDE_WIP_DEFAULT_STR MACRO_STR(MISC_HIDE_WIP_DEFAULT)
+#define MISC_SKIP_INTRO_KEY "skip_intro"
+#define MISC_SKIP_INTRO_DEFAULT true
+#define MISC_SKIP_INTRO_DEFAULT_STR MACRO_STR(MISC_SKIP_INTRO_DEFAULT)
 
 static inline bool create_dummy_file(const char* path) {
 	HANDLE handle = CreateFileA(
@@ -455,14 +457,12 @@ bool get_inputp2_spacing() {
 }
 
 static char INPUT2_TIMER_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
-int32_t get_inputp2_timer()
-{
+int32_t get_inputp2_timer() {
 	return GET_INT_CONFIG(INPUT2, TIMER);
 }
 
 static char INPUT2_RAW_INPUT_BUFFER[8]{ '\0' };
-bool get_inputp2_raw_input()
-{
+bool get_inputp2_raw_input() {
 	return GET_BOOL_CONFIG(INPUT2, RAW_INPUT);
 }
 
@@ -507,9 +507,9 @@ void set_ipv6_state(bool state) {
 	set_config_string(NETWORK_SECTION_NAME, NETWORK_IPV6_KEY, bool_str(state));
 }
 
-//====================
-//MISC
-//====================
+// ====================
+// MISC
+// ====================
 
 static char MISC_HIDE_WIP_BUFFER[8]{ '\0' };
 bool get_hide_wip_enabled() {
@@ -521,19 +521,22 @@ bool get_skip_intro_enabled() {
 	return GET_BOOL_CONFIG(MISC, SKIP_INTRO);
 }
 
-static char MISC_CACHE_RSA_BUFFER[8]{ '\0' };
+// ====================
+// Performance
+// ====================
+static char PERF_CACHE_RSA_BUFFER[8]{ '\0' };
 bool get_cache_rsa_enabled() {
-	return GET_BOOL_CONFIG(MISC, CACHE_RSA);
+	return GET_BOOL_CONFIG(PERF, CACHE_RSA);
 }
 
-static char MISC_BETTER_GAME_LOOP_BUFFER[8]{ '\0' };
+static char PERF_BETTER_GAME_LOOP_BUFFER[8]{ '\0' };
 bool get_better_game_loop_enabled() {
-	return GET_BOOL_CONFIG(MISC, BETTER_GAME_LOOP);
+	return GET_BOOL_CONFIG(PERF, BETTER_GAME_LOOP);
 }
 
-static char MISC_TIMER_LENIENCY_BUFFER[FLOAT_BUFFER_SIZE<float>]{ '\0' };
+static char PERF_TIMER_LENIENCY_BUFFER[FLOAT_BUFFER_SIZE<float>]{ '\0' };
 float get_timer_leniency() {
-	return GET_FLOAT_CONFIG(MISC, TIMER_LENIENCY);
+	return GET_FLOAT_CONFIG(PERF, TIMER_LENIENCY);
 }
 
 #define CONFIG_DEFAULT(SECTION, KEY) { MACRO_CAT(SECTION,_SECTION_NAME), MACRO_CAT4(SECTION,_,KEY,_KEY), MACRO_CAT4(SECTION,_,KEY,_DEFAULT_STR) }
@@ -571,9 +574,6 @@ void init_config_file() {
 							CONFIG_DEFAULT(LOBBY, PORT),
 							CONFIG_DEFAULT(LOBBY, PASS),
 
-							CONFIG_DEFAULT(MISC, HIDE_WIP),
-							CONFIG_DEFAULT(MISC, SKIP_INTRO),
-
 							CONFIG_DEFAULT(PING, ENABLED),
 							CONFIG_DEFAULT(PING, X),
 							CONFIG_DEFAULT(PING, Y),
@@ -610,6 +610,13 @@ void init_config_file() {
 							CONFIG_DEFAULT(NETWORK, NETPLAY),
 							CONFIG_DEFAULT(NETWORK, HIDE_IP),
 							CONFIG_DEFAULT(NETWORK, HIDE_NAME),
+
+							CONFIG_DEFAULT(MISC, HIDE_WIP),
+							CONFIG_DEFAULT(MISC, SKIP_INTRO),
+
+							CONFIG_DEFAULT(PERF, CACHE_RSA),
+							CONFIG_DEFAULT(PERF, BETTER_GAME_LOOP),
+							CONFIG_DEFAULT(PERF, TIMER_LENIENCY)
 						};
 
 						nounroll for (size_t i = 0; i < countof(default_configs); ++i) {

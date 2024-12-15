@@ -1,5 +1,12 @@
 #pragma once
 
+#ifndef DISCORD_H
+#define DISCORD_H 1
+
+#define ENABLE_DISCORD_RICH_PRESENCE 1
+
+#if ENABLE_DISCORD_RICH_PRESENCE
+
 struct DiscordRPCPresence {
 	char state[128];
 	char details[128];
@@ -24,3 +31,7 @@ void discord_rpc_stop();
 #define RPC_FIELD(field) void discord_rpc_set_##field(const char* value);
 RPC_FIELDS
 #undef RPC_FIELD
+
+#endif
+
+#endif

@@ -487,19 +487,24 @@ bool common_init(
     patch_file_loading();
 #endif
 
-    if (get_cache_rsa_enabled())
+    if (get_cache_rsa_enabled()) {
         patch_archive_parsing();
+    }
 
     // Disable fastfail to allow exception handlers to catch more crashes
     hotpatch_import(IsProcessorFeaturePresent_import_addr, IsProcessorFeaturePresent_hook);
 
-    if (get_better_game_loop_enabled())
+    if (get_better_game_loop_enabled()) {
         init_better_game_loop();
+    }
 
+#if ENABLE_DISCORD_RICH_PRESENCE
+    if ()
     discord_rpc_start();
     discord_rpc_set_large_img_key("mainicon");
     discord_rpc_set_details("Idle");
     discord_rpc_commit();
+#endif
 
     return true;
 }

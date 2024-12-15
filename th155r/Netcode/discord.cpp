@@ -1,10 +1,12 @@
-#include <Windows.h>
+#include <windows.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <atomic>
 #include "discord.h"
 #include "util.h"
 #include "log.h"
+
+#if ENABLE_DISCORD_RICH_PRESENCE
 
 #define APP_ID "1317594942289350666"
 
@@ -324,3 +326,5 @@ void discord_rpc_commit() {
 void discord_rpc_stop() {
 	rpc_thread_running.store(false);
 }
+
+#endif

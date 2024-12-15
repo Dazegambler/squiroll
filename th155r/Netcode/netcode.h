@@ -62,19 +62,21 @@ struct PacketLayout {
     unsigned char data[];
 };
 
-// size: 0x8
+// size: 0x8+
 struct PacketLobbyName {
     PacketType type; // 0x0
     // 0x1
     uint32_t length; // 0x4
     char name[]; // 0x8
 };
+static_assert(sizeof(PacketLobbyName) == 0x8);
 
 // size: 0x1
 struct PacketPunchPing {
     PacketType type; // 0x0
     // 0x1
 };
+static_assert(sizeof(PacketPunchPing) == 0x1);
 
 // size: 0x10
 struct PacketIPv6Test {
@@ -88,7 +90,7 @@ static_assert(sizeof(PacketIPv6Test) == 0x10, "");
 
 #define LOBBY_NAME_PACKET_SIZE(len) (sizeof(PacketLobbyName) + (len))
 
-// size: 0x4
+// size: 0x1
 struct PacketPunchWait {
     PacketType type; // 0x0
     //uint8_t is_ipv6; // 0x1
@@ -119,6 +121,7 @@ struct PacketPunchWait {
         */
     }
 };
+static_assert(sizeof(PacketPunchWait) == 0x1);
 
 static inline constexpr uint8_t LOCAL_IS_IPV6_MASK = 0b01;
 static inline constexpr uint8_t DEST_IS_IPV6_MASK = 0b10;
@@ -137,11 +140,13 @@ struct PacketPunchConnect {
 };
 */
 
+// size: 0x14
 struct PacketPunchConnect {
     PacketType type; // 0x0
     uint8_t is_ipv6; // 0x1
     uint16_t dest_port; // 0x2
     alignas(4) unsigned char dest_ip[sizeof(IP6_ADDRESS)]; // 0x4
+    // 0x14
 
     PacketPunchConnect() = default;
 
@@ -152,8 +157,9 @@ struct PacketPunchConnect {
         inet_pton(!is_ipv6 ? AF_INET : AF_INET6, ip, &this->dest_ip);
     }
 };
+static_assert(sizeof(PacketPunchConnect) == 0x14);
 
-// size: 0x4
+// size: 0x14
 struct PacketPunchPeer {
     PacketType type; // 0x0
     uint8_t is_ipv6; // 0x1
@@ -161,18 +167,22 @@ struct PacketPunchPeer {
     alignas(4) unsigned char ip[sizeof(IP6_ADDRESS)]; // 0x4
     // 0x14
 };
+static_assert(sizeof(PacketPunchPeer) == 0x14);
 
 // size: 0x1
 struct PacketPunch {
     PacketType type; // 0x0
     // 0x1
 };
+static_assert(sizeof(PacketPunch) == 0x1);
 
+// size: 0x14
 struct PacketPunchDelayPing {
     PacketType type; // 0x0
     uint8_t flags; // 0x1
     uint16_t dest_port; // 0x2
     alignas(4) unsigned char dest_ip[sizeof(IP6_ADDRESS)]; // 0x4
+    // 0x14
 
     PacketPunchDelayPing() = default;
 
@@ -187,12 +197,15 @@ struct PacketPunchDelayPing {
         }
     }
 };
+static_assert(sizeof(PacketPunchDelayPing) == 0x14);
 
+// size: 0x2
 struct PacketPunchDelayPong {
     PacketType type; // 0x0
     uint8_t index; // 0x1
     // 0x2
 };
+static_assert(sizeof(PacketPunchDelayPong) == 0x2);
 
 static inline constexpr PacketPunch PUNCH_PACKET = {
     .type = PACKET_TYPE_PUNCH

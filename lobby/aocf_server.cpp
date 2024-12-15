@@ -101,18 +101,18 @@ enum PacketType : uint8_t {
 	PACKET_TYPE_19 = 19,
 
 	// Custom packets
-	PACKET_TYPE_LOBBY_NAME = 0x80,
-	PACKET_TYPE_PUNCH_PING = 0x81,
-	PACKET_TYPE_PUNCH_WAIT = 0x82,
-	PACKET_TYPE_PUNCH_CONNECT = 0x83,
-	PACKET_TYPE_PUNCH_PEER = 0x84,
-	PACKET_TYPE_PUNCH = 0x85,
-	PACKET_TYPE_PUNCH_SELF = 0x86, // Same format as PACKET_TYPE_PUNCH_PEER
-	PACKET_TYPE_LOBBY_NAME_WAIT = 0x87,
-	PACKET_TYPE_IPV6_TEST = 0x88,
-	PACKET_TYPE_PUNCH_DELAY_PING = 0x89,
-	PACKET_TYPE_PUNCH_DELAY_PONGA = 0x8A,
-	PACKET_TYPE_PUNCH_DELAY_PONGB = 0x8B,
+	PACKET_TYPE_LOBBY_NAME = 0x80, // 128
+	PACKET_TYPE_PUNCH_PING = 0x81, // 129
+	PACKET_TYPE_PUNCH_WAIT = 0x82, // 130
+	PACKET_TYPE_PUNCH_CONNECT = 0x83, // 131
+	PACKET_TYPE_PUNCH_PEER = 0x84, // 132
+	PACKET_TYPE_PUNCH = 0x85, // 133
+	PACKET_TYPE_PUNCH_SELF = 0x86, // 134 Same format as PACKET_TYPE_PUNCH_PEER
+	PACKET_TYPE_LOBBY_NAME_WAIT = 0x87, // 135
+	PACKET_TYPE_IPV6_TEST = 0x88, // 136
+	PACKET_TYPE_PUNCH_DELAY_PING = 0x89, // 137
+	PACKET_TYPE_PUNCH_DELAY_PONGA = 0x8A, // 138
+	PACKET_TYPE_PUNCH_DELAY_PONGB = 0x8B, // 139
 };
 
 struct PacketLayout {
@@ -124,21 +124,24 @@ struct PacketLayout {
 struct PacketLobbyName {
 	PacketType type; // 0x0
 	// 0x1
-	size_t length; // 0x4
+	uint32_t length; // 0x4
 	alignas(4) char name[]; // 0x8
 };
+static_assert(sizeof(PacketLobbyName) == 0x8);
 
 // size: 0x1
 struct PacketPunchPing {
 	PacketType type; // 0x0
 	// 0x1
 };
+static_assert(sizeof(PacketPunchPing) == 0x1);
 
 // size: 0x1
 struct PacketPunch {
 	PacketType type; // 0x0
 	// 0x1
 };
+static_assert(sizeof(PacketPunch) == 0x1);
 
 static constexpr PacketPunchPing PUNCH_PING_PACKET = {
 	.type = PACKET_TYPE_PUNCH_PING
@@ -150,17 +153,19 @@ static constexpr PacketPunch PUNCH_PACKET = {
 
 static constexpr size_t IP_BYTE_SIZE = (std::max)(sizeof(IP4_ADDRESS), sizeof(IP6_ADDRESS));
 
-// size: 0x4+
+// size: 0x1
 struct PacketPunchWait {
 	PacketType type; // 0x0
-	uint8_t is_ipv6; // 0x1
-	uint16_t local_port; // 0x2
-	alignas(4) unsigned char ip[sizeof(IP6_ADDRESS)]; // 0x4
+	//uint8_t is_ipv6; // 0x1
+	//uint16_t local_port; // 0x2
+	//alignas(4) unsigned char ip[sizeof(IP6_ADDRESS)]; // 0x4
+	// 0x14
 
-	ipaddr_any local_ip() const {
-		return ipaddr_any(this->is_ipv6, this->local_port, this->ip);
-	}
+	//ipaddr_any local_ip() const {
+		//return ipaddr_any(this->is_ipv6, this->local_port, this->ip);
+	//}
 };
+static_assert(sizeof(PacketPunchWait) == 0x1);
 
 /*
 // size: 0x8+
@@ -184,11 +189,13 @@ struct PacketPunchConnect {
 };
 */
 
+// size: 0x14
 struct PacketPunchConnect {
 	PacketType type; // 0x0
 	uint8_t is_ipv6; // 0x1
 	uint16_t dest_port; // 0x2
 	alignas(4) unsigned char dest_ip_buf[sizeof(IP6_ADDRESS)]; // 0x4
+	// 0x14
 
 	ipaddr_any dest_ip() const {
 		return ipaddr_any(this->is_ipv6, this->dest_port, this->dest_ip_buf);
@@ -198,13 +205,15 @@ struct PacketPunchConnect {
 		return sockaddr_any(this->is_ipv6, this->dest_port, this->dest_ip_buf);
 	}
 };
+static_assert(sizeof(PacketPunchConnect) == 0x14);
 
-// size: 0x4
+// size: 0x14
 struct PacketPunchPeer {
 	PacketType type; // 0x0
 	uint8_t is_ipv6; // 0x1
 	uint16_t remote_port; // 0x2
 	alignas(4) unsigned char ip[sizeof(IP6_ADDRESS)]; // 0x4
+	// 0x14
 
 	PacketPunchPeer() = default;
 
@@ -220,12 +229,15 @@ struct PacketPunchPeer {
 
 	inline PacketPunchPeer(const sockaddr_any& addr) : PacketPunchPeer(addr.is_ipv6(), get_port(addr), addr.get_ip_ptr()) {}
 };
+static_assert(sizeof(PacketPunchPeer) == 0x14);
 
+// size: 0x14
 struct PacketPunchSelf {
 	PacketType type; // 0x0
 	uint8_t is_ipv6; // 0x1
 	uint16_t remote_port; // 0x2
 	alignas(4) unsigned char ip[sizeof(IP6_ADDRESS)]; // 0x4
+	// 0x14
 
 	PacketPunchSelf() = default;
 
@@ -241,12 +253,15 @@ struct PacketPunchSelf {
 
 	inline PacketPunchSelf(const sockaddr_any& addr) : PacketPunchSelf(addr.is_ipv6(), get_port(addr), addr.get_ip_ptr()) {}
 };
+static_assert(sizeof(PacketPunchSelf) == 0x14);
 
+// size: 0x14
 struct PacketPunchDelayPing {
 	PacketType type; // 0x0
 	uint8_t flags; // 0x1
 	uint16_t dest_port; // 0x2
 	alignas(4) unsigned char dest_ip_buf[sizeof(IP6_ADDRESS)]; // 0x4
+	// 0x14
 
 	ipaddr_any dest_ip() const {
 		return ipaddr_any(this->flags & 0x80, this->dest_port, this->dest_ip_buf);
@@ -256,12 +271,15 @@ struct PacketPunchDelayPing {
 		return sockaddr_any(this->flags & 0x80, this->dest_port, this->dest_ip_buf);
 	}
 };
+static_assert(sizeof(PacketPunchDelayPing) == 0x14);
 
+// size: 0x2
 struct PacketPunchDelayPong {
 	PacketType type; // 0x0
 	uint8_t index; // 0x1
 	// 0x2
 };
+static_assert(sizeof(PacketPunchDelayPong) == 0x2);
 
 // size: 0x10
 struct PacketIPv6Test {
@@ -555,7 +573,7 @@ static inline constexpr char JOIN_FREE_REPLY[] = "! JOIN #th155_Free %u\n";
 static inline constexpr char JOIN_NOVICE_REPLY[] = "! JOIN #th155_Novice %u\n";
 static inline constexpr char JOIN_VETERAN_REPLY[] = "! JOIN #th155_Veteran %u\n";
 static inline constexpr char JOIN_DEV_REPLY[] = "! JOIN #th155_Dev %u\n";
-static inline constexpr char JOIN_EU_REPLY[] =  "! JOIN #th155_EU %u\n";
+static inline constexpr char JOIN_EU_REPLY[] = "! JOIN #th155_EU %u\n";
 static inline constexpr char JOIN_NA_REPLY[] = "! JOIN #th155_NA %u\n";
 static inline constexpr char JOIN_SA_REPLY[] = "! JOIN #th155_SA %u\n";
 static inline constexpr char JOIN_ASIA_REPLY[] = "! JOIN #th155_Asia %u\n";
@@ -672,7 +690,7 @@ int main(int argc, char* argv[]) {
 										}
 									}
 									case PACKET_TYPE_PUNCH_WAIT: {
-										PacketPunchWait* packet = (PacketPunchWait*)raw_packet;
+										//PacketPunchWait* packet = (PacketPunchWait*)raw_packet;
 										insert_punch_data(
 											//packet->local_ip(), 
 											peer_addr

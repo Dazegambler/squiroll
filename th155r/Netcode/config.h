@@ -30,6 +30,7 @@ bool get_hide_name_enabled();
 bool get_skip_intro_enabled();
 bool get_cache_rsa_enabled();
 bool get_better_game_loop_enabled();
+float get_timer_leniency();
 
 bool get_ping_enabled();
 int32_t get_ping_x();

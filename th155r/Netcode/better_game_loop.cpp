@@ -10,6 +10,7 @@
 #include "log.h"
 #include "patch_utils.h"
 #include "util.h"
+#include "config.h"
 
 // Superluminal markers for debugging frametime spikes
 #define PROFILING 0
@@ -101,6 +102,7 @@ void stdcall better_game_loop() {
     timer.initialize();
     uint64_t qpc_next_fps_update = current_qpc() + qpc_second_frequency;
     uint32_t frames_this_sec = 0;
+    int64_t leniency = get_timer_leniency() * 10000;
 
     while (expect(!exit_requested, true)) {
 #if PROFILING
@@ -108,7 +110,7 @@ void stdcall better_game_loop() {
 #endif
 
         uint64_t qpc_target = current_qpc() + qpc_frame_frequency;
-        timer.set(166667 - 30000); // 3ms of leniency
+        timer.set(166667 - leniency);
 
         run_update_list(*input_update_list);
         window_update_frame();

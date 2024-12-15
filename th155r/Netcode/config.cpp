@@ -112,6 +112,9 @@ static constexpr char TASOFRO_CONFIG_FILE_NAME[] = "config.ini";
 #define MISC_BETTER_GAME_LOOP_KEY "better_game_loop"
 #define MISC_BETTER_GAME_LOOP_DEFAULT true
 #define MISC_BETTER_GAME_LOOP_DEFAULT_STR MACRO_STR(MISC_BETTER_GAME_LOOP_DEFAULT)
+#define MISC_TIMER_LENIENCY_KEY "timer_leniency"
+#define MISC_TIMER_LENIENCY_DEFAULT 4.0
+#define MISC_TIMER_LENIENCY_DEFAULT_STR MACRO_STR(MISC_TIMER_LENIENCY_DEFAULT)
 
 #define INPUT2_SECTION_NAME "input_display_p2"
 #define INPUT2_ENABLED_KEY "enabled"
@@ -526,6 +529,11 @@ bool get_cache_rsa_enabled() {
 static char MISC_BETTER_GAME_LOOP_BUFFER[8]{ '\0' };
 bool get_better_game_loop_enabled() {
 	return GET_BOOL_CONFIG(MISC, BETTER_GAME_LOOP);
+}
+
+static char MISC_TIMER_LENIENCY_BUFFER[FLOAT_BUFFER_SIZE<float>]{ '\0' };
+float get_timer_leniency() {
+	return GET_FLOAT_CONFIG(MISC, TIMER_LENIENCY);
 }
 
 #define CONFIG_DEFAULT(SECTION, KEY) { MACRO_CAT(SECTION,_SECTION_NAME), MACRO_CAT4(SECTION,_,KEY,_KEY), MACRO_CAT4(SECTION,_,KEY,_DEFAULT_STR) }

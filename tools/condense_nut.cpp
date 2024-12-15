@@ -173,10 +173,24 @@ int main(int argc, char* argv[]) {
                 case '\t':
                     c = ' ';
                     [[fallthrough]];
-                case ' ': 
+                case ' ':
+                    
+                    switch (current[1]) {
+                        case '(': case '[': case '{':
+                            can_fold = true;
+                            end_token();
+                            continue;
+                    }
+                    
                     if (
                         current[1] == 'i' && current[2] == 'n' &&
-                        (current[3] == ' ' || current[3] == '\t')
+                        (
+                            (current[3] == ' ' || current[3] == '\t' || current[3] == ':') ||
+                            (
+                                current[3] == 's' && current[4] == 't' && current[5] == 'a' && current[6] == 'n' && current[7] == 'c' &&
+                                current[8] == 'e' && current[9] == 'o' && current[10] == 'f' && (current[11] == ' ' || current[11] == '\t' || current[11] == ':')
+                            )
+                        )
                     ) {
                         end_token();
                         break;
@@ -188,17 +202,39 @@ int main(int argc, char* argv[]) {
                     if (c != ';') {
 #endif
                         bool prev_is_function = prev_token == "function"sv;
+                        bool prev_is_return = false;
                         bool prev_is_else = false;
                         if (
                             prev_is_function || prev_token == "local"sv || prev_token == "in"sv || prev_token == "case"sv ||
-                            prev_token == "return"sv || prev_token == "class"sv || prev_token == "delete"sv ||
+                            (prev_is_return = prev_token == "return"sv) || prev_token == "class"sv || prev_token == "delete"sv || prev_token == "instanceof"sv ||
                             (prev_is_else = prev_token == "else"sv)
                         ) {
                             if (!can_fold) {
                                 can_fold = true;
                                 if (prev_is_else) {
                                     c = ' ';
+                                    if (
+                                        !(
+                                            current[1] == 'i' && current[2] == 'f' && 
+                                            (current[3] == ' ' || current[3] == '\t' || current[3] == '(' || current[3] == '\r' || current[3] == '\n')
+                                        )
+                                    ) {
+                                        continue;
+                                    }
                                 }
+                                /*
+                                else if (prev_is_function) {
+                                    //c = ' ';
+                                    if (
+                                        (current[1] == ' ' || current[1] == '\t') && current[2] == '('
+                                    ) {
+                                        continue;
+                                    }
+                                }
+                                */
+                                //else if (prev_is_return) {
+
+                                //}
                                 break;
                             }
                         }

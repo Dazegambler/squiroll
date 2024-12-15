@@ -242,5 +242,9 @@ this.proc.exit <- function ()
 	{
 		::ExitGame();
 	});
+	foreach (v in ::loop.task_async) if (v instanceof ::menu.EndAnimeDelayedTask) {
+		v.anime.Terminate();
+		::loop.DeleteTask(v);
+	}
 	::loop.End();
 };

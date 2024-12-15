@@ -1,5 +1,5 @@
 if(!::setting.misc.hide_wip){this.item<-["story","tutorial","vs_com","vs_player","network","practice","replay","music","config","exit"]
-}else{ this.item<-["story","vs_com","vs_player","network","practice","replay","music","config","exit"]
+}else{this.item<-["story","vs_com","vs_player","network","practice","replay","music","config","exit"]
 }
 this.proc<-{}
 this.cursor<-this.Cursor(0,this.item.len(),::input_all)
@@ -13,7 +13,7 @@ this.visible<-false
 function Initialize(){this.Show()
 if(::setting.misc.skip_intro){this.Update<-this.UpdateMain
 ::sound.PlayBGM(::savedata.GetTitleBGMID())
-}else {this.Update<-this.UpdateOP
+}else{this.Update<-this.UpdateOP
 this.op.Initialize()
 }
 ::loop.Begin(this)
@@ -38,11 +38,11 @@ function Hide(){if(!this.visible){return
 this.visible=false
 this.anime.Terminate()
 }
-function UpdateOP(){if(::input_all.b0==1||::input_all.b1==1){::loop.Fade(function (){::menu.title.Update=::menu.title.UpdateMain
+function UpdateOP(){if(::input_all.b0==1||::input_all.b1==1){::loop.Fade(function(){::menu.title.Update=::menu.title.UpdateMain
 ::menu.title.op.Terminate()
 ::menu.title.op=null
 },30)
-this.Update=function (){}
+this.Update=function(){}
 }
 }
 function UpdateMain(){this.cursor.Update()
@@ -59,15 +59,15 @@ if(this.cursor_difficulty.ok){if(this.cursor.val==0){if(this.cursor_difficulty.v
 ::config.Save()
 }
 ::input_all.Lock()
-::loop.Fade(function (){::menu.title.Suspend()
+::loop.Fade(function(){::menu.title.Suspend()
 ::menu.story_select.Initialize(::menu.title.cursor_difficulty.val)
 })
 }
-else {if(this.cursor_difficulty.val!=::config.difficulty.vs){::config.difficulty.vs=this.cursor_difficulty.val
+else{if(this.cursor_difficulty.val!=::config.difficulty.vs){::config.difficulty.vs=this.cursor_difficulty.val
 ::config.Save()
 }
 ::input_all.Lock()
-::loop.Fade(function (){::menu.title.Suspend()
+::loop.Fade(function(){::menu.title.Suspend()
 ::menu.character_select.Initialize(0,this.cursor_difficulty.val)
 }.bindenv(this))
 }
@@ -76,43 +76,46 @@ else if(this.cursor_difficulty.cancel){this.Update=this.UpdateMain
 }
 this.anime.Update()
 }
-this.proc.story<-function (){local num=::savedata.GetDifficultyNum()
+this.proc.story<-function(){local num=::savedata.GetDifficultyNum()
 this.cursor_difficulty.SetItemNum(num)
 this.cursor_difficulty.val=::config.difficulty.story
 if(this.cursor_difficulty.val>=num){this.cursor_difficulty.val=num-1
 }
 this.Update=this.UpdateDifficulty
 }
-this.proc.vs_com<-function (){this.cursor_difficulty.SetItemNum(4)
+this.proc.vs_com<-function(){this.cursor_difficulty.SetItemNum(4)
 this.cursor_difficulty.val=::config.difficulty.vs
 this.Update=this.UpdateDifficulty
 }
-this.proc.vs_player<-function (){::loop.Fade(function (){::menu.title.Suspend()
+this.proc.vs_player<-function(){::loop.Fade(function(){::menu.title.Suspend()
 ::menu.character_select.Initialize(1)
 })
 }
-this.proc.network<-function (){::menu.network.Initialize()
+this.proc.network<-function(){::menu.network.Initialize()
 }
-this.proc.tutorial<-function (){::loop.Fade(function (){::menu.title.Suspend()
+this.proc.tutorial<-function(){::loop.Fade(function(){::menu.title.Suspend()
 ::tutorial.Initialize()
 })
 }
-this.proc.practice<-function (){::loop.Fade(function (){::menu.title.Suspend()
+this.proc.practice<-function(){::loop.Fade(function(){::menu.title.Suspend()
 ::menu.character_select.Initialize(40)
 })
 }
-this.proc.replay<-function (){::loop.Fade(function (){::menu.title.Suspend()
+this.proc.replay<-function(){::loop.Fade(function(){::menu.title.Suspend()
 ::menu.replay_select.Initialize()
 })
 }
-this.proc.music<-function (){::loop.Fade(function (){::menu.title.Suspend()
+this.proc.music<-function(){::loop.Fade(function(){::menu.title.Suspend()
 ::menu.music_room.Initialize()
 })
 }
-this.proc.config<-function (){::menu.config.Initialize(true)
+this.proc.config<-function(){::menu.config.Initialize(true)
 }
-this.proc.exit<-function (){::sound.StopBGM(500)
-::graphics.FadeOut(45,function (){::ExitGame()
+this.proc.exit<-function(){::sound.StopBGM(500)
+::graphics.FadeOut(45,function(){::ExitGame()
 })
+foreach(v in ::loop.task_async)if(v instanceof ::menu.EndAnimeDelayedTask){v.anime.Terminate()
+::loop.DeleteTask(v)
+}
 ::loop.End()
 }

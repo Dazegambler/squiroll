@@ -6,7 +6,9 @@
 #include "util.h"
 #include "log.h"
 
-#if ENABLE_DISCORD_RICH_PRESENCE
+#if ENABLE_DISCORD_INTEGRATION
+
+bool DISCORD_ENABLED = false;
 
 #define APP_ID "1317594942289350666"
 
@@ -325,6 +327,10 @@ void discord_rpc_commit() {
 
 void discord_rpc_stop() {
 	rpc_thread_running.store(false);
+}
+
+std::string_view get_discord_username() {
+	return std::string_view{};
 }
 
 #endif

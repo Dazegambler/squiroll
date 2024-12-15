@@ -10,6 +10,7 @@
 #include <windows.h>
 
 #include "log.h"
+#include "discord.h"
 
 #define PUNCH_BOOST_NONE                0b000
 #define PUNCH_BOOST_PROCESS_PRIORITY    0b001
@@ -28,6 +29,14 @@
 #define PUNCH_SLEEP_USE_TIMER 1
 
 #define PUNCH_SLEEP_TYPE PUNCH_SLEEP_USE_SPIN
+
+#if ENABLE_DISCORD_INTEGRATION
+// Toggle this define
+#define LOBBY_DISCORD_INTEGRATION 0
+#else
+// Keep this as 0
+#define LOBBY_DISCORD_INTEGRATION 0
+#endif
 
 extern uintptr_t lobby_base_address;
 

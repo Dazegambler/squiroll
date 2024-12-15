@@ -21,16 +21,19 @@ extern int32_t GAME_VERSION;
 
 void init_config_file();
 
+enum ConfigTestState : int8_t {
+	ConfigNeedsTest = -1,
+	ConfigDisabled = 0,
+	ConfigEnabled = 1
+};
+
+#define TST_CONFIG_MAYBE(...) ((__VA_ARGS__)<0)
+#define TST_CONFIG_DISABLED(...) ((__VA_ARGS__)==0)
+#define TST_CONFIG_ENABLED(...) ((__VA_ARGS__)>0)
+
 const char* get_lobby_host(const char* host);
 const char* get_lobby_port(const char* port);
 const char* get_lobby_pass(const char* pass);
-
-bool get_hide_ip_enabled();
-bool get_hide_name_enabled();
-bool get_skip_intro_enabled();
-bool get_cache_rsa_enabled();
-bool get_better_game_loop_enabled();
-float get_timer_leniency();
 
 bool get_ping_enabled();
 int32_t get_ping_x();
@@ -52,8 +55,6 @@ bool get_inputp1_spacing();
 int32_t get_inputp1_timer();
 bool get_inputp1_raw_input();
 
-bool get_hide_wip_enabled();
-
 bool get_inputp2_enabled();
 int32_t get_inputp2_x();
 int32_t get_inputp2_y();
@@ -66,15 +67,19 @@ bool get_inputp2_spacing();
 int32_t get_inputp2_timer();
 bool get_inputp2_raw_input();
 
-enum IPv6State : int8_t {
-	IPv6NeedsTest = -1,
-	IPv6Disabled = 0,
-	IPv6Enabled = 1
-};
-
-IPv6State get_ipv6_state();
+int8_t get_ipv6_state();
 bool get_netplay_state();
-
+bool get_hide_ip_enabled();
+bool get_hide_name_enabled();
 void set_ipv6_state(bool state);
+
+bool get_cache_rsa_enabled();
+bool get_better_game_loop_enabled();
+float get_timer_leniency();
+
+bool get_hide_wip_enabled();
+bool get_skip_intro_enabled();
+int8_t get_discord_enabled();
+void set_discord_enabled(bool state);
 
 #endif

@@ -12,6 +12,7 @@
 #include <windns.h>
 
 #include "util.h"
+#include "discord.h"
 
 #define BETTER_BLACK_SCREEN_FIX 1
 
@@ -62,10 +63,18 @@ struct PacketLayout {
     unsigned char data[];
 };
 
+enum NicknameSource : uint8_t {
+    AUTO_GENERATED_NAME = 0,
+    DISCORD_USERNAME = 1,
+};
+
+static inline constexpr size_t MAX_NICKNAME_LENGTH = 32;
+
 // size: 0x8+
 struct PacketLobbyName {
     PacketType type; // 0x0
-    // 0x1
+    NicknameSource source; // 0x1
+    // 0x2
     uint32_t length; // 0x4
     char name[]; // 0x8
 };

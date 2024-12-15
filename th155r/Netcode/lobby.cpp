@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <string>
+#include <string_view>
 #include <mutex>
 #include <charconv>
 #include <system_error>
@@ -26,6 +27,7 @@
 #include "log.h"
 #include "netcode.h"
 #include "lobby.h"
+#include "discord.h"
 
 #define ONLY_LOG_CUSTOM_PACKETS 0
 
@@ -137,7 +139,7 @@ struct AsyncLobbyClient {
     std::string __last_host_used; // 0x2D8
     std::string lobby_prefix; // 0x2F0
     std::string current_nickname; // 0x308
-    std::string __string_320; // 0x320
+    std::string __pending_nickname; // 0x320
     std::string current_channel; // 0x338
     std::string __lobby_nameA; // 0x350
     std::string password; // 0x368
@@ -179,6 +181,27 @@ struct AsyncLobbyClient {
 
 static_assert(sizeof(AsyncLobbyClient) == 0x4F8);
 static_assert(__builtin_offsetof(AsyncLobbyClient, current_nickname) == 0x308);
+
+typedef void fastcall generate_nickname_t(AsyncLobbyClient* self);
+#define generate_nickname_func 0x88E0
+
+#define initial_generate_nickname_call 0x6DAD
+#define inuse_generate_nickname_fixup_addrA 0x740D
+#define inuse_generate_nickname_fixup_addrB 0x7415
+
+#if LOBBY_DISCORD_INTEGRATION
+static NicknameSource nickname_source = AUTO_GENERATED_NAME;
+
+static void fastcall generate_nickname_hook(AsyncLobbyClient* self) {
+    std::string_view name = get_discord_username();
+    if (!name.empty()) {
+        // do something to mimic the logic of the original generate function
+        //nickname_source = DISCORD_USERNAME;
+        return;
+    }
+    return based_pointer<generate_nickname_t>(lobby_base_address, generate_nickname_func)(self);
+}
+#endif
 
 static_assert(__builtin_offsetof(PacketLobbyName, type) == 0);
 
@@ -480,12 +503,20 @@ static constexpr uint64_t MAX_PUNCH_START_DELAY = MAX_PUNCH_START_DELAY_US;
 // relative to the start of the hooks.
 template<bool is_welcome = false>
 static void send_lobby_name_packet(SOCKET sock, const char* nickname, size_t length) {
-    PacketLobbyName* name_packet = (PacketLobbyName*)_alloca(LOBBY_NAME_PACKET_SIZE(length));
+    //PacketLobbyName* name_packet = (PacketLobbyName*)_alloca(LOBBY_NAME_PACKET_SIZE(length));
+    unsigned char buffer[sizeof(PacketLobbyName) + MAX_NICKNAME_LENGTH];
+    PacketLobbyName* name_packet = new (buffer) PacketLobbyName();
+    length = std::min(length, MAX_NICKNAME_LENGTH);
     if constexpr (is_welcome) {
         name_packet->type = PACKET_TYPE_LOBBY_NAME_WAIT;
     } else {
         name_packet->type = PACKET_TYPE_LOBBY_NAME;
     }
+#if LOBBY_DISCORD_INTEGRATION
+    name_packet->source = nickname_source;
+#else
+    name_packet->source = AUTO_GENERATED_NAME;
+#endif
     name_packet->length = length;
     memcpy(name_packet->name, nickname, length);
 
@@ -1013,7 +1044,7 @@ neverinline void lobby_test_ipv6() {
                                 recv_ret == sizeof(test_packet) &&
                                 test_packet.type == PACKET_TYPE_IPV6_TEST &&
                                 tsc == test_packet.tsc.QuadPart
-                                ) {
+                            ) {
                                 closesocket(sock);
                                 //lobby_debug_printf("IPv6: Timed out\n");
                                 set_ipv6_state(true);
@@ -1046,7 +1077,7 @@ int WSAAPI lobby_socket_connect_hook(SOCKET s, const sockaddr* name, int namelen
         //print_sockaddr((sockaddr*)&local_addr);
         //lobby_debug_printf("\n");
 
-        if (get_ipv6_state() == IPv6NeedsTest) {
+        if (TST_CONFIG_MAYBE(get_ipv6_state())) {
             lobby_test_ipv6();
         }
     }
@@ -1353,6 +1384,20 @@ void patch_se_lobby(void* base_address) {
     mem_write(based_pointer(base_address, 0x79F4), lobby_user_count_patchE);
     hotpatch_rel32(based_pointer(base_address, 0x7A0D), lobby_user_count_from_str);
     mem_write(based_pointer(base_address, 0x7A11), lobby_user_count_patchF);
+
+#if LOBBY_DISCORD_INTEGRATION
+    if (DISCORD_ENABLED) {
+        hotpatch_rel32(based_pointer(base_address, initial_generate_nickname_call), &generate_nickname_hook);
+
+        // If the nickname is somehow in use, fallback to an auto-generated name.
+        mem_write(based_pointer(base_address, inuse_generate_nickname_fixup_addrA), PATCH_BYTES<
+            BASE_NOP4,  // NOP
+            0x31, 0xD2, // XOR EDX, EDX
+            0x88, 0x15  // MOV BYTE PTR [const], DL
+        >);
+        mem_write(based_pointer(base_address, inuse_generate_nickname_fixup_addrB), &nickname_source);
+    }
+#endif
 
 #if PUNCH_START_TYPE == PUNCH_START_USE_EVENT
     start_punch.initialize();

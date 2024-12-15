@@ -31,6 +31,10 @@ static inline constexpr const char MACRO_CAT4(SECTION,_,KEY,_DEFAULT_STR)[] = DE
 static inline constexpr const char MACRO_CAT4(SECTION,_,KEY,_KEY)[] = NAME; \
 static inline constexpr bool MACRO_CAT4(SECTION,_,KEY,_DEFAULT) = DEFAULT; \
 static inline constexpr const char MACRO_CAT4(SECTION,_,KEY,_DEFAULT_STR)[] = MACRO_STR(DEFAULT)
+#define CONFIG_TST(SECTION, KEY, NAME) MACRO_VOID2(__COUNTER__) \
+static inline constexpr const char MACRO_CAT4(SECTION,_,KEY,_KEY)[] = NAME; \
+static inline constexpr const char MACRO_CAT4(SECTION,_,KEY,_DEFAULT)[] = "maybe"; \
+static inline constexpr const char MACRO_CAT4(SECTION,_,KEY,_DEFAULT_STR)[] = "maybe"
 #define CONFIG_INT(SECTION, KEY, NAME, DEFAULT) MACRO_VOID2(__COUNTER__) \
 static inline constexpr const char MACRO_CAT4(SECTION,_,KEY,_KEY)[] = NAME; \
 static inline constexpr int32_t MACRO_CAT4(SECTION,_,KEY,_DEFAULT) = DEFAULT; \
@@ -93,7 +97,7 @@ CONFIG_INT(INPUT2, TIMER, "timer", 200);
 CONFIG_BOL(INPUT2, RAW_INPUT, "raw_input", false);
 
 #define NETWORK_SECTION_NAME "network"
-CONFIG_STR(NETWORK, IPV6, "enable_ipv6", "maybe");
+CONFIG_TST(NETWORK, IPV6, "enable_ipv6");
 CONFIG_BOL(NETWORK, NETPLAY, "netplay", true);
 CONFIG_BOL(NETWORK, HIDE_IP, "hide_ip", false);
 CONFIG_BOL(NETWORK, HIDE_NAME, "hide_name", false);
@@ -106,6 +110,7 @@ CONFIG_FLT(PERF, TIMER_LENIENCY, "timer_leniency", 4.0);
 #define MISC_SECTION_NAME "misc"
 CONFIG_BOL(MISC, HIDE_WIP, "hide_wip", true);
 CONFIG_BOL(MISC, SKIP_INTRO, "skip_intro", true);
+CONFIG_TST(MISC, DISCORD, "discord_integration");
 
 // DO NOT DEFINE CONFIGS BELOW THIS LINE
 static inline constexpr auto END_COUNTER = __COUNTER__ - 1;
@@ -160,6 +165,7 @@ static inline constexpr const char *const DEFAULT_CONFIGS[END_COUNTER - START_CO
 
 	CONFIG_DEFAULT(MISC, HIDE_WIP),
 	CONFIG_DEFAULT(MISC, SKIP_INTRO),
+	CONFIG_DEFAULT(MISC, DISCORD)
 };
 
 static inline constexpr size_t VALIDATE_DEFAULT_CONFIGS() {
@@ -234,6 +240,23 @@ static bool get_bool_setting(const char* section, const char* key, char(&buffer)
 }
 
 template <bool needs_config_enabled = true, size_t N>
+static ConfigTestState get_test_setting(const char* section, const char* key, char(&buffer)[N]) {
+	size_t length;
+	if (
+		(!needs_config_enabled || use_config) &&
+		(length = get_config_string(section, key, buffer))
+	) {
+		if (!stricmp(buffer, "true")) {
+			return ConfigEnabled;
+		}
+		else if (!stricmp(buffer, "false")) {
+			return ConfigDisabled;
+		}
+	}
+	return ConfigNeedsTest;
+}
+
+template <bool needs_config_enabled = true, size_t N>
 static int32_t get_int_setting(const char* section, const char* key, char(&buffer)[N], int32_t default_val) {
 	size_t length;
 	int32_t ret = default_val;
@@ -273,6 +296,7 @@ static float get_float_setting(const char* section, const char* key, char(&buffe
 }
 
 #define GET_BOOL_CONFIG(SECTION, KEY) get_bool_setting(MACRO_CAT(SECTION,_SECTION_NAME), MACRO_CAT4(SECTION,_,KEY,_KEY), MACRO_CAT4(SECTION,_,KEY,_BUFFER), MACRO_CAT4(SECTION,_,KEY,_DEFAULT))
+#define GET_TEST_CONFIG(SECTION, KEY) get_test_setting(MACRO_CAT(SECTION,_SECTION_NAME), MACRO_CAT4(SECTION,_,KEY,_KEY), MACRO_CAT4(SECTION,_,KEY,_BUFFER))
 #define GET_INT_CONFIG(SECTION, KEY) get_int_setting(MACRO_CAT(SECTION,_SECTION_NAME), MACRO_CAT4(SECTION,_,KEY,_KEY), MACRO_CAT4(SECTION,_,KEY,_BUFFER), MACRO_CAT4(SECTION,_,KEY,_DEFAULT))
 #define GET_HEX_CONFIG(SECTION, KEY) get_hex_setting(MACRO_CAT(SECTION,_SECTION_NAME), MACRO_CAT4(SECTION,_,KEY,_KEY), MACRO_CAT4(SECTION,_,KEY,_BUFFER), MACRO_CAT4(SECTION,_,KEY,_DEFAULT))
 #define GET_FLOAT_CONFIG(SECTION, KEY) get_float_setting(MACRO_CAT(SECTION,_SECTION_NAME), MACRO_CAT4(SECTION,_,KEY,_KEY), MACRO_CAT4(SECTION,_,KEY,_BUFFER), MACRO_CAT4(SECTION,_,KEY,_DEFAULT))
@@ -477,21 +501,8 @@ bool get_inputp2_raw_input() {
 // ====================
 
 static char NETWORK_IPV6_BUFFER[8]{ '\0' };
-IPv6State get_ipv6_state() {
-	size_t length;
-	IPv6State ret = IPv6NeedsTest;
-	if (
-		use_config &&
-		(length = get_config_string(NETWORK_SECTION_NAME, NETWORK_IPV6_KEY, NETWORK_IPV6_BUFFER))
-	) {
-		if (!stricmp(NETWORK_IPV6_BUFFER, "true")) {
-			ret = IPv6Enabled;
-		}
-		else if (!stricmp(NETWORK_IPV6_BUFFER, "false")) {
-			ret = IPv6Disabled;
-		}
-	}
-	return ret;
+int8_t get_ipv6_state() {
+	return GET_TEST_CONFIG(NETWORK, IPV6);
 }
 
 static char NETWORK_NETPLAY_BUFFER[8]{ '\0' };
@@ -525,6 +536,15 @@ bool get_hide_wip_enabled() {
 static char MISC_SKIP_INTRO_BUFFER[8]{ '\0' };
 bool get_skip_intro_enabled() {
 	return GET_BOOL_CONFIG(MISC, SKIP_INTRO);
+}
+
+static char MISC_DISCORD_BUFFER[8]{ '\0' };
+int8_t get_discord_enabled() {
+	return GET_TEST_CONFIG(MISC, DISCORD);
+}
+
+void set_discord_enabled(bool state) {
+	set_config_string(MISC_SECTION_NAME, MISC_DISCORD_KEY, bool_str(state));
 }
 
 // ====================

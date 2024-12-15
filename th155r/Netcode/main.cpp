@@ -498,12 +498,20 @@ bool common_init(
         init_better_game_loop();
     }
 
-#if ENABLE_DISCORD_RICH_PRESENCE
-    if ()
-    discord_rpc_start();
-    discord_rpc_set_large_img_key("mainicon");
-    discord_rpc_set_details("Idle");
-    discord_rpc_commit();
+#if ENABLE_DISCORD_INTEGRATION
+    int8_t discord_state = get_discord_enabled();
+    if (TST_CONFIG_MAYBE(discord_state)) {
+        // TODO: Add something to test if discord is actually present
+        set_discord_enabled(true);
+        discord_state = true;
+    }
+    if (TST_CONFIG_ENABLED(discord_state)) {
+        DISCORD_ENABLED = true;
+        discord_rpc_start();
+        discord_rpc_set_large_img_key("mainicon");
+        discord_rpc_set_details("Idle");
+        discord_rpc_commit();
+    }
 #endif
 
     return true;

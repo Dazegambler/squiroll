@@ -3,9 +3,14 @@
 #ifndef DISCORD_H
 #define DISCORD_H 1
 
-#define ENABLE_DISCORD_RICH_PRESENCE 1
+#include <string>
+#include <string_view>
 
-#if ENABLE_DISCORD_RICH_PRESENCE
+extern bool DISCORD_ENABLED;
+
+#define ENABLE_DISCORD_INTEGRATION 1
+
+#if ENABLE_DISCORD_INTEGRATION
 
 struct DiscordRPCPresence {
 	char state[128];
@@ -31,6 +36,8 @@ void discord_rpc_stop();
 #define RPC_FIELD(field) void discord_rpc_set_##field(const char* value);
 RPC_FIELDS
 #undef RPC_FIELD
+
+std::string_view get_discord_username();
 
 #endif
 

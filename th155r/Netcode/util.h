@@ -35,6 +35,7 @@
 #define MACRO_VOID(...)
 
 #define MACRO_FIRST(arg1, ...) arg1
+#define MACRO_VOID2(...) MACRO_FIRST(,__VA_ARGS__)
 
 #define require_semicolon() do; while(0)
 

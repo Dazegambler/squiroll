@@ -34,7 +34,7 @@ v.start_direction<-::battle.start_direction[i]
 }
 }
 }
-function Create(param){::manbow.SetTerminateFunction(function (){::battle.Release()
+function Create(param){::manbow.SetTerminateFunction(function(){::battle.Release()
 })
 this.Update=this.UpdateMain
 ::manbow.CompileFile("data/script/battle/battle_param.nut",this)
@@ -64,7 +64,7 @@ inputdisplaysetup(0)
 }
 else if(param.game_mode==10){::manbow.CompileFile("data/script/battle/battle_replay_story.nut",this)
 }
-else {::manbow.CompileFile("data/script/battle/battle_replay.nut",this)
+else{::manbow.CompileFile("data/script/battle/battle_replay.nut",this)
 inputdisplaysetup(0)
 inputdisplaysetup(1)
 }
@@ -100,7 +100,7 @@ this.ping_obj.text.green=::setting.ping.green
 this.ping_obj.text.blue=::setting.ping.blue
 this.ping_obj.text.alpha=::setting.ping.alpha
 this.ping_obj.text.ConnectRenderSlot(::graphics.slot.front,1)
-this.ping_obj.Update<-function() {local delay=::network.GetDelay()
+this.ping_obj.Update<-function(){local delay=::network.GetDelay()
 ::rollback.update_delay(delay)
 local str="ping:"+delay
 if(::setting.ping.ping_in_frames)str+="["+((delay+15)/16)+"f]"
@@ -115,7 +115,7 @@ this.ping_task=this.ping_obj
 }
 if(!::network.IsActive()){if(param.game_mode==10){::replay.SetDevice([this.team[0].input,this.team[1].input,::input_talk],::story.stage*3)
 }
-else {::replay.SetDevice([this.team[0].input,this.team[1].input],0)
+else{::replay.SetDevice([this.team[0].input,this.team[1].input],0)
 }
 }
 }
@@ -142,7 +142,7 @@ t.ConnectRenderSlot(::graphics.slot.ui,60000)
 input.list.append(t)
 input.buf.append("")
 }
-input.Update<-function (){local str=this.getinputs(player,this.padding)
+input.Update<-function(){local str=this.getinputs(player,this.padding)
 if(str!=this.lastinput&&str!=""){for(local i=this.listmax-1;i>0;--i){this.buf[i]=this.buf[i-1]
 this.list[i].Set(this.buf[i-1])
 }
@@ -169,7 +169,7 @@ if(input.y<0){str=x_axis<0?"7":!x_axis?"8":"9"
 }
 else if(!input.y){str=x_axis<0?"4":!x_axis?none:"6"
 }
-else {str=x_axis<0?"1":!x_axis?"2":"3"
+else{str=x_axis<0?"1":!x_axis?"2":"3"
 }
 str+=none
 str+=input.b0?"A":none

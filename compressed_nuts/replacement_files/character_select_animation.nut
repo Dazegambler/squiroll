@@ -9,7 +9,7 @@ this.anime_set.Load("data/system/select/stage_pic/stage_pic.pat",null)
 this.anime_set.Load("data/system/select/bgm_name/bgm_name.pat",null)
 this.take<-::actor.LoadAnimationData("data/system/select/pic/pic.pat",true)
 this.take_id<-{}
-local callback=function (){if(!::menu.character_select.anime){return
+local callback=function(){if(!::menu.character_select.anime){return
 }
 local prop=::manbow.Animation2DProperty()
 prop.texture_name=this.texture_name
@@ -32,7 +32,7 @@ v.texture<-t
 if(j==0&&(::menu.character_select.t[0].cursor_master.val==i||::menu.character_select.t[1].cursor_master.val==i)){t.Load(v.texture_name)
 callback.call(v)
 }
-else {t.LoadBackground(v.texture_name,v,callback)
+else{t.LoadBackground(v.texture_name,v,callback)
 }
 }
 }
@@ -77,7 +77,7 @@ actor.SetMotion(41,0)
 actor.alpha=0
 actor.ConnectRenderSlot(::graphics.slot.ui,45000)
 v.actor_stage<-actor
-v.Update<-function (){if(this.action.Update==this.action.UpdateCharacterSelect){if(this.actor_stage.alpha>0){this.actor_stage.alpha-=0.10000000
+v.Update<-function(){if(this.action.Update==this.action.UpdateCharacterSelect){if(this.actor_stage.alpha>0){this.actor_stage.alpha-=0.10000000
 }
 }
 else if(this.actor_stage.alpha<1){this.actor_stage.alpha+=0.10000000
@@ -89,14 +89,14 @@ local v={}
 v.action<-::menu.character_select.weakref()
 v.anime_set<-this.anime_set
 v.device<-[null,null]
-v.Update<-function (){foreach(i,v in this.action.device_id){if(this.device[i]){continue
+v.Update<-function(){foreach(i,v in this.action.device_id){if(this.device[i]){continue
 }
 local s=0
 if(v>=4){s=5
 }
 else if(v>=-1){s=v+1
 }
-else {continue
+else{continue
 }
 local d=::manbow.AnimationController2D()
 d.Init(this.anime_set)
@@ -113,7 +113,7 @@ this.data.push(v)
 if(::network.IsPlaying()){v={}
 v.text<-::font.CreateSystemStringSmall("")
 v.text.ConnectRenderSlot(::graphics.slot.ui,60000)
-v.Update<-function (){local delay=::network.GetDelay()
+v.Update<-function(){local delay=::network.GetDelay()
 ::rollback.update_delay(delay)
 this.text.Set("ping:"+delay)
 this.text.x=::graphics.width-this.text.width-2
@@ -131,7 +131,7 @@ v.text.sx=v.text.sy=0.66000003
 v.text.x=i==0?v.icon.x+32:v.icon.x-v.text.width*v.text.sx
 v.text.y=v.icon.y+2
 v.text.ConnectRenderSlot(::graphics.slot.ui,40000)
-v.Update<-function (){}
+v.Update<-function(){}
 this.data.push(v)
 }
 if(::network.allow_watch&&!::network.is_parent_vs){local ip_str={}
@@ -140,7 +140,7 @@ ip_str.text.x=10
 ip_str.text.y=10
 ip_str.text.sx=ip_str.text.sy=1.2
 ip_str.text.ConnectRenderSlot(::graphics.slot.front,-1)
-ip_str.Update<-function (){if(::input_all.b2==1){::punch.copy_ip_to_clipboard()
+ip_str.Update<-function(){if(::input_all.b2==1){::punch.copy_ip_to_clipboard()
 }
 if(!::network.IsPlaying())this=null
 }

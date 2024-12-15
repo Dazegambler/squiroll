@@ -110,7 +110,7 @@ this.is_suspend=false
 ::menu.title.Show()
 if(::network.return_code==0){::Dialog(0,::menu.common.GetMessageText("disconnect"))
 }
-else {}
+else{}
 ::network.Terminate()
 this.update=this.UpdateMain
 this.timeout=0
@@ -170,7 +170,7 @@ break
 case 6:this.target_addr_h.val=0
 ::Dialog(-1,this.item_table.input_address[0],null,this.dialog_address.Initialize)
 break
-case 8: ::Dialog(2,::menu.common.GetMessageText("input_name"),function (ret){if(ret){::config.network.player_name=ret
+case 8: ::Dialog(2,::menu.common.GetMessageText("input_name"),function(ret){if(ret){::config.network.player_name=ret
 ::config.Save()
 }
 },::config.network.player_name)
@@ -323,7 +323,7 @@ this.timeout=0
 return
 }
 }
-else {this.timeout=0
+else{this.timeout=0
 }
 local st_host=::LOBBY.GetMatchHost()
 local st_userdata=::LOBBY.GetMatchUserData()
@@ -374,7 +374,7 @@ local d=t.find(".")
 if(d){val=t.slice(0,d).tointeger()
 t=t.slice(d+1)
 }
-else {val=t.tointeger()
+else{val=t.tointeger()
 }
 this.target_addr_v[i*3+2].val=val%10
 val=val/10

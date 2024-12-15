@@ -87,7 +87,7 @@ function Update(){::menu.common.UpdateLayout.call(this,this)
 local state=::LOBBY.GetNetworkState()
 if(state!=::LOBBY.CLOSED){this.lobby_user_str.Set("Users: "+::lobby.user_count())
 this.lobby_user_str.visible=true
-}else {this.lobby_user_str.visible=false
+}else{this.lobby_user_str.visible=false
 }
 foreach(v in this.lobby_state){v.visible=false
 }

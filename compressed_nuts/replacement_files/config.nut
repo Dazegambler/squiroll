@@ -76,8 +76,8 @@ else if(this.common_cursor.cancel){this.common_callback_cancel()
 this.Update=this.UpdateMain
 }
 }
-this.proc.se<-function (){::menu.help.Set(this.help_item)
-this.Update=function (){this.cursor_se.Update()
+this.proc.se<-function(){::menu.help.Set(this.help_item)
+this.Update=function(){this.cursor_se.Update()
 if(this.cursor_se.diff){::sound.SetVolumeSE(this.cursor_se.val*10/100.00000000)
 }
 if(this.cursor_se.ok){::config.sound.se=this.cursor_se.val*10
@@ -90,8 +90,8 @@ this.Update=this.UpdateMain
 }
 }
 }
-this.proc.bgm<-function (){::menu.help.Set(this.help_item)
-this.Update=function (){this.cursor_bgm.Update()
+this.proc.bgm<-function(){::menu.help.Set(this.help_item)
+this.Update=function(){this.cursor_bgm.Update()
 if(this.cursor_bgm.diff){::sound.SetVolumeBGM(this.cursor_bgm.val*10/100.00000000)
 }
 if(this.cursor_bgm.ok){::config.sound.bgm=this.cursor_bgm.val*10
@@ -104,80 +104,80 @@ this.Update=this.UpdateMain
 }
 }
 }
-this.proc.screen<-function (){::menu.help.Set(this.help_item)
+this.proc.screen<-function(){::menu.help.Set(this.help_item)
 this.Update=this.UpdateCommonItem
 this.common_cursor=this.cursor_screen
-this.common_callback_ok=function (){::config.graphics.fullscreen=this.cursor_screen.val
+this.common_callback_ok=function(){::config.graphics.fullscreen=this.cursor_screen.val
 }
-this.common_callback_cancel=function (){this.cursor_screen.val=::config.graphics.fullscreen
+this.common_callback_cancel=function(){this.cursor_screen.val=::config.graphics.fullscreen
 }
 }
-this.proc.vsync<-function (){::menu.help.Set(this.help_item)
+this.proc.vsync<-function(){::menu.help.Set(this.help_item)
 this.Update=this.UpdateCommonItem
 this.common_cursor=this.cursor_vsync
-this.common_callback_ok=function (){::config.graphics.vsync=this.cursor_vsync.val
+this.common_callback_ok=function(){::config.graphics.vsync=this.cursor_vsync.val
 }
-this.common_callback_cancel=function (){this.cursor_vsync.val=::config.graphics.vsync
+this.common_callback_cancel=function(){this.cursor_vsync.val=::config.graphics.vsync
 }
 }
-this.proc.background<-function (){::menu.help.Set(this.help_item)
+this.proc.background<-function(){::menu.help.Set(this.help_item)
 this.Update=this.UpdateCommonItem
 this.common_cursor=this.cursor_background
-this.common_callback_ok=function (){::config.graphics.background=this.cursor_background.val
+this.common_callback_ok=function(){::config.graphics.background=this.cursor_background.val
 }
-this.common_callback_cancel=function (){this.cursor_background.val=::config.graphics.background
+this.common_callback_cancel=function(){this.cursor_background.val=::config.graphics.background
 }
 }
-this.proc.fps<-function (){::menu.help.Set(this.help_item)
+this.proc.fps<-function(){::menu.help.Set(this.help_item)
 this.Update=this.UpdateCommonItem
 this.common_cursor=this.cursor_fps
-this.common_callback_ok=function (){::config.graphics.fps=this.cursor_fps.val
+this.common_callback_ok=function(){::config.graphics.fps=this.cursor_fps.val
 }
-this.common_callback_cancel=function (){this.cursor_fps.val=::config.graphics.fps
+this.common_callback_cancel=function(){this.cursor_fps.val=::config.graphics.fps
 }
 }
-this.proc.key1p<-function (){if(this.cursor_item.ok){this.Suspend()
+this.proc.key1p<-function(){if(this.cursor_item.ok){this.Suspend()
 ::menu.key_config.Initialize(0)
 return
 }
 }
-this.proc.key2p<-function (){if(this.cursor_item.ok){this.Suspend()
+this.proc.key2p<-function(){if(this.cursor_item.ok){this.Suspend()
 ::menu.key_config.Initialize(1)
 return
 }
 }
-this.proc.replay_save<-function (){::menu.help.Set(this.help_item)
+this.proc.replay_save<-function(){::menu.help.Set(this.help_item)
 this.Update=this.UpdateCommonItem
 this.common_cursor=this.cursor_replay_save
-this.common_callback_ok=function (){::config.replay.save_mode=this.cursor_replay_save.val
+this.common_callback_ok=function(){::config.replay.save_mode=this.cursor_replay_save.val
 }
-this.common_callback_cancel=function (){this.cursor_replay_save.val=::config.replay.save_mode
+this.common_callback_cancel=function(){this.cursor_replay_save.val=::config.replay.save_mode
 }
 }
-this.proc.replay_save_online<-function (){::menu.help.Set(this.help_item)
+this.proc.replay_save_online<-function(){::menu.help.Set(this.help_item)
 this.Update=this.UpdateCommonItem
 this.common_cursor=this.cursor_replay_save_online
-this.common_callback_ok=function (){::config.replay.save_mode_online=this.cursor_replay_save_online.val
+this.common_callback_ok=function(){::config.replay.save_mode_online=this.cursor_replay_save_online.val
 }
-this.common_callback_cancel=function (){this.cursor_replay_save_online.val=::config.replay.save_mode_online
+this.common_callback_cancel=function(){this.cursor_replay_save_online.val=::config.replay.save_mode_online
 }
 }
-this.proc.lang<-function (){::menu.help.Set(this.help_item)
+this.proc.lang<-function(){::menu.help.Set(this.help_item)
 this.Update=this.UpdateCommonItem
 this.common_cursor=this.cursor_lang
-this.common_callback_ok=function (){if(::config.lang!=this.cursor_lang.val){::config.lang=this.cursor_lang.val
+this.common_callback_ok=function(){if(::config.lang!=this.cursor_lang.val){::config.lang=this.cursor_lang.val
 this.anime.UpdateLang()
 }
 }
-this.common_callback_cancel=function (){this.cursor_lang.val=::config.lang
+this.common_callback_cancel=function(){this.cursor_lang.val=::config.lang
 }
 }
-this.proc.mods<-function (){if(this.cursor_item.ok){this.Suspend()
+this.proc.mods<-function(){if(this.cursor_item.ok){this.Suspend()
 ::menu.key_config.Initialize(0)
 return
 }
 }
-this.proc.exit<-function (){if(this.cursor_item.ok){::loop.End()
+this.proc.exit<-function(){if(this.cursor_item.ok){::loop.End()
 return
 }
 }

@@ -20,9 +20,9 @@ function BeginResult()
 	{
 		::replay.Save();
 	}
-	else
-	{
-	}
+	//else
+	//{
+	//}
 
 	this.End();
 }

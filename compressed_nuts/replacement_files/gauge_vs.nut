@@ -45,7 +45,7 @@ actor=this.CreateStaticParts(3,this.mat_center)
 if(::battle.time<0){actor=this.CreateStaticParts(4,this.mat_center)
 this.time<-null
 }
-else {this.time<-::manbow.Number()
+else{this.time<-::manbow.Number()
 this.time.Initialize(this.texture,0,656,32,54,2,0,true)
 this.time.SetValue(99)
 this.time.x=640+32

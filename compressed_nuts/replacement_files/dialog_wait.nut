@@ -35,7 +35,7 @@ case 2:if(::UPnP.GetExternalIP()==""){this.obj[3].visible=true
 this.obj[4].visible=false
 this.obj[5].visible=false
 }
-else {this.obj[3].visible=false
+else{this.obj[3].visible=false
 this.obj[4].visible=false
 this.obj[5].visible=true
 }

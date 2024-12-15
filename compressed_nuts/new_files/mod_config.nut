@@ -42,7 +42,7 @@ this.cursor.Update()
 if(this.cursor.ok){::input_all.Lock()
 if(this.cursor.y==10){::loop.End()
 }
-else {this.current_item=this.item[this.cursor.y]
+else{this.current_item=this.item[this.cursor.y]
 if(this.cursor.x==0){this.update=this.GetPadStateWait
 }
 else if(this.cursor.x==1){this.update=this.GetKeyStateWait

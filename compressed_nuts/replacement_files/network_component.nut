@@ -40,7 +40,7 @@ this.allow_watch=false
 this.is_disconnect=false
 this.client_num=0
 this.icon=[null,null]
-this.func_get_delay=function (){return 0
+this.func_get_delay=function(){return 0
 }
 }
 function Terminate(){if(this.upnp_port>0){try{local ret=::UPnP.DeletePort(this.upnp_port,"UDP")
@@ -65,11 +65,11 @@ try{local ret=::UPnP.AddPort(port,port,"UDP")
 }
 catch(_e){}
 }
-else {this.upnp_port=0
+else{this.upnp_port=0
 }
 this.Initialize()
 local mb_server=::manbow.NetworkServer()
-mb_server.ConnectRequest=function (id,context,table_src,table_dst){table_dst.message<-""
+mb_server.ConnectRequest=function(id,context,table_src,table_dst){table_dst.message<-""
 if(::LOBBY.GetNetworkState()!=::LOBBY.CLOSED){::LOBBY.Close()
 }
 if(!("version" in table_src)||table_src.version!=this.GetVersion()){table_dst.message="version"
@@ -82,7 +82,7 @@ return true
 table_dst.message="watch"
 return false
 }
-else {if(::config.network.allow_watch){table_dst.message="ready"
+else{if(::config.network.allow_watch){table_dst.message="ready"
 return false
 }
 table_dst.message="watch"
@@ -95,7 +95,7 @@ return false
 if(this.inst){return false
 }
 this.inst=this.inst_connect
-this.func_get_delay=function (){return ::network.inst.GetChildDelay(0)
+this.func_get_delay=function(){return ::network.inst.GetChildDelay(0)
 }
 this.rand_seed=::manbow.timeGetTime()
 this.srand(this.rand_seed)
@@ -113,15 +113,15 @@ table_dst.name<-::config.network.player_name.len()>16?"": ::config.network.playe
 table_dst.color<-this.color_num[0]
 table_dst.icon<-this.icon[0]
 ::sound.PlaySE(120)
-::loop.Fade(function (){::menu.network.Suspend()
+::loop.Fade(function(){::menu.network.Suspend()
 ::menu.character_select.Initialize(1)
 })
 return true
 }.bindenv(this)
-mb_server.DisconnectChild=function (id){if(id==0){this.Disconnect()
+mb_server.DisconnectChild=function(id){if(id==0){this.Disconnect()
 }
 }.bindenv(this)
-mb_server.ReceiveFromChild=function (id,table){}.bindenv(this)
+mb_server.ReceiveFromChild=function(id,table){}.bindenv(this)
 this.client_num=2
 this.inst_connect=mb_server
 local ret=mb_server.Init(port,this.client_num)
@@ -138,7 +138,7 @@ if(!mb_client.Init(0,this.client_num)){this.inst=null
 mb_client=null
 return false
 }
-mb_client.ConnectRequest=function (id,context,table_src,table_dst){table_dst.message<-""
+mb_client.ConnectRequest=function(id,context,table_src,table_dst){table_dst.message<-""
 if(!("version" in table_src)&&table_src.version!=::GetVersion()){table_dst.message="version"
 return false
 }
@@ -152,7 +152,7 @@ table_dst.is_parent_vs<-::network.is_parent_vs
 table_dst.is_watch<-true
 return true
 }
-mb_client.ConnectComplete=function (id,context,_reply_table){if(::LOBBY.GetNetworkState()!=::LOBBY.CLOSED){::LOBBY.Close()
+mb_client.ConnectComplete=function(id,context,_reply_table){if(::LOBBY.GetNetworkState()!=::LOBBY.CLOSED){::LOBBY.Close()
 }
 if(this.inst){return
 }
@@ -161,7 +161,7 @@ this.is_parent_vs=_reply_table.is_parent_vs
 this.is_watch=true
 this.inst=this.inst_connect
 ::sound.PlaySE(120)
-::loop.Fade(function (){::menu.network.Suspend()
+::loop.Fade(function(){::menu.network.Suspend()
 ::menu.watch.Initialize()
 })
 return
@@ -178,15 +178,15 @@ this.color_num[1]=::savedata.GetColorNum()
 this.icon[0]="icon" in _reply_table?_reply_table.icon:null
 this.allow_watch=_reply_table.allow_watch
 this.use_lobby=_reply_table.use_lobby
-this.func_get_delay=function (){return ::network.inst.GetParentDelay()
+this.func_get_delay=function(){return ::network.inst.GetParentDelay()
 }
 ::sound.PlaySE(120)
-::loop.Fade(function (){::menu.network.Suspend()
+::loop.Fade(function(){::menu.network.Suspend()
 ::menu.character_select.Initialize(1)
 })
 return
 }.bindenv(this)
-mb_client.ConnectReject=function (context,table){if("message" in table){if(table.message=="busy"){this.return_code=1
+mb_client.ConnectReject=function(context,table){if("message" in table){if(table.message=="busy"){this.return_code=1
 }
 if(table.message=="version"){this.return_code=2
 }
@@ -196,7 +196,7 @@ if(table.message=="ready"){this.return_code=4
 }
 }
 }.bindenv(this)
-mb_client.DisconnectParent=function (){if(this.is_parent_vs){local t={}
+mb_client.DisconnectParent=function(){if(this.is_parent_vs){local t={}
 t.message<-"end_vs"
 for(local i=0;i<this.client_num;i++){this.inst.SendToChild(i,t)
 }
@@ -207,7 +207,7 @@ if(this.is_watch&&this.inst){this.inst.Reconnect()
 return
 }
 }.bindenv(this)
-mb_client.ReceiveFromParent=function (table){try{if("message" in table){if(table.message=="end_vs"){for(local i=0;i<::network_client_num;i++){::network_inst.SendToChild(i,table)
+mb_client.ReceiveFromParent=function(table){try{if("message" in table){if(table.message=="end_vs"){for(local i=0;i<::network_client_num;i++){::network_inst.SendToChild(i,table)
 }
 this.Disconnect()
 return
@@ -233,12 +233,12 @@ function Disconnect(scene=true){if(this.is_disconnect){return
 if(!::network.IsActive()){return
 }
 this.is_disconnect=true
-if(scene){::loop.Fade(function (){if(::network.IsActive()){::network.Terminate()
+if(scene){::loop.Fade(function(){if(::network.IsActive()){::network.Terminate()
 ::loop.End(::menu.network)
 }
 })
 }
-else {::network.Terminate()
+else{::network.Terminate()
 }
 return
 }

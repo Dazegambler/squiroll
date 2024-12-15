@@ -109,7 +109,7 @@ foreach(i,v in this.action.item){if(v==null){continue
 local t=this.text[i]
 if(t.width>270){t.sx=270.00000000/t.width.tofloat()
 }
-else {t.sx=1
+else{t.sx=1
 }
 }
 foreach(key,item in this.select_obj){item.SetString(item_table[key].slice(1))

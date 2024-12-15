@@ -103,6 +103,8 @@ function UpdateOP()
 
 function UpdateMain()
 {
+	::discord.rpc_commit_details_and_state("Idle", "");
+
 	//this.new_version = ::INFORMATION.GetNewestVersion() > this.GetUpdaterVersion();
 	this.cursor.Update();
 
@@ -140,6 +142,7 @@ function UpdateDifficulty()
 			::input_all.Lock();
 			::loop.Fade(function ()
 			{
+				::discord.rpc_commit_details_and_state("Story", "");
 				::menu.title.Suspend();
 				::menu.story_select.Initialize(::menu.title.cursor_difficulty.val);
 			});
@@ -155,6 +158,7 @@ function UpdateDifficulty()
 			::input_all.Lock();
 			::loop.Fade(function ()
 			{
+				::discord.rpc_set_details("VS COM");
 				::menu.title.Suspend();
 				::menu.character_select.Initialize(0, this.cursor_difficulty.val);
 			}.bindenv(this));
@@ -170,6 +174,8 @@ function UpdateDifficulty()
 
 this.proc.story <- function ()
 {
+	::discord.rpc_commit_details_and_state("Story", "");
+
 	local num = ::savedata.GetDifficultyNum();
 	this.cursor_difficulty.SetItemNum(num);
 	this.cursor_difficulty.val = ::config.difficulty.story;
@@ -191,6 +197,7 @@ this.proc.vs_player <- function ()
 {
 	::loop.Fade(function ()
 	{
+		::discord.rpc_set_details("VS Local");
 		::menu.title.Suspend();
 		::menu.character_select.Initialize(1);
 	});
@@ -203,6 +210,7 @@ this.proc.tutorial <- function ()
 {
 	::loop.Fade(function ()
 	{
+		::discord.rpc_commit_details_and_state("Tutorial", "");
 		::menu.title.Suspend();
 		::tutorial.Initialize();
 	});
@@ -211,6 +219,7 @@ this.proc.practice <- function ()
 {
 	::loop.Fade(function ()
 	{
+		::discord.rpc_set_details("Practice");
 		::menu.title.Suspend();
 		::menu.character_select.Initialize(40);
 	});

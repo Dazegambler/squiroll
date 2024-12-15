@@ -17,6 +17,7 @@
 #include "config.h"
 #include "lobby.h"
 #include "better_game_loop.h"
+#include "discord.h"
 
 #include <shared.h>
 
@@ -494,6 +495,11 @@ bool common_init(
 
     if (get_better_game_loop_enabled())
         init_better_game_loop();
+
+    discord_rpc_start();
+    discord_rpc_set_large_img_key("mainicon");
+    discord_rpc_set_details("Idle");
+    discord_rpc_commit();
 
     return true;
 }

@@ -200,6 +200,7 @@ function StartupServer( port, mode )
 		::sound.PlaySE(120);
 		::loop.Fade(function ()
 		{
+			::discord.rpc_set_details("VS Online");
 			::menu.network.Suspend();
 			::menu.character_select.Initialize(1);
 		});
@@ -287,6 +288,7 @@ function StartupClient( addr, port, mode )
 			::sound.PlaySE(120);
 			::loop.Fade(function ()
 			{
+				::discord.rpc_set_details("Spectating");
 				::menu.network.Suspend();
 				::menu.watch.Initialize();
 			});
@@ -312,6 +314,7 @@ function StartupClient( addr, port, mode )
 		::sound.PlaySE(120);
 		::loop.Fade(function ()
 		{
+			::discord.rpc_set_details("VS Online");
 			::menu.network.Suspend();
 			::menu.character_select.Initialize(1);
 		});

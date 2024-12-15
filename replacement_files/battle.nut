@@ -59,6 +59,13 @@ class this.InitializeParam
 
 function Create( param )
 {
+	if (::replay.GetState() == ::replay.PLAY)
+		::discord.rpc_set_details("Watching a replay");
+	::discord.rpc_set_state("");
+	if (::replay.GetState() != ::replay.PLAY && (::network.IsPlaying() || param.game_mode != 1))
+		::discord.rpc_set_small_img_key(param.team[::network.IsPlaying() ? (::network.is_parent_vs ? 1 : 0) : 0].master.name);
+	::discord.rpc_commit();
+
 	::manbow.SetTerminateFunction(function ()
 	{
 		::battle.Release();

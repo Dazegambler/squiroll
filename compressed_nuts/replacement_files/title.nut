@@ -45,7 +45,8 @@ function UpdateOP(){if(::input_all.b0==1||::input_all.b1==1){::loop.Fade(functio
 this.Update=function(){}
 }
 }
-function UpdateMain(){this.cursor.Update()
+function UpdateMain(){::discord.rpc_commit_details_and_state("Idle","")
+this.cursor.Update()
 if(this.cursor.ok){::input_all.Lock()
 if(this.item[this.cursor.val] in this.proc){this.proc[this.item[this.cursor.val]].call(this)
 }
@@ -59,7 +60,8 @@ if(this.cursor_difficulty.ok){if(this.cursor.val==0){if(this.cursor_difficulty.v
 ::config.Save()
 }
 ::input_all.Lock()
-::loop.Fade(function(){::menu.title.Suspend()
+::loop.Fade(function(){::discord.rpc_commit_details_and_state("Story","")
+::menu.title.Suspend()
 ::menu.story_select.Initialize(::menu.title.cursor_difficulty.val)
 })
 }
@@ -67,7 +69,8 @@ else{if(this.cursor_difficulty.val!=::config.difficulty.vs){::config.difficulty.
 ::config.Save()
 }
 ::input_all.Lock()
-::loop.Fade(function(){::menu.title.Suspend()
+::loop.Fade(function(){::discord.rpc_set_details("VS COM")
+::menu.title.Suspend()
 ::menu.character_select.Initialize(0,this.cursor_difficulty.val)
 }.bindenv(this))
 }
@@ -76,7 +79,8 @@ else if(this.cursor_difficulty.cancel){this.Update=this.UpdateMain
 }
 this.anime.Update()
 }
-this.proc.story<-function(){local num=::savedata.GetDifficultyNum()
+this.proc.story<-function(){::discord.rpc_commit_details_and_state("Story","")
+local num=::savedata.GetDifficultyNum()
 this.cursor_difficulty.SetItemNum(num)
 this.cursor_difficulty.val=::config.difficulty.story
 if(this.cursor_difficulty.val>=num){this.cursor_difficulty.val=num-1
@@ -87,17 +91,20 @@ this.proc.vs_com<-function(){this.cursor_difficulty.SetItemNum(4)
 this.cursor_difficulty.val=::config.difficulty.vs
 this.Update=this.UpdateDifficulty
 }
-this.proc.vs_player<-function(){::loop.Fade(function(){::menu.title.Suspend()
+this.proc.vs_player<-function(){::loop.Fade(function(){::discord.rpc_set_details("VS Local")
+::menu.title.Suspend()
 ::menu.character_select.Initialize(1)
 })
 }
 this.proc.network<-function(){::menu.network.Initialize()
 }
-this.proc.tutorial<-function(){::loop.Fade(function(){::menu.title.Suspend()
+this.proc.tutorial<-function(){::loop.Fade(function(){::discord.rpc_commit_details_and_state("Tutorial","")
+::menu.title.Suspend()
 ::tutorial.Initialize()
 })
 }
-this.proc.practice<-function(){::loop.Fade(function(){::menu.title.Suspend()
+this.proc.practice<-function(){::loop.Fade(function(){::discord.rpc_set_details("Practice")
+::menu.title.Suspend()
 ::menu.character_select.Initialize(40)
 })
 }

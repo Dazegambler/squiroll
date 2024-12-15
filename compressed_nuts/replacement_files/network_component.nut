@@ -113,7 +113,8 @@ table_dst.name<-::config.network.player_name.len()>16?"": ::config.network.playe
 table_dst.color<-this.color_num[0]
 table_dst.icon<-this.icon[0]
 ::sound.PlaySE(120)
-::loop.Fade(function(){::menu.network.Suspend()
+::loop.Fade(function(){::discord.rpc_set_details("VS Online")
+::menu.network.Suspend()
 ::menu.character_select.Initialize(1)
 })
 return true
@@ -161,7 +162,8 @@ this.is_parent_vs=_reply_table.is_parent_vs
 this.is_watch=true
 this.inst=this.inst_connect
 ::sound.PlaySE(120)
-::loop.Fade(function(){::menu.network.Suspend()
+::loop.Fade(function(){::discord.rpc_set_details("Spectating")
+::menu.network.Suspend()
 ::menu.watch.Initialize()
 })
 return
@@ -181,7 +183,8 @@ this.use_lobby=_reply_table.use_lobby
 this.func_get_delay=function(){return ::network.inst.GetParentDelay()
 }
 ::sound.PlaySE(120)
-::loop.Fade(function(){::menu.network.Suspend()
+::loop.Fade(function(){::discord.rpc_set_details("VS Online")
+::menu.network.Suspend()
 ::menu.character_select.Initialize(1)
 })
 return

@@ -260,6 +260,8 @@ function Update()
 
 function UpdateMain()
 {
+	::discord.rpc_commit_details_and_state("Idle", "");
+
 	::menu.help.Set(this.help);
 	this.cursor_item.Update();
 	::punch.ignore_ping();
@@ -274,6 +276,8 @@ function UpdateMain()
 		case 0://wait in lobby
 			if (::LOBBY.GetNetworkState() == 2)
 			{
+				::discord.rpc_commit_details_and_state("Waiting in " + ::config.network.lobby_name, "");
+
 				::LOBBY.SetExternalPort(::config.network.hosting_port);
 				::LOBBY.SetUserData("" + ::config.network.hosting_port);
 
@@ -297,6 +301,8 @@ function UpdateMain()
 		case 1://search in lobby
 			if (::LOBBY.GetNetworkState() == 2)
 			{
+				::discord.rpc_commit_details_and_state("Searching in " + ::config.network.lobby_name, "");
+
 				::LOBBY.SetExternalPort(::config.network.hosting_port);
 				::LOBBY.SetUserData("" + ::config.network.hosting_port);
 				::LOBBY.SetLobbyUserState(::LOBBY.MATCHING);
@@ -313,6 +319,8 @@ function UpdateMain()
 			break;
 
 		case 4://wait incomming
+			::discord.rpc_commit_details_and_state("Waiting for connection", "");
+
 			::network.use_lobby = false;
 			::network.StartupServer(::config.network.hosting_port, 1);
 			this.update = this.UpdateWaitServer;

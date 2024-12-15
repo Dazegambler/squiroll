@@ -127,12 +127,14 @@ this.LobbyUpdate()
 if(this.update){this.update()
 }
 }
-function UpdateMain(){::menu.help.Set(this.help)
+function UpdateMain(){::discord.rpc_commit_details_and_state("Idle","")
+::menu.help.Set(this.help)
 this.cursor_item.Update()
 ::punch.ignore_ping()
 if(::input_all.b0==1){::input_all.Lock()
 ::network.local_device_id=::input_all.GetLastDevice()
-switch(this.cursor_item.val){case 0:if(::LOBBY.GetNetworkState()==2){::LOBBY.SetExternalPort(::config.network.hosting_port)
+switch(this.cursor_item.val){case 0:if(::LOBBY.GetNetworkState()==2){::discord.rpc_commit_details_and_state("Waiting in "+::config.network.lobby_name,"")
+::LOBBY.SetExternalPort(::config.network.hosting_port)
 ::LOBBY.SetUserData(""+::config.network.hosting_port)
 this.upnp_timeout=0
 if(!::config.network.upnp){::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING)
@@ -146,7 +148,8 @@ this.display_ip_on_wait=false
 ::Dialog(-1,this.item_table.wait_incomming[0],null,this.dialog_wait.InitializeWithUPnP)
 }
 break
-case 1:if(::LOBBY.GetNetworkState()==2){::LOBBY.SetExternalPort(::config.network.hosting_port)
+case 1:if(::LOBBY.GetNetworkState()==2){::discord.rpc_commit_details_and_state("Searching in "+::config.network.lobby_name,"")
+::LOBBY.SetExternalPort(::config.network.hosting_port)
 ::LOBBY.SetUserData(""+::config.network.hosting_port)
 ::LOBBY.SetLobbyUserState(::LOBBY.MATCHING)
 this.lobby_user_state=::LOBBY.MATCHING
@@ -157,7 +160,8 @@ this.display_ip_on_wait=false
 break
 case 2:this.update=this.UpdateSelectLobby
 break
-case 4: ::network.use_lobby=false
+case 4: ::discord.rpc_commit_details_and_state("Waiting for connection","")
+::network.use_lobby=false
 ::network.StartupServer(::config.network.hosting_port,1)
 this.update=this.UpdateWaitServer
 ::punch.reset_ip()

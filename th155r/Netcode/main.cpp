@@ -30,9 +30,10 @@ using namespace std::literals::string_view_literals;
 const uintptr_t base_address = (uintptr_t)GetModuleHandleA(NULL);
 uintptr_t libact_base_address = 0;
 
-LARGE_INTEGERX qpc_raw_frequency;
-LARGE_INTEGERX qpc_frame_frequency;
-LARGE_INTEGERX qpc_timer_frequency;
+uint64_t qpc_second_frequency;
+uint64_t qpc_frame_frequency;
+uint64_t qpc_milli_frequency;
+uint64_t qpc_micro_frequency;
 
 /*
 void Cleanup() {
@@ -467,14 +468,13 @@ bool common_init(
 
     patch_netplay();
 
-    QueryPerformanceFrequency(&qpc_raw_frequency);
+    LARGE_INTEGERX qpc_freq;
+    QueryPerformanceFrequency(&qpc_freq);
 
-    qpc_frame_frequency = qpc_raw_frequency / 60; // frames per second
-#if SYNC_TYPE == SYNC_USE_MILLISECONDS
-    qpc_timer_frequency = qpc_raw_frequency / 1000; // millisecond per second
-#elif SYNC_TYPE == SYNC_USE_MICROSECONDS
-    qpc_timer_frequency = qpc_raw_frequency / 1000000; // microsecond per second
-#endif
+    qpc_second_frequency = (uint64_t)qpc_freq;
+    qpc_frame_frequency = (uint64_t)qpc_freq / 60; // frames per second
+    qpc_milli_frequency = (uint64_t)qpc_freq / 1000; // millisecond per second
+    qpc_micro_frequency = (uint64_t)qpc_freq / 1000000; // microsecond per second
 
     patch_sockets();
 

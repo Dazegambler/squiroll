@@ -192,15 +192,39 @@ static inline constexpr bool is_constexpr(...) { return false; }
 #undef gnu_used
 #endif
 
+#ifdef gnu_alias
+#undef gnu_alias
+#endif
+
 #if GCC_COMPAT || CLANG_COMPAT
 #define gnu_used __attribute__((used))
+#define gnu_alias(...) __attribute__((alias(__VA_ARGS__)))
+#else
+#define gnu_used
+#define gnu_alias(...)
 #endif
+
+#if !__has_builtin(__builtin_expect_with_probability)
+#define __builtin_expect_with_probability(cond, ...) (cond)
+#endif
+#define expect_chance __builtin_expect_with_probability
 
 #if GCC_COMPAT || CLANG_COMPAT
 #define expect(...) __builtin_expect(__VA_ARGS__)
 #else
 #define expect(...) MACRO_FIRST(__VA_ARGS__)
 #endif
+
+#if CLANG_COMPAT
+#define assume(...) __builtin_assume(__VA_ARGS__)
+#elif GCC_COMPAT
+#define assume(...) __attibute__((assume(__VA_ARGS__)))
+#elif MSVC_COMPAT
+#define assume(...) __assume(__VA_ARGS__)
+#else
+#define assume(...)
+#endif
+
 
 #ifdef unreachable
 #undef unreachable
@@ -494,12 +518,6 @@ inline bool HasScrollLockChanged() {
     return false;
 }
 
-static inline uint64_t query_performance_counter() {
-    LARGE_INTEGER ret;
-    QueryPerformanceCounter(&ret);
-    return ret.QuadPart;
-}
-
 static inline bool file_exists(const char* path) {
     DWORD attr = GetFileAttributesA(path);
     return attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY);
@@ -640,6 +658,10 @@ struct LARGE_INTEGERX {
     inline operator int64_t() const {
         return this->value.QuadPart;
     }
+
+    inline explicit operator uint64_t() const {
+        return this->value.QuadPart;
+    }
 };
 
 struct WaitableEvent {
@@ -750,22 +772,57 @@ struct WaitableTimer {
 #define CurrentProcessPseudoHandle() ((HANDLE)-1)
 #define CurrentThreadPseudoHandle() ((HANDLE)-2)
 
-extern LARGE_INTEGERX qpc_raw_frequency;
-extern LARGE_INTEGERX qpc_frame_frequency;
-extern LARGE_INTEGERX qpc_timer_frequency;
+static inline constexpr double FRAC_SECONDS_PER_FRAME = 1.0 / 60.0;
 
-static inline int64_t current_qpc() {
+extern uint64_t qpc_second_frequency;
+extern uint64_t qpc_frame_frequency;
+extern uint64_t qpc_milli_frequency;
+extern uint64_t qpc_micro_frequency;
+
+#if SYNC_TYPE == SYNC_USE_MILLISECONDS
+#define SYNC_WORD_STR "milliseconds"
+#define SYNC_UNIT_STR "ms"
+#elif SYNC_TYPE == SYNC_USE_MICROSECONDS
+#define SYNC_WORD_STR "microseconds"
+#define SYNC_UNIT_STR "us"
+#endif
+
+static inline uint64_t current_qpc() {
     LARGE_INTEGERX now;
     QueryPerformanceCounter(&now);
-    return now;
+    return (uint64_t)now;
+}
+
+static inline uint64_t qpc_to_seconds(uint64_t value) {
+    return value / qpc_second_frequency;
+}
+
+static inline uint64_t qpc_to_frames(uint64_t value) {
+    return value / qpc_frame_frequency;
+}
+
+static inline uint64_t qpc_to_milliseconds(uint64_t value) {
+    return value / qpc_milli_frequency;
+}
+
+static inline uint64_t qpc_to_microseconds(uint64_t value) {
+    return value / qpc_micro_frequency;
+}
+
+static inline uint64_t qpc_to_sync_time(uint64_t value) {
+#if SYNC_TYPE == SYNC_USE_MILLISECONDS
+    return qpc_to_milliseconds(value);
+#elif SYNC_TYPE == SYNC_USE_MICROSECONDS
+    return qpc_to_microseconds(value);
+#endif
 }
 
 static inline int64_t current_sync_time() {
-    return current_qpc() / qpc_timer_frequency;
+    return qpc_to_sync_time(current_qpc());
 }
 
 template <bool use_pause = false>
-static inline void spin_until_qpc(int64_t stop) {
+static inline void spin_until_qpc(uint64_t stop) {
     while (current_qpc() < stop) {
         if constexpr (use_pause) {
             _mm_pause();
@@ -774,8 +831,8 @@ static inline void spin_until_qpc(int64_t stop) {
 }
 
 template <bool use_pause = false>
-static inline void spin_for_sync_time(int64_t duration) {
-    int64_t initial_time = current_sync_time();
+static inline void spin_for_sync_time(uint64_t duration) {
+    uint64_t initial_time = current_sync_time();
     while (current_sync_time() - initial_time < duration) {
         if constexpr (use_pause) {
             _mm_pause();

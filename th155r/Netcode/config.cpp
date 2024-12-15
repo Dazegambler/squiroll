@@ -24,20 +24,19 @@ static constexpr char CONFIG_FILE_NAME[] = "netcode.ini";
 static constexpr char TASOFRO_CONFIG_FILE_NAME[] = "config.ini";
 
 #define LOBBY_SECTION_NAME "lobby"
+
 #define LOBBY_HOST_KEY "lobby_server"
+#define LOBBY_PORT_KEY "lobby_port"
 #if !USE_DEV_SERVER
 #define LOBBY_HOST_DEFAULT "squiroll.justapenguin.ca"
-#define LOBBY_HOST_DEFAULT_STR LOBBY_HOST_DEFAULT
-#define LOBBY_PORT_KEY "lobby_port"
 #define LOBBY_PORT_DEFAULT "5001"
-#define LOBBY_PORT_DEFAULT_STR LOBBY_PORT_DEFAULT
 #else
 #define LOBBY_HOST_DEFAULT "waluigistacostand.ddns.net"
-#define LOBBY_HOST_DEFAULT_STR LOBBY_HOST_DEFAULT
-#define LOBBY_PORT_KEY "lobby_port"
 #define LOBBY_PORT_DEFAULT "1550"
-#define LOBBY_PORT_DEFAULT_STR LOBBY_PORT_DEFAULT
 #endif
+#define LOBBY_HOST_DEFAULT_STR LOBBY_HOST_DEFAULT
+#define LOBBY_PORT_DEFAULT_STR LOBBY_PORT_DEFAULT
+
 #define LOBBY_PASS_KEY "lobby_password"
 #define LOBBY_PASS_DEFAULT "kzxmckfqbpqieh8rw<rczuturKfnsjxhauhybttboiuuzmWdmnt5mnlczpythaxf"
 #define LOBBY_PASS_DEFAULT_STR LOBBY_PASS_DEFAULT

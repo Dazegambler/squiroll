@@ -1,5 +1,12 @@
-#include <Windows.h>
+#if __INTELLISENSE__
+#undef _HAS_CXX20
+#define _HAS_CXX20 0
+#endif
+
+#include <windows.h>
 #include <dxgi.h>
+#include <float.h>
+
 #include "log.h"
 #include "patch_utils.h"
 #include "util.h"
@@ -9,17 +16,15 @@
 
 typedef void stdcall window_update_frame_t();
 typedef bool stdcall window_render_t();
-typedef void thiscall run_update_list_t(void*);
+typedef void fastcall run_update_list_t(void*);
 
-#define game_loop_call_addr (0x1A22C_R)
+#define game_loop_call_addr (0x1A22D_R)
 #define wndproc_param_addr (0x23944_R)
 #define set_window_mode_param_addr (0xEAB6_R)
 #define no_gdi_compat_patch_addr (0xD687_R)
 #define no_input_thread_patch_addr (0x3175C_R)
 
 #define main_hwnd (*(HWND*)0x4DAD0C_R)
-#define exit_requested (*(bool*)0x4DAD02_R)
-#define cur_fps ((uint32_t*)0x4DACF8_R)
 #define window_vsync ((bool*)0x49AF01_R)
 #define window_present_interval ((bool*)0x4DAD2D_R)
 #define dxgi_swapchain_desc ((DXGI_SWAP_CHAIN_DESC*)0x4DAE4C_R)
@@ -47,20 +52,28 @@ typedef struct {
 typedef int (*PerformanceAPI_GetAPI_Func)(int inVersion, PerformanceAPI_Functions* outFunctions);
 #endif
 
-static void cdecl set_window_mode_custom(int, int, bool fullscreen, bool vsync) {
+static void set_fullscreen(BOOL fullscreen) {
     if (dxgi_swapchain_desc->Windowed == fullscreen) {
         dxgi_swapchain_desc->Windowed = !fullscreen;
         HRESULT res = (*dxgi_swapchain)->SetFullscreenState(fullscreen, nullptr);
-        if (FAILED(res))
+        if (FAILED(res)) {
             log_printf("SetFullscreenState failed: 0x%X\n", res);
+        }
 
         SetForegroundWindow(main_hwnd);
     }
+}
+
+static void cdecl set_window_mode_custom(int, int, bool fullscreen, bool vsync) {
+    set_fullscreen(fullscreen);
     *window_vsync = vsync;
     *window_present_interval = vsync;
 }
 
 static bool fullscreen_queued = false;
+static bool exit_requested = false;
+static uint32_t current_fps = 0;
+
 void stdcall better_game_loop() {
     // Disable DXGI's Alt+Enter handler because it's unreliable sometimes (handled in custom WndProc instead)
     size_t enter_held_frames = 0;
@@ -69,14 +82,13 @@ void stdcall better_game_loop() {
     dxgi_factory->MakeWindowAssociation(main_hwnd, DXGI_MWA_NO_ALT_ENTER);
 
     // Make the scheduler friendlier
-    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+    SetThreadPriority(CurrentThreadPseudoHandle(), THREAD_PRIORITY_HIGHEST);
     timeBeginPeriod(1);
 
     // The vanilla game loop does this for some reason, so this needs to do the same to not desync replays
     unsigned int fpu_state = 0;
     _clearfp();
-    _controlfp_s(&fpu_state, _RC_NEAR, _MCW_RC);
-    _controlfp_s(&fpu_state, _PC_64, _MCW_PC);
+    _controlfp_s(&fpu_state, _RC_NEAR | _PC_64, _MCW_RC | _MCW_PC);
 
 #if PROFILING
     PerformanceAPI_Functions perf_api;
@@ -87,49 +99,50 @@ void stdcall better_game_loop() {
     // TODO: Investigate how precise this is without CREATE_WAITABLE_TIMER_HIGH_RESOLUTION
     WaitableTimer timer;
     timer.initialize();
-    uint64_t qpc_next_fps_update = query_performance_counter() + qpc_raw_frequency;
+    uint64_t qpc_next_fps_update = current_qpc() + qpc_second_frequency;
     uint32_t frames_this_sec = 0;
-    while (!exit_requested) {
+
+    while (expect(!exit_requested, true)) {
 #if PROFILING
         perf_api.BeginEvent("Frame", nullptr, 0xFFFFFFFF);
 #endif
 
-        uint64_t qpc_target = query_performance_counter() + qpc_frame_frequency;
+        uint64_t qpc_target = current_qpc() + qpc_frame_frequency;
         timer.set(166667 - 30000); // 3ms of leniency
 
         run_update_list(*input_update_list);
         window_update_frame();
         // NOTE: Not handling "SkipRender" because that doesn't seem to be used in AoCF
-        if (window_render())
-            frames_this_sec++;
+        frames_this_sec += window_render();
 
 #if PROFILING
         perf_api.EndEvent();
 #endif
 
-        if (query_performance_counter() < qpc_target) {
+        uint64_t now = current_qpc();
+        if (now < qpc_target) {
             timer.wait();
-            if (query_performance_counter() > qpc_target) {
-                uint64_t overshoot = (query_performance_counter() - qpc_target) / qpc_timer_frequency;
-#if SYNC_TYPE == SYNC_USE_MILLISECONDS
-                log_printf("Scheduler overshot frame deadline by %llu ms\n", overshoot);
-#elif SYNC_TYPE == SYNC_USE_MICROSECONDS
-                log_printf("Scheduler overshot frame deadline by %llu us\n", overshoot);
-#endif
+            now = current_qpc();
+            if (now > qpc_target) {
+                log_printf("Scheduler overshot frame deadline by %llu " SYNC_UNIT_STR "\n", qpc_to_sync_time(now - qpc_target));
+            }
+            else {
+                while (now < qpc_target) {
+                    _mm_pause();
+                    now = current_qpc();
+                }
             }
         }
-        while (query_performance_counter() < qpc_target)
-            _mm_pause();
 
-        if (query_performance_counter() >= qpc_next_fps_update) {
-            qpc_next_fps_update = query_performance_counter() + qpc_raw_frequency;
-            *cur_fps = frames_this_sec;
+        if (expect_chance(now >= qpc_next_fps_update, true, FRAC_SECONDS_PER_FRAME)) {
+            qpc_next_fps_update = now + qpc_second_frequency;
+            current_fps = frames_this_sec;
             frames_this_sec = 0;
         }
 
-        if (fullscreen_queued) {
-            set_window_mode_custom(0, 0, dxgi_swapchain_desc->Windowed, *window_vsync);
+        if (expect(fullscreen_queued, false)) {
             fullscreen_queued = false;
+            set_fullscreen(dxgi_swapchain_desc->Windowed);
         }
     }
 
@@ -138,7 +151,7 @@ void stdcall better_game_loop() {
     SendMessageA(main_hwnd, WM_DESTROY, 0, 0);
 }
 
-LRESULT __stdcall WndProc_custom(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
+LRESULT stdcall WndProc_custom(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
     if (Msg == WM_SYSKEYDOWN && (HIWORD(lParam) & KF_ALTDOWN) && wParam == VK_RETURN) {
         fullscreen_queued = true;
         return 0;
@@ -147,9 +160,14 @@ LRESULT __stdcall WndProc_custom(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lPar
 }
 
 void init_better_game_loop() {
-    hotpatch_call(game_loop_call_addr, better_game_loop);
-    mem_write(wndproc_param_addr, (void*)WndProc_custom);
-    mem_write(set_window_mode_param_addr, (void*)set_window_mode_custom);
+    hotpatch_rel32(game_loop_call_addr, better_game_loop);
+
+    mem_write(0xEA21_R, &current_fps);
+    mem_write(0xE0A7_R, &exit_requested);
+    mem_write(0xE192_R, &exit_requested);
+
+    mem_write(wndproc_param_addr, &WndProc_custom);
+    mem_write(set_window_mode_param_addr, &set_window_mode_custom);
     mem_write(no_gdi_compat_patch_addr, PATCH_BYTES<0x00>); // Not used at all and it's probably better to turn it off
     mem_write(no_input_thread_patch_addr, NOP_BYTES(5));
 }

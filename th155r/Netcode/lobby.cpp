@@ -458,21 +458,21 @@ static char pong_recv[sizeof(PacketPunchDelayPong) + 64];
 
 using delay_mask_t = UBitIntType<std::max(DELAY_PACKET_COUNT, (size_t)32)>;
 
-static constexpr uint64_t DELAY_PACKET_SPACING_MS = 5;
-static constexpr uint64_t DELAY_RECV_SPACING_MS = 1;
-static constexpr uint64_t MAX_PACKET_END_DELAY_MS = 2000;
-static constexpr uint64_t MAX_PUNCH_START_DELAY_MS = 2000;
+static constexpr uint64_t DELAY_PACKET_SPACING_US =     5000;
+static constexpr uint64_t DELAY_RECV_SPACING_US =        100;
+static constexpr uint64_t MAX_PACKET_END_DELAY_US =  2000000;
+static constexpr uint64_t MAX_PUNCH_START_DELAY_US = 2000000;
 
 #if SYNC_TYPE == SYNC_USE_MILLISECONDS
-static constexpr uint64_t DELAY_PACKET_SPACING = DELAY_PACKET_SPACING_MS;
-static constexpr uint64_t DELAY_RECV_SPACING = DELAY_RECV_SPACING_MS;
-static constexpr uint64_t MAX_PACKET_END_DELAY = MAX_PACKET_END_DELAY_MS;
-static constexpr uint64_t MAX_PUNCH_START_DELAY = MAX_PUNCH_START_DELAY_MS;
+static constexpr uint64_t DELAY_PACKET_SPACING = std::max<uint64_t>(DELAY_PACKET_SPACING_US / 1000, 1);
+static constexpr uint64_t DELAY_RECV_SPACING = std::max<uint64_t>(DELAY_RECV_SPACING_US / 1000, 1);
+static constexpr uint64_t MAX_PACKET_END_DELAY = std::max<uint64_t>(MAX_PACKET_END_DELAY_US / 1000, 1);
+static constexpr uint64_t MAX_PUNCH_START_DELAY = std::max<uint64_t>(MAX_PUNCH_START_DELAY_US / 1000, 1);
 #elif SYNC_TYPE == SYNC_USE_MICROSECONDS
-static constexpr uint64_t DELAY_PACKET_SPACING = DELAY_PACKET_SPACING_MS * 1000;
-static constexpr uint64_t DELAY_RECV_SPACING = 100;
-static constexpr uint64_t MAX_PACKET_END_DELAY = MAX_PACKET_END_DELAY_MS * 1000;
-static constexpr uint64_t MAX_PUNCH_START_DELAY = MAX_PUNCH_START_DELAY_MS * 1000;
+static constexpr uint64_t DELAY_PACKET_SPACING = DELAY_PACKET_SPACING_US;
+static constexpr uint64_t DELAY_RECV_SPACING = DELAY_RECV_SPACING_US;
+static constexpr uint64_t MAX_PACKET_END_DELAY = MAX_PACKET_END_DELAY_US;
+static constexpr uint64_t MAX_PUNCH_START_DELAY = MAX_PUNCH_START_DELAY_US;
 #endif
 
 // Function for telling the server what the external port of this
@@ -662,11 +662,7 @@ finished_receive:
 
 #if CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS
     lobby_debug_printf(
-#if SYNC_TYPE == SYNC_USE_MILLISECONDS
-        "DELAY: %llu ms (%zu responses)\n"
-#elif SYNC_TYPE == SYNC_USE_MICROSECONDS
-        "DELAY: %llu microseconds (%zu responses)\n"
-#endif
+        "DELAY: %llu " SYNC_UNIT_STR " (%zu responses)\n"
         , total_delay, received_number
     );
 #endif

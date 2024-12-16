@@ -16,6 +16,7 @@ this.game_mode<--1
 this.ping_task<-null
 this.input_task<-null
 this.ping_obj<-null
+this.frame_task<-null
 class this.InitializeParam{game_mode=1
 seed=0
 team=[null,null]
@@ -50,6 +51,7 @@ inputdisplaysetup(1)
 break
 case 40: ::manbow.CompileFile("data/actor/status/gauge_vs.nut",this.gauge)
 ::manbow.CompileFile("data/script/battle/battle_practice.nut",this)
+framedisplaysetup()
 inputdisplaysetup(0)
 inputdisplaysetup(1)
 break
@@ -123,6 +125,20 @@ else{::replay.SetDevice([this.team[0].input,this.team[1].input],0)
 }
 }
 }
+function framedisplaysetup(){local frame={}
+frame.last<-0
+frame.Update<-function(){::debug.print_value(::battle.team[0].current.temp_atk_data)
+return
+local frames=::battle.team[0].current.frame
+local recovery=::battle.team[1].current.recover
+if(this.last!=frames&&frames<35){this.last=frames
+local total=frames-recovery
+::debug.print("frames:"+total+"\n"+"recovery:"+recovery+"\n")
+}
+}
+AddTask(frame)
+this.frame_task=frame
+}
 function inputdisplaysetup(player){::setting.input_display.update_consts()
 local p=player!=1?::setting.input_display.p1: ::setting.input_display.p2
 if(p.enabled){local input={}
@@ -189,6 +205,9 @@ this.ping_obj=null
 }
 if(this.input_task!=null){DeleteTask(this.input_task)
 this.input_task=null
+}
+if(this.frame_task!=null){DeleteTask(this.frame_task)
+this.frame_task=null
 }
 this.task={}
 this.gauge.Terminate()

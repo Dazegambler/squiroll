@@ -25,6 +25,7 @@ this.game_mode <- -1;
 this.ping_task <- null;
 this.input_task <- null;
 this.ping_obj <- null;
+this.frame_task <- null;
 class this.InitializeParam
 {
 	game_mode = 1;
@@ -86,6 +87,7 @@ function Create( param )
 	case 40:
 		::manbow.CompileFile("data/actor/status/gauge_vs.nut", this.gauge);
 		::manbow.CompileFile("data/script/battle/battle_practice.nut", this);
+		//framedisplaysetup();
 		inputdisplaysetup(0);
 		inputdisplaysetup(1);
 		break;
@@ -199,6 +201,28 @@ function Create( param )
 	}
 }
 
+function framedisplaysetup() {
+	local frame = {};
+	frame.last <- 0;
+	//frame.count <- 0;
+	//frame.recover <- 0;
+	frame.Update <- function () {
+		::debug.print_value(::battle.team[0].current.temp_atk_data);
+		return;
+		//this.last = ::battle.team[0].current.flagAttack
+		local frames = ::battle.team[0].current.frame;
+		local recovery = ::battle.team[1].current.recover;
+		if (this.last != frames && frames < 35){
+			this.last = frames;
+			local total = frames - recovery;
+			::debug.print("frames:"+total+"\n"+"recovery:"+recovery+"\n");
+			//::debug.print_value(total);
+		}
+	}
+	AddTask(frame);
+	this.frame_task = frame;
+}
+
 function inputdisplaysetup(player) {
 	::setting.input_display.update_consts();
 	local p = player != 1 ? ::setting.input_display.p1 : ::setting.input_display.p2;
@@ -287,6 +311,10 @@ function Release()
 	if (this.input_task != null) {
 		DeleteTask(this.input_task);
 		this.input_task = null;
+	}
+	if (this.frame_task != null) {
+		DeleteTask(this.frame_task);
+		this.frame_task = null;
 	}
 	this.task = {};
 	this.gauge.Terminate();

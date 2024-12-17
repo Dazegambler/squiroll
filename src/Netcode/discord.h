@@ -10,6 +10,14 @@
 
 #define ENABLE_DISCORD_INTEGRATION 1
 
+#define ENABLE_DISCORD_LOGGING 1
+
+#if !DISABLE_ALL_LOGGING_FOR_BUILD && ENABLE_DISCORD_LOGGING
+#define log_discordf(...) log_printf(__VA_ARGS__)
+#else
+#define log_discordf(...) EVAL_NOOP(__VA_ARGS__)
+#endif
+
 #define RPC_FIELDS \
 	RPC_FIELD(state) \
 	RPC_FIELD(details) \
@@ -42,7 +50,8 @@ RPC_FIELDS
 
 #undef RPC_FIELD
 
-const char* get_discord_userid();
+size_t get_discord_userid_length();
+extern char lobby_user_id[1 + INTEGER_BUFFER_SIZE<uint64_t>];
 
 #else
 

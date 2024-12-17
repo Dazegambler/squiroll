@@ -144,7 +144,9 @@ static bool rpc_connected = false;
 static std::atomic_bool rpc_thread_running;
 static MessageFrame rpc_send_msg;
 static MessageFrame rpc_recv_msg;
-static char rpc_user_id[INTEGER_BUFFER_SIZE<uint64_t>] = {};
+
+static size_t user_id_length = 0;
+char lobby_user_id[1 + INTEGER_BUFFER_SIZE<uint64_t>] = "d";
 
 static std::atomic_bool rpc_presence_queued;
 static DiscordRPCPresence rpc_queued_presence;
@@ -220,7 +222,7 @@ static bool pipe_read(void* data, size_t len) {
 		}
 	}
 
-	log_printf("PeekNamedPipe failed: 0x%X\n", GetLastError());
+	log_discordf("PeekNamedPipe failed: 0x%X\n", GetLastError());
 	pipe_close();
 	return false;
 }
@@ -239,7 +241,7 @@ static bool rpc_read_msg(bool update_user_id = false) {
 
 		switch (rpc_recv_msg.opcode) {
 			case Opcode::Frame: {
-				log_printf("Discord RPC message: %s\n", rpc_recv_msg.msg);
+				log_discordf("Discord RPC message: %s\n", rpc_recv_msg.msg);
 				if (update_user_id) {
 					// I'd rather not pull in a whole JSON parsing library for this
 					constexpr char target_field[] = "\"id\":\"";
@@ -252,8 +254,8 @@ static bool rpc_read_msg(bool update_user_id = false) {
 					while (*end) {
 						if (*end == '"') {
 							if (start != end) {
-								memcpy(rpc_user_id, start, std::min(sizeof(rpc_user_id) - 1, (size_t)(end - start)));
-								log_printf("Got Discord user ID: %s\n", rpc_user_id);
+								memcpy(lobby_user_id + 1, start, user_id_length = std::min(sizeof(lobby_user_id) - 2, (size_t)(end - start)));
+								log_discordf("Got Discord user ID: %s\n", lobby_user_id + 1);
 							}
 							break;
 						}
@@ -271,7 +273,7 @@ static bool rpc_read_msg(bool update_user_id = false) {
 			case Opcode::Pong:
 				break;
 			default: {
-				log_printf("Bad opcode: 0x%X\n", rpc_recv_msg.opcode);
+				log_discordf("Bad opcode: 0x%X\n", rpc_recv_msg.opcode);
 				pipe_close();
 				return false;
 			}
@@ -298,7 +300,7 @@ static void rpc_update() {
 		}
 
 		rpc_connected = true;
-		log_printf("Discord RPC connected\n");
+		log_discordf("Discord RPC connected\n");
 	}
 
 	if (rpc_presence_queued.load()) {
@@ -320,7 +322,7 @@ static void rpc_update() {
 		ReleaseSRWLockShared(&rpc_presence_lock);
 
 		snprintf(rpc_send_msg.msg, sizeof(rpc_send_msg.msg), R"({"cmd":"SET_ACTIVITY","nonce":%zu,"args":{"pid":%lu,"activity":{%s}}})", rpc_nonce++, rpc_pid, activity.finish());
-		log_printf("Updating rich presence: %s\n", rpc_send_msg.msg);
+		log_discordf("Updating rich presence: %s\n", rpc_send_msg.msg);
 
 		rpc_send_msg.opcode = Opcode::Frame;
 		rpc_send_msg.len = strlen(rpc_send_msg.msg);
@@ -365,8 +367,8 @@ void discord_rpc_stop() {
 	rpc_thread_running.store(false);
 }
 
-const char* get_discord_userid() {
-	return rpc_user_id;
+size_t get_discord_userid_length() {
+	return user_id_length;
 }
 
 #endif

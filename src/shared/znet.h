@@ -329,6 +329,7 @@ static in_port_t get_port(const sockaddr* addr) {
 }
 
 static inline constexpr size_t MAX_ADDR_BUFF_SIZE = (std::max)(INET_ADDRSTRLEN, INET6_ADDRSTRLEN);
+static inline constexpr size_t MAX_IP_BUFF_SIZE = (std::max)(sizeof(IP4_ADDRESS), sizeof(IP6_ADDRESS));
 
 static void print_ipv4_full(IP4_ADDRESS addr) {
     union {

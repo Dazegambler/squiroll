@@ -62,8 +62,7 @@ static inline constexpr size_t MAX_NICKNAME_LENGTH = 32;
 // size: 0x8+
 struct PacketLobbyName {
     PacketType type; // 0x0
-    NicknameSource source; // 0x1
-    // 0x2
+    // 0x1
     uint32_t length; // 0x4
     char name[]; // 0x8
 };

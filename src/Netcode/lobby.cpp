@@ -190,18 +190,24 @@ static_assert(__builtin_offsetof(AsyncLobbyClient, current_nickname) == 0x308);
 typedef void fastcall generate_nickname_t(AsyncLobbyClient* self);
 #define generate_nickname_func 0x88E0
 
+typedef std::string* cdecl wtf_func_t(std::string*, std::string*, std::string*);
+#define wtf_func_addr 0x128E0
+
 #define initial_generate_nickname_call 0x6DAD
 #define inuse_generate_nickname_fixup_addrA 0x740D
 #define inuse_generate_nickname_fixup_addrB 0x7415
 
 #if LOBBY_DISCORD_INTEGRATION
-static NicknameSource nickname_source = AUTO_GENERATED_NAME;
+
+using namespace std::literals::string_literals;
 
 static void fastcall generate_nickname_hook(AsyncLobbyClient* self) {
-    const char* name = get_discord_userid();
-    if (*name) {
-        // do something to mimic the logic of the original generate function
-        //nickname_source = DISCORD_USERID;
+    size_t user_id_length = get_discord_userid_length();
+    // do something to mimic the logic of the original generate function
+    if (user_id_length > 0 && (user_id_length + 1) < self->max_nickname_length) {
+        // Screw std string
+        self->current_nickname = ""s;
+        self->__pending_nickname.assign(lobby_user_id, user_id_length + 1);
         return;
     }
     return based_pointer<generate_nickname_t>(lobby_base_address, generate_nickname_func)(self);
@@ -478,11 +484,6 @@ static void send_lobby_name_packet(SocketUDP sock, const char* nickname, size_t 
     } else {
         name_packet->type = PACKET_TYPE_LOBBY_NAME;
     }
-#if LOBBY_DISCORD_INTEGRATION
-    name_packet->source = nickname_source;
-#else
-    name_packet->source = AUTO_GENERATED_NAME;
-#endif
     name_packet->length = length;
     memcpy(name_packet->name, nickname, length);
 
@@ -1004,9 +1005,6 @@ int WSAAPI lobby_socket_connect_hook(SOCKET s, const sockaddr* name, int namelen
     if (ret == 0) {
         lobby_addr.initialize(name, namelen);
 
-        print_sockaddr(lobby_addr);
-        lobby_debug_printf("\n");
-
         //local_addr_length = sizeof(sockaddr_storage);
         //getsockname(s, (sockaddr*)&local_addr, (int*)&local_addr_length);
 
@@ -1325,14 +1323,6 @@ void patch_se_lobby(void* base_address) {
 #if LOBBY_DISCORD_INTEGRATION
     if (DISCORD_ENABLED) {
         hotpatch_rel32(based_pointer(base_address, initial_generate_nickname_call), &generate_nickname_hook);
-
-        // If the nickname is somehow in use, fallback to an auto-generated name.
-        mem_write(based_pointer(base_address, inuse_generate_nickname_fixup_addrA), PATCH_BYTES<
-            BASE_NOP4,  // NOP
-            0x31, 0xD2, // XOR EDX, EDX
-            0x88, 0x15  // MOV BYTE PTR [const], DL
-        >);
-        mem_write(based_pointer(base_address, inuse_generate_nickname_fixup_addrB), &nickname_source);
     }
 #endif
 

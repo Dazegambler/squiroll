@@ -36,7 +36,7 @@
 
 #if ENABLE_DISCORD_INTEGRATION
 // Toggle this define
-#define LOBBY_DISCORD_INTEGRATION 0
+#define LOBBY_DISCORD_INTEGRATION 1
 #else
 // Keep this as 0
 #define LOBBY_DISCORD_INTEGRATION 0

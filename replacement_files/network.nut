@@ -47,6 +47,7 @@ this.update <- null;
 this.state <- 0;
 this.plugin <- {};
 this.plugin.se_lobby <- ::libact.LoadPlugin("data/plugin/se_lobby.dll");
+::LOBBY.SetMaxNickLength(32);
 this.plugin.se_upnp <- ::libact.LoadPlugin("data/plugin/se_upnp.dll");
 //this.plugin.se_infomation <- ::libact.LoadPlugin("data/plugin/se_information.dll");
 this.cursor_lobby <- this.Cursor(1, this.room_name.len(), ::input_all);

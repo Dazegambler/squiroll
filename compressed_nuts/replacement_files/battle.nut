@@ -145,7 +145,9 @@ if(p.enabled){local input={}
 input.list<-[]
 input.buf<-[]
 input.lastinput<-""
-input.sincelast<-0;input.autodeletetimer<-p.timer;input.getinputs<-getinputs
+input.sincelast<-0
+input.autodeletetimer<-p.timer
+input.getinputs<-getinputs
 input.padding<-p.spacing?" ":""
 input.listmax<-p.list_max
 for(local i=0;i<input.listmax;++i){local t=::manbow.String()

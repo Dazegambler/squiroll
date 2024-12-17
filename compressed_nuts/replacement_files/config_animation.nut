@@ -13,7 +13,8 @@ this.title<-::manbow.Sprite()
 this.title.Initialize(texture,res.left,res.top,res.width,res.height)
 this.item.push(this.title)
 local item_table=::menu.common.LoadItemTextArray("data/system/config/item.csv")
-::menu.common.InitializeLayout.call(this,null,item_table);local item_width=548
+::menu.common.InitializeLayout.call(this,null,item_table)
+local item_width=548
 local left=::menu.common.item_x-item_width/2
 local text_table={}
 foreach(i,v in this.action.item){if(v==null){continue

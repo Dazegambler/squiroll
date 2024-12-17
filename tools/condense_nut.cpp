@@ -125,11 +125,11 @@ int main(int argc, char* argv[]) {
                     if (comment_type == 1) {
                         comment_type = 0;
                         c = ' ';
-                        goto handle_whitespace;
+                        goto handle_newline;
                     }
                     c = prev_c;
                     continue;
-                case '\\':
+                case '/':
                     if (comment_type == 2) {
                         if (prev_c == '*') {
                             comment_type = 0;
@@ -150,7 +150,7 @@ int main(int argc, char* argv[]) {
                     end_token();
                     c = prev_c;
                     continue;
-                case '\n':
+                case '\n': handle_newline:
 #if REMOVE_SEMICOLONS
                     if (pre_semicolon) {
                         pre_semicolon = false;
@@ -204,9 +204,11 @@ int main(int argc, char* argv[]) {
                         bool prev_is_function = prev_token == "function"sv;
                         bool prev_is_return = false;
                         bool prev_is_else = false;
+                        bool next_can_colon = false;
                         if (
-                            prev_is_function || prev_token == "local"sv || prev_token == "in"sv || prev_token == "case"sv ||
-                            (prev_is_return = prev_token == "return"sv) || prev_token == "class"sv || prev_token == "delete"sv || prev_token == "instanceof"sv ||
+                            prev_is_function || prev_token == "local"sv || prev_token == "case"sv || 
+                            (prev_is_return = prev_token == "return"sv) || prev_token == "class"sv || prev_token == "delete"sv ||
+                            (next_can_colon = (prev_token == "in"sv || prev_token == "instanceof"sv)) ||
                             (prev_is_else = prev_token == "else"sv)
                         ) {
                             if (!can_fold) {

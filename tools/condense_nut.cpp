@@ -210,73 +210,76 @@ int main(int argc, char* argv[]) {
 #if !REMOVE_SEMICOLONS
                     if (c != ';') {
 #endif
-                        bool prev_is_function = prev_token == "function"sv;
+                        bool prev_is_function;
                         bool prev_is_return = false;
                         bool prev_is_else = false;
                         bool next_can_colon = false;
                         if (
-                            prev_is_function || prev_token == "local"sv || prev_token == "case"sv || 
-                            (prev_is_return = prev_token == "return"sv) || prev_token == "class"sv || prev_token == "delete"sv ||
-                            (next_can_colon = (prev_token == "in"sv || prev_token == "instanceof"sv)) ||
-                            (prev_is_else = prev_token == "else"sv)
+                            !can_fold &&
+                            (
+                                prev_token == "local"sv || prev_token == "case"sv ||
+                                prev_token == "class"sv || prev_token == "delete"sv ||
+                                (prev_is_function = prev_token == "function"sv) ||
+                                (prev_is_return = prev_token == "return"sv) ||
+                                (next_can_colon = (prev_token == "in"sv || prev_token == "instanceof"sv)) ||
+                                (prev_is_else = prev_token == "else"sv)
+                            )
                         ) {
-                            if (!can_fold) {
-                                can_fold = true;
-                                if (prev_is_else) {
-                                    c = ' ';
-                                    if (
-                                        !(
-                                            current[1] == 'i' && current[2] == 'f' && 
-                                            (current[3] == ' ' || current[3] == '\t' || current[3] == '(' || current[3] == '\r' || current[3] == '\n')
-                                        )
-                                    ) {
-                                        continue;
-                                    }
+                            can_fold = true;
+                            if (prev_is_else) {
+                                c = ' ';
+                                if (
+                                    !(
+                                        current[1] == 'i' && current[2] == 'f' && 
+                                        (current[3] == ' ' || current[3] == '\t' || current[3] == '(' || current[3] == '\r' || current[3] == '\n')
+                                    )
+                                ) {
+                                    continue;
                                 }
-                                /*
-                                else if (prev_is_function) {
-                                    //c = ' ';
-                                    if (
-                                        (current[1] == ' ' || current[1] == '\t') && current[2] == '('
-                                    ) {
-                                        continue;
-                                    }
-                                }
-                                */
-                                else if (prev_is_return) {
-                                    for (size_t j = i + 1; j < size; ++j) {
-                                        switch (char c2 = buffer[j]) {
-                                            case ' ': case '\t': case '\r': case '\n':
-                                                continue;
-                                            case '\'': case '"': case ':':
-                                                i = j - 1;
-                                                c = c2;
-                                                prev_token = ""sv;
-                                                goto skip_whitespace;
-                                            default:
-                                                break;
-                                        }
-                                        break;
-                                    }
-                                }
-                                else if (next_can_colon) {
-                                    for (size_t j = i + 1; j < size; ++j) {
-                                        switch (char c2 = buffer[j]) {
-                                            case ' ': case '\t': case '\r': case '\n':
-                                                continue;
-                                            case ':': case '{': case '[': case '(':
-                                                i = j - 1;
-                                                c = c2;
-                                                prev_token = ""sv;
-                                                goto skip_whitespace;
-                                            default:
-                                                break;
-                                        }
-                                        break;
-                                    }
-                                }
-                                break;
                             }
+                            /*
+                            else if (prev_is_function) {
+                                //c = ' ';
+                                if (
+                                    (current[1] == ' ' || current[1] == '\t') && current[2] == '('
+                                ) {
+                                    continue;
+                                }
+                            }
+                            */
+                            else if (prev_is_return) {
+                                prev_token = ""sv;
+                                for (size_t j = i + 1; j < size; ++j) {
+                                    switch (char c2 = buffer[j]) {
+                                        case ' ': case '\t': case '\r': case '\n':
+                                            continue;
+                                        case '\'': case '"': case ':':
+                                            i = j - 1;
+                                            c = c2;
+                                            goto skip_whitespace;
+                                        default:
+                                            break;
+                                    }
+                                    break;
+                                }
+                            }
+                            else if (next_can_colon) {
+                                prev_token = ""sv;
+                                for (size_t j = i + 1; j < size; ++j) {
+                                    switch (char c2 = buffer[j]) {
+                                        case ' ': case '\t': case '\r': case '\n':
+                                            continue;
+                                        case ':': case '{': case '[': case '(':
+                                            i = j - 1;
+                                            c = c2;
+                                            goto skip_whitespace;
+                                        default:
+                                            break;
+                                    }
+                                    break;
+                                }
+                            }
+                            break;
                         }
                     skip_whitespace:
                         continue;

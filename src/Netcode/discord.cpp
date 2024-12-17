@@ -317,12 +317,14 @@ static DWORD stdcall rpc_thread_proc(void*) {
 void discord_rpc_start() {
 	rpc_pid = GetCurrentProcessId();
 	rpc_thread = CreateThread(NULL, 0, rpc_thread_proc, NULL, 0, NULL);
+	rpc_presence_queued.store(true);
 }
 
 #define RPC_FIELD(field) \
 	void discord_rpc_set_##field(const char* value) { \
-		strncpy(rpc_queued_presence.field, value, sizeof(rpc_queued_presence.field)); \
-		rpc_queued_presence.field[sizeof(rpc_queued_presence.field) - 1] = '\0'; \
+		if (!memccpy(rpc_queued_presence.field, value, '\0', countof(rpc_queued_presence.field))) { \
+			rpc_queued_presence.field[countof(rpc_queued_presence.field) - 1] = '\0'; \
+		} \
 	}
 RPC_FIELDS
 #undef RPC_FIELD

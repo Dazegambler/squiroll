@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 
+#include "util.h"
 
 #define ENABLE_DISCORD_INTEGRATION 1
 
@@ -23,8 +24,8 @@ extern bool DISCORD_ENABLED;
 
 struct DiscordRPCPresence {
 	char state[128];
-	char details[128];
-	char large_img_key[32];
+	char details[128] = "Idle";
+	char large_img_key[32] = "mainicon";
 	char large_img_text[128];
 	char small_img_key[32];
 	char small_img_text[128];
@@ -35,9 +36,7 @@ void discord_rpc_commit();
 void discord_rpc_stop();
 
 #define RPC_FIELD(field) \
-void discord_rpc_set_##field(const char* value); \
-template <size_t N> \
-void discord_rpc_set_##field(const char(&value)[N]);
+void discord_rpc_set_##field(const char* value);
 
 RPC_FIELDS
 

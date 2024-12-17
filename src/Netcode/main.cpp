@@ -508,9 +508,6 @@ bool common_init(
     if (TST_CONFIG_ENABLED(discord_state)) {
         DISCORD_ENABLED = true;
         discord_rpc_start();
-        discord_rpc_set_large_img_key("mainicon");
-        discord_rpc_set_details("Idle");
-        discord_rpc_commit();
     }
 #endif
 

@@ -409,7 +409,6 @@ return null
 function GetIPAddress(text){local ex=this.regexp("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:\\d{1,5}")
 local ret=ex.search(text)
 if(ret==null){return ""
-
 }
 return text.slice(ret.begin,ret.end)
 }

@@ -116,6 +116,8 @@ int main(int argc, char* argv[]) {
             if (is_string) {
                 is_string = prev_c == '\\';
             } else {
+                is_token = false;
+                prev_token = ""sv;
                 is_string = true;
             }
         }

@@ -30,9 +30,11 @@
 #include <functional>
 
 #if _WIN32
+#ifndef ZNET_SUPPORT_WCHAR
 #define ZNET_SUPPORT_WCHAR 1
+#endif
 
-#define ENABLE_SSL 1
+#define ENABLE_SSL 0
 
 #include <WinSock2.h>
 #include <WS2tcpip.h>
@@ -163,7 +165,7 @@ static inline constexpr T ntoh(T value) {
 }
 
 #if ZNET_SUPPORT_WCHAR
-#define ZNET_WHCAR_TEST(type) do; while(0)
+#define ZNET_WCHAR_TEST(type) do; while(0)
 #else
 #define ZNET_WCHAR_TEST(type) if constexpr (std::is_same_v<type, wchar_t>) { static_assert(false, "Wide characters are not supported"); }
 #endif
@@ -1102,6 +1104,7 @@ template<typename S>
 struct SocketBase {
     SOCKET sock = INVALID_SOCKET; // 0x0
 
+    inline constexpr SocketBase() = default;
     inline constexpr SocketBase(SOCKET sock) : sock(sock) {};
 
     inline operator bool() const {
@@ -1402,7 +1405,7 @@ public:
 #if ZNET_SUPPORT_WCHAR
     template<SocketType socket_type>
     bool connect_ip(const wchar_t* ip, const wchar_t* port_str) const {
-        if (wcschr(ip, '.') {
+        if (wcschr(ip, L'.')) {
             return this->connect_ipv4<socket_type>(ip, port_str);
         } else {
             return this->connect_ipv6<socket_type>(ip, port_str);

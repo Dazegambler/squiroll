@@ -51,7 +51,6 @@ inputdisplaysetup(1)
 break
 case 40: ::manbow.CompileFile("data/actor/status/gauge_vs.nut",this.gauge)
 ::manbow.CompileFile("data/script/battle/battle_practice.nut",this)
-framedisplaysetup()
 inputdisplaysetup(0)
 inputdisplaysetup(1)
 break

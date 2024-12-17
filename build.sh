@@ -3,11 +3,11 @@ CONDENSE_NUT_PATH="./tools/condense_nut_linux.run"
 
 REPLACEMENT_FILES_DIR="replacement_files"
 REPLACEMENT_COMPRESSED_DIR="compressed_nuts/replacement_files"
-REPLACEMENT_DESTINATION_DIR="th155r/Netcode/replacement_files"
+REPLACEMENT_DESTINATION_DIR="src/Netcode/replacement_files"
 
 NEW_FILES_DIR="new_files"
 NEW_COMPRESSED_DIR="compressed_nuts/new_files"
-NEW_DESTINATION_DIR="th155r/Netcode/new_files"
+NEW_DESTINATION_DIR="src/Netcode/new_files"
 
 mkdir -p "$REPLACEMENT_COMPRESSED_DIR"
 mkdir -p "$REPLACEMENT_DESTINATION_DIR"
@@ -38,7 +38,7 @@ for FILE in "$NEW_COMPRESSED_DIR"/*; do
     $MAKE_EMBED_PATH "$FILE" "$DEST_FILE"
 done
 
-llvm-rc-18 th155r/th155r.rc
+llvm-rc-18 src/th155r/th155r.rc
 
 PREFIX="$HOME/.xwin-cache/splat"
 INCLUDES="/imsvc$PREFIX/crt/include /imsvc$PREFIX/sdk/include/shared /imsvc$PREFIX/sdk/include/ucrt /imsvc$PREFIX/sdk/include/um"
@@ -47,5 +47,5 @@ DEFINES="-D_CRT_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -DNOMINMAX 
 WARNINGS="-Wno-cpp -Wno-narrowing -Wno-c99-designator"
 FLAGS="/Gs- /GS- /clang:-fwrapv /Zc:threadSafeInit- -mfpmath=sse -msse2 -msse -mstack-probe-size=1024 -flto=full -mstack-alignment=4 -mno-stackrealign /clang:-fomit-frame-pointer"
 
-clang-cl-18 -m32 -fuse-ld=lld /EHsc $WARNINGS $DEFINES $INCLUDES $FLAGS /Ith155r/shared th155r/main.cpp th155r/th155r.res -O2 /link $LIBPATHS /OUT:th155r.exe
-clang-cl-18 -m32 -fuse-ld=lld /EHsc $WARNINGS $DEFINES $INCLUDES $FLAGS /Ith155r/shared /Ith155r/Netcode/include th155r/Netcode/*.cpp /std:c++20 -static -O2 /link /DLL $LIBPATHS user32.lib WS2_32.lib dbghelp.lib winmm.lib -exclude-all-symbols -kill-at /DEF:Netcode.def /OUT:Netcode.dll
+clang-cl-18 -m32 -fuse-ld=lld /EHsc $WARNINGS $DEFINES $INCLUDES $FLAGS /Isrc/shared src/th155r/main.cpp src/th155r/th155r.res -O2 /link $LIBPATHS /OUT:th155r.exe
+clang-cl-18 -m32 -fuse-ld=lld /EHsc $WARNINGS $DEFINES $INCLUDES $FLAGS /Isrc/shared /Isrc/Netcode/include src/Netcode/*.cpp /std:c++20 -static -O2 /link /DLL $LIBPATHS user32.lib WS2_32.lib dbghelp.lib winmm.lib -exclude-all-symbols -kill-at /DEF:Netcode.def /OUT:Netcode.dll

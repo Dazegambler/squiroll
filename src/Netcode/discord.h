@@ -8,7 +8,7 @@
 
 extern bool DISCORD_ENABLED;
 
-#define ENABLE_DISCORD_INTEGRATION 1
+#define ENABLE_DISCORD_INTEGRATION 0
 
 #if ENABLE_DISCORD_INTEGRATION
 
@@ -38,6 +38,10 @@ RPC_FIELDS
 #undef RPC_FIELD
 
 std::string_view get_discord_username();
+
+#else
+
+#define RPC_FIELDS
 
 #endif
 

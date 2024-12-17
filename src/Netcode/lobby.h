@@ -12,6 +12,10 @@
 #include "log.h"
 #include "discord.h"
 
+#define ZNET_SIZE_OPTIMIZE_PRINTS 1
+#define ZNET_IPV6_MODE ZNET_DISABLE_IPV6
+#include "znet.h"
+
 #define PUNCH_BOOST_NONE                0b000
 #define PUNCH_BOOST_PROCESS_PRIORITY    0b001
 #define PUNCH_BOOST_THREAD_PRIORITY     0b010
@@ -71,8 +75,8 @@ void recvfrom_log(
 
 void send_lobby_punch_wait();
 void send_lobby_punch_connect(bool is_ipv6, const char* ip, uint16_t port);
-void send_punch_response(SOCKET sock, bool is_ipv6, const void* ip, uint16_t port);
-void send_punch_delay_pong(SOCKET sock, const void* buf, size_t length);
+void send_punch_response(SocketUDP sock, bool is_ipv6, const void* ip, uint16_t port);
+void send_punch_delay_pong(SocketUDP sock, const void* buf, size_t length);
 
 bool addr_is_lobby(const sockaddr* addr, int addr_len);
 

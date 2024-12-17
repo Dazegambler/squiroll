@@ -406,30 +406,45 @@ extern "C" {
 
             // discord rich presence
             #define RPC_FIELD(field) \
-                sq_setfunc(v, _SC("rpc_set_" #field), [](HSQUIRRELVM v) -> SQInteger { \
+                sq_setfunc(v, _SC("rpc_set_" MACRO_STR(field)), [](HSQUIRRELVM v) -> SQInteger { \
                     const SQChar* str; \
-                    if (sq_gettop(v) != 2 || SQ_FAILED(sq_getstring(v, 2, &str))) \
+                    if (sq_gettop(v) != 2 || SQ_FAILED(sq_getstring(v, 2, &str))) { \
                         return sq_throwerror(v, "Invalid arguments, expected: <string>"); \
-                    discord_rpc_set_##field(str); \
+                    } \
+                    MACRO_CAT(discord_rpc_set_,field)(str); \
                     return 0; \
                 });
+
             sq_createtable(v, _SC("discord"), [](HSQUIRRELVM v) {
                 RPC_FIELDS
-                sq_setfunc(v, _SC("rpc_commit_details_and_state"), [](HSQUIRRELVM v) -> SQInteger {
-                    const SQChar* details;
-                    const SQChar* state;
-                    if (sq_gettop(v) != 3 || SQ_FAILED(sq_getstring(v, 2, &details)) || SQ_FAILED(sq_getstring(v, 3, &state)))
-                        return sq_throwerror(v, "Invalid arguments, expected: <string> <string>");
-                    discord_rpc_set_details(details);
-                    discord_rpc_set_state(state);
-	                discord_rpc_set_small_img_key("");
-                    discord_rpc_commit();
-                    return 0;
-                });
-                sq_setfunc(v, _SC("rpc_commit"), [](HSQUIRRELVM v) -> SQInteger {
-                    discord_rpc_commit();
-                    return 0;
-                });
+                sq_setfunc(v, _SC("rpc_commit_details_and_state"),
+#if ENABLE_DISCORD_INTEGRATION
+                    [](HSQUIRRELVM v) -> SQInteger {
+                        const SQChar* details;
+                        const SQChar* state;
+                        if (sq_gettop(v) != 3 || SQ_FAILED(sq_getstring(v, 2, &details)) || SQ_FAILED(sq_getstring(v, 3, &state))) {
+                            return sq_throwerror(v, "Invalid arguments, expected: <string> <string>");
+                        }
+                        discord_rpc_set_details(details);
+                        discord_rpc_set_state(state);
+	                    discord_rpc_set_small_img_key("");
+                        discord_rpc_commit();
+                        return 0;
+                    }
+#else
+                    sq_dummy
+#endif
+                );
+                sq_setfunc(v, _SC("rpc_commit"), 
+#if ENABLE_DISCORD_INTEGRATION
+                    [](HSQUIRRELVM v) -> SQInteger {
+                        discord_rpc_commit();
+                        return 0;
+                    }
+#else
+                    sq_dummy
+#endif
+                );
             });
             #undef RPC_FIELD
 

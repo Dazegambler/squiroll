@@ -1,27 +1,16 @@
 #pragma once
 
-#ifndef NETCODE_H
-#define NETCODE_H 1
+#ifndef PACKET_TYPES_H
+#define PACKET_TYPES_H 1
 
-#include <stdlib.h>
 #include <stdint.h>
-#include <squirrel.h>
 
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <windns.h>
+#include "znet.h"
 
-#include "util.h"
-#include "discord.h"
-
-#define BETTER_BLACK_SCREEN_FIX 1
-
-extern bool resyncing;
-
-void patch_netplay();
+using namespace zero::net;
 
 enum PacketType : uint8_t {
-	// Original packets
+    // Original packets
     PACKET_TYPE_0 = 0,
     PACKET_TYPE_1 = 1,
     PACKET_TYPE_2 = 2,
@@ -80,6 +69,8 @@ struct PacketLobbyName {
 };
 static_assert(sizeof(PacketLobbyName) == 0x8);
 
+#define LOBBY_NAME_PACKET_SIZE(len) (sizeof(PacketLobbyName) + (len))
+
 // size: 0x1
 struct PacketPunchPing {
     PacketType type; // 0x0
@@ -94,10 +85,7 @@ struct PacketIPv6Test {
     alignas(8) LARGE_INTEGER tsc; // 0x8
     // 0x10
 };
-
 static_assert(sizeof(PacketIPv6Test) == 0x10, "");
-
-#define LOBBY_NAME_PACKET_SIZE(len) (sizeof(PacketLobbyName) + (len))
 
 // size: 0x1
 struct PacketPunchWait {
@@ -129,6 +117,10 @@ struct PacketPunchWait {
         }
         */
     }
+
+    //ipaddr_any local_ip() const {
+        //return ipaddr_any(this->is_ipv6, this->local_port, this->ip);
+    //}
 };
 static_assert(sizeof(PacketPunchWait) == 0x1);
 
@@ -146,6 +138,14 @@ struct PacketPunchConnect {
     alignas(4) unsigned char local_ip[sizeof(IP6_ADDRESS)]; // 0x8
     alignas(4) unsigned char dest_ip[sizeof(IP6_ADDRESS)]; // 0x18
     // 0x28
+
+    ipaddr_any local_ip() const {
+        return ipaddr_any(this->is_ipv6 & LOCAL_IS_IPV6_MASK, this->local_port, this->local_ip_buf);
+    }
+
+    ipaddr_any dest_ip() const {
+        return ipaddr_any(this->is_ipv6 & DEST_IS_IPV6_MASK, this->dest_port, this->dest_ip_buf);
+    }
 };
 */
 
@@ -154,7 +154,7 @@ struct PacketPunchConnect {
     PacketType type; // 0x0
     uint8_t is_ipv6; // 0x1
     uint16_t dest_port; // 0x2
-    alignas(4) unsigned char dest_ip[sizeof(IP6_ADDRESS)]; // 0x4
+    alignas(4) unsigned char dest_ip_buf[sizeof(IP6_ADDRESS)]; // 0x4
     // 0x14
 
     PacketPunchConnect() = default;
@@ -163,7 +163,15 @@ struct PacketPunchConnect {
         : type(PACKET_TYPE_PUNCH_CONNECT), is_ipv6(is_ipv6), dest_port(port)
     
     {
-        inet_pton(!is_ipv6 ? AF_INET : AF_INET6, ip, &this->dest_ip);
+        inet_pton(!is_ipv6 ? AF_INET : AF_INET6, ip, &this->dest_ip_buf);
+    }
+
+    ipaddr_any dest_ip() const {
+        return ipaddr_any(this->is_ipv6, this->dest_port, this->dest_ip_buf);
+    }
+
+    sockaddr_any dest_sock() const {
+        return sockaddr_any(this->is_ipv6, this->dest_port, this->dest_ip_buf);
     }
 };
 static_assert(sizeof(PacketPunchConnect) == 0x14);
@@ -175,6 +183,20 @@ struct PacketPunchPeer {
     uint16_t remote_port; // 0x2
     alignas(4) unsigned char ip[sizeof(IP6_ADDRESS)]; // 0x4
     // 0x14
+
+    PacketPunchPeer() = default;
+
+    PacketPunchPeer(bool is_ipv6, uint16_t port, const void* ip)
+        : type(PACKET_TYPE_PUNCH_PEER), is_ipv6(is_ipv6), remote_port(port)
+    {
+        if (is_ipv6) {
+            *(IP6_ADDRESS*)this->ip = *(IP6_ADDRESS*)ip;
+        } else {
+            *(IP4_ADDRESS*)this->ip = *(IP4_ADDRESS*)ip;
+        }
+    }
+
+    inline PacketPunchPeer(const sockaddr_any& addr) : PacketPunchPeer(addr.is_ipv6(), get_port(addr), addr.get_ip_ptr()) {}
 };
 static_assert(sizeof(PacketPunchPeer) == 0x14);
 
@@ -190,7 +212,7 @@ struct PacketPunchDelayPing {
     PacketType type; // 0x0
     uint8_t flags; // 0x1
     uint16_t dest_port; // 0x2
-    alignas(4) unsigned char dest_ip[sizeof(IP6_ADDRESS)]; // 0x4
+    alignas(4) unsigned char dest_ip_buf[sizeof(IP6_ADDRESS)]; // 0x4
     // 0x14
 
     PacketPunchDelayPing() = default;
@@ -200,10 +222,18 @@ struct PacketPunchDelayPing {
     {
         this->dest_port = ntoh<uint16_t>(((sockaddr_in*)&addr)->sin_port);
         if ((this->flags = addr.ss_family == AF_INET6 ? 0x80 : 0x00)) {
-            *(in_addr6*)&this->dest_ip = ((sockaddr_in6*)&addr)->sin6_addr;
+            *(in6_addr*)&this->dest_ip_buf = ((sockaddr_in6*)&addr)->sin6_addr;
         } else {
-            *(in_addr*)&this->dest_ip = ((sockaddr_in*)&addr)->sin_addr;
+            *(in_addr*)&this->dest_ip_buf = ((sockaddr_in*)&addr)->sin_addr;
         }
+    }
+
+    ipaddr_any dest_ip() const {
+        return ipaddr_any(this->flags & 0x80, this->dest_port, this->dest_ip_buf);
+    }
+
+    sockaddr_any dest_sock() const {
+        return sockaddr_any(this->flags & 0x80, this->dest_port, this->dest_ip_buf);
     }
 };
 static_assert(sizeof(PacketPunchDelayPing) == 0x14);
@@ -216,14 +246,28 @@ struct PacketPunchDelayPong {
 };
 static_assert(sizeof(PacketPunchDelayPong) == 0x2);
 
-static inline constexpr PacketPunch PUNCH_PACKET = {
-    .type = PACKET_TYPE_PUNCH
-};
+// size: 0x14
+struct PacketPunchSelf {
+    PacketType type; // 0x0
+    uint8_t is_ipv6; // 0x1
+    uint16_t remote_port; // 0x2
+    alignas(4) unsigned char ip[sizeof(IP6_ADDRESS)]; // 0x4
+    // 0x14
 
-extern char punch_ip_buffer[INET6_ADDRSTRLEN];
-extern size_t punch_ip_len;
-extern bool punch_ip_updated;
-extern int64_t latency;
-extern std::atomic<bool> respond_to_punch_ping;
+    PacketPunchSelf() = default;
+
+    PacketPunchSelf(bool is_ipv6, uint16_t port, const void* ip)
+        : type(PACKET_TYPE_PUNCH_SELF), is_ipv6(is_ipv6), remote_port(port)
+    {
+        if (is_ipv6) {
+            *(IP6_ADDRESS*)this->ip = *(IP6_ADDRESS*)ip;
+        } else {
+            *(IP4_ADDRESS*)this->ip = *(IP4_ADDRESS*)ip;
+        }
+    }
+
+    inline PacketPunchSelf(const sockaddr_any& addr) : PacketPunchSelf(addr.is_ipv6(), get_port(addr), addr.get_ip_ptr()) {}
+};
+static_assert(sizeof(PacketPunchSelf) == 0x14);
 
 #endif

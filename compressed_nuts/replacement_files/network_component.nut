@@ -72,10 +72,10 @@ local mb_server=::manbow.NetworkServer()
 mb_server.ConnectRequest=function(id,context,table_src,table_dst){table_dst.message<-""
 if(::LOBBY.GetNetworkState()!=::LOBBY.CLOSED){::LOBBY.Close()
 }
-if(!("version" in table_src)||table_src.version!=this.GetVersion()){table_dst.message="version"
+if(!("version"in table_src)||table_src.version!=this.GetVersion()){table_dst.message="version"
 return false
 }
-if("is_watch" in table_src){if(id>0){if(this.allow_watch){table_dst.is_parent_vs<-true
+if("is_watch"in table_src){if(id>0){if(this.allow_watch){table_dst.is_parent_vs<-true
 table_dst.is_watch<-true
 return true
 }
@@ -95,7 +95,7 @@ return false
 if(this.inst){return false
 }
 this.inst=this.inst_connect
-this.func_get_delay=function(){return ::network.inst.GetChildDelay(0)
+this.func_get_delay=function(){return::network.inst.GetChildDelay(0)
 }
 this.rand_seed=::manbow.timeGetTime()
 this.srand(this.rand_seed)
@@ -103,7 +103,7 @@ this.player_name[0]=::config.network.player_name
 this.player_name[1]=::setting.misc.hide_name?"P2":table_src.name.len()>16?"":table_src.name
 this.color_num[0]=::savedata.GetColorNum()
 this.color_num[1]=table_src.color
-this.icon[1]="icon" in table_src?table_src.icon:null
+this.icon[1]="icon"in table_src?table_src.icon:null
 this.allow_watch=::config.network.allow_watch&&table_src.allow_watch
 table_dst.rand_seed<-this.rand_seed
 table_dst.is_parent_vs<-true
@@ -140,10 +140,10 @@ mb_client=null
 return false
 }
 mb_client.ConnectRequest=function(id,context,table_src,table_dst){table_dst.message<-""
-if(!("version" in table_src)&&table_src.version!=::GetVersion()){table_dst.message="version"
+if(!("version"in table_src)&&table_src.version!=::GetVersion()){table_dst.message="version"
 return false
 }
-if(!("is_watch" in table_src)){table_dst.message="busy"
+if(!("is_watch"in table_src)){table_dst.message="busy"
 return false
 }
 if(!::network.allow_watch){table_dst.message="watch"
@@ -157,7 +157,7 @@ mb_client.ConnectComplete=function(id,context,_reply_table){if(::LOBBY.GetNetwor
 }
 if(this.inst){return
 }
-if("is_watch" in _reply_table){this.allow_watch=true
+if("is_watch"in _reply_table){this.allow_watch=true
 this.is_parent_vs=_reply_table.is_parent_vs
 this.is_watch=true
 this.inst=this.inst_connect
@@ -177,10 +177,10 @@ this.player_name[0]=::setting.misc.hide_name?"P1":_reply_table.name.len()>16?"":
 this.player_name[1]=::config.network.player_name
 this.color_num[0]=_reply_table.color
 this.color_num[1]=::savedata.GetColorNum()
-this.icon[0]="icon" in _reply_table?_reply_table.icon:null
+this.icon[0]="icon"in _reply_table?_reply_table.icon:null
 this.allow_watch=_reply_table.allow_watch
 this.use_lobby=_reply_table.use_lobby
-this.func_get_delay=function(){return ::network.inst.GetParentDelay()
+this.func_get_delay=function(){return::network.inst.GetParentDelay()
 }
 ::sound.PlaySE(120)
 ::loop.Fade(function(){::discord.rpc_set_details("VS Online")
@@ -189,7 +189,7 @@ this.func_get_delay=function(){return ::network.inst.GetParentDelay()
 })
 return
 }.bindenv(this)
-mb_client.ConnectReject=function(context,table){if("message" in table){if(table.message=="busy"){this.return_code=1
+mb_client.ConnectReject=function(context,table){if("message"in table){if(table.message=="busy"){this.return_code=1
 }
 if(table.message=="version"){this.return_code=2
 }
@@ -210,7 +210,7 @@ if(this.is_watch&&this.inst){this.inst.Reconnect()
 return
 }
 }.bindenv(this)
-mb_client.ReceiveFromParent=function(table){try{if("message" in table){if(table.message=="end_vs"){for(local i=0;i<::network_client_num;i++){::network_inst.SendToChild(i,table)
+mb_client.ReceiveFromParent=function(table){try{if("message"in table){if(table.message=="end_vs"){for(local i=0;i<::network_client_num;i++){::network_inst.SendToChild(i,table)
 }
 this.Disconnect()
 return
@@ -267,7 +267,7 @@ return null
 }
 function GetIPAddress(text){local ex=this.regexp("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:\\d{1,5}")
 local ret=ex.search(text)
-if(ret==null){return ""
+if(ret==null){return""
 }
 return text.slice(ret.begin,ret.end)
 }

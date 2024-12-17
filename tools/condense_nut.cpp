@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
                 is_string = prev_c == '\\';
             } else {
                 is_token = false;
-                prev_token = ""sv;
+                prev_token = "\""sv;
                 is_string = true;
             }
         }
@@ -194,6 +194,13 @@ int main(int argc, char* argv[]) {
                             )
                         )
                     ) {
+                        if (
+                            prev_token.ends_with(')') ||
+                            prev_token.ends_with('"') ||
+                            prev_token.ends_with('\'')
+                        ) {
+                            continue;
+                        }
                         end_token();
                         break;
                     }
@@ -236,12 +243,42 @@ int main(int argc, char* argv[]) {
                                     }
                                 }
                                 */
-                                //else if (prev_is_return) {
-
-                                //}
+                                else if (prev_is_return) {
+                                    for (size_t j = i + 1; j < size; ++j) {
+                                        switch (char c2 = buffer[j]) {
+                                            case ' ': case '\t': case '\r': case '\n':
+                                                continue;
+                                            case '\'': case '"': case ':':
+                                                i = j - 1;
+                                                c = c2;
+                                                prev_token = ""sv;
+                                                goto skip_whitespace;
+                                            default:
+                                                break;
+                                        }
+                                        break;
+                                    }
+                                }
+                                else if (next_can_colon) {
+                                    for (size_t j = i + 1; j < size; ++j) {
+                                        switch (char c2 = buffer[j]) {
+                                            case ' ': case '\t': case '\r': case '\n':
+                                                continue;
+                                            case ':': case '{': case '[': case '(':
+                                                i = j - 1;
+                                                c = c2;
+                                                prev_token = ""sv;
+                                                goto skip_whitespace;
+                                            default:
+                                                break;
+                                        }
+                                        break;
+                                    }
+                                }
                                 break;
                             }
                         }
+                    skip_whitespace:
                         continue;
 #if !REMOVE_SEMICOLONS
                     }
@@ -276,7 +313,9 @@ int main(int argc, char* argv[]) {
                         *out_buf_write++ = ' ';
                     }
                     break;
-                case '(': case ')': case '{': case '}': case '[': case ']':
+                case ')': case '}': case ']':
+                    //can_fold = true;
+                case '(':  case '{': case '[':
                     end_token();
                     break;
                 default: default_char:

@@ -121,7 +121,7 @@ this.proc.config<-function(){::menu.config.Initialize(true)
 this.proc.exit<-function(){::sound.StopBGM(500)
 ::graphics.FadeOut(45,function(){::ExitGame()
 })
-foreach(v in ::loop.task_async)if(v instanceof ::menu.EndAnimeDelayedTask){v.anime.Terminate()
+foreach(v in::loop.task_async)if(v instanceof::menu.EndAnimeDelayedTask){v.anime.Terminate()
 ::loop.DeleteTask(v)
 }
 ::loop.End()

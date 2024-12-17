@@ -100,7 +100,7 @@ mat.SetTranslation(bottom[i].GetFramePointX(1)-::spell.width/2,bottom[i].GetFram
 this.AddParts(actor,mat_bottom,mat)
 actor.ConnectRenderSlot(::graphics.slot.status,1200)
 v.spell<-actor
-if("match_num" in ::battle){v.win<-[]
+if("match_num"in::battle){v.win<-[]
 for(local j=0;j<::battle.match_num;j=++j){mat=::manbow.Matrix()
 mat.SetTranslation(j*dir*-32,0,0)
 actor=this.CreateStaticParts(220+i,mat_top,mat)

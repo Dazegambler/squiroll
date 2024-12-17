@@ -46,7 +46,7 @@ function BeginAct(){this.act.pl.BeginStage(0)
 ::loop.DeleteTask(this._act_task)
 }
 function EndAct(){this.act.pl.EndStage()
-if("Terminate" in this.act.global){this.act.global.Terminate()
+if("Terminate"in this.act.global){this.act.global.Terminate()
 }
 ::loop.DeleteTask(this._act_task)
 }
@@ -56,7 +56,7 @@ function EndActDelayed(delay=30){this._act_task.count=delay
 class this.EndActDelayedTask{act=null
 count=0
 function Update(){if(this.count--==0){this.act.pl.EndStage()
-if("Terminate" in this.act.global){this.act.global.Terminate()
+if("Terminate"in this.act.global){this.act.global.Terminate()
 }
 ::loop.DeleteTask(this)
 }
@@ -66,7 +66,7 @@ function BeginAnime(){::loop.DeleteTask(this._anime_task)
 this.anime.Initialize()
 }
 function EndAnime(){::loop.DeleteTask(this._anime_task)
-if("Terminate" in this.anime){this.anime.Terminate()
+if("Terminate"in this.anime){this.anime.Terminate()
 }
 }
 function EndAnimeDelayed(delay=30){this._anime_task.count=delay
@@ -79,13 +79,13 @@ function Update(){if(this.count--==0){this.anime.Terminate()
 }
 }
 }
-foreach(v in scene){if("act" in v){v._act_task<-this.EndActDelayedTask()
+foreach(v in scene){if("act"in v){v._act_task<-this.EndActDelayedTask()
 v._act_task.act=v.act.weakref()
 v.BeginAct<-this.BeginAct
 v.EndAct<-this.EndAct
 v.EndActDelayed<-this.EndActDelayed
 }
-if("anime" in v){v._anime_task<-this.EndAnimeDelayedTask()
+if("anime"in v){v._anime_task<-this.EndAnimeDelayedTask()
 v._anime_task.anime=v.anime.weakref()
 v.BeginAnime<-this.BeginAnime
 v.EndAnime<-this.EndAnime

@@ -80,7 +80,7 @@ this.srand(param.seed)
 ::graphics.ShowActor(true)
 ::graphics.ShowBackground(true)
 ::camera.Initialize()
-if("SetCamera" in ::stage.background){::stage.background.SetCamera()
+if("SetCamera"in::stage.background){::stage.background.SetCamera()
 }
 this.world=::manbow.World2D()
 this.world.Init(-1000,-1000,-100,3560,2440,100)
@@ -218,7 +218,7 @@ this.TerminateUser()
 this.battleUpdate=null
 this.group_player=null
 this.group_effect=null
-if("bgm" in this){this.bgm=null
+if("bgm"in this){this.bgm=null
 }
 foreach(v in this.team){v.Release()
 }

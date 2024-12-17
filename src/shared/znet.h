@@ -1698,17 +1698,6 @@ public:
         return zero::net::setsockopt(this->sock, SOL_SOCKET, SO_SNDTIMEO, timeout_val);
     }
 
-    template <bool state>
-    bool set_blocking_state() const {
-        if constexpr (state) {
-            static u_long BLOCKING_SOCKET = false;
-            return ::ioctlsocket(sock, FIONBIO, &BLOCKING_SOCKET);
-        } else {
-            static u_long NON_BLOCKING_SOCKET = true;
-            return ::ioctlsocket(sock, FIONBIO, &NON_BLOCKING_SOCKET);
-        }
-    }
-
     bool set_blocking_state(bool state) const {
 #if _WIN32
         u_long blocking_state = !state;
@@ -1718,6 +1707,21 @@ public:
         flags &= O_NONBLOCK;
         flags |= state ? 0 : O_NONBLOCK;
         return ::fcntl(this->sock, F_SETFL, flags) == 0;
+#endif
+    }
+
+    template <bool state>
+    bool set_blocking_state() const {
+#if _WIN32
+        if constexpr (state) {
+            static u_long BLOCKING_SOCKET = false;
+            return ::ioctlsocket(sock, FIONBIO, &BLOCKING_SOCKET);
+        } else {
+            static u_long NON_BLOCKING_SOCKET = true;
+            return ::ioctlsocket(sock, FIONBIO, &NON_BLOCKING_SOCKET);
+        }
+#else
+        return this->set_blocking_state(state);
 #endif
     }
 };

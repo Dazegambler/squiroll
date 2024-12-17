@@ -17,8 +17,6 @@ function Pause()
 
 function Begin()
 {
-	::discord.rpc_set_state("Starting match");
-	::discord.rpc_commit();
 	this.Round_Begin();
 }
 

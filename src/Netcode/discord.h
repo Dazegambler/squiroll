@@ -42,7 +42,7 @@ RPC_FIELDS
 
 #undef RPC_FIELD
 
-std::string_view get_discord_userid();
+const char* get_discord_userid();
 
 #else
 

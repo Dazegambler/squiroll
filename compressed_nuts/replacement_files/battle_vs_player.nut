@@ -9,9 +9,7 @@ this.GuardCrash_Check=this.GuardCrash_Check_VS
 function Pause(){::sound.PlaySE(111)
 ::menu.pause.Initialize(0)
 }
-function Begin(){::discord.rpc_set_state("Starting match")
-::discord.rpc_commit()
-this.Round_Begin()
+function Begin(){this.Round_Begin()
 }
 function Round_Begin(){this.battleUpdate=this.Game_BeginUpdate
 this.state=2

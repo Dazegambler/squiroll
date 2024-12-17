@@ -1,7 +1,6 @@
 function Initialize()
 {
 	::discord.rpc_set_state("Choosing a character");
-	::discord.rpc_set_small_img_key("");
 	::discord.rpc_commit();
 
 	this.mode <- 0;

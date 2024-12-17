@@ -435,7 +435,6 @@ extern "C" {
                         }
                         discord_rpc_set_details(details);
                         discord_rpc_set_state(state);
-	                    discord_rpc_set_small_img_key("");
                         discord_rpc_commit();
                         return 0;
                     }

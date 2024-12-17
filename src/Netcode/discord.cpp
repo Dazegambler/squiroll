@@ -144,6 +144,7 @@ static bool rpc_connected = false;
 static std::atomic_bool rpc_thread_running;
 static MessageFrame rpc_send_msg;
 static MessageFrame rpc_recv_msg;
+static char rpc_user_id[INTEGER_BUFFER_SIZE<uint64_t>] = {};
 
 static std::atomic_bool rpc_presence_queued;
 static DiscordRPCPresence rpc_queued_presence;
@@ -224,7 +225,7 @@ static bool pipe_read(void* data, size_t len) {
 	return false;
 }
 
-static bool rpc_read_msg() {
+static bool rpc_read_msg(bool update_user_id = false) {
 	if (rpc_pipe == INVALID_HANDLE_VALUE)
 		return false;
 
@@ -237,8 +238,30 @@ static bool rpc_read_msg() {
 		rpc_recv_msg.msg[rpc_recv_msg.len] = '\0';
 
 		switch (rpc_recv_msg.opcode) {
-			case Opcode::Frame:
+			case Opcode::Frame: {
+				log_printf("Discord RPC message: %s\n", rpc_recv_msg.msg);
+				if (update_user_id) {
+					// I'd rather not pull in a whole JSON parsing library for this
+					constexpr char target_field[] = "\"id\":\"";
+					char* pos = strstr(rpc_recv_msg.msg, target_field);
+					if (!pos)
+						return true;
+
+					char* start = pos + sizeof(target_field) - 1;
+					char* end = start;
+					while (*end) {
+						if (*end == '"') {
+							if (start != end) {
+								memcpy(rpc_user_id, start, std::min(sizeof(rpc_user_id) - 1, (size_t)(end - start)));
+								log_printf("Got Discord user ID: %s\n", rpc_user_id);
+							}
+							break;
+						}
+						end++;
+					}
+				}
 				return true;
+			}
 			case Opcode::Ping: {
 				rpc_recv_msg.opcode = Opcode::Pong;
 				if (!pipe_write(&rpc_recv_msg, HeaderSize + rpc_recv_msg.len))
@@ -268,7 +291,7 @@ static void rpc_update() {
 		if (!pipe_write(&rpc_send_msg, HeaderSize + rpc_send_msg.len))
 			return;
 
-		while (!rpc_read_msg()) {
+		while (!rpc_read_msg(true)) {
 			if (!rpc_thread_running.load() || rpc_pipe == INVALID_HANDLE_VALUE)
 				return;
 			Sleep(100);
@@ -342,8 +365,8 @@ void discord_rpc_stop() {
 	rpc_thread_running.store(false);
 }
 
-std::string_view get_discord_userid() {
-	return std::string_view{};
+const char* get_discord_userid() {
+	return rpc_user_id;
 }
 
 #endif

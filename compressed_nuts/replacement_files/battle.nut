@@ -35,9 +35,19 @@ v.start_direction<-::battle.start_direction[i]
 }
 }
 }
+this.name_overrides<-{hijiri="Byakuren",sinmyoumaru="Shinmyoumaru",usami="Sumireko",udonge="Reisen",jyoon="Joon"}
+function LookupName(name){return(name in this.name_overrides)?this.name_overrides[name]:(name.slice(0,1).toupper()+name.slice(1,name.len()))
+}
 function Create(param){if(::replay.GetState()==::replay.PLAY)::discord.rpc_set_details("Watching a replay")
-::discord.rpc_set_state("")
-if(::replay.GetState()!=::replay.PLAY&&(::network.IsPlaying()||param.game_mode!=1))::discord.rpc_set_small_img_key(param.team[::network.IsPlaying()?(::network.is_parent_vs?1:0):0].master.name)
+::discord.rpc_set_state(param.game_mode<10?"Starting match":"")
+::discord.rpc_set_large_img_key("stage"+::stage.background.id)
+if(::replay.GetState()!=::replay.PLAY&&(::network.IsPlaying()||param.game_mode!=1)){local p1m=param.team[0].master.name
+local p1s=param.team[0].slave.name
+local p2m=param.team[1].master.name
+local p2s=param.team[1].slave.name
+::discord.rpc_set_small_img_key(::network.IsPlaying()?(::network.is_parent_vs?p2m:p1m):p1m)
+::discord.rpc_set_small_img_text(format("%s/%s vs %s/%s",LookupName(p1m),LookupName(p1s),LookupName(p2m),LookupName(p2s)))
+}
 ::discord.rpc_commit()
 ::manbow.SetTerminateFunction(function(){::battle.Release()
 })
@@ -200,7 +210,11 @@ str+=input.b4?"D":none
 str+=input.b3?"E":none
 return str
 }
-function Release(){if(this.ping_task!=null){::loop.DeleteTask(this.ping_task)
+function Release(){::discord.rpc_set_small_img_key("")
+::discord.rpc_set_small_img_text("")
+::discord.rpc_set_large_img_key("mainicon")
+if(::replay.GetState()==::replay.PLAY)::discord.rpc_commit_details_and_state("Idle","")
+if(this.ping_task!=null){::loop.DeleteTask(this.ping_task)
 this.ping_task=null
 this.ping_obj=null
 }

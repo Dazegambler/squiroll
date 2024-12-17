@@ -198,8 +198,8 @@ typedef void fastcall generate_nickname_t(AsyncLobbyClient* self);
 static NicknameSource nickname_source = AUTO_GENERATED_NAME;
 
 static void fastcall generate_nickname_hook(AsyncLobbyClient* self) {
-    std::string_view name = get_discord_userid();
-    if (!name.empty()) {
+    const char* name = get_discord_userid();
+    if (*name) {
         // do something to mimic the logic of the original generate function
         //nickname_source = DISCORD_USERID;
         return;

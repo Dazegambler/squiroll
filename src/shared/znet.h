@@ -85,8 +85,8 @@ using usocklen_t = std::make_unsigned_t<socklen_t>;
 #include "common.h"
 
 #if _WIN32
-#pragma comment (lib, "Ws2_32.lib")
-#pragma comment (lib, "Dnsapi")
+#pragma comment (lib, "WS2_32.lib")
+#pragma comment (lib, "dnsapi.lib")
 #if ENABLE_SSL
 #pragma comment (lib, "secur32.lib")
 #endif

@@ -54,7 +54,7 @@ struct PacketLayout {
 
 enum NicknameSource : uint8_t {
     AUTO_GENERATED_NAME = 0,
-    DISCORD_USERNAME = 1,
+    DISCORD_USERID = 1,
 };
 
 static inline constexpr size_t MAX_NICKNAME_LENGTH = 32;

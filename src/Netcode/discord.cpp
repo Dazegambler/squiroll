@@ -154,34 +154,36 @@ static bool pipe_open() {
 	if (rpc_pipe != INVALID_HANDLE_VALUE)
 		return true;
 
-	char path[] = "\\\\?\\pipe\\discord-ipc-0";
-	constexpr size_t digit = sizeof(path) - 2;
+	wchar_t path[] = L"\\\\?\\pipe\\discord-ipc-0";
+	constexpr size_t digit = countof(path) - 1;
 
 	while (true) {
-		rpc_pipe = CreateFileA(path, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-		if (rpc_pipe != INVALID_HANDLE_VALUE)
+		HANDLE pipe = CreateFileW(path, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+		if (pipe != INVALID_HANDLE_VALUE) {
+			rpc_pipe = pipe;
 			return true;
-
-		auto err = GetLastError();
-		if (err == ERROR_FILE_NOT_FOUND) {
-			if (path[digit] < '9') {
-				path[digit]++;
-				continue;
-			}
 		}
-		else if (err == ERROR_PIPE_BUSY) {
-			if (!WaitNamedPipeA(path, 1000))
-				return false;
-			continue;
+
+		switch (GetLastError()) {
+			case ERROR_PIPE_BUSY:
+				if (WaitNamedPipeW(path, 1000)) {
+					continue;
+				}
+			case ERROR_FILE_NOT_FOUND:
+				if (path[digit] < L'9') {
+					path[digit]++;
+					continue;
+				}
 		}
 		return false;
 	}
 }
 
 static void pipe_close() {
-	if (rpc_pipe != INVALID_HANDLE_VALUE)
+	if (rpc_pipe != INVALID_HANDLE_VALUE) {
 		CloseHandle(rpc_pipe);
-	rpc_pipe = INVALID_HANDLE_VALUE;
+		rpc_pipe = INVALID_HANDLE_VALUE;
+	}
 	rpc_connected = false;
 }
 
@@ -205,8 +207,12 @@ static bool pipe_read(void* data, size_t len) {
 	DWORD avail = 0;
 	if (PeekNamedPipe(rpc_pipe, NULL, 0, NULL, &avail, NULL)) {
 		if (avail >= len) {
-			if (ReadFile(rpc_pipe, data, len, NULL, NULL))
+			// lpNumberOfBytesRead cannot be NULL on Win7,
+			// so just dump the value in a variable that
+			// already needs to be on the stack.
+			if (ReadFile(rpc_pipe, data, len, &avail, NULL)) {
 				return true;
+			}
 		} else {
 			// Don't close!
 			return false;
@@ -324,7 +330,7 @@ RPC_FIELDS
 void discord_rpc_commit() {
 	AcquireSRWLockExclusive(&rpc_presence_lock);
 	if (memcmp(&rpc_cur_presence, &rpc_queued_presence, sizeof(DiscordRPCPresence))) {
-		memcpy(&rpc_cur_presence, &rpc_queued_presence, sizeof(DiscordRPCPresence));
+		rpc_cur_presence = rpc_queued_presence;
 		rpc_presence_queued.store(true);
 	}
 	ReleaseSRWLockExclusive(&rpc_presence_lock);
@@ -334,7 +340,7 @@ void discord_rpc_stop() {
 	rpc_thread_running.store(false);
 }
 
-std::string_view get_discord_username() {
+std::string_view get_discord_userid() {
 	return std::string_view{};
 }
 

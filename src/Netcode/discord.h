@@ -6,11 +6,20 @@
 #include <string>
 #include <string_view>
 
-extern bool DISCORD_ENABLED;
 
-#define ENABLE_DISCORD_INTEGRATION 0
+#define ENABLE_DISCORD_INTEGRATION 1
+
+#define RPC_FIELDS \
+	RPC_FIELD(state) \
+	RPC_FIELD(details) \
+	RPC_FIELD(large_img_key) \
+	RPC_FIELD(large_img_text) \
+	RPC_FIELD(small_img_key) \
+	RPC_FIELD(small_img_text) \
 
 #if ENABLE_DISCORD_INTEGRATION
+
+extern bool DISCORD_ENABLED;
 
 struct DiscordRPCPresence {
 	char state[128];
@@ -25,19 +34,16 @@ void discord_rpc_start();
 void discord_rpc_commit();
 void discord_rpc_stop();
 
-#define RPC_FIELDS \
-	RPC_FIELD(state) \
-	RPC_FIELD(details) \
-	RPC_FIELD(large_img_key) \
-	RPC_FIELD(large_img_text) \
-	RPC_FIELD(small_img_key) \
-	RPC_FIELD(small_img_text) \
+#define RPC_FIELD(field) \
+void discord_rpc_set_##field(const char* value); \
+template <size_t N> \
+void discord_rpc_set_##field(const char(&value)[N]);
 
-#define RPC_FIELD(field) void discord_rpc_set_##field(const char* value);
 RPC_FIELDS
+
 #undef RPC_FIELD
 
-std::string_view get_discord_username();
+std::string_view get_discord_userid();
 
 #else
 

@@ -405,15 +405,23 @@ extern "C" {
             });
 
             // discord rich presence
+
+#if ENABLE_DISCORD_INTEGRATION
+#define DISCORD_RPC_FUNC(field) \
+[](HSQUIRRELVM v) -> SQInteger { \
+    const SQChar* str; \
+    if (sq_gettop(v) != 2 || SQ_FAILED(sq_getstring(v, 2, &str))) { \
+        return sq_throwerror(v, "Invalid arguments, expected: <string>"); \
+    } \
+    MACRO_CAT(discord_rpc_set_,field)(str); \
+    return 0; \
+}
+#else
+#define DISCORD_RPC_FUNC(field) sq_dummy
+#endif
+
             #define RPC_FIELD(field) \
-                sq_setfunc(v, _SC("rpc_set_" MACRO_STR(field)), [](HSQUIRRELVM v) -> SQInteger { \
-                    const SQChar* str; \
-                    if (sq_gettop(v) != 2 || SQ_FAILED(sq_getstring(v, 2, &str))) { \
-                        return sq_throwerror(v, "Invalid arguments, expected: <string>"); \
-                    } \
-                    MACRO_CAT(discord_rpc_set_,field)(str); \
-                    return 0; \
-                });
+                sq_setfunc(v, _SC("rpc_set_" MACRO_STR(field)), DISCORD_RPC_FUNC(field));
 
             sq_createtable(v, _SC("discord"), [](HSQUIRRELVM v) {
                 RPC_FIELDS

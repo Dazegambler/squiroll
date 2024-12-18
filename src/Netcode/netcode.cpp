@@ -293,10 +293,10 @@ static void run_resync_logic(uint32_t new_timestampA, uint32_t new_timestampB) {
     else {
         lag_dur = saturate_add<uint8_t>(lag_dur, 1u);
         if (!(resyncing = lag_dur > RESYNC_THRESHOLD)) {
-            int8_t lag = static_cast<int8_t>((static_cast<float>(latency) / static_cast<float>(latency_threshhold)) * INT8_MAX);
-            int8_t diff = static_cast<int8_t>((lag-lag_packets) * .1);// linearly interpolating patched value
+            int8_t lag = (float)latency / (float)latency_threshhold;
+            int8_t diff = (lag * INT8_MAX - lag_packets) * .1f; // linearly interpolating patched value
             lag_packets = diff > 0 ? saturate_add<int8_t>(lag_packets, diff) : saturate_sub<int8_t>(lag_packets, diff);
-            //log_printf("pak=%d,latency=%d,lag=%d\n", lag_packets, latency,lag);
+            //log_printf("pak=%d,latency=%d,lag=%d\n", lag_packets, latency, lag);
         }else {
             lag_packets = RESYNC_ASM_ORIGINAL_VALUE;
         }

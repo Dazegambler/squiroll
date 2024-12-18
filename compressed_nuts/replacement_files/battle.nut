@@ -33,7 +33,7 @@ v.start_y<-::battle.start_y[i]
 v.start_direction<-::battle.start_direction[i]}}}
 this.name_overrides<-{hijiri="Byakuren",sinmyoumaru="Shinmyoumaru",usami="Sumireko",udonge="Reisen",jyoon="Joon"}
 function LookupName(name){return(name in this.name_overrides)?this.name_overrides[name]:(name.slice(0,1).toupper()+name.slice(1,name.len()))}
-function Create(param){if(::replay.GetState()==::replay.PLAY&&!::network.is_watch)::discord.rpc_set_details("Watching a replay")
+function Create(param){if(::replay.GetState()==::replay.PLAY&&::network.inst==null)::discord.rpc_set_details("Watching a replay")
 ::discord.rpc_set_state(param.game_mode<10?"Starting match":"")
 ::discord.rpc_set_large_img_key("stage"+::stage.background.id)
 if(::replay.GetState()!=::replay.PLAY&&(::network.IsPlaying()||param.game_mode!=1)){local p1m=param.team[0].master.name
@@ -177,7 +177,7 @@ return str}
 function Release(){::discord.rpc_set_small_img_key("")
 ::discord.rpc_set_small_img_text("")
 ::discord.rpc_set_large_img_key("mainicon")
-if(::replay.GetState()==::replay.PLAY&&!::network.is_watch)::discord.rpc_commit_details_and_state("Idle","")
+if(::replay.GetState()==::replay.PLAY&&::network.inst==null)::discord.rpc_commit_details_and_state("Idle","")
 if(this.ping_task!=null){::loop.DeleteTask(this.ping_task)
 this.ping_task=null
 this.ping_obj=null}

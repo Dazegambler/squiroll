@@ -13,6 +13,260 @@
 
 #if ENABLE_DISCORD_INTEGRATION
 
+struct sockaddr_un_win {
+	uint16_t sun_family = AF_UNIX;
+	char sun_path[108];
+};
+
+struct UnixSocketHack {
+private:
+
+#if !USE_MSVC_ASM
+#define SYSCALL_ZERO_ARG(ret, number) __asm__("int $0x80":"=a"(ret):"a"(number))
+#define SYSCALL_ONE_ARG(ret, number, arg1) __asm__("int $0x80":"=a"(ret):"a"(number),"b"(arg1))
+#define SYSCALL_TWO_ARG(ret, number, arg1, arg2) __asm__("int $0x80":"=a"(ret):"a"(number),"b"(arg1),"c"(arg2))
+#define SYSCALL_THREE_ARG(ret, number, arg1, arg2, arg3) __asm__("int $0x80":"=a"(ret):"a"(number),"b"(arg1),"c"(arg2),"d"(arg3))
+#else
+#define SYSCALL_ZERO_ARG(ret, number) __asm { __asm MOV EAX, number __asm INT 0x80 __asm MOV ret, EAX }
+#define SYSCALL_ONE_ARG(ret, number, arg1) __asm { __asm MOV EAX, number __asm MOV EBX, arg1 __asm INT 0x80 __asm MOV ret, EAX }
+#define SYSCALL_TWO_ARG(ret, number, arg1, arg2) __asm { __asm MOV EAX, number __asm MOV EBX, arg1 __asm MOV ECX, arg2 __asm INT 0x80 __asm MOV ret, EAX }
+#define SYSCALL_THREE_ARG(ret, number, arg1, arg2, arg3) __asm { __asm MOV EAX, number __asm MOV EBX, arg1 __asm MOV ECX, arg2 __asm MOV EDX, arg3 __asm INT 0x80 __asm MOV ret, EAX }
+#endif
+
+	static inline int socketcall(int call_number, void* args) {
+		int ret;
+		SYSCALL_TWO_ARG(ret, 0x66, call_number, args);
+		return ret;
+	}
+public:
+	static inline int read(int fd, char* buf, unsigned int count) {
+		int ret;
+		SYSCALL_THREE_ARG(ret, 0x03, fd, buf, count);
+		return ret;
+	}
+	static inline int write(int fd, const char* buf, unsigned int count) {
+		int ret;
+		SYSCALL_THREE_ARG(ret, 0x04, fd, buf, count);
+		return ret;
+	}
+	static inline int open(const char* filename, int flags, int mode) {
+		int ret;
+		SYSCALL_THREE_ARG(ret, 0x05, filename, flags, mode);
+		return ret;
+	}
+	static inline int close(int fd) {
+		int ret;
+		SYSCALL_ONE_ARG(ret, 0x06, fd);
+		return ret;
+	}
+	static inline unsigned int getpid() {
+		unsigned int ret;
+		SYSCALL_ZERO_ARG(ret, 0x14);
+		return ret;
+	}
+	static inline int fcntl(int fd, unsigned int cmd, unsigned long arg) {
+		int ret;
+		SYSCALL_THREE_ARG(ret, 0x37, fd, cmd, arg);
+		return ret;
+	}
+
+	// Yes, volatile is necessary for these arrays
+	// because the compiler hates the inline ASM.
+	// 
+	// TODO: Add a memory argument in there somewhere
+	// to fix this more properly so the compiler can
+	// reason about the memory properly.
+	static inline int socket(int domain, int type, int protocol) {
+		volatile uintptr_t args[3] = { domain, type, protocol };
+		return socketcall(1, (void*)args);
+	}
+	static inline int connect(int sockfd, const sockaddr* addr, unsigned int addrlen) {
+		volatile uintptr_t args[3] = { sockfd, (uintptr_t)addr, addrlen };
+		return socketcall(3, (void*)args);
+	}
+
+	int sock;
+
+	inline operator bool() const {
+		return this->sock != -1;
+	}
+
+	inline bool operator!() const {
+		return this->sock == -1;
+	}
+
+	void close() {
+		int fd = this->sock;
+		if (fd != -1) {
+			this->sock = -1;
+			close(fd);
+		}
+	}
+
+	bool write(const void* data, unsigned int length) const {
+		if (expect(length != 0, true)) {
+			return write(this->sock, (const char*)data, length) == length;
+		}
+		return true;
+	}
+
+	template <typename T> requires(sizeof(T) <= (std::numeric_limits<unsigned int>::max)())
+	bool write(const T& data) const {
+		return this->write(&data, sizeof(T));
+	}
+
+	int read(void* data, unsigned int length) const {
+		if (expect(length != 0, true)) {
+			switch (int ret = read(this->sock, (char*)data, length)) {
+				case -EAGAIN: case -EWOULDBLOCK:
+					return 0;
+				default:
+					return ret == length ? 1 : -1;
+			}
+		}
+		return 1;
+	}
+
+	template <typename T> requires(sizeof(T) <= (std::numeric_limits<unsigned int>::max)())
+	int read(T& data) const {
+		return this->read(&data, sizeof(T));
+	}
+};
+
+union DiscordRPC {
+	struct {
+		union {
+			NamedPipeClient windows_pipe;
+			UnixSocketHack unix_socket;
+		};
+		bool is_wine;
+	};
+
+	inline operator bool() const {
+		if (expect(!this->is_wine, true)) {
+			return this->windows_pipe;
+		} else {
+			return this->unix_socket;
+		}
+	}
+
+	inline bool operator!() const {
+		if (expect(!this->is_wine, true)) {
+			return !this->windows_pipe;
+		} else {
+			return !this->unix_socket;
+		}
+	}
+
+	void initialize() {
+		if (expect(!(this->is_wine = GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "wine_get_version")), true)) {
+			this->windows_pipe.pipe_handle = INVALID_HANDLE_VALUE;
+		} else {
+			this->unix_socket.sock = -1;
+		}
+	}
+
+	bool connect() {
+		if (expect(!this->is_wine, true)) {
+			wchar_t path[] = L"\\\\?\\pipe\\discord-ipc-0";
+			constexpr size_t digit = countof(path) - 1;
+			do {
+				if (this->windows_pipe.connect(path, GENERIC_READ | GENERIC_WRITE, 1000)) {
+					return true;
+				}
+			} while (++path[digit] <= L'9');
+			return false;
+		} else {
+			int fd = UnixSocketHack::socket(AF_UNIX, SOCK_STREAM, 0);
+			if (fd != -1) {
+				// Trying to turn off blocking, but it tends to fail
+				UnixSocketHack::fcntl(fd, 4, UnixSocketHack::fcntl(fd, 3, 0) | 0x4000);
+
+				sockaddr_un_win addr;
+
+				auto get_env = [&](const char* name) {
+					size_t length = GetEnvironmentVariableA(name, addr.sun_path, countof(addr.sun_path));
+					return length < countof(addr.sun_path) ? length : 0;
+				};
+
+				size_t env_length; 
+				if (!(
+					(env_length = get_env("XDG_RUNTIME_DIR")) ||
+					(env_length = get_env("TMPDIR")) ||
+					(env_length = get_env("TMP")) ||
+					(env_length = get_env("TEMP"))
+				)) {
+					memcpy(addr.sun_path, "/tmp", env_length = countof("/tmp") - 1);
+				}
+
+				//log_discordf("Socket temp path \"%.*s\"\n", (int)env_length, addr.sun_path);
+
+				size_t copy_length = std::min(countof("/discord-ipc-0"), countof(addr.sun_path) - env_length) - 1;
+				addr.sun_path[env_length + copy_length] = '\0';
+				memcpy(&addr.sun_path[env_length], "/discord-ipc-0", copy_length);
+				env_length += copy_length - 1;
+				do {
+					//log_discordf("Socket path \"%s\"\n", addr.sun_path);
+					if (!UnixSocketHack::connect(fd, (const sockaddr*)&addr, sizeof(sockaddr_un_win))) {
+						this->unix_socket.sock = fd;
+						return true;
+					}
+				} while (++addr.sun_path[env_length] <= '9');
+				UnixSocketHack::close(fd);
+			}
+			//else {
+				//log_discordf("Linux socket creation failed\n");
+			//}
+			return false;
+		}
+	}
+
+	void close() {
+		if (expect(!this->is_wine, true)) {
+			this->windows_pipe.close();
+		} else {
+			this->unix_socket.close();
+		}
+	}
+
+	bool write(const void* data, unsigned int length) const {
+		if (expect(!this->is_wine, true)) {
+			return this->windows_pipe.write(data, length);
+		} else {
+			return this->unix_socket.write(data, length);
+		}
+	}
+
+	template <typename T> requires(sizeof(T) <= (std::numeric_limits<unsigned int>::max)())
+	bool write(const T& data) const {
+		return this->write(&data, sizeof(T));
+	}
+
+	int read(void* data, unsigned int length) const {
+		if (expect(!this->is_wine, true)) {
+			return this->windows_pipe.read(data, length);
+		} else {
+			return this->unix_socket.read(data, length);
+		}
+	}
+
+	template <typename T> requires(sizeof(T) <= (std::numeric_limits<unsigned int>::max)())
+	int read(T& data) const {
+		return this->read(&data, sizeof(T));
+	}
+
+	unsigned int current_pid() const {
+		if (expect(!this->is_wine, true)) {
+			return GetCurrentProcessId();
+		} else {
+			return UnixSocketHack::getpid();
+		}
+	}
+};
+
+static DiscordRPC discord_rpc;
+
+
 bool DISCORD_ENABLED = false;
 
 #define APP_ID "1317594942289350666"
@@ -154,82 +408,48 @@ static DiscordRPCPresence rpc_cur_presence;
 static SRWLOCK rpc_presence_lock = SRWLOCK_INIT;
 
 static bool pipe_open() {
-	if (rpc_pipe != INVALID_HANDLE_VALUE)
+	if (discord_rpc) {
 		return true;
-
-	wchar_t path[] = L"\\\\?\\pipe\\discord-ipc-0";
-	constexpr size_t digit = countof(path) - 1;
-
-	while (true) {
-		HANDLE pipe = CreateFileW(path, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-		if (pipe != INVALID_HANDLE_VALUE) {
-			rpc_pipe = pipe;
-			return true;
-		}
-
-		switch (GetLastError()) {
-			case ERROR_PIPE_BUSY:
-				if (WaitNamedPipeW(path, 1000)) {
-					continue;
-				}
-			case ERROR_FILE_NOT_FOUND:
-				if (path[digit] < L'9') {
-					path[digit]++;
-					continue;
-				}
-		}
-		return false;
 	}
+	return discord_rpc.connect();
 }
 
 static void pipe_close() {
-	if (rpc_pipe != INVALID_HANDLE_VALUE) {
-		CloseHandle(rpc_pipe);
-		rpc_pipe = INVALID_HANDLE_VALUE;
-	}
+	discord_rpc.close();
 	rpc_connected = false;
 }
 
 static bool pipe_write(void* data, size_t len) {
-	if (rpc_pipe == INVALID_HANDLE_VALUE)
+	if (!discord_rpc) {
 		return false;
-
-	DWORD written = 0;
-	if (WriteFile(rpc_pipe, data, len, &written, NULL) && written == len)
+	}
+	if (discord_rpc.write(data, len)) {
 		return true;
-
+	}
 	pipe_close();
 	return false;
 }
 
 static bool pipe_read(void* data, size_t len) {
-	if (rpc_pipe == INVALID_HANDLE_VALUE)
+	if (!discord_rpc) {
 		return false;
-
-	// The official implementation uses PeekNamedPipe here, but I don't know if that's necessary
-	DWORD avail = 0;
-	if (PeekNamedPipe(rpc_pipe, NULL, 0, NULL, &avail, NULL)) {
-		if (avail >= len) {
-			// lpNumberOfBytesRead cannot be NULL on Win7,
-			// so just dump the value in a variable that
-			// already needs to be on the stack.
-			if (ReadFile(rpc_pipe, data, len, &avail, NULL)) {
-				return true;
-			}
-		} else {
-			// Don't close!
-			return false;
-		}
 	}
 
-	log_discordf("PeekNamedPipe failed: 0x%X\n", GetLastError());
-	pipe_close();
-	return false;
+	switch (discord_rpc.read(data, len)) {
+		case -1:
+			log_discordf("RPC Read failed: 0x%X\n", GetLastError());
+			pipe_close();
+		case 0:
+			return false;
+		default:
+			return true;
+	}
 }
 
 static bool rpc_read_msg(bool update_user_id = false) {
-	if (rpc_pipe == INVALID_HANDLE_VALUE)
+	if (!discord_rpc) {
 		return false;
+	}
 
 	while (true) {
 		if (!pipe_read(&rpc_recv_msg, HeaderSize) || rpc_recv_msg.len >= sizeof(rpc_recv_msg.msg))
@@ -294,7 +514,7 @@ static void rpc_update() {
 			return;
 
 		while (!rpc_read_msg(true)) {
-			if (!rpc_thread_running.load() || rpc_pipe == INVALID_HANDLE_VALUE)
+			if (!rpc_thread_running || !discord_rpc)
 				return;
 			Sleep(100);
 		}
@@ -303,7 +523,7 @@ static void rpc_update() {
 		log_discordf("Discord RPC connected\n");
 	}
 
-	if (rpc_presence_queued.load()) {
+	if (rpc_presence_queued) {
 		AcquireSRWLockShared(&rpc_presence_lock);
 
 		JsonWriter activity;
@@ -318,7 +538,7 @@ static void rpc_update() {
 		activity.add_opt_str("small_text", rpc_cur_presence.small_img_text);
 		activity.end_obj();
 
-		rpc_presence_queued.store(false);
+		rpc_presence_queued = false;
 		ReleaseSRWLockShared(&rpc_presence_lock);
 
 		snprintf(rpc_send_msg.msg, sizeof(rpc_send_msg.msg), R"({"cmd":"SET_ACTIVITY","nonce":%zu,"args":{"pid":%lu,"activity":{%s}}})", rpc_nonce++, rpc_pid, activity.finish());
@@ -331,18 +551,20 @@ static void rpc_update() {
 }
 
 static DWORD stdcall rpc_thread_proc(void*) {
-	rpc_thread_running.store(true);
-	while (rpc_thread_running.load()) {
+	discord_rpc.initialize();
+	rpc_pid = discord_rpc.current_pid();
+
+	rpc_thread_running = true;
+	do {
 		rpc_update();
 		Sleep(500);
-	}
+	} while (rpc_thread_running);
 	return 0;
 }
 
 void discord_rpc_start() {
-	rpc_pid = GetCurrentProcessId();
 	rpc_thread = CreateThread(NULL, 0, rpc_thread_proc, NULL, 0, NULL);
-	rpc_presence_queued.store(true);
+	rpc_presence_queued = true;
 }
 
 #define RPC_FIELD(field) \
@@ -358,13 +580,13 @@ void discord_rpc_commit() {
 	AcquireSRWLockExclusive(&rpc_presence_lock);
 	if (memcmp(&rpc_cur_presence, &rpc_queued_presence, sizeof(DiscordRPCPresence))) {
 		rpc_cur_presence = rpc_queued_presence;
-		rpc_presence_queued.store(true);
+		rpc_presence_queued = true;
 	}
 	ReleaseSRWLockExclusive(&rpc_presence_lock);
 }
 
 void discord_rpc_stop() {
-	rpc_thread_running.store(false);
+	rpc_thread_running = false;
 }
 
 size_t get_discord_userid_length() {

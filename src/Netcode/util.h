@@ -641,6 +641,91 @@ struct WaitableTimer {
     }
 };
 
+struct NamedPipeClient {
+    HANDLE pipe_handle;
+
+    inline operator bool() const {
+        return this->pipe_handle != INVALID_HANDLE_VALUE;
+    }
+
+    inline bool operator!() const {
+        return this->pipe_handle == INVALID_HANDLE_VALUE;
+    }
+
+private:
+    static inline HANDLE create_pipe(const wchar_t* name, DWORD access) {
+        return CreateFileW(name, access, 0, NULL, OPEN_EXISTING, 0, NULL);
+    }
+    static inline HANDLE create_pipe(const char* name, DWORD access) {
+        return CreateFileA(name, access, 0, NULL, OPEN_EXISTING, 0, NULL);
+    }
+    static inline bool wait_pipe(const wchar_t* name, DWORD timeout) {
+        return WaitNamedPipeW(name, timeout);
+    }
+    static inline bool wait_pipe(const char* name, DWORD timeout) {
+        return WaitNamedPipeA(name, timeout);
+    }
+public:
+
+    template <typename T>
+    bool connect(const T* name, DWORD access) {
+        HANDLE handle = create_pipe(name, access);
+        if (handle != INVALID_HANDLE_VALUE) {
+            this->pipe_handle = handle;
+            return true;
+        }
+        return false;
+    };
+
+    template <typename T>
+    bool connect(const T* name, DWORD access, DWORD retry_timeout) {
+        return this->connect(name, access) || (wait_pipe(name, retry_timeout) && this->connect(name, access));
+    }
+
+    void close() {
+        HANDLE handle = this->pipe_handle;
+        if (handle != INVALID_HANDLE_VALUE) {
+            this->pipe_handle = INVALID_HANDLE_VALUE;
+            CloseHandle(handle);
+        }
+    }
+
+    bool write(const void* data, DWORD length) const {
+        if (expect(length != 0, true)) {
+            DWORD written;
+            return WriteFile(this->pipe_handle, data, length, &written, NULL) && written == length;
+        }
+        return true;
+    }
+
+    template <typename T> requires(sizeof(T) <= (std::numeric_limits<DWORD>::max)())
+    bool write(const T& data) const {
+        return this->write(&data, sizeof(T));
+    }
+
+    int read(void* data, DWORD length) const {
+        if (expect(length != 0, true)) {
+            DWORD avail;
+            if (PeekNamedPipe(this->pipe_handle, NULL, 0, NULL, &avail, NULL)) {
+                if (avail >= length) {
+                    // lpNumberOfBytesRead cannot be NULL on Win7,
+                    // so just dump the value in a variable that
+                    // already needs to be on the stack.
+                    return ReadFile(this->pipe_handle, data, length, &avail, NULL) ? 1 : -1;
+                }
+                return 0;
+            }
+            return -1;
+        }
+        return 1;
+    }
+
+    template <typename T> requires(sizeof(T) <= (std::numeric_limits<DWORD>::max)())
+    int read(T& data) const {
+        return this->read(&data, sizeof(T));
+    }
+};
+
 #define CurrentProcessPseudoHandle() ((HANDLE)-1)
 #define CurrentThreadPseudoHandle() ((HANDLE)-2)
 

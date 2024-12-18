@@ -72,7 +72,7 @@ function LookupName(name) {
 
 function Create( param )
 {
-	if (::replay.GetState() == ::replay.PLAY)
+	if (::replay.GetState() == ::replay.PLAY && !::network.is_watch)
 		::discord.rpc_set_details("Watching a replay");
 	::discord.rpc_set_state(param.game_mode < 10 ? "Starting match" : "");
 	::discord.rpc_set_large_img_key("stage" + ::stage.background.id);
@@ -326,7 +326,7 @@ function Release()
 	::discord.rpc_set_small_img_key("");
 	::discord.rpc_set_small_img_text("");
 	::discord.rpc_set_large_img_key("mainicon");
-	if (::replay.GetState() == ::replay.PLAY)
+	if (::replay.GetState() == ::replay.PLAY && !::network.is_watch)
 		::discord.rpc_commit_details_and_state("Idle", "");
 
 	if (this.ping_task != null) {

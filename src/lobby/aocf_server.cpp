@@ -596,7 +596,12 @@ int main(int argc, char* argv[]) {
 							});
 							wait_milliseconds(UDP_SLEEP_TIME);
 						} while (!stop);
-						printf("!!!!! UDP THREAD EXIT !!!!!\n");
+						printf(
+							"!!!!! UDP THREAD EXIT !!!!!\n"
+#if LOBBY_STATISTICS
+							"!!!!! TOTAL MATCHES: %llu\n", TOTAL_LOBBY_MATCHES.load()
+#endif
+						);
 					});
 
 					do {

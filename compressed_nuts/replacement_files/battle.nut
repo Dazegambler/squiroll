@@ -20,8 +20,7 @@ this.frame_task<-null
 class this.InitializeParam{game_mode=1
 seed=0
 team=[null,null]
-constructor(){this.team=[{},{}
-]
+constructor(){this.team=[{},{}]
 foreach(i,v in this.team){v.device_id<--2
 v.master<-null
 v.slave<-null
@@ -31,13 +30,9 @@ v.slave_spell<-0
 v.slave_sub_spell<-0
 v.start_x<-::battle.start_x[i]
 v.start_y<-::battle.start_y[i]
-v.start_direction<-::battle.start_direction[i]
-}
-}
-}
+v.start_direction<-::battle.start_direction[i]}}}
 this.name_overrides<-{hijiri="Byakuren",sinmyoumaru="Shinmyoumaru",usami="Sumireko",udonge="Reisen",jyoon="Joon"}
-function LookupName(name){return(name in this.name_overrides)?this.name_overrides[name]:(name.slice(0,1).toupper()+name.slice(1,name.len()))
-}
+function LookupName(name){return(name in this.name_overrides)?this.name_overrides[name]:(name.slice(0,1).toupper()+name.slice(1,name.len()))}
 function Create(param){if(::replay.GetState()==::replay.PLAY&&!::network.is_watch)::discord.rpc_set_details("Watching a replay")
 ::discord.rpc_set_state(param.game_mode<10?"Starting match":"")
 ::discord.rpc_set_large_img_key("stage"+::stage.background.id)
@@ -46,11 +41,9 @@ local p1s=param.team[0].slave.name
 local p2m=param.team[1].master.name
 local p2s=param.team[1].slave.name
 ::discord.rpc_set_small_img_key(::network.IsPlaying()?(::network.is_parent_vs?p2m:p1m):p1m)
-::discord.rpc_set_small_img_text(format("%s/%s vs %s/%s",LookupName(p1m),LookupName(p1s),LookupName(p2m),LookupName(p2s)))
-}
+::discord.rpc_set_small_img_text(format("%s/%s vs %s/%s",LookupName(p1m),LookupName(p1s),LookupName(p2m),LookupName(p2s)))}
 ::discord.rpc_commit()
-::manbow.SetTerminateFunction(function(){::battle.Release()
-})
+::manbow.SetTerminateFunction(function(){::battle.Release()})
 this.Update=this.UpdateMain
 ::manbow.CompileFile("data/script/battle/battle_param.nut",this)
 ::manbow.CompileFile("data/script/battle/battle_team.nut",this)
@@ -71,27 +64,20 @@ default: ::manbow.CompileFile("data/actor/status/gauge_vs.nut",this.gauge)
 ::manbow.CompileFile("data/script/battle/battle_vs_player.nut",this)
 inputdisplaysetup(::network.IsPlaying()?(::network.is_parent_vs?1:0):0)
 if(!::network.IsPlaying())inputdisplaysetup(1)
-break
-}
+break}
 if(::replay.GetState()==::replay.PLAY){if(::network.IsActive()){::manbow.CompileFile("data/script/battle/battle_watch.nut",this)
 inputdisplaysetup(1)
-inputdisplaysetup(0)
-}
-else if(param.game_mode==10){::manbow.CompileFile("data/script/battle/battle_replay_story.nut",this)
-}
+inputdisplaysetup(0)}
+else if(param.game_mode==10){::manbow.CompileFile("data/script/battle/battle_replay_story.nut",this)}
 else{::manbow.CompileFile("data/script/battle/battle_replay.nut",this)
 inputdisplaysetup(0)
-inputdisplaysetup(1)
-}
-}
-if(::network.IsPlaying()){::manbow.CompileFile("data/script/battle/battle_network.nut",this)
-}
+inputdisplaysetup(1)}}
+if(::network.IsPlaying()){::manbow.CompileFile("data/script/battle/battle_network.nut",this)}
 this.srand(param.seed)
 ::graphics.ShowActor(true)
 ::graphics.ShowBackground(true)
 ::camera.Initialize()
-if("SetCamera"in::stage.background){::stage.background.SetCamera()
-}
+if("SetCamera"in::stage.background){::stage.background.SetCamera()}
 this.world=::manbow.World2D()
 this.world.Init(-1000,-1000,-100,3560,2440,100)
 this.group_player=::manbow.Actor2DGroup()
@@ -122,18 +108,11 @@ if(::setting.ping.ping_in_frames)str+="["+((delay+15)/16)+"f]"
 if(::rollback.resyncing())str+="(resyncing)"
 this.text.Set(str)
 this.text.x=::setting.ping.X-(this.text.width/2)
-this.text.y=(::setting.ping.Y-this.text.height)
-}
+this.text.y=(::setting.ping.Y-this.text.height)}
 this.ping_task=this.ping_obj
-::loop.AddTask(this.ping_obj)
-}
-}
-if(!::network.IsActive()){if(param.game_mode==10){::replay.SetDevice([this.team[0].input,this.team[1].input,::input_talk],::story.stage*3)
-}
-else{::replay.SetDevice([this.team[0].input,this.team[1].input],0)
-}
-}
-}
+::loop.AddTask(this.ping_obj)}}
+if(!::network.IsActive()){if(param.game_mode==10){::replay.SetDevice([this.team[0].input,this.team[1].input,::input_talk],::story.stage*3)}
+else{::replay.SetDevice([this.team[0].input,this.team[1].input],0)}}}
 function framedisplaysetup(){local frame={}
 frame.last<-0
 frame.Update<-function(){::debug.print_value(::battle.team[0].current.temp_atk_data)
@@ -142,12 +121,9 @@ local frames=::battle.team[0].current.frame
 local recovery=::battle.team[1].current.recover
 if(this.last!=frames&&frames<35){this.last=frames
 local total=frames-recovery
-::debug.print("frames:"+total+"\n"+"recovery:"+recovery+"\n")
-}
-}
+::debug.print("frames:"+total+"\n"+"recovery:"+recovery+"\n")}}
 AddTask(frame)
-this.frame_task=frame
-}
+this.frame_task=frame}
 function inputdisplaysetup(player){::setting.input_display.update_consts()
 local p=player!=1?::setting.input_display.p1: ::setting.input_display.p2
 if(p.enabled){local input={}
@@ -171,59 +147,44 @@ t.x=p.X
 t.y=p.Y-(i*p.offset)
 t.ConnectRenderSlot(::graphics.slot.ui,60000)
 input.list.append(t)
-input.buf.append("")
-}
+input.buf.append("")}
 input.Update<-function(){local str=this.getinputs(player,this.padding)
 if(str!=this.lastinput&&str!=""){for(local i=this.listmax-1;i>0;--i){this.buf[i]=this.buf[i-1]
-this.list[i].Set(this.buf[i-1])
-}
+this.list[i].Set(this.buf[i-1])}
 this.buf[0]=str
 this.list[0].Set(str)
 this.lastinput=str
-this.sincelast=this.autodeletetimer
-}else if(this.sincelast&&!--this.sincelast){for(local i=0;i<this.listmax;++i){this.buf[i]=""
-this.list[i].Set("")
-}
-this.lastinput=""
-}
-}
+this.sincelast=this.autodeletetimer}else if(this.sincelast&&!--this.sincelast){for(local i=0;i<this.listmax;++i){this.buf[i]=""
+this.list[i].Set("")}
+this.lastinput=""}}
 this.input_task=input
-AddTask(input)
-}
-}
+AddTask(input)}}
 function getinputs(player,none){local str=""
 local setting=player!=1?::setting.input_display.p1: ::setting.input_display.p2
 local team=::battle.team[(::network.IsPlaying()?::network.is_parent_vs:player==1)?1:0]
 local input=team.input
 local x_axis=setting.raw_input||team.current.direction>0?input.x:-input.x
-if(input.y<0){str=x_axis<0?"7":!x_axis?"8":"9"
-}
-else if(!input.y){str=x_axis<0?"4":!x_axis?none:"6"
-}
-else{str=x_axis<0?"1":!x_axis?"2":"3"
-}
+if(input.y<0){str=x_axis<0?"7":!x_axis?"8":"9"}
+else if(!input.y){str=x_axis<0?"4":!x_axis?none:"6"}
+else{str=x_axis<0?"1":!x_axis?"2":"3"}
 str+=none
 str+=input.b0?"A":none
 str+=input.b1?input.b1>12?"[B]":none+"B"+none:none+none+none
 str+=input.b2?"C":none
 str+=input.b4?"D":none
 str+=input.b3?"E":none
-return str
-}
+return str}
 function Release(){::discord.rpc_set_small_img_key("")
 ::discord.rpc_set_small_img_text("")
 ::discord.rpc_set_large_img_key("mainicon")
 if(::replay.GetState()==::replay.PLAY&&!::network.is_watch)::discord.rpc_commit_details_and_state("Idle","")
 if(this.ping_task!=null){::loop.DeleteTask(this.ping_task)
 this.ping_task=null
-this.ping_obj=null
-}
+this.ping_obj=null}
 if(this.input_task!=null){DeleteTask(this.input_task)
-this.input_task=null
-}
+this.input_task=null}
 if(this.frame_task!=null){DeleteTask(this.frame_task)
-this.frame_task=null
-}
+this.frame_task=null}
 this.task={}
 this.gauge.Terminate()
 this.TerminateUser()
@@ -232,29 +193,19 @@ this.TerminateUser()
 this.battleUpdate=null
 this.group_player=null
 this.group_effect=null
-if("bgm"in this){this.bgm=null
-}
-foreach(v in this.team){v.Release()
-}
+if("bgm"in this){this.bgm=null}
+foreach(v in this.team){v.Release()}
 this.team=[null,null]
 ::talk.Clear()
 ::effect.Clear()
-::manbow.SetTerminateFunction(null)
-}
+::manbow.SetTerminateFunction(null)}
 function Begin(){}
 function End(){if(this.ping_task!=null){::loop.DeleteTask(this.ping_task)
 this.ping_task=null
-this.ping_obj=null
-}
+this.ping_obj=null}
 ::sound.StopBGM(500)
-::loop.EndWithFade()
-}
-function AddTask(actor){this.task[actor.tostring()]<-actor
-}
-function DeleteTask(actor){if(actor.tostring() in this.task){delete this.task[actor.tostring()]
-}
-}
-function SetTimeStop(n){this.time_stop_count=n
-}
-function SetSlow(n){this.slow_count=n
-}
+::loop.EndWithFade()}
+function AddTask(actor){this.task[actor.tostring()]<-actor}
+function DeleteTask(actor){if(actor.tostring() in this.task){delete this.task[actor.tostring()]}}
+function SetTimeStop(n){this.time_stop_count=n}
+function SetSlow(n){this.slow_count=n}

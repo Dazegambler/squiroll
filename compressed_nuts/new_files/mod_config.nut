@@ -17,48 +17,33 @@ this.side=_side
 this.cursor.x=0
 this.cursor.y=0
 foreach(val in this.item){this.key[val]<-::config.input.key[this.side][val]
-this.pad[val]<-::config.input.pad[this.side][val]
-}
+this.pad[val]<-::config.input.pad[this.side][val]}
 this.state<-0
 this.update=this.SelectItem
 this.BeginAnime()
-::loop.Begin(this)
-}
+::loop.Begin(this)}
 function Terminate(){this.state=-1
 this.EndAnimeDelayed()
 ::menu.help.Reset()
 ::menu.back.Deactivate()
-::menu.cursor.Deactivate()
-}
-function Update(){this.update()
-}
+::menu.cursor.Deactivate()}
+function Update(){this.update()}
 function SelectItem(){::menu.help.Set(this.help)
 if(::input_all.b10==1){::sound.PlaySE("sys_cancel")
 ::input_all.Lock()
 ::loop.End()
-return
-}
+return}
 this.cursor.Update()
 if(this.cursor.ok){::input_all.Lock()
-if(this.cursor.y==10){::loop.End()
-}
+if(this.cursor.y==10){::loop.End()}
 else{this.current_item=this.item[this.cursor.y]
-if(this.cursor.x==0){this.update=this.GetPadStateWait
-}
-else if(this.cursor.x==1){this.update=this.GetKeyStateWait
-}
-}
-}
+if(this.cursor.x==0){this.update=this.GetPadStateWait}
+else if(this.cursor.x==1){this.update=this.GetKeyStateWait}}}
 else if(this.cursor.cancel){::input_all.Lock()
-::loop.End()
-}
-}
-function GetKeyStateWait(){if(::manbow.GetKeyboardState()>=0){return
-}
-if(::manbow.GetPadButtonState()>=0){return
-}
-this.update=this.GetKeyState
-}
+::loop.End()}}
+function GetKeyStateWait(){if(::manbow.GetKeyboardState()>=0){return}
+if(::manbow.GetPadButtonState()>=0){return}
+this.update=this.GetKeyState}
 function GetKeyState(){::menu.help.Set(this.help_key)
 local id=::manbow.GetKeyboardState()
 if(id>=0){::sound.PlaySE("sys_ok")
@@ -66,22 +51,16 @@ this.key[this.current_item]=id
 ::config.input.key[this.side][this.current_item]=this.key[this.current_item]
 ::config.Save()
 this.update=this.SelectItem
-return
-}
+return}
 id=::manbow.GetPadButtonState()
 if(id>=0){this.key[this.current_item]=::config.input.key[this.side][this.current_item]
 ::sound.PlaySE("sys_cancel")
 this.update=this.SelectItem
-return
-}
-this.key[this.current_item]=-1
-}
-function GetPadStateWait(){if(::manbow.GetKeyboardState()>=0){return
-}
-if(::manbow.GetPadButtonState()>=0){return
-}
-this.update=this.GetPadState
-}
+return}
+this.key[this.current_item]=-1}
+function GetPadStateWait(){if(::manbow.GetKeyboardState()>=0){return}
+if(::manbow.GetPadButtonState()>=0){return}
+this.update=this.GetPadState}
 function GetPadState(){::menu.help.Set(this.help_pad)
 local id=::manbow.GetPadButtonState()
 if(id>=0){::sound.PlaySE("sys_ok")
@@ -89,13 +68,10 @@ this.pad[this.current_item]=id
 ::config.input.pad[this.side][this.current_item]=this.pad[this.current_item]
 ::config.Save()
 this.update=this.SelectItem
-return
-}
+return}
 id=::manbow.GetKeyboardState()
 if(id>=0){::sound.PlaySE("sys_cancel")
 this.pad[this.current_item]=::config.input.pad[this.side][this.current_item]
 this.update=this.SelectItem
-return
-}
-this.pad[this.current_item]=-1
-}
+return}
+this.pad[this.current_item]=-1}

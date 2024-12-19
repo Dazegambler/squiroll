@@ -11,8 +11,7 @@ this.anime_set.Load("data/system/select/stage_pic/stage_pic.pat",null)
 this.anime_set.Load("data/system/select/bgm_name/bgm_name.pat",null)
 this.take<-::actor.LoadAnimationData("data/system/select/pic/pic.pat",true)
 this.take_id<-{}
-local callback=function(){if(!::menu.character_select.anime){return
-}
+local callback=function(){if(!::menu.character_select.anime){return}
 local prop=::manbow.Animation2DProperty()
 prop.texture_name=this.texture_name
 prop.id=this.id
@@ -25,19 +24,14 @@ prop.frame=9999
 prop.filter=1
 prop.is_loop=true
 ::menu.character_select.anime.take_id[this.id]<-true
-::menu.character_select.anime.anime_set.Create(prop)
-}
+::menu.character_select.anime.anime_set.Create(prop)}
 for(local j=0;j<2;j=++j){for(local i=0;i<this.character_id.len();i=++i){local v=this.take[1000*j+1000+i]
 local t=::manbow.Texture()
 v.id<-1000*j+1000+i
 v.texture<-t
 if(j==0&&(::menu.character_select.t[0].cursor_master.val==i||::menu.character_select.t[1].cursor_master.val==i)){t.Load(v.texture_name)
-callback.call(v)
-}
-else{t.LoadBackground(v.texture_name,v,callback)
-}
-}
-}
+callback.call(v)}
+else{t.LoadBackground(v.texture_name,v,callback)}}}
 this.parts<-[]
 local mat=::manbow.Matrix()
 local actor
@@ -50,8 +44,7 @@ for(local i=1;i<=4;i=++i){actor=::manbow.AnimationController2D()
 actor.Init(this.anime_set)
 actor.SetMotion(i,0)
 actor.ConnectRenderSlot(::graphics.slot.ui,40000)
-this.parts.push(actor)
-}
+this.parts.push(actor)}
 this.data<-[]
 ::manbow.CompileFile("data/system/select/script/animation_name.nut",this)
 ::manbow.CompileFile("data/system/select/script/animation_name_slave.nut",this)
@@ -79,27 +72,19 @@ actor.SetMotion(41,0)
 actor.alpha=0
 actor.ConnectRenderSlot(::graphics.slot.ui,45000)
 v.actor_stage<-actor
-v.Update<-function(){if(this.action.Update==this.action.UpdateCharacterSelect){if(this.actor_stage.alpha>0){this.actor_stage.alpha-=0.10000000
-}
-}
-else if(this.actor_stage.alpha<1){this.actor_stage.alpha+=0.10000000
-}
-this.actor_character.alpha=1.00000000-this.actor_stage.alpha
-}
+v.Update<-function(){if(this.action.Update==this.action.UpdateCharacterSelect){if(this.actor_stage.alpha>0){this.actor_stage.alpha-=0.10000000}}
+else if(this.actor_stage.alpha<1){this.actor_stage.alpha+=0.10000000}
+this.actor_character.alpha=1.00000000-this.actor_stage.alpha}
 this.data.push(v)
 local v={}
 v.action<-::menu.character_select.weakref()
 v.anime_set<-this.anime_set
 v.device<-[null,null]
-v.Update<-function(){foreach(i,v in this.action.device_id){if(this.device[i]){continue
-}
+v.Update<-function(){foreach(i,v in this.action.device_id){if(this.device[i]){continue}
 local s=0
-if(v>=4){s=5
-}
-else if(v>=-1){s=v+1
-}
-else{continue
-}
+if(v>=4){s=5}
+else if(v>=-1){s=v+1}
+else{continue}
 local d=::manbow.AnimationController2D()
 d.Init(this.anime_set)
 d.SetMotion(800+i,s)
@@ -108,9 +93,7 @@ local mat=::manbow.Matrix()
 mat.SetScaling(0.50000000,0.50000000,0.50000000)
 mat.Translate(i==0?8:1280-8,8,0)
 d.SetWorldTransform(mat)
-this.device[i]=d
-}
-}
+this.device[i]=d}}
 this.data.push(v)
 if(::network.IsPlaying()){v={}
 v.text<-::font.CreateSystemStringSmall("")
@@ -119,8 +102,7 @@ v.Update<-function(){local delay=::network.GetDelay()
 ::rollback.update_delay(delay)
 this.text.Set("ping:"+delay)
 this.text.x=::graphics.width-this.text.width-2
-this.text.y=-4
-}
+this.text.y=-4}
 this.data.push(v)
 for(local i=0;i<2;i=++i){v={}
 v.icon<-::manbow.Sprite()
@@ -134,22 +116,14 @@ v.text.x=i==0?v.icon.x+32:v.icon.x-v.text.width*v.text.sx
 v.text.y=v.icon.y+2
 v.text.ConnectRenderSlot(::graphics.slot.ui,40000)
 v.Update<-function(){}
-this.data.push(v)
-}
+this.data.push(v)}
 if(::network.allow_watch&&!::network.is_parent_vs){local ip_str={}
 ip_str.text<-::font.CreateSystemStringSmall(!::setting.misc.hide_ip?::punch.get_ip():"press C to copy ip")
 ip_str.text.x=10
 ip_str.text.y=10
 ip_str.text.sx=ip_str.text.sy=1.2
 ip_str.text.ConnectRenderSlot(::graphics.slot.front,-1)
-ip_str.Update<-function(){if(::input_all.b2==1){::punch.copy_ip_to_clipboard()
-}
-if(!::network.IsPlaying())this=null
-}
-this.data.push(ip_str)
-}
-}
-}
-function Update(){foreach(v in this.data){v.Update()
-}
-}
+ip_str.Update<-function(){if(::input_all.b2==1){::punch.copy_ip_to_clipboard()}
+if(!::network.IsPlaying())this=null}
+this.data.push(ip_str)}}}
+function Update(){foreach(v in this.data){v.Update()}}

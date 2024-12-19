@@ -30,9 +30,7 @@ name.sx=name.sy=2.00000000/3.00000000
 name.x=i==0?icon.x+32:icon.x-name.width*name.sx
 name.y=icon.y+2
 name.ConnectRenderSlot(::graphics.slot.status,4000)
-this.AddParts(name,i==0?this.mat_left_top:this.mat_right_top)
-}
-}
+this.AddParts(name,i==0?this.mat_left_top:this.mat_right_top)}}
 actor=this.CreateStaticParts(0,this.mat_left_top)
 this.spell_name_x<-[actor.GetFramePointX(0),actor.GetFramePointX(1)]
 this.spell_name_y<-[actor.GetFramePointY(0),actor.GetFramePointY(1)]
@@ -43,16 +41,14 @@ this.CreateStaticParts(21,this.mat_right_top)
 this.CreateStaticParts(2,this.mat_center)
 actor=this.CreateStaticParts(3,this.mat_center)
 if(::battle.time<0){actor=this.CreateStaticParts(4,this.mat_center)
-this.time<-null
-}
+this.time<-null}
 else{this.time<-::manbow.Number()
 this.time.Initialize(this.texture,0,656,32,54,2,0,true)
 this.time.SetValue(99)
 this.time.x=640+32
 this.time.y=actor.GetFramePointY(0)
 this.time.ConnectRenderSlot(::graphics.slot.status,1000)
-this.AddParts(this.time,this.mat_center)
-}
+this.AddParts(this.time,this.mat_center)}
 this.fps<-::manbow.Number()
 this.fps.Initialize(this.texture,0,575,16,18,2,-5,true)
 this.fps.SetValue(0)
@@ -61,8 +57,7 @@ this.fps.y=1
 this.fps.ConnectRenderSlot(::graphics.slot.status,1000)
 this.fps.visible=::config.graphics.fps
 local bottom=[this.CreateStaticParts(10,this.mat_left_bottom),this.CreateStaticParts(11,this.mat_right_bottom)]
-this.gauge=[{},{}
-]
+this.gauge=[{},{}]
 foreach(i,v in this.gauge){local t=::battle.team[i]
 local offset=i*10
 local dir=i==0?1.00000000:-1.00000000
@@ -87,8 +82,7 @@ v.op_flash.visible=false
 v.op_flash2<-this.CreateStaticParts(lang*10000+202+offset,mat_top)
 v.op_flash2.visible=false
 local a=[this.Gauge(),this.Gauge(),this.Gauge(),this.Gauge(),this.Gauge()]
-for(local j=0;j<5;j=++j){a[j].Initialize(300+offset+j,mat_bottom)
-}
+for(local j=0;j<5;j=++j){a[j].Initialize(300+offset+j,mat_bottom)}
 v.mp<-a
 a=[this.SPGauge(),this.SPGauge()]
 a[0].Initialize(t.sp_max,bottom[i].GetFramePointX(0),bottom[i].GetFramePointY(0),dir,mat_bottom)
@@ -104,21 +98,12 @@ if("match_num"in::battle){v.win<-[]
 for(local j=0;j<::battle.match_num;j=++j){mat=::manbow.Matrix()
 mat.SetTranslation(j*dir*-32,0,0)
 actor=this.CreateStaticParts(220+i,mat_top,mat)
-v.win.push(actor)
-}
-}
-v.face_slave<-face_slave[i]
-}
-::graphics.slot.status.Show(false)
-}
+v.win.push(actor)}}
+v.face_slave<-face_slave[i]}
+::graphics.slot.status.Show(false)}
 function Update(){this.alpha-=0.05000000
-if(this.alpha<-1){this.alpha=1
-}
-if(this.time){this.time.SetValue((::battle.time+::battle.time_unit-1)/::battle.time_unit)
-}
+if(this.alpha<-1){this.alpha=1}
+if(this.time){this.time.SetValue((::battle.time+::battle.time_unit-1)/::battle.time_unit)}
 this.fps.visible=::config.graphics.fps
-if(::config.graphics.fps){this.fps.SetValue(::GetFPS())
-}
-foreach(v in this.gauge){this.UpdateGauge.call(v,this)
-}
-}
+if(::config.graphics.fps){this.fps.SetValue(::GetFPS())}
+foreach(v in this.gauge){this.UpdateGauge.call(v,this)}}

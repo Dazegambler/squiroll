@@ -43,52 +43,34 @@ this.help<-{}
 ::manbow.CompileFile("data/system/help/help.nut",this.help)
 scene.append(this.help)
 function BeginAct(){this.act.pl.BeginStage(0)
-::loop.DeleteTask(this._act_task)
-}
+::loop.DeleteTask(this._act_task)}
 function EndAct(){this.act.pl.EndStage()
-if("Terminate"in this.act.global){this.act.global.Terminate()
-}
-::loop.DeleteTask(this._act_task)
-}
+if("Terminate"in this.act.global){this.act.global.Terminate()}
+::loop.DeleteTask(this._act_task)}
 function EndActDelayed(delay=30){this._act_task.count=delay
-::loop.AddTask(this._act_task)
-}
+::loop.AddTask(this._act_task)}
 class this.EndActDelayedTask{act=null
 count=0
 function Update(){if(this.count--==0){this.act.pl.EndStage()
-if("Terminate"in this.act.global){this.act.global.Terminate()
-}
-::loop.DeleteTask(this)
-}
-}
-}
+if("Terminate"in this.act.global){this.act.global.Terminate()}
+::loop.DeleteTask(this)}}}
 function BeginAnime(){::loop.DeleteTask(this._anime_task)
-this.anime.Initialize()
-}
+this.anime.Initialize()}
 function EndAnime(){::loop.DeleteTask(this._anime_task)
-if("Terminate"in this.anime){this.anime.Terminate()
-}
-}
+if("Terminate"in this.anime){this.anime.Terminate()}}
 function EndAnimeDelayed(delay=30){this._anime_task.count=delay
-::loop.AddTask(this._anime_task)
-}
+::loop.AddTask(this._anime_task)}
 class this.EndAnimeDelayedTask{anime=null
 count=0
 function Update(){if(this.count--==0){this.anime.Terminate()
-::loop.DeleteTask(this)
-}
-}
-}
+::loop.DeleteTask(this)}}}
 foreach(v in scene){if("act"in v){v._act_task<-this.EndActDelayedTask()
 v._act_task.act=v.act.weakref()
 v.BeginAct<-this.BeginAct
 v.EndAct<-this.EndAct
-v.EndActDelayed<-this.EndActDelayed
-}
+v.EndActDelayed<-this.EndActDelayed}
 if("anime"in v){v._anime_task<-this.EndAnimeDelayedTask()
 v._anime_task.anime=v.anime.weakref()
 v.BeginAnime<-this.BeginAnime
 v.EndAnime<-this.EndAnime
-v.EndAnimeDelayed<-this.EndAnimeDelayed
-}
-}
+v.EndAnimeDelayed<-this.EndAnimeDelayed}}

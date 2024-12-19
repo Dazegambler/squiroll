@@ -1,2 +1,1 @@
-function testy(){::debug.print("hello there o/ \n")
-}
+function testy(){::debug.print("hello there o/ \n")}

@@ -36,8 +36,6 @@ using namespace std::literals::string_view_literals;
 // Workaround for a parsing bug of some sort...?
 #define REMOVE_SEMICOLONS 1
 
-#define JANK_WORKAROUNDS 0
-
 int main(int argc, char* argv[]) {
     if (argc <= 1) {
         error_exit(
@@ -73,7 +71,6 @@ int main(int argc, char* argv[]) {
     char* out_buf = (char*)malloc(size);
     char* out_buf_write = out_buf;
 
-
     char* token_start = buffer;
     bool is_token = false;
     bool can_fold = false;
@@ -81,9 +78,6 @@ int main(int argc, char* argv[]) {
     bool pre_namespace = false;
 #if REMOVE_SEMICOLONS
     bool pre_semicolon = false;
-#endif
-#if JANK_WORKAROUNDS
-    bool line_poison = false;
 #endif
     uint8_t comment_type = 0; // 1 = single, 2 = multi
     uint8_t string_type = 0; // 1 = double quote, 2 = verbatim, 3 = single quote
@@ -184,14 +178,10 @@ int main(int argc, char* argv[]) {
                                 *out_buf_write++ = '\n';
                                 prev_printed_c = '\n';
                             }
-#if JANK_WORKAROUNDS
-                            if (line_poison)
-#endif
-                            {
-                                if (prev_c == '}') {
-                                    end_token();
-                                    break;
-                                }
+
+                            if (prev_c == '}') {
+                                end_token();
+                                break;
                             }
 #endif
                             goto handle_whitespace;
@@ -260,11 +250,7 @@ int main(int argc, char* argv[]) {
                                 bool prev_is_else = false;
                                 bool next_ends_token = false;
                                 //bool next_can_bracket_or_colon = false;
-#if JANK_WORKAROUNDS
-                                if (!line_poison) {
-                                    line_poison = (prev_token == "try"sv || prev_token == "class"sv);
-                                }
-#endif
+                                
                                 // Valid keyword characters
                                 // 
                                 // Nothing special:

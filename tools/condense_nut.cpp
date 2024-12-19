@@ -408,6 +408,10 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    while (out_buf_write[-1] == '\n') {
+        --out_buf_write;
+    }
+
     fwrite(out_buf, out_buf_write - out_buf, 1, output);
 
     free(buffer);

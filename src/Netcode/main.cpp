@@ -424,6 +424,8 @@ static void cdecl parse_command_line(const char* str) {
     }
 }
 
+//static char* launch_str = "th155r.exe";
+
 // Initialization code shared by th155r and thcrap use
 // Executes before the start of the process
 bool common_init(
@@ -528,6 +530,8 @@ static void yes_tampering() {
 }
 
 typedef BOOL cdecl globalconfig_get_boolean_t(const char* key, const BOOL default_value);
+typedef const char* cdecl runconfig_runcfg_fn_get_t();
+typedef const char* cdecl runconfig_thcrap_dir_get_t();
 
 #if !DISABLE_ALL_LOGGING_FOR_BUILD
 static bool enable_thcrap_console = false;
@@ -578,6 +582,18 @@ extern "C" {
                     if (mbox_t* log_func = (mbox_t*)GetProcAddress(thcrap_handle, "log_mbox")) {
                         log_mbox = log_func;
                     }
+                    /*
+                    if (runconfig_runcfg_fn_get_t* runcfg_get = (runconfig_runcfg_fn_get_t*)GetProcAddress(thcrap_handle, "runconfig_runcfg_fn_get")) {
+                        if (const char* runcfg_fn = runcfg_get()) {
+                            if (runconfig_thcrap_dir_get_t* thcrap_dir_get = (runconfig_thcrap_dir_get_t*)GetProcAddress(thcrap_handle, "runconfig_thcrap_dir_get")) {
+                                if (const char* thcrap_dir = thcrap_dir_get()) {
+                                    size_t length = snprintf(NULL, 0, "\"%sthcrap_loader.exe\" %s \"%s\"", thcrap_dir, game_str, runcfg_fn);
+                                    sprintf(launch_str = (char*)malloc(length + 1), "\"%sthcrap_loader.exe\" %s \"%s\"", thcrap_dir, game_str, runcfg_fn);
+                                }
+                            }
+                        }
+                    }
+                    */
                     //if (patchhook_register_t* patchhook_register_func = (patchhook_register_t*)GetProcAddress(thcrap_handle, "patchhook_register")) {
                         //patchhook_register = patchhook_register_func;
                     //}

@@ -134,6 +134,7 @@ int main(int argc, char* argv[]) {
         }
         else {
             switch (string_type) {
+                // TODO: Calculate which string type be smaller and convert between them
                 case 1: // Double quote string
                     if (c == '"' && prev_c != '\\') {
                         string_type = 0;
@@ -262,10 +263,10 @@ int main(int argc, char* argv[]) {
                                 // local, const, class, static
                                 // 
                                 // Needs valid token end afterwards (whitespace, ", ', :, (, [, {):
-                                // return, yield, throw, delete, case, resume
+                                // return, yield, throw, delete, case, resume, clone
                                 //
                                 // Needs valid token end before and after:
-                                // in, instanceof, typeof, extends 
+                                // in, instanceof, typeof, extends
                                 //
 
                                 if (
@@ -280,7 +281,8 @@ int main(int argc, char* argv[]) {
                                             prev_token == "throw"sv || prev_token == "delete"sv ||
                                             prev_token == "resume"sv || prev_token == "extends"sv ||
                                             prev_token == "in"sv || prev_token == "instanceof"sv ||
-                                            prev_token == "typeof"sv || prev_token == "case"sv
+                                            prev_token == "typeof"sv || prev_token == "case"sv ||
+                                            prev_token == "clone"sv
                                         ))
                                     )
                                 ) {
@@ -411,6 +413,14 @@ int main(int argc, char* argv[]) {
     while (out_buf_write[-1] == '\n') {
         --out_buf_write;
     }
+
+    // TODO:
+    // Now that everything is condensed, certain
+    // code patterns *should* be easier to detect.
+    //
+    // Single line if statements and loops
+    // Empty blocks
+    //
 
     fwrite(out_buf, out_buf_write - out_buf, 1, output);
 

@@ -1,6 +1,6 @@
 this.item<-["lobby_incomming","lobby_match","lobby_select",null,"server","client","watch",null,"player_name","port","upnp","allow_watch",null,"exit"]
-this.room_name<-["Free","Novice","Veteran","EU","NA","SA","Asia"]
-this.room_title<-["Free","Novice","Veteran","EU","NA","SA","Asia"]
+this.room_name<-["Free","Novice","Veteran","EU","NA","SA","Asia","Dev"]
+this.room_title<-["Free","Novice","Veteran","EU","NA","SA","Asia","Dev"]
 this.cursor_item<-this.Cursor(0,this.item.len(),::input_all)
 local skip=[]
 foreach(v in this.item){skip.push(v?0:1)}
@@ -26,6 +26,7 @@ c.enable_ok=false
 c.enable_cancel=false
 this.server_port_v.push(c)}
 this.display_ip_on_wait<-false
+this.update_help_text<-false
 this.server_port_h<-this.Cursor(1,5,::input_all)
 this.cursor_upnp<-this.Cursor(1,2,::input_all)
 this.cursor_allow_watch<-this.Cursor(1,2,::input_all)
@@ -37,6 +38,7 @@ this.lobby_interval<-10*1000
 this.lobby_time_stamp<-::manbow.timeGetTime()-this.lobby_interval+1000
 this.help<-["B1","ok",null,"B2","return",null,"UD","select"]
 this.help_cancel<-["B2","cancel"]
+this.help_cancel_copy<-["B2","cancel",null,"B3","copy_host"]
 this.help_port<-["B1","ok",null,"B2","cancel",null,"UD","val",null,"LR","digit"]
 this.help_addr<-["B1","ok","B2","cancel","B3","clipboard","UD","val","LR","digit"]
 this.help_item<-["B1","ok",null,"B2","cancel",null,"LR","change"]
@@ -77,6 +79,7 @@ this.SetTargetHostToCursor(::config.network.target_host)
 this.SetTargetPortToCursor(::config.network.target_port)
 this.cursor_upnp.val=::config.network.upnp?0:1
 this.cursor_allow_watch.val=::config.network.allow_watch?0:1
+this.cursor_lobby.SetItemNum(this.room_name.len()-(::debug.dev()?0:1))
 this.BeginAnime()
 ::loop.Begin(this)}
 function Terminate(){this.state=-1
@@ -130,6 +133,7 @@ this.lobby_user_state=::LOBBY.WAIT_INCOMMING
 ::lobby.inc_user_count()
 this.update=this.UpdateMatch
 this.display_ip_on_wait=false
+this.update_help_text=false
 ::Dialog(-1,this.item_table.wait_incomming[0],null,this.dialog_wait.InitializeWithUPnP)}
 break
 case 1:if(::LOBBY.GetNetworkState()==2){::discord.rpc_commit_details_and_state("Searching in "+::config.network.lobby_name,"")
@@ -139,6 +143,7 @@ case 1:if(::LOBBY.GetNetworkState()==2){::discord.rpc_commit_details_and_state("
 this.lobby_user_state=::LOBBY.MATCHING
 this.update=this.UpdateMatch
 this.display_ip_on_wait=false
+this.update_help_text=true
 ::Dialog(-1,this.item_table.find[0],null,this.dialog_wait.Initialize)}
 break
 case 2:this.update=this.UpdateSelectLobby
@@ -148,6 +153,7 @@ case 4: ::discord.rpc_commit_details_and_state("Waiting for connection","")
 ::network.StartupServer(::config.network.hosting_port,1)
 this.update=this.UpdateWaitServer
 ::punch.reset_ip()
+this.update_help_text=false
 this.display_ip_on_wait=true
 ::Dialog(-1,this.item_table.wait_incomming[0],null,this.dialog_wait.InitializeWithUPnP)
 break
@@ -201,7 +207,7 @@ port=port+this.server_port_v[i].val}
 ::config.Save()
 ::loop.End()}
 else if(::input_all.b1==1){::loop.End()}}
-function UpdateWaitServer(){::menu.help.Set(this.help_cancel)
+function UpdateWaitServer(){::menu.help.Set(this.update_help_text?this.help_cancel_copy:this.help_cancel)
 if(::input_all.b1==1){::network.Terminate()
 this.update=this.UpdateMain
 ::loop.End()}

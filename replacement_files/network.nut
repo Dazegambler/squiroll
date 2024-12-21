@@ -18,21 +18,21 @@ this.room_name <- [
 	"Free",
 	"Novice",
 	"Veteran",
-	//"Dev",//uncomment if use is needed
 	"EU",
 	"NA",
 	"SA",
-	"Asia"
+	"Asia",
+	"Dev"
 ];
 this.room_title <- [
 	"Free",
 	"Novice",
 	"Veteran",
-	//"Dev",//uncomment if use is needed
 	"EU",
 	"NA",
 	"SA",
-	"Asia"
+	"Asia",
+	"Dev"
 ];
 this.cursor_item <- this.Cursor(0, this.item.len(), ::input_all);
 local skip = [];
@@ -75,6 +75,7 @@ for( local i = 0; i < 5; i = ++i )
 }
 
 this.display_ip_on_wait <- false;
+this.update_help_text <- false;
 
 this.server_port_h <- this.Cursor(1, 5, ::input_all);
 this.cursor_upnp <- this.Cursor(1, 2, ::input_all);
@@ -85,6 +86,7 @@ this.retry_count <- 0;
 this.lobby_user_state <- 0;
 this.lobby_interval <- 10 * 1000;
 this.lobby_time_stamp <- ::manbow.timeGetTime() - this.lobby_interval + 1000;
+
 this.help <- [
 	"B1",
 	"ok",
@@ -98,6 +100,13 @@ this.help <- [
 this.help_cancel <- [
 	"B2",
 	"cancel"
+];
+this.help_cancel_copy <- [
+	"B2",
+	"cancel",
+	null,
+	"B3",
+	"copy_host"
 ];
 this.help_port <- [
 	"B1",
@@ -186,6 +195,7 @@ function Initialize()
 	this.SetTargetPortToCursor(::config.network.target_port);
 	this.cursor_upnp.val = ::config.network.upnp ? 0 : 1;
 	this.cursor_allow_watch.val = ::config.network.allow_watch ? 0 : 1;
+	this.cursor_lobby.SetItemNum(this.room_name.len() - (::debug.dev() ? 0 : 1));
 	this.BeginAnime();
 	::loop.Begin(this);
 }
@@ -294,6 +304,7 @@ function UpdateMain()
 				::lobby.inc_user_count();
 				this.update = this.UpdateMatch;
 				this.display_ip_on_wait = false;
+				this.update_help_text = false;
 				::Dialog(-1, this.item_table.wait_incomming[0], null, this.dialog_wait.InitializeWithUPnP);
 			}
 
@@ -310,6 +321,7 @@ function UpdateMain()
 				this.lobby_user_state = ::LOBBY.MATCHING;
 				this.update = this.UpdateMatch;
 				this.display_ip_on_wait = false;
+				this.update_help_text = true;
 				::Dialog(-1, this.item_table.find[0], null, this.dialog_wait.Initialize);
 			}
 
@@ -326,6 +338,7 @@ function UpdateMain()
 			::network.StartupServer(::config.network.hosting_port, 1);
 			this.update = this.UpdateWaitServer;
 			::punch.reset_ip();
+			this.update_help_text = false;
 			this.display_ip_on_wait = true;
 			::Dialog(-1, this.item_table.wait_incomming[0], null, this.dialog_wait.InitializeWithUPnP);
 			break;
@@ -460,7 +473,7 @@ function UpdateInputPort()
 
 function UpdateWaitServer()
 {
-	::menu.help.Set(this.help_cancel);
+	::menu.help.Set(this.update_help_text ? this.help_cancel_copy : this.help_cancel);
 
 	if (::input_all.b1 == 1)
 	{

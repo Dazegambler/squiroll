@@ -42,6 +42,8 @@ scene.append(this.key_config)
 this.help<-{}
 ::manbow.CompileFile("data/system/help/help.nut",this.help)
 scene.append(this.help)
+foreach(key,str in{["copy_host"]="copy IP/port to clipboard",["copy_watch"]="copy watch IP/port to clipboard"}){this.help.src[0][key]<-this.help.func_init_text(str)
+this.help.src[1][key]<-this.help.func_init_text(str)}
 function BeginAct(){this.act.pl.BeginStage(0)
 ::loop.DeleteTask(this._act_task)}
 function EndAct(){this.act.pl.EndStage()

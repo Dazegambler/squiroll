@@ -12,8 +12,9 @@ this.obj[3].blue=0
 this.obj[4].blue=0
 this.obj[5].red=0
 this.Update=::menu.network.dialog_wait.Update2}}
-function Update(){if(::menu.network.display_ip_on_wait&&::punch.ip_available()){this.obj[1].Set(::menu.network.item_table.wait_incomming[0]+" "+(!::setting.misc.hide_ip?::punch.get_ip():"press C to copy hosting IP/port"))
-this.obj[1].x=20+-this.obj[1].width/2}
+function Update(){if(::punch.ip_available()){::menu.network.update_help_text=true
+if(::menu.network.display_ip_on_wait){this.obj[1].Set(::menu.network.item_table.wait_incomming[0]+" "+(!::setting.misc.hide_ip?::punch.get_ip():""))
+this.obj[1].x=20+-this.obj[1].width/2}}
 ::menu.cursor.SetTarget(this.obj[1].x-20+::graphics.width/2,this.obj[1].y+24+::graphics.height/2,0.69999999)
 ::menu.network.update()}
 function Update2(){local upnp_state=::UPnP.GetAsyncState()

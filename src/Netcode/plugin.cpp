@@ -276,6 +276,11 @@ SQInteger ignore_lobby_punch_ping(HSQUIRRELVM v) {
     return 0;
 }
 
+SQInteger get_dev_mode(HSQUIRRELVM v) {
+    sq_pushbool(v, (SQBool)get_dev_mode_enabled());
+    return 1;
+}
+
 extern "C" {
     dll_export int stdcall init_instance_v2(HostEnvironment* environment) {
         if (
@@ -390,6 +395,7 @@ extern "C" {
                 sq_setfunc(v, _SC("fprint"), sq_fprint);
                 sq_setfunc(v, _SC("print_value"), sq_print_value);
                 sq_setfunc(v, _SC("fprint_value"), sq_fprint_value);
+                sq_setfunc(v, _SC("dev"), get_dev_mode);
             });
 
             // modifications to the manbow table

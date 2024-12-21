@@ -49,7 +49,7 @@ static inline constexpr float MACRO_CAT4(SECTION,_,KEY,_DEFAULT) = MACRO_CAT(DEF
 static inline constexpr const char MACRO_CAT4(SECTION,_,KEY,_DEFAULT_STR)[] = MACRO_STR(DEFAULT)
 
 static inline constexpr auto START_COUNTER = __COUNTER__;
-// DO NOT DEFINE CONFIGS ABOVE THIS LINE
+// DO NOT DEFINE NORMAL CONFIGS ABOVE THIS LINE
 
 #define LOBBY_SECTION_NAME "lobby"
 #if !USE_DEV_SERVER
@@ -112,8 +112,11 @@ CONFIG_BOL(MISC, HIDE_WIP, "hide_wip", true);
 CONFIG_BOL(MISC, SKIP_INTRO, "skip_intro", true);
 CONFIG_TST(MISC, DISCORD, "discord_integration");
 
-// DO NOT DEFINE CONFIGS BELOW THIS LINE
+// DO NOT DEFINE NORMAL CONFIGS BELOW THIS LINE
 static inline constexpr auto END_COUNTER = __COUNTER__ - 1;
+
+// This config is "hidden", it won't get added to people's config files automatically
+CONFIG_BOL(MISC, DEV_MODE, "dev", false);
 
 #define CONFIG_DEFAULT(SECTION, KEY) { MACRO_CAT(SECTION,_SECTION_NAME), MACRO_CAT4(SECTION,_,KEY,_KEY), MACRO_CAT4(SECTION,_,KEY,_DEFAULT_STR) }
 
@@ -541,6 +544,11 @@ bool get_skip_intro_enabled() {
 static char MISC_DISCORD_BUFFER[8]{ '\0' };
 int8_t get_discord_enabled() {
 	return GET_TEST_CONFIG(MISC, DISCORD);
+}
+
+static char MISC_DEV_MODE_BUFFER[8]{ '\0' };
+bool get_dev_mode_enabled() {
+	return GET_BOOL_CONFIG(MISC, DEV_MODE);
 }
 
 void set_discord_enabled(bool state) {

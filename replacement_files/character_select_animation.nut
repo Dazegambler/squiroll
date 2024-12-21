@@ -217,7 +217,7 @@ function Initialize()
 			};
 			this.data.push(ip_str);
 			if (::menu.network.update_help_text) {
-				::menu.help.set(::menu.character_select.help_copy);
+				::menu.help.Set(::menu.character_select.help_copy);
 			}
 		}
 	}

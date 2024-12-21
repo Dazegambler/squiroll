@@ -130,5 +130,5 @@ ip_str.text.ConnectRenderSlot(::graphics.slot.front,-1)}
 ip_str.Update<-function(){if(::input_all.b2==1){::punch.copy_ip_to_clipboard()}
 if(!::network.IsPlaying())this=null}
 this.data.push(ip_str)
-if(::menu.network.update_help_text){::menu.help.set(::menu.character_select.help_copy)}}}}
+if(::menu.network.update_help_text){::menu.help.Set(::menu.character_select.help_copy)}}}}
 function Update(){foreach(v in this.data){v.Update()}}

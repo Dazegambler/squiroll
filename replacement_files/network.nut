@@ -32,7 +32,7 @@ this.room_title <- [
 	"NA",
 	"SA",
 	"Asia",
-	"Dev"
+	"Secret Dev Lobby"
 ];
 this.cursor_item <- this.Cursor(0, this.item.len(), ::input_all);
 local skip = [];
@@ -287,7 +287,7 @@ function UpdateMain()
 		case 0://wait in lobby
 			if (::LOBBY.GetNetworkState() == 2)
 			{
-				::discord.rpc_commit_details_and_state("Waiting in " + ::config.network.lobby_name, "");
+				::discord.rpc_commit_details_and_state("Waiting in " + this.room_title[this.cursor_lobby.val], "");
 
 				::LOBBY.SetExternalPort(::config.network.hosting_port);
 				::LOBBY.SetUserData("" + ::config.network.hosting_port);

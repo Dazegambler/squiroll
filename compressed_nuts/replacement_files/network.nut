@@ -1,6 +1,6 @@
 this.item<-["lobby_incomming","lobby_match","lobby_select",null,"server","client","watch",null,"player_name","port","upnp","allow_watch",null,"exit"]
 this.room_name<-["Free","Novice","Veteran","EU","NA","SA","Asia","Dev"]
-this.room_title<-["Free","Novice","Veteran","EU","NA","SA","Asia","Dev"]
+this.room_title<-["Free","Novice","Veteran","EU","NA","SA","Asia","Secret Dev Lobby"]
 this.cursor_item<-this.Cursor(0,this.item.len(),::input_all)
 local skip=[]
 foreach(v in this.item){skip.push(v?0:1)}
@@ -122,7 +122,7 @@ this.cursor_item.Update()
 ::punch.ignore_ping()
 if(::input_all.b0==1){::input_all.Lock()
 ::network.local_device_id=::input_all.GetLastDevice()
-switch(this.cursor_item.val){case 0:if(::LOBBY.GetNetworkState()==2){::discord.rpc_commit_details_and_state("Waiting in "+::config.network.lobby_name,"")
+switch(this.cursor_item.val){case 0:if(::LOBBY.GetNetworkState()==2){::discord.rpc_commit_details_and_state("Waiting in "+this.room_title[this.cursor_lobby.val],"")
 ::LOBBY.SetExternalPort(::config.network.hosting_port)
 ::LOBBY.SetUserData(""+::config.network.hosting_port)
 this.upnp_timeout=0

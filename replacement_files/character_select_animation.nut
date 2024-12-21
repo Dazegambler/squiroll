@@ -216,7 +216,7 @@ function Initialize()
 				if(!::network.IsPlaying())this = null;
 			};
 			this.data.push(ip_str);
-			if (::menu.network.update_help_text) {
+			if (::menu.network.update_help_text || ::punch.ip_available()) {
 				::menu.help.Set(::menu.character_select.help_copy);
 			}
 		}

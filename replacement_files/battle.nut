@@ -222,22 +222,31 @@ function Create( param )
 }
 
 function framedisplaysetup() {
+	//get frame count post flagattack
 	local frame = {};
 	frame.last <- 0;
+	frame.current <- 0;
+	frame.previous <- 0;
 	//frame.count <- 0;
 	//frame.recover <- 0;
 	frame.Update <- function () {
-		::debug.print_value(::battle.team[0].current.temp_atk_data);
-		return;
-		//this.last = ::battle.team[0].current.flagAttack
-		local frames = ::battle.team[0].current.frame;
-		local recovery = ::battle.team[1].current.recover;
-		if (this.last != frames && frames < 35){
-			this.last = frames;
-			local total = frames - recovery;
-			::debug.print("frames:"+total+"\n"+"recovery:"+recovery+"\n");
-			//::debug.print_value(total);
+		// ::debug.print_value(::battle.team[0].current.keyTake);
+		// return;
+		local flag = ::battle.team[0].current.keyTake;//atkRank,flagAttack
+		local count = this.current;
+		if (this.last == flag && (::battle.team[0].input.x == 0 && ::battle.team[0].input.y == 0)){
+			if (flag != 0){
+				count++;
+			}else{
+				count = 0;
+			}
+		} else if (::battle.team[0].input.x == 0 && ::battle.team[0].input.y == 0){
+			count++;
 		}
+		this.last = flag;
+		this.current = count != this.current ? (function (){
+			::debug.print("frames:"+::battle.team[0].current.frame+"||count:"+count+"\n");
+			return count;}()) : this.current;
 	}
 	AddTask(frame);
 	this.frame_task = frame;

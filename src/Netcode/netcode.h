@@ -21,6 +21,7 @@
 #define BETTER_BLACK_SCREEN_FIX 1
 
 extern bool resyncing;
+extern int32_t local_buffered_frames;
 
 void patch_netplay();
 

@@ -281,6 +281,11 @@ SQInteger get_dev_mode(HSQUIRRELVM v) {
     return 1;
 }
 
+SQInteger get_buffered_frames(HSQUIRRELVM v) {
+    sq_pushinteger(v, local_buffered_frames);
+    return 1;
+}
+
 extern "C" {
     dll_export int stdcall init_instance_v2(HostEnvironment* environment) {
         if (
@@ -377,6 +382,7 @@ extern "C" {
             sq_createtable(v, _SC("rollback"), [](HSQUIRRELVM v) {
                 sq_setfunc(v, _SC("update_delay"),update_delay);
                 sq_setfunc(v, _SC("resyncing"), r_resync_get);
+                sq_setfunc(v, _SC("get_buffered_frames"), get_buffered_frames);
             });
 
             sq_createtable(v, _SC("punch"), [](HSQUIRRELVM v) {

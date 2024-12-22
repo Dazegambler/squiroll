@@ -7,6 +7,7 @@
 #include <windows.h>
 #include <squirrel.h>
 
+#include <memory>
 #include <vector>
 
 #include "util.h"
@@ -159,6 +160,63 @@ struct TF4UDP {
 
 static_assert(sizeof(TF4UDP) == 0x24C);
 
+struct TF4InputRecorderDevice {
+    size_t input_write_idx; // 0x0
+    size_t input_read_idx; // 0x4
+    bool __bool_8; // 0x8
+    uint8_t probably_padding_bytes9[0xC - 0x9]; // 0x9
+    void* /* TF4::InputDevice* */ tf4_device; // 0xC
+    std::vector<uint16_t> input_vec; // 0x10
+    BoostMutex* input_mutex; // 0x1C
+    // 0x20
+};
+
+static_assert(sizeof(TF4InputRecorderDevice) == 0x20);
+
+struct ManbowInputRecorder {
+    uintptr_t vtbl; // 0x0
+    std::vector<uint8_t> compressed_header; // 0x4
+    std::vector<std::shared_ptr<TF4InputRecorderDevice>> devices; // 0x10
+    BoostMutex input_mutex; // 0x1C
+    uint8_t __unk24[0x4C - 0x24]; // 0x24
+    // 0x4C
+};
+
+static_assert(sizeof(ManbowInputRecorder) == 0x4C);
+
+struct ManbowNetworkInputSessionRemote {
+    size_t session_num; // 0x0
+    size_t remote_write_idx; // 0x4
+    size_t local_write_idx; // 0x8
+    uint8_t __unkC[4]; // 0xC
+    std::function<void(void*, uint32_t)> send_packet_func; // 0x10
+    std::function<uint32_t()> get_ping_func; // 0x38
+    std::function<void()> disconnect_func; // 0x60
+    uint64_t last_input_packet_time; // 0x88
+    // 0x90
+};
+
+static_assert(sizeof(ManbowNetworkInputSessionRemote) == 0x90);
+
+struct ManbowNetworkInputSession {
+    int32_t session_num; // 0x0
+    uint8_t local_player_idx; // 0x4
+    uint8_t player_count; // 0x5
+    uint8_t __unk6[0x14 - 6]; // 0x6
+    bool __bool_14; // 0x14
+    uint8_t probably_padding_bytes15[0x18 - 0x15]; // 0x15
+    std::vector<std::shared_ptr<void /* TF4::InputDevice */>> device_vec; // 0x18
+    std::shared_ptr<ManbowInputRecorder> input_recorder; // 0x24
+    std::vector<uint8_t> player_to_remote_idx; // 0x2C
+    std::vector<ManbowNetworkInputSessionRemote> remote_vec; // 0x38
+    std::vector<uint8_t> input_packet_buf; // 0x44
+    std::vector<uint8_t> input_packet_buf2; // 0x50
+    uint8_t __unk5C[0x68 - 0x5C]; // 0x5C
+    // 0x68
+};
+
+static_assert(sizeof(ManbowNetworkInputSession) == 0x68);
+
 #define resync_patch_addr (0x0E364C_R)
 #define patchA_addr (0x0E357A_R)
 #define wsasendto_import_addr (0x3884D4_R)
@@ -178,6 +236,7 @@ static int64_t latency_threshhold = 700;
 static uint8_t lag_dur = 0;
 static uint32_t prev_timestampA = 0;
 static uint32_t prev_timestampB = 0;
+int32_t local_buffered_frames = 0;
 
 #if USE_ORIGINAL_RESYNC
 static inline constexpr uint8_t RESYNC_THRESHOLD = INT8_MAX;
@@ -647,6 +706,12 @@ static constexpr uint8_t unlock_fixB11[] = {
 
 #endif
 
+void thiscall SyncInput_hook(ManbowNetworkInputSession* self) {
+    TF4InputRecorderDevice* device = self->input_recorder->devices[self->local_player_idx].get();
+    local_buffered_frames = (int32_t)(device->input_write_idx - device->input_read_idx);
+    ((void (thiscall*)(ManbowNetworkInputSession*))(0xE3340_R))(self);
+}
+
 void patch_netplay() {
 
 #if BETTER_BLACK_SCREEN_FIX
@@ -701,6 +766,9 @@ void patch_netplay() {
         hotpatch_rel32(based_pointer(base, unlock_fixA_addrs[i]), fix_black_screen_unlock);
     }
 #endif
+
+    hotpatch_call(0xD6075_R, &SyncInput_hook); // Manbow::NetworkServerImpl::SyncInput
+    hotpatch_call(0xDF6FA_R, &SyncInput_hook); // Manbow::NetworkClientImpl::SyncInput
 
     /*
     if (get_ipv6_enabled()) {

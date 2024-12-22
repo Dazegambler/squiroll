@@ -10,7 +10,9 @@ set NEW_FILES_DIR=new_files
 set NEW_COMPRESSED_DIR=compressed_nuts\new_files
 set NEW_DESTINATION_DIR=src\Netcode\new_files
 
+mkdir "%REPLACEMENT_COMPRESSED_DIR%"
 mkdir "%REPLACEMENT_DESTINATION_DIR%"
+mkdir "%NEW_COMPRESSED_DIR%"
 mkdir "%NEW_DESTINATION_DIR%"
 
 for %%F in (%REPLACEMENT_FILES_DIR%\*) do (

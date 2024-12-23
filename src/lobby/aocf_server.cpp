@@ -13,6 +13,7 @@
 #include <stdarg.h>
 #include <limits.h>
 
+#include <algorithm>
 #include <utility>
 #include <unordered_map>
 #include <deque>
@@ -99,7 +100,7 @@ static constexpr size_t UDP_PORT_ITERS = UDP_PORT_TIMEOUT / UDP_PORT_ITER_DELAY;
 
 static constexpr size_t CLIENT_SETUP_TIMEOUT = 1_secms;
 static constexpr size_t JOIN_SETUP_TIMEOUT = 5_secms;
-static constexpr size_t PONG_TIMEOUT = 10_secms;
+static constexpr size_t PONG_TIMEOUT = 15_secms;
 
 static constexpr size_t PACKET_TYPE_LOBBY_NAME_MAX_SIZE = sizeof(PacketLobbyName) + MAX_NICKNAME_LENGTH;
 static constexpr size_t PACKET_TYPE_PUNCH_WAIT_MAX_SIZE = sizeof(PacketPunchWait) + MAX_IP_BUFF_SIZE;

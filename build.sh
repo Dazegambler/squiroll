@@ -1,3 +1,5 @@
+#!/usr/bin/env sh
+
 MAKE_EMBED_PATH="./tools/make_embed_linux.run"
 CONDENSE_NUT_PATH="./tools/condense_nut_linux.run"
 

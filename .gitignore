@@ -2,8 +2,8 @@
 *.dll
 /tools/*.exe
 /tools/*.run
-/lobby/*.run
-/lobby/*.exe
+/src/lobby/*.run
+/src/lobby/*.exe
 /compressed_nuts
 /src/Netcode/new_files
 /src/Netcode/replacement_files

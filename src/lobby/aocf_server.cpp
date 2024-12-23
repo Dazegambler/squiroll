@@ -623,6 +623,7 @@ int main(int argc, char* argv[]) {
 							
 									if (messages.empty()) {
 										if (size_t length = response_socket.receive_text(text)) {
+											++length;
 											char* text_start = text;
 											char* text_read = text;
 											do {

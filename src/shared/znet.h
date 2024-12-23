@@ -80,6 +80,10 @@ typedef union {
 #define WSAGetLastError() errno
 #endif
 
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
+
 using usocklen_t = std::make_unsigned_t<socklen_t>;
 
 #include "common.h"
@@ -1202,6 +1206,9 @@ public:
             SOCKET sock = zero::net::socket<socket_type>(AF_INET6);
             if (expect(sock != INVALID_SOCKET, true)) {
                 zero::net::setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, FALSE);
+#ifdef SO_NOSIGPIPE
+                zero::net::setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, 1);
+#endif
                 this->sock = sock;
                 return true;
             }
@@ -1210,6 +1217,9 @@ public:
 #if ZNET_IPV6_MODES(ZNET_DONT_REQUIRE_IPV6 | ZNET_DISABLE_IPV6)
         SOCKET sock = zero::net::socket<socket_type>(AF_INET);
         if (expect(sock != INVALID_SOCKET, true)) {
+#ifdef SO_NOSIGPIPE
+            zero::net::setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, 1);
+#endif
             this->sock = sock;
             return true;
         }
@@ -1500,7 +1510,7 @@ public:
 
 protected:
     inline size_t receive_impl(void* buffer, size_t recv_length) const {
-        int recv_ret = ::recv(this->sock, (char*)buffer, recv_length, 0);
+        int recv_ret = ::recv(this->sock, (char*)buffer, recv_length, MSG_NOSIGNAL);
         if (expect(recv_ret <= 0, false)) {
             recv_ret = 0;
         }
@@ -1509,7 +1519,7 @@ protected:
 
     inline size_t receive_from_impl(void* buffer, size_t recv_length, sockaddr_any& addr) const {
         addr.length = sizeof(addr.storage);
-        int recv_ret = ::recvfrom(this->sock, (char*)buffer, recv_length, 0, addr, (socklen_t*)&addr.length);
+        int recv_ret = ::recvfrom(this->sock, (char*)buffer, recv_length, MSG_NOSIGNAL, addr, (socklen_t*)&addr.length);
         if (expect(recv_ret <= 0, false)) {
             recv_ret = 0;
         }
@@ -1567,7 +1577,7 @@ protected:
     inline size_t send_impl(const void* buffer, size_t send_length) const {
         size_t sent = 0;
         while (sent != send_length) {
-            int send_ret = ::send(this->sock, &((char*)buffer)[sent], send_length - sent, 0);
+            int send_ret = ::send(this->sock, &((char*)buffer)[sent], send_length - sent, MSG_NOSIGNAL);
             if (expect(send_ret <= 0, false)) {
                 return 0;
             }
@@ -1579,7 +1589,7 @@ protected:
     inline size_t send_to_impl(const void* buffer, size_t send_length, const sockaddr_any& addr) const {
         size_t sent = 0;
         while (sent != send_length) {
-            int send_ret = zero::net::sendto(this->sock, &((char*)buffer)[sent], send_length - sent, 0, addr);
+            int send_ret = zero::net::sendto(this->sock, &((char*)buffer)[sent], send_length - sent, MSG_NOSIGNAL, addr);
             if (expect(send_ret <= 0, false)) {
                 return 0;
             }

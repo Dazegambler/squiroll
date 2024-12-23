@@ -160,12 +160,31 @@ struct TF4UDP {
 
 static_assert(sizeof(TF4UDP) == 0x24C);
 
+struct TF4InputDeviceState {
+    int32_t x; // 0x0
+    int32_t y; // 0x4
+    uint32_t buttons[12]; // 0x8
+    char __unk38[0x90 - 0x38]; // 0x38
+    // 0x90
+};
+
+static_assert(sizeof(TF4InputDeviceState) == 0x90);
+
+struct TF4InputDevice {
+    void* vtbl; // 0x0
+    TF4InputDeviceState state; // 0x4
+    char __unk94[0x140 - 0x94]; // 0x94
+    // 0x140
+};
+
+static_assert(sizeof(TF4InputDevice) == 0x140);
+
 struct TF4InputRecorderDevice {
     size_t input_write_idx; // 0x0
     size_t input_read_idx; // 0x4
     bool __bool_8; // 0x8
     uint8_t probably_padding_bytes9[0xC - 0x9]; // 0x9
-    void* /* TF4::InputDevice* */ tf4_device; // 0xC
+    TF4InputDevice* tf4_device; // 0xC
     std::vector<uint16_t> input_vec; // 0x10
     BoostMutex* input_mutex; // 0x1C
     // 0x20
@@ -202,7 +221,8 @@ struct ManbowNetworkInputSession {
     int32_t session_num; // 0x0
     uint8_t local_player_idx; // 0x4
     uint8_t player_count; // 0x5
-    uint8_t __unk6[0x14 - 6]; // 0x6
+    uint8_t __unk6[0x10 - 6]; // 0x6
+    TF4InputDevice* local_input; // 0x10
     bool __bool_14; // 0x14
     uint8_t probably_padding_bytes15[0x18 - 0x15]; // 0x15
     std::vector<std::shared_ptr<void /* TF4::InputDevice */>> device_vec; // 0x18
@@ -706,10 +726,36 @@ static constexpr uint8_t unlock_fixB11[] = {
 
 #endif
 
+static uint16_t lag_frame_input = 0;
+
 void thiscall SyncInput_hook(ManbowNetworkInputSession* self) {
-    TF4InputRecorderDevice* device = self->input_recorder->devices[self->local_player_idx].get();
-    local_buffered_frames = (int32_t)(device->input_write_idx - device->input_read_idx);
     ((void (thiscall*)(ManbowNetworkInputSession*))(0xE3340_R))(self);
+
+    // Reimplementation of RxE3740
+    uint32_t min_frame_diff = 5;
+    ManbowInputRecorder* input_recorder = self->input_recorder.get();
+    for (size_t i = 0; i < input_recorder->devices.size(); i++) {
+        TF4InputRecorderDevice* device = input_recorder->devices[i].get();
+        uint32_t diff = (uint32_t)(device->input_write_idx - device->input_read_idx);
+        if (i == self->local_player_idx)
+            local_buffered_frames = (int32_t)diff;
+        min_frame_diff = std::min(min_frame_diff, diff);
+    }
+    if (min_frame_diff == 0) {
+        // Keep holding inputs during lag frame
+        lag_frame_input |= ((uint16_t (thiscall*)(TF4InputDeviceState*))(0x169D80_R))(&self->local_input->state);
+    }
+}
+
+void thiscall SetLocalInput_hook(ManbowNetworkInputSession* self, void* local_input) {
+    // Make sure lag frame inputs don't carry over between entering/exiting battle
+    ((void (thiscall*)(ManbowNetworkInputSession*, void*))(0xE3200_R))(self, local_input);
+    lag_frame_input = 0;
+}
+
+void thiscall WriteSingleInput_hook(TF4InputRecorderDevice* self, uint16_t input) {
+    ((void (thiscall*)(TF4InputRecorderDevice*, uint16_t))(0x169CC0_R))(self, input | lag_frame_input);
+    lag_frame_input = 0;
 }
 
 void patch_netplay() {
@@ -769,6 +815,9 @@ void patch_netplay() {
 
     hotpatch_call(0xD6075_R, &SyncInput_hook); // Manbow::NetworkServerImpl::SyncInput
     hotpatch_call(0xDF6FA_R, &SyncInput_hook); // Manbow::NetworkClientImpl::SyncInput
+
+    hotpatch_call(0xE2EC5_R, &SetLocalInput_hook);
+    hotpatch_call(0xE35D5_R, &WriteSingleInput_hook);
 
     /*
     if (get_ipv6_enabled()) {

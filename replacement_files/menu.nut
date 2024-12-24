@@ -42,6 +42,14 @@ scene.append(this.key_config);
 this.help <- {};
 ::manbow.CompileFile("data/system/help/help.nut", this.help);
 scene.append(this.help);
+
+foreach (key,str in {
+	["copy_host"]="copy IP/port to clipboard",
+	["copy_watch"]="copy watch IP/port to clipboard"
+}) {
+	this.help.src[0][key] <- this.help.func_init_text(str);
+	this.help.src[1][key] <- this.help.func_init_text(str);
+}
 //this.mod_config <- {};
 //::manbow.compilebuffer("mod_config.nut", this.mod_config);
 function BeginAct()

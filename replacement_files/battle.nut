@@ -25,6 +25,7 @@ this.game_mode <- -1;
 this.ping_task <- null;
 this.input_task <- null;
 this.ping_obj <- null;
+this.frame_task <- null;
 class this.InitializeParam
 {
 	game_mode = 1;
@@ -57,8 +58,35 @@ class this.InitializeParam
 
 }
 
+this.name_overrides <- {
+    hijiri = "Byakuren",
+    sinmyoumaru = "Shinmyoumaru",
+    usami = "Sumireko",
+    udonge = "Reisen",
+    jyoon = "Joon"
+};
+
+function LookupName(name) {
+	return (name in this.name_overrides) ? this.name_overrides[name] : (name.slice(0, 1).toupper() + name.slice(1, name.len()));
+}
+
 function Create( param )
 {
+	if (::replay.GetState() == ::replay.PLAY && ::network.inst == null)
+		::discord.rpc_set_details("Watching a replay");
+	::discord.rpc_set_state(param.game_mode < 10 ? "Starting match" : "");
+	::discord.rpc_set_large_img_key("stage" + ::stage.background.id);
+	if (::replay.GetState() != ::replay.PLAY && (::network.IsPlaying() || param.game_mode != 1)) {
+		local p1m = param.team[0].master.name;
+		local p1s = param.team[0].slave.name;
+		local p2m = param.team[1].master.name;
+		local p2s = param.team[1].slave.name;
+
+		::discord.rpc_set_small_img_key(::network.IsPlaying() ? (::network.is_parent_vs ? p2m : p1m) : p1m);
+		::discord.rpc_set_small_img_text(format("%s/%s vs %s/%s", LookupName(p1m), LookupName(p1s), LookupName(p2m), LookupName(p2s)));
+	}
+	::discord.rpc_commit();
+
 	::manbow.SetTerminateFunction(function ()
 	{
 		::battle.Release();
@@ -79,6 +107,7 @@ function Create( param )
 	case 40:
 		::manbow.CompileFile("data/actor/status/gauge_vs.nut", this.gauge);
 		::manbow.CompileFile("data/script/battle/battle_practice.nut", this);
+		//framedisplaysetup();
 		inputdisplaysetup(0);
 		inputdisplaysetup(1);
 		break;
@@ -161,8 +190,8 @@ function Create( param )
 				local delay = ::network.GetDelay();
 				::rollback.update_delay(delay);
 				local str = "ping:" + delay;
-				if (::setting.ping.ping_in_frames) str += "[" + ((delay + 15) / 16) + "f]";
-				if (::rollback.resyncing()) str += "(resyncing)";
+				if (::setting.ping.ping_in_frames) str += " [" + ::rollback.get_buffered_frames() + "f]";
+				if (::rollback.resyncing()) str += " (resyncing)";
 				this.text.Set(str);
 				this.text.x = ::setting.ping.X - (this.text.width / 2);
 				this.text.y = (::setting.ping.Y - this.text.height);
@@ -190,6 +219,37 @@ function Create( param )
 			  // [329]  OP_JMP            0      0    0    0
 		}
 	}
+}
+
+function framedisplaysetup() {
+	//get frame count post flagattack
+	local frame = {};
+	frame.last <- 0;
+	frame.current <- 0;
+	frame.previous <- 0;
+	//frame.count <- 0;
+	//frame.recover <- 0;
+	frame.Update <- function () {
+		// ::debug.print_value(::battle.team[0].current.keyTake);
+		// return;
+		local flag = ::battle.team[0].current.keyTake;//atkRank,flagAttack
+		local count = this.current;
+		if (this.last == flag && (::battle.team[0].input.x == 0 && ::battle.team[0].input.y == 0)){
+			if (flag != 0){
+				count++;
+			}else{
+				count = 0;
+			}
+		} else if (::battle.team[0].input.x == 0 && ::battle.team[0].input.y == 0){
+			count++;
+		}
+		this.last = flag;
+		this.current = count != this.current ? (function (){
+			::debug.print("frames:"+::battle.team[0].current.frame+"||count:"+count+"\n");
+			return count;}()) : this.current;
+	}
+	AddTask(frame);
+	this.frame_task = frame;
 }
 
 function inputdisplaysetup(player) {
@@ -272,6 +332,12 @@ function getinputs(player,none)
 
 function Release()
 {
+	::discord.rpc_set_small_img_key("");
+	::discord.rpc_set_small_img_text("");
+	::discord.rpc_set_large_img_key("mainicon");
+	if (::replay.GetState() == ::replay.PLAY && ::network.inst == null)
+		::discord.rpc_commit_details_and_state("Idle", "");
+
 	if (this.ping_task != null) {
 		::loop.DeleteTask(this.ping_task);
 		this.ping_task = null;
@@ -280,6 +346,10 @@ function Release()
 	if (this.input_task != null) {
 		DeleteTask(this.input_task);
 		this.input_task = null;
+	}
+	if (this.frame_task != null) {
+		DeleteTask(this.frame_task);
+		this.frame_task = null;
 	}
 	this.task = {};
 	this.gauge.Terminate();

@@ -728,7 +728,26 @@ static constexpr uint8_t unlock_fixB11[] = {
 
 #endif
 
+enum InputBits : uint16_t {
+    INPUT_LEFT = 1,
+    INPUT_RIGHT = 2,
+    INPUT_UP = 4,
+    INPUT_DOWN = 8,
+    INPUT_B0 = 16,
+    INPUT_B1 = 32,
+    INPUT_B2 = 64,
+    INPUT_B3 = 128,
+    INPUT_B4 = 256,
+    INPUT_B5 = 512,
+
+    INPUT_X_DIR = INPUT_LEFT | INPUT_RIGHT,
+    INPUT_Y_DIR = INPUT_UP | INPUT_DOWN,
+    INPUT_BUTTONS = INPUT_B0 | INPUT_B1 | INPUT_B2 | INPUT_B3 | INPUT_B4 | INPUT_B5,
+};
+
 static uint16_t lag_frame_input = 0;
+static uint16_t last_nonlag_local_input = 0;
+static bool block_new_button_presses = false;
 
 void thiscall SyncInput_hook(ManbowNetworkInputSession* self) {
     ((void (thiscall*)(ManbowNetworkInputSession*))(0xE3340_R))(self);
@@ -743,21 +762,43 @@ void thiscall SyncInput_hook(ManbowNetworkInputSession* self) {
             local_buffered_frames = (int32_t)diff;
         min_frame_diff = std::min(min_frame_diff, diff);
     }
-    if (min_frame_diff == 0) {
-        // Keep holding inputs during lag frame
-        lag_frame_input |= ((uint16_t (thiscall*)(TF4InputDeviceState*))(0x169D80_R))(&self->local_input->state);
+
+    if (min_frame_diff == 0 && get_prevent_input_drops()) {
+        // Only buffer newly pressed button inputs from a lag frame ONCE
+        // Should prevent accidentally triggering spell cards/last words
+        uint16_t input = ((uint16_t (thiscall*)(TF4InputDeviceState*))(0x169D80_R))(&self->local_input->state);
+        if (block_new_button_presses) {
+            lag_frame_input |= (input & ~INPUT_BUTTONS);
+        } else {
+            if ((input & ~last_nonlag_local_input) & INPUT_BUTTONS)
+                block_new_button_presses = true;
+            lag_frame_input |= input;
+        }
     }
 }
 
 void thiscall SetLocalInput_hook(ManbowNetworkInputSession* self, void* local_input) {
     // Make sure lag frame inputs don't carry over between entering/exiting battle
     ((void (thiscall*)(ManbowNetworkInputSession*, void*))(0xE3200_R))(self, local_input);
-    lag_frame_input = 0;
+    lag_frame_input = last_nonlag_local_input = 0;
+    block_new_button_presses = false;
 }
 
 void thiscall WriteSingleInput_hook(TF4InputRecorderDevice* self, uint16_t input) {
-    ((void (thiscall*)(TF4InputRecorderDevice*, uint16_t))(0x169CC0_R))(self, input | lag_frame_input);
+    if (block_new_button_presses)
+        input &= ~INPUT_BUTTONS;
+    last_nonlag_local_input = input | lag_frame_input;
+
+    // Prevent impossible directional inputs
+    // This is how the game internally prioritizes each direction if both are held
+    if ((last_nonlag_local_input & INPUT_X_DIR) == INPUT_X_DIR)
+        last_nonlag_local_input &= ~INPUT_RIGHT;
+    if ((last_nonlag_local_input & INPUT_Y_DIR) == INPUT_Y_DIR)
+        last_nonlag_local_input &= ~INPUT_DOWN;
+
+    ((void (thiscall*)(TF4InputRecorderDevice*, uint16_t))(0x169CC0_R))(self, last_nonlag_local_input);
     lag_frame_input = 0;
+    block_new_button_presses = false;
 }
 
 void patch_netplay() {

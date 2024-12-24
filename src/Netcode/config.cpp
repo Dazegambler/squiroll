@@ -101,6 +101,7 @@ CONFIG_TST(NETWORK, IPV6, "enable_ipv6");
 CONFIG_BOL(NETWORK, NETPLAY, "netplay", true);
 CONFIG_BOL(NETWORK, HIDE_IP, "hide_ip", false);
 CONFIG_BOL(NETWORK, HIDE_NAME, "hide_name", false);
+CONFIG_BOL(NETWORK, PREVENT_INPUT_DROPS, "prevent_input_drops", true);
 
 #define PERF_SECTION_NAME "performance"
 CONFIG_BOL(PERF, CACHE_RSA, "cache_rsa", true);
@@ -161,6 +162,7 @@ static inline constexpr const char *const DEFAULT_CONFIGS[END_COUNTER - START_CO
 	CONFIG_DEFAULT(NETWORK, NETPLAY),
 	CONFIG_DEFAULT(NETWORK, HIDE_IP),
 	CONFIG_DEFAULT(NETWORK, HIDE_NAME),
+	CONFIG_DEFAULT(NETWORK, PREVENT_INPUT_DROPS),
 
 	CONFIG_DEFAULT(PERF, CACHE_RSA),
 	CONFIG_DEFAULT(PERF, BETTER_GAME_LOOP),
@@ -521,6 +523,11 @@ bool get_hide_ip_enabled() {
 static char NETWORK_HIDE_NAME_BUFFER[8]{ '\0' };
 bool get_hide_name_enabled() {
 	return GET_BOOL_CONFIG(NETWORK, HIDE_NAME);
+}
+
+static char NETWORK_PREVENT_INPUT_DROPS_BUFFER[8]{ '\0' };
+bool get_prevent_input_drops() {
+	return GET_BOOL_CONFIG(NETWORK, PREVENT_INPUT_DROPS);
 }
 
 void set_ipv6_state(bool state) {

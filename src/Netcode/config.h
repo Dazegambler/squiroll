@@ -71,6 +71,7 @@ int8_t get_ipv6_state();
 bool get_netplay_state();
 bool get_hide_ip_enabled();
 bool get_hide_name_enabled();
+bool get_prevent_input_drops();
 void set_ipv6_state(bool state);
 
 bool get_cache_rsa_enabled();

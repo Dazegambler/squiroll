@@ -310,16 +310,16 @@ static inline const uintptr_t dummy_ip = 0;
 
 template <size_t bit_count>
 using SBitIntType = std::conditional_t<bit_count <= 8, int8_t,
-					std::conditional_t<bit_count <= 16, int16_t,
-					std::conditional_t<bit_count <= 32, int32_t,
-					std::conditional_t<bit_count <= 64, int64_t,
-					void>>>>;
+                    std::conditional_t<bit_count <= 16, int16_t,
+                    std::conditional_t<bit_count <= 32, int32_t,
+                    std::conditional_t<bit_count <= 64, int64_t,
+                    void>>>>;
 template <size_t bit_count>
 using UBitIntType = std::conditional_t<bit_count <= 8, uint8_t,
-					std::conditional_t<bit_count <= 16, uint16_t,
-					std::conditional_t<bit_count <= 32, uint32_t,
-					std::conditional_t<bit_count <= 64, uint64_t,
-					void>>>>;
+                    std::conditional_t<bit_count <= 16, uint16_t,
+                    std::conditional_t<bit_count <= 32, uint32_t,
+                    std::conditional_t<bit_count <= 64, uint64_t,
+                    void>>>>;
 
 #if !__has_builtin(__builtin_add_overflow)
 #define __builtin_add_overflow __builtin_add_overflow_impl

@@ -70,40 +70,40 @@ static inline uint64_t __builtin_bswap64(uint64_t value) {
 
 static inline void wait_milliseconds(size_t count) {
 #if _WIN32
-	return Sleep(count);
+    return Sleep(count);
 #else
-	timespec sleep_time;
-	sleep_time.tv_sec = count / 1000;
-	sleep_time.tv_nsec = count % 1000 * 1000000;
-	timespec sleep_rem;
-	while (nanosleep(&sleep_time, &sleep_rem) != 0) {
-		sleep_time = sleep_rem;
-	}
+    timespec sleep_time;
+    sleep_time.tv_sec = count / 1000;
+    sleep_time.tv_nsec = count % 1000 * 1000000;
+    timespec sleep_rem;
+    while (nanosleep(&sleep_time, &sleep_rem) != 0) {
+        sleep_time = sleep_rem;
+    }
 #endif
 }
 
 [[noreturn]] static void error_exit(const char* message) {
-	fputs(message, stderr);
-	exit(EXIT_FAILURE);
+    fputs(message, stderr);
+    exit(EXIT_FAILURE);
 }
 
 [[noreturn]] static void error_exitf(const char* format, ...) {
-	va_list va;
-	va_start(va, format);
-	vfprintf(stderr, format, va);
-	va_end(va);
-	exit(EXIT_FAILURE);
+    va_list va;
+    va_start(va, format);
+    vfprintf(stderr, format, va);
+    va_end(va);
+    exit(EXIT_FAILURE);
 }
 
 #if INCLUDE_KEYBOARD_FUNCTIONS
 static inline char wait_for_keyboard() {
-	while (!_kbhit());
-	return _getch();
+    while (!_kbhit());
+    return _getch();
 }
 
 static inline char wait_for_keyboard(size_t delay) {
-	while (!_kbhit()) wait_milliseconds(delay);
-	return _getch();
+    while (!_kbhit()) wait_milliseconds(delay);
+    return _getch();
 }
 #endif
 
@@ -132,31 +132,31 @@ static inline size_t uint8_to_strbuf(uint8_t value, T* text_buffer) {
 
 template <typename T>
 static inline size_t uint16_to_strbuf(uint16_t value, T* text_buffer) {
-	size_t digit_offset;
-	switch (value) {
-		case 0 ... 9:
-			digit_offset = 0;
-			break;
-		case 10 ... 99:
-			digit_offset = 1;
-			break;
-		case 100 ... 999:
-			digit_offset = 2;
-			break;
-		case 1000 ... 9999:
-			digit_offset = 3;
-			break;
-		default:
-			digit_offset = 4;
-			break;
-	}
-	size_t ret = digit_offset + 1;
-	do {
-		uint16_t digit = value % 10;
-		value /= 10;
-		text_buffer[digit_offset] = ((T)'0') + digit;
-	} while (digit_offset--);
-	return ret;
+    size_t digit_offset;
+    switch (value) {
+        case 0 ... 9:
+            digit_offset = 0;
+            break;
+        case 10 ... 99:
+            digit_offset = 1;
+            break;
+        case 100 ... 999:
+            digit_offset = 2;
+            break;
+        case 1000 ... 9999:
+            digit_offset = 3;
+            break;
+        default:
+            digit_offset = 4;
+            break;
+    }
+    size_t ret = digit_offset + 1;
+    do {
+        uint16_t digit = value % 10;
+        value /= 10;
+        text_buffer[digit_offset] = ((T)'0') + digit;
+    } while (digit_offset--);
+    return ret;
 }
 
 template <typename T>
@@ -174,61 +174,61 @@ static inline size_t uint16_to_hex_strbuf(uint16_t value, T* text_buffer) {
 
 template <typename T>
 static inline bool strbuf_to_uint16(const T* str, uint16_t& out) {
-	using U = std::make_unsigned_t<T>;
-	
-	const U* str_read = (const U*)str;
-	switch (uint32_t ret = *str_read++) {
-		case (U)'0': case (U)'1': case (U)'2': case (U)'3': case (U)'4':
-		case (U)'5': case (U)'6': case (U)'7': case (U)'8': case (U)'9':
-			ret -= (U)'0';
-			for (;;) {
-				switch (U c = *str_read++) {
-					default:
-						out = ret;
-						return true;
-					case (U)'0': case (U)'1': case (U)'2': case (U)'3': case (U)'4':
-					case (U)'5': case (U)'6': case (U)'7': case (U)'8': case (U)'9':
-						ret = ret * 10 + (c - (U)'0');
-						if (ret <= UINT16_MAX) {
-							continue;
-						}
-				}
-		default:
-				return false;
-			}
-	}
+    using U = std::make_unsigned_t<T>;
+    
+    const U* str_read = (const U*)str;
+    switch (uint32_t ret = *str_read++) {
+        case (U)'0': case (U)'1': case (U)'2': case (U)'3': case (U)'4':
+        case (U)'5': case (U)'6': case (U)'7': case (U)'8': case (U)'9':
+            ret -= (U)'0';
+            for (;;) {
+                switch (U c = *str_read++) {
+                    default:
+                        out = ret;
+                        return true;
+                    case (U)'0': case (U)'1': case (U)'2': case (U)'3': case (U)'4':
+                    case (U)'5': case (U)'6': case (U)'7': case (U)'8': case (U)'9':
+                        ret = ret * 10 + (c - (U)'0');
+                        if (ret <= UINT16_MAX) {
+                            continue;
+                        }
+                }
+        default:
+                return false;
+            }
+    }
 }
 
 template<size_t N>
 static inline size_t getsn(char(&str)[N]) {
-	fgets(str, N, stdin);
-	size_t length = strcspn(str, "\r\n");
-	str[length] = '\0';
-	return length;
+    fgets(str, N, stdin);
+    size_t length = strcspn(str, "\r\n");
+    str[length] = '\0';
+    return length;
 }
 
 template<size_t N>
 static inline size_t getsn_newline(char(&str)[N]) {
-	fgets(str, N, stdin);
-	size_t length = strcspn(str, "\r\0");
-	str[length] = '\n';
-	return length;
+    fgets(str, N, stdin);
+    size_t length = strcspn(str, "\r\0");
+    str[length] = '\n';
+    return length;
 }
 
 constexpr size_t seconds_as_ms(size_t seconds) {
-	return seconds * 1000;
+    return seconds * 1000;
 }
 
 constexpr size_t seconds_as_ms(double seconds) {
-	return (size_t)(seconds * 1000.0);
+    return (size_t)(seconds * 1000.0);
 }
 
 constexpr size_t operator ""_secms(unsigned long long seconds) {
-	return seconds_as_ms((size_t)seconds);
+    return seconds_as_ms((size_t)seconds);
 }
 
 constexpr size_t operator ""_secms(long double seconds) {
-	return seconds_as_ms((double)seconds);
+    return seconds_as_ms((double)seconds);
 }
 
 #endif

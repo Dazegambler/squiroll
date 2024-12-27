@@ -13,9 +13,9 @@
 #include <windows.h>
 
 enum LogType {
-	NO_LOGGING = 0,
-	LOG_TO_SEPARATE_CONSOLES = 1,
-	LOG_TO_PARENT_CONSOLE = 2
+    NO_LOGGING = 0,
+    LOG_TO_SEPARATE_CONSOLES = 1,
+    LOG_TO_PARENT_CONSOLE = 2
 };
 
 static void enable_debug_console(bool inherit_console) {
@@ -32,7 +32,7 @@ static void enable_debug_console(bool inherit_console) {
 }
 
 struct InitFuncData {
-	LogType log_type;
+    LogType log_type;
 };
 
 #endif

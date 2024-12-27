@@ -22,9 +22,9 @@ extern int32_t GAME_VERSION;
 void init_config_file();
 
 enum ConfigTestState : int8_t {
-	ConfigNeedsTest = -1,
-	ConfigDisabled = 0,
-	ConfigEnabled = 1
+    ConfigNeedsTest = -1,
+    ConfigDisabled = 0,
+    ConfigEnabled = 1
 };
 
 #define TST_CONFIG_MAYBE(...) ((__VA_ARGS__)<0)

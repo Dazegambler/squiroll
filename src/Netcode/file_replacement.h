@@ -17,17 +17,17 @@
 #if FILE_REPLACEMENT_TYPE != FILE_REPLACEMENT_NONE
 
 struct EmbedData {
-	const uint8_t *const data;
-	const size_t length;
+    const uint8_t *const data;
+    const size_t length;
 
-	constexpr EmbedData() : data(nullptr), length(0) {}
+    constexpr EmbedData() : data(nullptr), length(0) {}
 
-	template<size_t N>
-	constexpr EmbedData(const uint8_t(&data)[N]) : data(data), length(N) {}
+    template<size_t N>
+    constexpr EmbedData(const uint8_t(&data)[N]) : data(data), length(N) {}
 
-	constexpr operator bool() const {
-		return this->data != NULL;
-	}
+    constexpr operator bool() const {
+        return this->data != NULL;
+    }
 };
 
 //typedef int (*func_patch_t)(void* file_inout, size_t size_out, size_t size_in, const char* fn, void* patch);

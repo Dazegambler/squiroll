@@ -32,7 +32,7 @@ function Initialize()
 			icon.y = 4;
 			icon.ConnectRenderSlot(::graphics.slot.status, 3000);
 			this.AddParts(icon, i == 0 ? this.mat_left_top : this.mat_right_top);
-			local name = ::font.CreateSystemString(::setting.misc.hide_name ? "P"+(i+1) : ::network.player_name[i]);
+			local name = ::font.CreateSystemString(::setting.misc.hide_name() ? "P"+(i+1) : ::network.player_name[i]);
 			name.sx = name.sy = 2.00000000 / 3.00000000;
 			name.x = i == 0 ? icon.x + 32 : icon.x - name.width * name.sx;
 			name.y = icon.y + 2;

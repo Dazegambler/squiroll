@@ -217,10 +217,10 @@ function Initialize()
 			};
 			ip_manager.Update <- function () {
 				if (::menu.network.update_help_text || ::punch.ip_available()) {
-					if (!::setting.misc.hide_ip) {
-						this.text <- ::font.CreateSystemStringSmall(::punch.get_ip());
-						this.text.x = 10;
-						this.text.y = 7;
+					if (!::setting.misc.hide_ip()) {
+						this.text <- ::font.CreateSystemStringSmall("Watch IP: " + ::punch.get_ip());
+						this.text.x = 5;
+						this.text.y = 1;
 						this.text.sx = this.text.sy = 1.2;
 						this.text.ConnectRenderSlot(::graphics.slot.front,-1);
 					}

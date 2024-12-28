@@ -110,11 +110,6 @@ public:
 
 static HSQUIRRELVM v;
 
-SQInteger r_resync_get(HSQUIRRELVM v) {
-    sq_pushbool(v, (SQBool)resyncing);
-    return 1;
-}
-
 static inline void set_ping_constants(HSQUIRRELVM v) {
     sq_setbool(v, _SC("enabled"), get_ping_enabled());
     sq_setinteger(v, _SC("X"), get_ping_x());
@@ -210,12 +205,6 @@ SQInteger start_direct_punch_connect(HSQUIRRELVM v) {
     return 0;
 }
 
-SQInteger get_users_in_room(HSQUIRRELVM v) {
-    sq_pushinteger(v, users_in_room);
-    //log_printf("Users in room: %u\n", users_in_room.load());
-    return 1;
-}
-
 SQInteger inc_users_in_room(HSQUIRRELVM v) {
     ++users_in_room;
     return 0;
@@ -226,11 +215,6 @@ SQInteger dec_users_in_room(HSQUIRRELVM v) {
         --users_in_room;
     }
     return 0;
-}
-
-SQInteger is_punch_ip_available(HSQUIRRELVM v) {
-    sq_pushbool(v, (SQBool)punch_ip_updated);
-    return 1;
 }
 
 SQInteger get_punch_ip(HSQUIRRELVM v) {
@@ -276,15 +260,9 @@ SQInteger ignore_lobby_punch_ping(HSQUIRRELVM v) {
     return 0;
 }
 
-SQInteger get_dev_mode(HSQUIRRELVM v) {
-    sq_pushbool(v, (SQBool)get_dev_mode_enabled());
-    return 1;
-}
-
-SQInteger get_buffered_frames(HSQUIRRELVM v) {
-    sq_pushinteger(v, local_buffered_frames);
-    return 1;
-}
+#define SQPUSH_BOOL_FUNC(val) [](HSQUIRRELVM v) -> SQInteger { sq_pushbool(v, (SQBool)(val)); return 1; }
+#define SQPUSH_INT_FUNC(val) [](HSQUIRRELVM v) -> SQInteger { sq_pushinteger(v, (SQInteger)(val)); return 1; }
+#define SQPUSH_FLOAT_FUNC(val) [](HSQUIRRELVM v) -> SQInteger { sq_pushfloat(v, (SQFloat)(val)); return 1; }
 
 extern "C" {
     dll_export int stdcall init_instance_v2(HostEnvironment* environment) {
@@ -297,75 +275,75 @@ extern "C" {
             // like adding squirrel globals/funcs/etc.
             sq_pushroottable(v);
 
-        sq_setcompilererrorhandler(v, [](HSQUIRRELVM v, const SQChar* desc, const SQChar* src, SQInteger line, SQInteger col) {
+            sq_setcompilererrorhandler(v, [](HSQUIRRELVM v, const SQChar* desc, const SQChar* src, SQInteger line, SQInteger col) {
 #if !DISABLE_ALL_LOGGING_FOR_BUILD
-            log_printf(
-                "Squirrel compiler exception: %s\n"
-                "<%d,%d> \"%s\"\n",
-                src,
-                line, col, desc
-            );
-#else
-            mboxf("Squirrel Exception", MB_OK | MB_ICONERROR, [=](auto add_text) {
-                add_text(
+                log_printf(
                     "Squirrel compiler exception: %s\n"
                     "<%d,%d> \"%s\"\n",
                     src,
                     line, col, desc
                 );
-            });
-#endif
-        });
-        sq_newclosure(v, [](HSQUIRRELVM v) -> SQInteger {
-            if (sq_gettop(v) > 0) {
-                const SQChar* error_msg;
-                if (SQ_SUCCEEDED(sq_getstring(v, 2, &error_msg))) {
-#if !DISABLE_ALL_LOGGING_FOR_BUILD
-                    log_printf("Squirrel runtime exception: \"%s\"\n", error_msg);
-                    SQStackInfos sqstack;
-                    for (
-                        SQInteger i = 1;
-                        SQ_SUCCEEDED(sq_stackinfos(v, i, &sqstack));
-                        ++i
-                    ) {
-                        log_printf(
-                            *sqstack.source ? " %d | %s (%s)\n" : " %d | %s\n"
-                            , sqstack.line, sqstack.funcname ? sqstack.funcname : "Anonymous function", sqstack.source
-                        );
-                    }
 #else
-                    mboxf("Squirrel Exception", MB_OK | MB_ICONERROR, [=](auto add_text) {
-                        add_text("Squirrel runtime exception: \"%s\"\n", error_msg);
+                mboxf("Squirrel Exception", MB_OK | MB_ICONERROR, [=](auto add_text) {
+                    add_text(
+                        "Squirrel compiler exception: %s\n"
+                        "<%d,%d> \"%s\"\n",
+                        src,
+                        line, col, desc
+                    );
+                });
+#endif
+            });
+            sq_newclosure(v, [](HSQUIRRELVM v) -> SQInteger {
+                if (sq_gettop(v) > 0) {
+                    const SQChar* error_msg;
+                    if (SQ_SUCCEEDED(sq_getstring(v, 2, &error_msg))) {
+#if !DISABLE_ALL_LOGGING_FOR_BUILD
+                        log_printf("Squirrel runtime exception: \"%s\"\n", error_msg);
                         SQStackInfos sqstack;
                         for (
                             SQInteger i = 1;
                             SQ_SUCCEEDED(sq_stackinfos(v, i, &sqstack));
                             ++i
                         ) {
-                            add_text(
+                            log_printf(
                                 *sqstack.source ? " %d | %s (%s)\n" : " %d | %s\n"
                                 , sqstack.line, sqstack.funcname ? sqstack.funcname : "Anonymous function", sqstack.source
                             );
                         }
-                    });
+#else
+                        mboxf("Squirrel Exception", MB_OK | MB_ICONERROR, [=](auto add_text) {
+                            add_text("Squirrel runtime exception: \"%s\"\n", error_msg);
+                            SQStackInfos sqstack;
+                            for (
+                                SQInteger i = 1;
+                                SQ_SUCCEEDED(sq_stackinfos(v, i, &sqstack));
+                                ++i
+                            ) {
+                                add_text(
+                                    *sqstack.source ? " %d | %s (%s)\n" : " %d | %s\n"
+                                    , sqstack.line, sqstack.funcname ? sqstack.funcname : "Anonymous function", sqstack.source
+                                );
+                            }
+                        });
 #endif
+                    }
                 }
-            }
-            return 0;
-        }, 0);
-        sq_seterrorhandler(v);
+                return 0;
+            }, 0);
+            sq_seterrorhandler(v);
 
             // setting table setup
             sq_createtable(v, _SC("setting"), [](HSQUIRRELVM v) {
                 sq_setinteger(v, _SC("version"), PLUGIN_VERSION);
                 sq_setinteger(v, _SC("revision"), PLUGIN_REVISION);
                 sq_createtable(v, _SC("misc"), [](HSQUIRRELVM v){
-                    sq_setbool(v,_SC("hide_ip"), get_hide_ip_enabled());
-                    sq_setbool(v, _SC("hide_wip"), get_hide_wip_enabled());
-                    sq_setbool(v, _SC("hide_name"), get_hide_name_enabled());
+                    sq_setfunc(v,_SC("hide_ip"), SQPUSH_BOOL_FUNC(get_hide_ip_enabled()));
+                    sq_setfunc(v, _SC("hide_wip"), SQPUSH_BOOL_FUNC(get_hide_wip_enabled()));
+                    sq_setfunc(v, _SC("hide_name"), SQPUSH_BOOL_FUNC(get_hide_name_enabled()));
+                    sq_setbool(v, _SC("skip_intro"), get_skip_intro_enabled()); // This isn't a function because it only runs once anyway
                     //only add to config file if needed
-                    sq_setbool(v, _SC("hide_lobby"), false);//more useful once we get custom lobbies
-                    sq_setbool(v, _SC("skip_intro"), get_skip_intro_enabled());
+                    //sq_setbool(v, _SC("hide_lobby"), false);//more useful once we get custom lobbies
                 });
                 sq_createtable(v, _SC("ping"), [](HSQUIRRELVM v) {
                     sq_setfunc(v, _SC("update_consts"), update_ping_constants);
@@ -380,9 +358,9 @@ extern "C" {
 
             // rollback table setup
             sq_createtable(v, _SC("rollback"), [](HSQUIRRELVM v) {
-                sq_setfunc(v, _SC("update_delay"),update_delay);
-                sq_setfunc(v, _SC("resyncing"), r_resync_get);
-                sq_setfunc(v, _SC("get_buffered_frames"), get_buffered_frames);
+                sq_setfunc(v, _SC("update_delay"), update_delay);
+                sq_setfunc(v, _SC("resyncing"), SQPUSH_BOOL_FUNC(resyncing));
+                sq_setfunc(v, _SC("get_buffered_frames"), SQPUSH_INT_FUNC(local_buffered_frames));
             });
 
             sq_createtable(v, _SC("punch"), [](HSQUIRRELVM v) {
@@ -390,7 +368,7 @@ extern "C" {
                 sq_setfunc(v, _SC("init_connect"), start_direct_punch_connect);
                 sq_setfunc(v, _SC("get_ip"), get_punch_ip);
                 sq_setfunc(v, _SC("reset_ip"), reset_punch_ip);
-                sq_setfunc(v, _SC("ip_available"), is_punch_ip_available);
+                sq_setfunc(v, _SC("ip_available"), SQPUSH_BOOL_FUNC(punch_ip_updated));
                 sq_setfunc(v, _SC("copy_ip_to_clipboard"), copy_punch_ip);
                 sq_setfunc(v, _SC("ignore_ping"), ignore_lobby_punch_ping);
             });
@@ -401,7 +379,7 @@ extern "C" {
                 sq_setfunc(v, _SC("fprint"), sq_fprint);
                 sq_setfunc(v, _SC("print_value"), sq_print_value);
                 sq_setfunc(v, _SC("fprint_value"), sq_fprint_value);
-                sq_setfunc(v, _SC("dev"), get_dev_mode);
+                sq_setfunc(v, _SC("dev"), SQPUSH_BOOL_FUNC(get_dev_mode_enabled()));
             });
 
             // modifications to the manbow table
@@ -411,7 +389,7 @@ extern "C" {
 
             // custom lobby table
             sq_createtable(v, _SC("lobby"), [](HSQUIRRELVM v) {
-                sq_setfunc(v, _SC("user_count"), get_users_in_room);
+                sq_setfunc(v, _SC("user_count"), SQPUSH_INT_FUNC(users_in_room));
                 sq_setfunc(v, _SC("inc_user_count"), inc_users_in_room);
                 sq_setfunc(v, _SC("dec_user_count"), dec_users_in_room);
             });

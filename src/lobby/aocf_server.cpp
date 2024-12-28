@@ -288,6 +288,18 @@ static inline void shared_user_data(std::string_view user, const L& lambda) {
 }
 
 template <typename L>
+static inline auto shared_user_data_ret(std::string_view user, const L& lambda) {
+    shared_mutex_lock lock(user_mutex);
+    
+    auto iter = user_map.find(user);
+    if (iter != user_map.end()) {
+        UserData* user_data = iter->second;
+        return lambda(user_data);
+    }
+    return (decltype(lambda((UserData*)nullptr))){};
+}
+
+template <typename L>
 static inline void exclusive_user_data(std::string_view user, const L& lambda) {
     unique_mutex_lock lock(user_mutex);
 
@@ -459,7 +471,7 @@ static inline constexpr std::string_view WELCOME_COMMAND_VIEW = "WELCOME "sv;
 static inline constexpr std::string_view PASSWORD_VIEW = "kzxmckfqbpqieh8rw<rczuturKfnsjxhauhybttboiuuzmWdmnt5mnlczpythaxf"sv;
 
 #if LOBBY_BOT_INTEGRATION
-static inline constexpr std::string_view BOT_PASSWORD_VIEW = "bot_test"sv;
+static inline constexpr std::string_view BOT_NICKNAME = "bot"sv;
 
 static std::atomic<room_mask_t> room_update_mask = {};
 static std::vector<SocketTCP> bot_vector;
@@ -869,36 +881,39 @@ int main(int argc, char* argv[]) {
                                 std::string_view message_view;
                                 std::string_view nick_view = {};
                                 uint8_t login_bits = 0;
-                                for (; login_bits < 0b11000000; login_bits += 0b01000000) {
+                                do {
                                     if (receive_message(message_view)) {
                                         if (message_view.starts_with("NICK "sv)) {
-                                            if (!(login_bits & 0b00000001)) {
-                                                login_bits |= 0b00000001;
-                                                //printf("%s\n", message_view.data());
-                                                memcpy(name_buffer + 1, message_view.data() + 5, message_view.length() - 4);
-                                                nick_view = { name_buffer + 1, message_view.length() - 5 };
+                                            if (!(login_bits & 0b00100000)) {
+                                                login_bits  |= 0b00100000;
+                                                message_view.remove_prefix(5);
+#if LOBBY_BOT_INTEGRATION
+                                                if (expect(message_view == BOT_NICKNAME, false)) {
+                                                    login_bits |= 0b00000001;
+                                                }
+                                                else
+#endif
+                                                {
+                                                    //printf("%s\n", message_view.data());
+                                                    memcpy(name_buffer + 1, message_view.data(), message_view.length() + 1); // +1 to copy null terminator
+                                                    nick_view = { name_buffer + 1, message_view.length() };
+                                                }
                                                 continue;
                                             }
                                         }
                                         else if (message_view.starts_with("PASS "sv)) {
-                                            if (!(login_bits & 0b00000010)) {
-                                                login_bits |= 0b00000010;
+                                            if (!(login_bits & 0b01000000)) {
+                                                login_bits  |= 0b01000000;
                                                 //printf("%s\n", message_view.data());
                                                 message_view.remove_prefix(5);
                                                 if (message_view == PASSWORD_VIEW) {
                                                     continue;
                                                 }
-#if LOBBY_BOT_INTEGRATION
-                                                else if (message_view == BOT_PASSWORD_VIEW) {
-                                                    login_bits |= 0b00001000;
-                                                    continue;
-                                                }
-#endif
                                             }
                                         }
                                         else if (message_view.starts_with("USER "sv)) {
-                                            if (!(login_bits & 0b00000100)) {
-                                                login_bits |= 0b00000100;
+                                            if (!(login_bits & 0b10000000)) {
+                                                login_bits  |= 0b10000000;
                                                 // Even though IRC usernames are meant to be how a server identifies you,
                                                 // the client just sends the nickname again for this field. There's nothing
                                                 // really useful to do with it because the clients later use nickname for
@@ -907,18 +922,22 @@ int main(int argc, char* argv[]) {
                                                 continue;
                                             }
                                         }
+#if LOBBY_BOT_INTEGRATION
+                                        else if (message_view.starts_with("CAP "sv)) {
+                                            // Ignore capability negotiation just incase someone writing a bot
+                                            // uses an IRC library that sends this message type
+                                            continue;
+                                        }
+#endif
                                     }
                                     goto disconnect;
-                                }
+                                } while (login_bits < 0b11100000);
 
                                 // It *should* be impossible to reach here without
                                 // having received the full NICK/PASS/USER combo.
 #if LOBBY_BOT_INTEGRATION
-                                if (expect(login_bits & 0b00001000, false)) {
-                                    if (
-                                        nick_view != "bot"sv ||
-                                        !add_bot_sock(response_socket)
-                                    ) {
+                                if (expect(login_bits & 0b00000001, false)) {
+                                    if (!add_bot_sock(response_socket)) {
                                         response_socket.close();
                                     }
                                     return;
@@ -931,7 +950,7 @@ int main(int argc, char* argv[]) {
                                         response_socket.send_text(NICK_IN_USE_REPLY);
 
                                         if (receive_message(message_view) && message_view.starts_with("NICK "sv)) {
-                                            memcpy(name_buffer + 1, message_view.data() + 5, message_view.length() - 4);
+                                            memcpy(name_buffer + 1, message_view.data() + 5, message_view.length() - 4); // +1 to copy null terminator
                                             nick_view = { name_buffer + 1, message_view.length() - 5 };
                                             //printf("%s", textA);
                                             continue;
@@ -1060,12 +1079,12 @@ int main(int argc, char* argv[]) {
                                                         }
                                                         is_waiting = true;
 #else
-                                                        shared_user_data(nick_view, [&, room_type](UserData* user_data) {
+                                                        if (shared_user_data_ret(nick_view, [](UserData* user_data) {
                                                             bool expected = false;
-                                                            if (user_data->is_waiting.compare_exchange_strong(expected, true)) {
-                                                                send_user_count_packet<INC_USER_COUNT>(join_and_users_buffer, room_type);
-                                                            }
-                                                        });
+                                                            return user_data->is_waiting.compare_exchange_strong(expected, true);
+                                                        })) {
+                                                            send_user_count_packet<INC_USER_COUNT>(join_and_users_buffer, room_type);
+                                                        };
 #endif
                                                     }
                                                     else if (command_view.starts_with(REQUEST_MATCH_COMMAND_VIEW)) {
@@ -1093,12 +1112,12 @@ int main(int argc, char* argv[]) {
                                                         }
                                                         is_waiting = false;
 #else
-                                                        shared_user_data(nick_view, [&, room_type](UserData* user_data) {
+                                                        if (shared_user_data_ret(nick_view, [](UserData* user_data) {
                                                             bool expected = true;
-                                                            if (user_data->is_waiting.compare_exchange_strong(expected, false)) {
-                                                                send_user_count_packet<DEC_USER_COUNT>(join_and_users_buffer, room_type);
-                                                            }
-                                                        });
+                                                            return user_data->is_waiting.compare_exchange_strong(expected, false);
+                                                        })) {
+                                                            send_user_count_packet<DEC_USER_COUNT>(join_and_users_buffer, room_type);
+                                                        };
 #endif
 
                                                         prefix_length += WELCOME_COMMAND_VIEW.length();
@@ -1140,12 +1159,12 @@ int main(int argc, char* argv[]) {
                                         }
                                         is_waiting = false;
 #else
-                                        shared_user_data(nick_view, [&, room_type](UserData* user_data) {
+                                        if (shared_user_data_ret(nick_view, [](UserData* user_data) {
                                             bool expected = true;
-                                            if (user_data->is_waiting.compare_exchange_strong(expected, false)) {
-                                                send_user_count_packet<DEC_USER_COUNT>(join_and_users_buffer, room_type);
-                                            }
-                                        });
+                                            return user_data->is_waiting.compare_exchange_strong(expected, false);
+                                        })) {
+                                            send_user_count_packet<DEC_USER_COUNT>(join_and_users_buffer, room_type);
+                                        };
 #endif
                                     } while (receive_message(message_view) && message_view == PONG_REPLY);
 

@@ -1,7 +1,8 @@
-::menu.character_select.help_copy <- clone ::menu.character_select.help;
-::menu.character_select.help_copy.insert(6, "B3");
-::menu.character_select.help_copy.insert(7, "copy_watch");
-::menu.character_select.help_copy.insert(8, null);
+::menu.character_select.help_network_copy <- clone ::menu.character_select.help_network;
+::menu.character_select.help_network_copy.insert(7, "B3");
+::menu.character_select.help_network_copy.insert(8, "copy_watch");
+::menu.character_select.help_network_copy.insert(9, null);
+local help_is_swapped = false;
 function Initialize()
 {
 	::discord.rpc_set_state("Choosing a character");
@@ -169,6 +170,12 @@ function Initialize()
 
 	if (::network.IsPlaying())
 	{
+		if (help_is_swapped) {
+			help_is_swapped = false;
+			local temp = ::menu.character_select.help_network;
+			::menu.character_select.help_network = ::menu.character_select.help_network_copy;
+			::menu.character_select.help_network_copy = temp;
+		}
 		v = {};
 		v.text <- ::font.CreateSystemStringSmall("");
 		v.text.ConnectRenderSlot(::graphics.slot.ui, 60000);
@@ -201,24 +208,30 @@ function Initialize()
 			this.data.push(v);
 		}
 		if (::network.allow_watch && !::network.is_parent_vs){
-			local ip_str = {};
-			if (!::setting.misc.hide_ip) {
-				ip_str.text <- ::font.CreateSystemStringSmall(::punch.get_ip());
-				ip_str.text.x = 10;
-				ip_str.text.y = 10;
-				ip_str.text.sx = ip_str.text.sy = 1.2;
-				ip_str.text.ConnectRenderSlot(::graphics.slot.front,-1);
-			}
-			ip_str.Update <- function () {
+			local ip_manager = {};
+			ip_manager.Update2 <- function () {
 				if (::input_all.b2 == 1) {
 					::punch.copy_ip_to_clipboard();
 				}
-				if(!::network.IsPlaying())this = null;
+				//if(!::network.IsPlaying())this = null;
 			};
-			this.data.push(ip_str);
-			if (::menu.network.update_help_text || ::punch.ip_available()) {
-				::menu.help.Set(::menu.character_select.help_copy);
-			}
+			ip_manager.Update <- function () {
+				if (::menu.network.update_help_text || ::punch.ip_available()) {
+					if (!::setting.misc.hide_ip) {
+						this.text <- ::font.CreateSystemStringSmall(::punch.get_ip());
+						this.text.x = 10;
+						this.text.y = 7;
+						this.text.sx = this.text.sy = 1.2;
+						this.text.ConnectRenderSlot(::graphics.slot.front,-1);
+					}
+					help_is_swapped = true;
+					local temp = ::menu.character_select.help_network;
+					::menu.character_select.help_network = ::menu.character_select.help_network_copy;
+					::menu.character_select.help_network_copy = temp;
+					this.Update = this.Update2;
+				}
+			};
+			this.data.push(ip_manager);
 		}
 	}
 }

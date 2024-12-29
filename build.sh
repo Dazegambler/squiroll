@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 MAKE_EMBED_PATH="./tools/make_embed_linux.run"
 CONDENSE_NUT_PATH="./tools/condense_nut_linux.run"
@@ -18,8 +18,13 @@ mkdir -p "$NEW_DESTINATION_DIR"
 
 for FILE in "$REPLACEMENT_FILES_DIR"/*; do
     FILENAME=$(basename "$FILE")
+    if [[ "$FILE" != *.nut ]]; then
+    DEST_FILE="$REPLACEMENT_DESTINATION_DIR/$FILENAME.h"
+    $MAKE_EMBED_PATH "$FILE" "$DEST_FILE"
+    else
     DEST_FILE="$REPLACEMENT_COMPRESSED_DIR/$FILENAME"
     $CONDENSE_NUT_PATH "$FILE" "$DEST_FILE"
+    fi
 done
 
 for FILE in "$REPLACEMENT_COMPRESSED_DIR"/*; do
@@ -30,8 +35,13 @@ done
 
 for FILE in "$NEW_FILES_DIR"/*; do
     FILENAME=$(basename "$FILE")
+    if [[ "$FILE" != *.nut ]]; then
+    DEST_FILE="$NEW_DESTINATION_DIR/$FILENAME.h"
+    $MAKE_EMBED_PATH "$FILE" "$DEST_FILE"
+    else
     DEST_FILE="$NEW_COMPRESSED_DIR/$FILENAME"
     $CONDENSE_NUT_PATH "$FILE" "$DEST_FILE"
+    fi
 done
 
 for FILE in "$NEW_COMPRESSED_DIR"/*; do

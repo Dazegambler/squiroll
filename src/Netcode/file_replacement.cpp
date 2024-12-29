@@ -143,6 +143,12 @@ static constexpr uint8_t replay_select_view_nut[] = {
 #endif
 };
 
+static constexpr uint8_t menu_common_nut[] = {
+#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+#include "replacement_files/menu_common.nut.h"
+#endif
+};
+
 static const std::unordered_map<std::string_view, const EmbedData> replacements = {
     {"data/system/network/network.nut"sv, network_nut},
     {"data/system/component/network.nut"sv, network_component_nut},
@@ -160,6 +166,7 @@ static const std::unordered_map<std::string_view, const EmbedData> replacements 
     {"data/script/battle/battle_vs_player.nut"sv, battle_vs_player_nut},
     {"data/system/watch/watch.nut"sv, watch_nut},
     {"data/system/replay_select/replay_select_view.nut"sv, replay_select_view_nut},
+    {"data/system/component/menu_common.nut"sv, menu_common_nut},
 };
 
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
@@ -247,8 +254,13 @@ static constexpr uint8_t mod_config_animation_nut[] = {
 #include "new_files/mod_config_animation.nut.h"
 };
 
+static constexpr uint8_t item_config_csv[] = {
+#include "new_files/mod_config_animation.nut.h"
+};
+
 static const std::unordered_map<std::string_view, const EmbedData> new_files = {
     {"debug.nut"sv, debug_nut},
+    {"item_config.csv"sv, item_config_csv},
     //{"mod_config.nut"sv, mod_config_nut},
     //{"mod_config_animation.nut"sv, mod_config_animation_nut},
 };

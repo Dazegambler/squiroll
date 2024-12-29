@@ -230,17 +230,32 @@ SQInteger reset_punch_ip(HSQUIRRELVM v) {
     return 0;
 }
 
-SQInteger copy_punch_ip(HSQUIRRELVM v) {
+static void set_clipboard(const char* str, size_t length) {
     OpenClipboard(NULL);
     EmptyClipboard();
-    if (size_t punch_len = punch_ip_len) {
-        ++punch_len;
-        HGLOBAL clip_mem = GlobalAlloc(GMEM_MOVEABLE, punch_len);
-        memcpy(GlobalLock(clip_mem), punch_ip_buffer, punch_len);
+    if (length) {
+        ++length;
+        HGLOBAL clip_mem = GlobalAlloc(GMEM_MOVEABLE, length);
+        memcpy(GlobalLock(clip_mem), str, length);
         GlobalUnlock(clip_mem);
         SetClipboardData(CF_TEXT, clip_mem);
     }
     CloseClipboard();
+}
+
+SQInteger copy_punch_ip(HSQUIRRELVM v) {
+    set_clipboard(punch_ip_buffer, punch_ip_len);
+    return 0;
+}
+
+SQInteger copy_to_clipboard(HSQUIRRELVM v) {
+    const SQChar* str;
+    if (
+        sq_gettop(v) == 2 &&
+        SQ_SUCCEEDED(sq_getstring(v, 2, &str))
+    ) {
+        set_clipboard(str, strlen(str));
+    }
     return 0;
 }
 
@@ -248,8 +263,8 @@ SQInteger update_delay(HSQUIRRELVM v){
     SQInteger delay;
     if (
         sq_gettop(v) == 2 &&
-        SQ_SUCCEEDED(sq_getinteger(v, 2, &delay)))
-    {
+        SQ_SUCCEEDED(sq_getinteger(v, 2, &delay))
+    ) {
       latency = delay;
     }
     return 0;
@@ -339,6 +354,7 @@ extern "C" {
                 sq_setinteger(v, _SC("revision"), PLUGIN_REVISION);
                 sq_createtable(v, _SC("misc"), [](HSQUIRRELVM v){
                     sq_setfunc(v,_SC("hide_ip"), SQPUSH_BOOL_FUNC(get_hide_ip_enabled()));
+                    sq_setfunc(v, _SC("share_watch_ip"), SQPUSH_BOOL_FUNC(get_share_watch_ip_enabled()));
                     sq_setfunc(v, _SC("hide_wip"), SQPUSH_BOOL_FUNC(get_hide_wip_enabled()));
                     sq_setfunc(v, _SC("hide_name"), SQPUSH_BOOL_FUNC(get_hide_name_enabled()));
                     sq_setbool(v, _SC("skip_intro"), get_skip_intro_enabled()); // This isn't a function because it only runs once anyway
@@ -385,6 +401,7 @@ extern "C" {
             // modifications to the manbow table
             sq_edit(v, _SC("manbow"), [](HSQUIRRELVM v) {
                 sq_setfunc(v, _SC("compilebuffer"), sq_compile_buffer);
+                sq_setfunc(v, _SC("SetClipboardString"), copy_to_clipboard);
             });
 
             // custom lobby table

@@ -30,8 +30,8 @@ static inline constexpr PacketPunch PUNCH_PACKET = {
 };
 
 extern char punch_ip_buffer[MAX_ADDR_BUFF_SIZE];
-extern size_t punch_ip_len;
 extern bool punch_ip_updated;
+extern size_t punch_ip_len;
 extern int64_t latency;
 extern std::atomic<bool> respond_to_punch_ping;
 

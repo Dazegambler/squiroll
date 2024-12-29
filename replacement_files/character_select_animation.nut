@@ -207,30 +207,41 @@ function Initialize()
 			};
 			this.data.push(v);
 		}
-		if (::network.allow_watch && !::network.is_parent_vs){
+		if (::network.allow_watch && (!::network.is_parent_vs || !::network.hide_host_ip)){
 			local ip_manager = {};
-			ip_manager.Update2 <- function () {
-				if (::input_all.b2 == 1) {
-					::punch.copy_ip_to_clipboard();
+			ip_manager.Apply <- function (text_func) {
+				if (!::setting.misc.hide_ip()) {
+					this.text <- ::font.CreateSystemStringSmall("Watch IP: " + text_func());
+					this.text.x = 5;
+					this.text.y = 1;
+					this.text.sx = this.text.sy = 1.2;
+					this.text.ConnectRenderSlot(::graphics.slot.front,-1);
 				}
-				//if(!::network.IsPlaying())this = null;
+				help_is_swapped = true;
+				local temp = ::menu.character_select.help_network;
+				::menu.character_select.help_network = ::menu.character_select.help_network_copy;
+				::menu.character_select.help_network_copy = temp;
 			};
-			ip_manager.Update <- function () {
-				if (::menu.network.update_help_text || ::punch.ip_available()) {
-					if (!::setting.misc.hide_ip()) {
-						this.text <- ::font.CreateSystemStringSmall("Watch IP: " + ::punch.get_ip());
-						this.text.x = 5;
-						this.text.y = 1;
-						this.text.sx = this.text.sy = 1.2;
-						this.text.ConnectRenderSlot(::graphics.slot.front,-1);
+			if (!::network.is_parent_vs) {
+				ip_manager.Update <- function () {
+					if (::menu.network.update_help_text || ::punch.ip_available()) {
+						this.Apply(::punch.get_ip);
+						this.Update = function () {
+							if (::input_all.b2 == 1) {
+								::punch.copy_ip_to_clipboard();
+							}
+						};
 					}
-					help_is_swapped = true;
-					local temp = ::menu.character_select.help_network;
-					::menu.character_select.help_network = ::menu.character_select.help_network_copy;
-					::menu.character_select.help_network_copy = temp;
-					this.Update = this.Update2;
-				}
-			};
+				};
+			}
+			else {
+				ip_manager.Apply(@() ::network.host_ip);
+				ip_manager.Update <- function () {
+					if (::input_all.b2 == 1) {
+						::manbow.SetClipboardString(::network.host_ip);
+					}
+				};
+			}
 			this.data.push(ip_manager);
 		}
 	}

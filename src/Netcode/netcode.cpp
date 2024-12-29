@@ -21,9 +21,9 @@
 
 static bool enable_netplay = true;
 
-char punch_ip_buffer[INET6_ADDRSTRLEN] = "";
-size_t punch_ip_len = 0;
+char punch_ip_buffer[MAX_ADDR_BUFF_SIZE] = "";
 bool punch_ip_updated = false;
+size_t punch_ip_len = 0;
 int64_t latency = 0;
 
 // size: 0x1C

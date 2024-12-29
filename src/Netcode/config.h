@@ -70,6 +70,7 @@ bool get_inputp2_raw_input();
 int8_t get_ipv6_state();
 bool get_netplay_state();
 bool get_hide_ip_enabled();
+bool get_share_watch_ip_enabled();
 bool get_hide_name_enabled();
 bool get_prevent_input_drops();
 void set_ipv6_state(bool state);

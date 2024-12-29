@@ -100,6 +100,7 @@ CONFIG_BOL(INPUT2, RAW_INPUT, "raw_input", false);
 CONFIG_TST(NETWORK, IPV6, "enable_ipv6");
 CONFIG_BOL(NETWORK, NETPLAY, "netplay", true);
 CONFIG_BOL(NETWORK, HIDE_IP, "hide_ip", false);
+CONFIG_BOL(NETWORK, SHARE_WATCH_IP, "share_watch_ip", false);
 CONFIG_BOL(NETWORK, HIDE_NAME, "hide_name", false);
 CONFIG_BOL(NETWORK, PREVENT_INPUT_DROPS, "prevent_input_drops", true);
 
@@ -161,6 +162,7 @@ static inline constexpr const char *const DEFAULT_CONFIGS[END_COUNTER - START_CO
     CONFIG_DEFAULT(NETWORK, IPV6),
     CONFIG_DEFAULT(NETWORK, NETPLAY),
     CONFIG_DEFAULT(NETWORK, HIDE_IP),
+    CONFIG_DEFAULT(NETWORK, SHARE_WATCH_IP),
     CONFIG_DEFAULT(NETWORK, HIDE_NAME),
     CONFIG_DEFAULT(NETWORK, PREVENT_INPUT_DROPS),
 
@@ -518,6 +520,11 @@ bool get_netplay_state() {
 static char NETWORK_HIDE_IP_BUFFER[8]{ '\0' };
 bool get_hide_ip_enabled() {
     return GET_BOOL_CONFIG(NETWORK, HIDE_IP);
+}
+
+static char NETWORK_SHARE_WATCH_IP_BUFFER[8]{ '\0' };
+bool get_share_watch_ip_enabled() {
+    return GET_BOOL_CONFIG(NETWORK, SHARE_WATCH_IP);
 }
 
 static char NETWORK_HIDE_NAME_BUFFER[8]{ '\0' };

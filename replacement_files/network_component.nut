@@ -9,6 +9,8 @@ this.is_client <- false;
 this.is_parent_vs <- false;
 this.allow_watch <- false;
 this.is_watch <- false;
+this.hide_host_ip <- true;
+this.host_ip <- "";
 this.is_disconnect <- false;
 this.use_lobby <- false;
 this.upnp_port <- 0;
@@ -50,6 +52,8 @@ function Initialize()
 	this.is_client = false;
 	this.is_parent_vs = false;
 	this.is_watch = false;
+	this.hide_host_ip = true;
+	this.host_ip = "";
 	this.allow_watch = false;
 	this.is_disconnect = false;
 	this.client_num = 0;
@@ -193,6 +197,7 @@ function StartupServer( port, mode )
 		table_dst.rand_seed <- this.rand_seed;
 		table_dst.is_parent_vs <- true;
 		table_dst.allow_watch <- this.allow_watch;
+		table_dst.hide_ip <- ::setting.misc.hide_ip() || !::setting.misc.share_watch_ip();
 		table_dst.use_lobby <- this.use_lobby;
 		table_dst.name <- ::config.network.player_name.len() > 16 ? "" : ::config.network.player_name;
 		table_dst.color <- this.color_num[0];
@@ -306,6 +311,7 @@ function StartupClient( addr, port, mode )
 		this.color_num[1] = ::savedata.GetColorNum();
 		this.icon[0] = "icon" in _reply_table ? _reply_table.icon : null;
 		this.allow_watch = _reply_table.allow_watch;
+		this.hide_host_ip = !("hide_ip" in _reply_table) || _reply_table.hide_ip;
 		this.use_lobby = _reply_table.use_lobby;
 		this.func_get_delay = function ()
 		{
@@ -402,6 +408,7 @@ function StartupClient( addr, port, mode )
 	{
 		connect_param.is_watch <- false;
 	}
+	this.host_ip = addr + ":" + port;
 
 	this.inst_connect = mb_client;
 	return mb_client.Connect(addr, port, connect_param);

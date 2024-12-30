@@ -1,0 +1,12 @@
+exit,戻る,exit
+se,SE音量,SE volume
+bgm,BGM音量,BGM volume
+screen,画面表示,screen mode,ウィンドウ,window,フルスクリーン,fullscreen
+vsync,垂直同期,vsync,無効,disable,有効,enable
+background,背景,stage backgrounds,通常,normal,簡易,simple
+fps,FPSの表示,show FPS,無効,disable,有効,enable
+key1p,1Pキーコンフィグ,keyconfig 1P
+key2p,2Pキーコンフィグ,keyconfig 2P
+replay_save,リプレイの保存,replay save,する,auto save,しない,not save,選択,select each time
+replay_save_online,リプレイの保存(オンライン),replay save(online),する,auto save,しない,not save
+lang,言語/language,language/言語,日本語,日本語,English,English

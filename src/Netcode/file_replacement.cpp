@@ -149,6 +149,12 @@ static constexpr uint8_t menu_common_nut[] = {
 #endif
 };
 
+static constexpr uint8_t item_config_csv[] = {
+#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+#include "replacement_files/item_config.csv.h"
+#endif
+};
+
 static const std::unordered_map<std::string_view, const EmbedData> replacements = {
     {"data/system/network/network.nut"sv, network_nut},
     {"data/system/component/network.nut"sv, network_component_nut},
@@ -167,6 +173,7 @@ static const std::unordered_map<std::string_view, const EmbedData> replacements 
     {"data/system/watch/watch.nut"sv, watch_nut},
     {"data/system/replay_select/replay_select_view.nut"sv, replay_select_view_nut},
     {"data/system/component/menu_common.nut"sv, menu_common_nut},
+    {"data/system/config/item.csv"sv, item_config_csv},
 };
 
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
@@ -254,13 +261,8 @@ static constexpr uint8_t mod_config_animation_nut[] = {
 #include "new_files/mod_config_animation.nut.h"
 };
 
-static constexpr uint8_t item_config_csv[] = {
-#include "new_files/mod_config_animation.nut.h"
-};
-
 static const std::unordered_map<std::string_view, const EmbedData> new_files = {
     {"debug.nut"sv, debug_nut},
-    {"item_config.csv"sv, item_config_csv},
     //{"mod_config.nut"sv, mod_config_nut},
     //{"mod_config_animation.nut"sv, mod_config_animation_nut},
 };
@@ -272,3 +274,67 @@ EmbedData get_new_file_data(const char* name) {
     }
     return {};
 }
+
+#if DUMP_TFCS_FILES
+
+#include <stdio.h>
+#include <direct.h>
+
+void fastcall dump_tfcs(const uint8_t* data, const char* path) {
+
+    auto make_and_swap_to_folder = [](const char* dir) {
+        if (chdir(dir)) {
+            mkdir(dir);
+            chdir(dir);
+        }
+    };
+
+    make_and_swap_to_folder("tfcs_dump");
+
+    size_t path_len = strlen(path);
+    char path_copy[path_len + 1];
+    memcpy(path_copy, path, path_len + 1);
+
+    size_t path_depth = 0;
+    size_t cur_start = 0;
+    for (size_t i = 0; i < path_len; ++i) {
+        switch (path_copy[i]) {
+            case '/': case '\\':
+                ++path_depth;
+                path_copy[i] = '\0';
+                make_and_swap_to_folder(&path_copy[cur_start]);
+                cur_start = i + 1;
+        }
+    }
+
+    if (FILE* dump = fopen(&path_copy[cur_start], "wb")) {
+        uint32_t rows = *(uint32_t*)data;
+        data += sizeof(uint32_t);
+        while (rows--) {
+            uint32_t columns = *(uint32_t*)data;
+            data += sizeof(uint32_t);
+            while (columns--) {
+                uint32_t text_len = *(uint32_t*)data;
+                data += sizeof(uint32_t);
+                if (text_len) {
+                    fwrite(data, text_len, 1, dump);
+                    data += text_len;
+                }
+                if (columns) {
+                    fputc(',', dump);
+                }
+            }
+            if (rows) {
+                fputc('\n', dump);
+            }
+        }
+            
+        fclose(dump);
+    }
+
+    do {
+        chdir("..");
+    } while (path_depth--);
+}
+
+#endif

@@ -8,6 +8,8 @@
 #include <windows.h>
 #include "util.h"
 
+#define DUMP_TFCS_FILES 0
+
 #define FILE_REPLACEMENT_NONE 0
 #define FILE_REPLACEMENT_BASIC_THCRAP 1
 #define FILE_REPLACEMENT_NO_CRYPT 2 // Currently crashes
@@ -47,6 +49,10 @@ BOOL WINAPI close_handle_hook(HANDLE handle);
 //void file_replacement_thcrap();
 
 EmbedData get_new_file_data(const char* name);
+
+#if DUMP_TFCS_FILES
+void fastcall dump_tfcs(const uint8_t* data, const char* path);
+#endif
 
 #endif
 

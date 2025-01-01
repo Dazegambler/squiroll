@@ -219,34 +219,54 @@ function Create( param )
 			  // [329]  OP_JMP            0      0    0    0
 		}
 	}
+	// local end = ::battle.team[0].current.EndtoFreeMove;
+	// ::battle.team[0].current.EndtoFreeMove = function () {
+	// 	::debug.print("||||||||NOTICE ME||||||||||||\n");
+	// 	end();
+	// }
 }
 
 function framedisplaysetup() {
-	//get frame count post flagattack
+	/*
+	Endto*(freemove,loop,stand) seemed promising but doesn't seem existent on most of the time somehow
+	same for releaseActor
+	IsAttack() continously attacking still increases the count
+	value types:
+	0 nothing
+	1 melee,grab A
+	2 bullet,occult B A+B
+	3 special C
+	4 SC A
+	5 LW C+E
+	6 tag E
+	IsFree() doesn't really work, seems to always increase
+	IsRecover() only affects opponent(i.e amount of knockback dealt)
+	flagAttack only triggers on melee attacks
+	attack_state doesn't reset??
+	GetKeyFrameData() seems to have useful things
+	recover true recovery frames??
+	damagePoint active frames
+	*/
 	local frame = {};
-	frame.last <- 0;
-	frame.current <- 0;
-	frame.previous <- 0;
-	//frame.count <- 0;
-	//frame.recover <- 0;
+	frame.data <- [0,0,0];
+	frame.str <- "";
 	frame.Update <- function () {
-		// ::debug.print_value(::battle.team[0].current.keyTake);
-		// return;
-		local flag = ::battle.team[0].current.keyTake;//atkRank,flagAttack
-		local count = this.current;
-		if (this.last == flag && (::battle.team[0].input.x == 0 && ::battle.team[0].input.y == 0)){
-			if (flag != 0){
-				count++;
-			}else{
-				count = 0;
-			}
-		} else if (::battle.team[0].input.x == 0 && ::battle.team[0].input.y == 0){
-			count++;
-		}
-		this.last = flag;
-		this.current = count != this.current ? (function (){
-			::debug.print("frames:"+::battle.team[0].current.frame+"||count:"+count+"\n");
-			return count;}()) : this.current;
+		local p1 = ::battle.team[0].current;
+		local frameData = p1.temp_frame_data;
+		::debug.print_value(p1.temp_frame_data.flagAttack);
+		return;
+		local fre = p1.IsFree();
+		local att = p1.IsAttack();
+		local rcvr = frameData.recover;
+		local dmg = frameData.damagePoint;
+		if ( fre == false ) this.data[dmg == 0 ? rcvr == 0 ? 0 : 2 : 1]++;
+		else {this.data = [0,0,0];}
+		local str = format("startup:%d||active:%d||recovery:%d\n",
+		data[0],
+		data[1],
+		data[2]
+		);
+		if (this.str != str && fre == false)::debug.print((this.str = str));
 	}
 	AddTask(frame);
 	this.frame_task = frame;

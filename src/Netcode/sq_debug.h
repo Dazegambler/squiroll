@@ -14,8 +14,7 @@ static SQInteger sq_dummy(HSQUIRRELVM v) {
 }
 
 //SQUIRREL FUNCTIONS
-SQInteger sq_compile_buffer(HSQUIRRELVM v);
-SQInteger LoadCSVA(HSQUIRRELVM v); 
+SQInteger sq_compile_buffer(HSQUIRRELVM v); 
 
 #if !DISABLE_ALL_LOGGING_FOR_BUILD
 SQInteger sq_print(HSQUIRRELVM v);

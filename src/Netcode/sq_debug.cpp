@@ -192,41 +192,6 @@ HSQOBJECT SQGetObjectByName(HSQUIRRELVM v, const SQChar *name) {
 */
 
 //SQUIRREL FUNCTIONS
-SQInteger LoadCSVA(HSQUIRRELVM v) {
-    const SQChar* Src;
-    if (sq_gettop(v) != 2 ||
-        SQ_FAILED(sq_getstring(v, 2, &Src))
-    ) {
-        return sq_throwerror(v, _SC("Invalid arguments...\n"
-                             "usage: LoadCSVA <src>\n"));
-    } 
-    if (EmbedData csv = get_new_file_data(Src)) {
-        sq_newarray(v, 0);
-        char* data = (char*)csv.data;
-        char *line = std::strtok(data, "\n");
-        log_printf("o/\n");
-        while (line) {
-            sq_newarray(v, 0);
-            char *token = std::strtok(line, ",");
-            while (token) {
-                if (token == NULL || token[0] == '\0') {
-                    sq_pushnull(v);
-                } else {
-                    sq_pushstring(v, token, -1);
-                }
-                sq_arrayappend(v, -2);
-                token = std::strtok(NULL, ",");
-            }
-            sq_arrayappend(v, -2);
-            line = std::strtok(NULL, "\n");
-        }
-        sq_push(v, -2);
-    }else {
-        sq_pushnull(v);
-    }
-    return 1;
-}
-
 SQInteger sq_compile_buffer(HSQUIRRELVM v){
     const SQChar* src;
     HSQOBJECT root;

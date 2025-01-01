@@ -10,7 +10,7 @@ this.item <- [
 	"replay_save",
 	"replay_save_online",
 	"lang",
-	//"mods",
+	"misc",
 	null,
 	"exit"
 ];
@@ -319,7 +319,7 @@ this.proc.lang <- function ()
 		this.cursor_lang.val = ::config.lang;
 	};
 };
-this.proc.mods <- function ()
+this.proc.misc <- function ()
 {
 	if (this.cursor_item.ok)
 	{

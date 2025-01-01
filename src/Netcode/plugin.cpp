@@ -400,7 +400,6 @@ extern "C" {
 
             // modifications to the manbow table
             sq_edit(v, _SC("manbow"), [](HSQUIRRELVM v) {
-                sq_setfunc(v, _SC("LoadCSVA"), LoadCSVA);
                 sq_setfunc(v, _SC("compilebuffer"), sq_compile_buffer);
                 sq_setfunc(v, _SC("SetClipboardString"), copy_to_clipboard);
             });

@@ -67,6 +67,18 @@ bool get_inputp2_spacing();
 int32_t get_inputp2_timer();
 bool get_inputp2_raw_input();
 
+bool get_hitbox_vis_enabled();
+int32_t get_hitbox_border_width();
+float get_hitbox_inner_alpha();
+float get_hitbox_border_alpha();
+uint32_t get_hitbox_collision_col();
+uint32_t get_hitbox_hit_col();
+uint32_t get_hitbox_player_hurt_col();
+uint32_t get_hitbox_player_unhit_col();
+uint32_t get_hitbox_player_ungrab_col();
+uint32_t get_hitbox_player_unhit_ungrab_col();
+uint32_t get_hitbox_misc_hurt_col();
+
 int8_t get_ipv6_state();
 bool get_netplay_state();
 bool get_hide_ip_enabled();

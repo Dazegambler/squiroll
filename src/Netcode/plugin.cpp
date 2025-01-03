@@ -20,6 +20,7 @@
 #include "lobby.h"
 #include "sq_debug.h"
 #include "discord.h"
+#include "overlay.h"
 
 const KiteSquirrelAPI* KITE;
 
@@ -462,6 +463,29 @@ extern "C" {
             });
             #undef RPC_FIELD
 
+            // custom render overlays
+            sq_createtable(v, _SC("overlay"), [](HSQUIRRELVM v) {
+                sq_setfunc(v, _SC("set_hitboxes"), [](HSQUIRRELVM v) -> SQInteger {
+                    void* inst;
+                    SQInteger p1_flags;
+                    SQInteger p2_flags;
+                    if (sq_gettop(v) != 4 ||
+                        SQ_FAILED(sq_getinstanceup(v, 2, &inst, nullptr)) ||
+                        SQ_FAILED(sq_getinteger(v, 3, &p1_flags)) ||
+                        SQ_FAILED(sq_getinteger(v, 4, &p2_flags)))
+                    {
+                        return sq_throwerror(v, "Invalid arguments, expected: <instance> <integer> <integer>");
+                    }
+                    overlay_set_hitboxes((ManbowActor2DGroup*)inst, p1_flags, p2_flags);
+                    return 0;
+                });
+                sq_setfunc(v, _SC("clear"), [](HSQUIRRELVM v) -> SQInteger {
+                    overlay_clear();
+                    return 0;
+                });
+            });
+            overlay_init();
+
             //this changes the item array in the config menu :)
             //yes i know it's beautiful you don't have to tell me
             // sq_edit(v, _SC("menu"), [](HSQUIRRELVM v) {
@@ -482,6 +506,7 @@ extern "C" {
     }
 
     dll_export int stdcall release_instance() {
+        overlay_destroy();
         return 1;
     }
 
@@ -512,6 +537,7 @@ extern "C" {
     }
 
     dll_export int stdcall render(int, int) {
+        overlay_draw();
         return 0;
     }
 }

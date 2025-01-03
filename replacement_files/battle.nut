@@ -442,6 +442,8 @@ function Release()
 	::talk.Clear();
 	::effect.Clear();
 	::manbow.SetTerminateFunction(null);
+
+	::overlay.clear();
 }
 
 function Begin()
@@ -482,3 +484,12 @@ function SetSlow( n )
 	this.slow_count = n;
 }
 
+this.UpdateMainOrig <- this.UpdateMain;
+this.UpdateMain = function() {
+	this.UpdateMainOrig();
+
+	if (::menu.pause_hack)
+		::menu.pause_hack = false;
+	else if (::loop.pause_count == 0 && !this.is_time_stop && !::network.IsPlaying())
+		::overlay.set_hitboxes(this.group_player, this.team[0].current.hit_state, this.team[1].current.hit_state);
+}

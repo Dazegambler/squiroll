@@ -96,6 +96,19 @@ CONFIG_BOL(INPUT2, SPACING, "spacing", false);
 CONFIG_INT(INPUT2, TIMER, "timer", 200);
 CONFIG_BOL(INPUT2, RAW_INPUT, "raw_input", false);
 
+#define HITBOX_VIS_SECTION_NAME "hitbox_vis"
+CONFIG_BOL(HITBOX_VIS, ENABLED, "enabled", false);
+CONFIG_INT(HITBOX_VIS, BORDER_WIDTH, "border_width", 2);
+CONFIG_FLT(HITBOX_VIS, INNER_ALPHA, "inner_alpha", 0.25);
+CONFIG_FLT(HITBOX_VIS, BORDER_ALPHA, "border_alpha", 1.0);
+CONFIG_HEX(HITBOX_VIS, COLLISION_COL, "collision_col", 1E90FF);
+CONFIG_HEX(HITBOX_VIS, HIT_COL, "hit_col", FF0000);
+CONFIG_HEX(HITBOX_VIS, PLAYER_HURT_COL, "player_hurt_col", 00FF00);
+CONFIG_HEX(HITBOX_VIS, PLAYER_UNHIT_COL, "player_unhit_col", FF5F1F);
+CONFIG_HEX(HITBOX_VIS, PLAYER_UNGRAB_COL, "player_ungrab_col", FF00FF);
+CONFIG_HEX(HITBOX_VIS, PLAYER_UNHIT_UNGRAB_COL, "player_unhit_ungrab_col", FFFFFF);
+CONFIG_HEX(HITBOX_VIS, MISC_HURT_COL, "misc_hurt_col", FFFF00);
+
 #define NETWORK_SECTION_NAME "network"
 CONFIG_TST(NETWORK, IPV6, "enable_ipv6");
 CONFIG_BOL(NETWORK, NETPLAY, "netplay", true);
@@ -158,6 +171,18 @@ static inline constexpr const char *const DEFAULT_CONFIGS[END_COUNTER - START_CO
     CONFIG_DEFAULT(INPUT2, SPACING),
     CONFIG_DEFAULT(INPUT2, TIMER),
     CONFIG_DEFAULT(INPUT2, RAW_INPUT),
+
+    CONFIG_DEFAULT(HITBOX_VIS, ENABLED),
+    CONFIG_DEFAULT(HITBOX_VIS, BORDER_WIDTH),
+    CONFIG_DEFAULT(HITBOX_VIS, INNER_ALPHA),
+    CONFIG_DEFAULT(HITBOX_VIS, BORDER_ALPHA),
+    CONFIG_DEFAULT(HITBOX_VIS, COLLISION_COL),
+    CONFIG_DEFAULT(HITBOX_VIS, HIT_COL),
+    CONFIG_DEFAULT(HITBOX_VIS, PLAYER_HURT_COL),
+    CONFIG_DEFAULT(HITBOX_VIS, PLAYER_UNHIT_COL),
+    CONFIG_DEFAULT(HITBOX_VIS, PLAYER_UNGRAB_COL),
+    CONFIG_DEFAULT(HITBOX_VIS, PLAYER_UNHIT_UNGRAB_COL),
+    CONFIG_DEFAULT(HITBOX_VIS, MISC_HURT_COL),
 
     CONFIG_DEFAULT(NETWORK, IPV6),
     CONFIG_DEFAULT(NETWORK, NETPLAY),
@@ -501,6 +526,65 @@ int32_t get_inputp2_timer() {
 static char INPUT2_RAW_INPUT_BUFFER[8]{ '\0' };
 bool get_inputp2_raw_input() {
     return GET_BOOL_CONFIG(INPUT2, RAW_INPUT);
+}
+
+// ====================
+// HITBOX VISUALIZER
+// ====================
+
+static char HITBOX_VIS_ENABLED_BUFFER[8]{ '\0' };
+bool get_hitbox_vis_enabled() {
+    return GET_BOOL_CONFIG(HITBOX_VIS, ENABLED);
+}
+
+static char HITBOX_VIS_BORDER_WIDTH_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
+int32_t get_hitbox_border_width() {
+    return GET_INT_CONFIG(HITBOX_VIS, BORDER_WIDTH);
+}
+
+static char HITBOX_VIS_INNER_ALPHA_BUFFER[FLOAT_BUFFER_SIZE<float>]{ '\0' };
+float get_hitbox_inner_alpha() {
+    return GET_FLOAT_CONFIG(HITBOX_VIS, INNER_ALPHA);
+}
+
+static char HITBOX_VIS_BORDER_ALPHA_BUFFER[FLOAT_BUFFER_SIZE<float>]{ '\0' };
+float get_hitbox_border_alpha() {
+    return GET_FLOAT_CONFIG(HITBOX_VIS, BORDER_ALPHA);
+}
+
+static char HITBOX_VIS_COLLISION_COL_BUFFER[INTEGER_BUFFER_SIZE<uint32_t>]{ '\0' };
+uint32_t get_hitbox_collision_col() {
+    return GET_HEX_CONFIG(HITBOX_VIS, COLLISION_COL);
+}
+
+static char HITBOX_VIS_HIT_COL_BUFFER[INTEGER_BUFFER_SIZE<uint32_t>]{ '\0' };
+uint32_t get_hitbox_hit_col() {
+    return GET_HEX_CONFIG(HITBOX_VIS, HIT_COL);
+}
+
+static char HITBOX_VIS_PLAYER_HURT_COL_BUFFER[INTEGER_BUFFER_SIZE<uint32_t>]{ '\0' };
+uint32_t get_hitbox_player_hurt_col() {
+    return GET_HEX_CONFIG(HITBOX_VIS, PLAYER_HURT_COL);
+}
+
+static char HITBOX_VIS_PLAYER_UNHIT_COL_BUFFER[INTEGER_BUFFER_SIZE<uint32_t>]{ '\0' };
+uint32_t get_hitbox_player_unhit_col() {
+    return GET_HEX_CONFIG(HITBOX_VIS, PLAYER_UNHIT_COL);
+}
+
+static char HITBOX_VIS_PLAYER_UNGRAB_COL_BUFFER[INTEGER_BUFFER_SIZE<uint32_t>]{ '\0' };
+uint32_t get_hitbox_player_ungrab_col() {
+    return GET_HEX_CONFIG(HITBOX_VIS, PLAYER_UNGRAB_COL);
+}
+
+static char HITBOX_VIS_PLAYER_UNHIT_UNGRAB_COL_BUFFER[INTEGER_BUFFER_SIZE<uint32_t>]{ '\0' };
+uint32_t get_hitbox_player_unhit_ungrab_col() {
+    return GET_HEX_CONFIG(HITBOX_VIS, PLAYER_UNHIT_UNGRAB_COL);
+}
+
+static char HITBOX_VIS_MISC_HURT_COL_BUFFER[INTEGER_BUFFER_SIZE<uint32_t>]{ '\0' };
+uint32_t get_hitbox_misc_hurt_col() {
+    return GET_HEX_CONFIG(HITBOX_VIS, MISC_HURT_COL);
 }
 
 // ====================

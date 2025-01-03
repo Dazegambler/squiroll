@@ -246,27 +246,72 @@ function framedisplaysetup() {
 	GetKeyFrameData() seems to have useful things
 	recover true recovery frames??
 	damagePoint active frames
+	check p1.motion to have frame data of one attack only
+	CHECK FLAGSTATE
+	0x320
+	0x220
+	32 is for recovery
+	512 is for active
+	288 maybe for some moves?
+	256
+	check flagattack
 	*/
 	local frame = {};
-	frame.data <- [0,0,0];
+	frame.motion <- 0;
+	frame.data <- [
+		0,//startup
+		0,//active
+		0//recovery
+	];
+	frame.timer <- 0;
+	frame.text <- ::font.CreateSystemString("");
+	frame.text.sx = ::setting.ping.SX;
+	frame.text.sy = ::setting.ping.SY;
+	frame.text.red = ::setting.ping.red;
+	frame.text.green = ::setting.ping.green;
+	frame.text.blue = ::setting.ping.blue;
+	frame.text.alpha = ::setting.ping.alpha;
+	frame.text.ConnectRenderSlot(::graphics.slot.front, 1);
 	frame.str <- "";
 	frame.Update <- function () {
 		local p1 = ::battle.team[0].current;
-		local frameData = p1.temp_frame_data;
-		::debug.print_value(p1.temp_frame_data.flagAttack);
-		return;
+		local frameData = p1.GetKeyFrameData();
+		// ::debug.print_value(p1.flagAttack);
+		// return;
 		local fre = p1.IsFree();
-		local att = p1.IsAttack();
-		local rcvr = frameData.recover;
+		// local att = p1.IsAttack();
+		// local rcvr = frameData.recover;
+		local flag = p1.flagState;
 		local dmg = frameData.damagePoint;
-		if ( fre == false ) this.data[dmg == 0 ? rcvr == 0 ? 0 : 2 : 1]++;
-		else {this.data = [0,0,0];}
-		local str = format("startup:%d||active:%d||recovery:%d\n",
-		data[0],
-		data[1],
-		data[2]
-		);
-		if (this.str != str && fre == false)::debug.print((this.str = str));
+		local mot = p1.motion;
+		if ( fre == false ) {
+			this.timer = 120;
+			if (this.motion != mot) {
+				this.data = [0,0,0];
+				this.motion = mot
+			}
+			// data[flag & 32 ? 2 : dmg != 0 && flag & 0x220 ? 1 : 0]++;
+			data[dmg != 0 && flag & 0x220 ? 1 : flag & 32 ? 2 : 0]++;//was 0x320
+			// if (dmg != 0){
+			// 	data[1]++;
+			// }else{
+			// 	// if (flag != 0) data[2]++;
+			// 	// else{data[0]++;}
+			// }
+		}
+		else {this.data = [0,0,0];this.timer--;}
+		//local str = format("startup:%d||active:%d||recovery:%d||frame:%d\n",data[0],data[1],data[2],p1.frame);
+		local bin = "";
+		for (local i = 16 -1; i >= 0; i--){
+			bin += (p1.flagState & (1 << i)) ? "1 " : "0 ";
+		}
+		local str = format("startup:%2d||active:%2d||recovery:%2d||dmg:%5s||flag:%s\n",data[0]+1,data[1],data[2],(dmg!=0).tostring(),bin);
+		if (this.str != str && fre == false){
+			::debug.print((this.str = str));
+		}
+		this.text.Set(this.timer > 0 ? this.str : "");
+		this.text.x = ::setting.ping.X - (this.text.width / 2);
+		this.text.y = (::setting.ping.Y - this.text.height);
 	}
 	AddTask(frame);
 	this.frame_task = frame;

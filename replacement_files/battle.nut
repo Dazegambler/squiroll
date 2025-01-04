@@ -26,6 +26,7 @@ this.ping_task <- null;
 this.input_task <- null;
 this.ping_obj <- null;
 this.frame_task <- null;
+this.UI <- false;
 class this.InitializeParam
 {
 	game_mode = 1;
@@ -219,11 +220,6 @@ function Create( param )
 			  // [329]  OP_JMP            0      0    0    0
 		}
 	}
-	// local end = ::battle.team[0].current.EndtoFreeMove;
-	// ::battle.team[0].current.EndtoFreeMove = function () {
-	// 	::debug.print("||||||||NOTICE ME||||||||||||\n");
-	// 	end();
-	// }
 }
 
 function framedisplaysetup() {
@@ -258,6 +254,7 @@ function framedisplaysetup() {
 	*/
 	local frame = {};
 	frame.motion <- 0;
+	frame.test <- false;
 	frame.data <- [
 		0,//startup
 		0,//active
@@ -492,4 +489,14 @@ this.UpdateMain = function() {
 		::menu.pause_hack = false;
 	else if (::loop.pause_count == 0 && !this.is_time_stop && !::network.IsPlaying())
 		::overlay.set_hitboxes(this.group_player, this.team[0].current.hit_state, this.team[1].current.hit_state);
+
+	local b2 = ::battle.team[0].input.b2;
+	local b4 = ::battle.team[0].input.b4;
+	if ((b2 != 0 && b4 != 0) &&
+		b2 % 120 == 0 && b4 % 120 == 0){
+		this.UI = !this.UI;
+		if (!this.UI)::battle.gauge.Hide();
+		else{::battle.gauge.Show(0);}
+	}
+
 }

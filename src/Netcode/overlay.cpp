@@ -625,13 +625,13 @@ void overlay_draw() {
     hitbox_border_width = get_hitbox_border_width() * 2.0f;
 
     // Try not to read config entries if we don't have to
-    uint32_t collision_col = has_collision ? get_hitbox_collision_col() : 0;
-    uint32_t hit_col = has_hit ? get_hitbox_hit_col() : 0;
-    uint32_t player_hurt_col = has_hurt ? get_hitbox_player_hurt_col() : 0;
-    uint32_t player_unhit_col = has_hurt ? get_hitbox_player_unhit_col() : 0;
-    uint32_t player_ungrab_col = has_hurt ? get_hitbox_player_ungrab_col() : 0;
-    uint32_t player_unhit_ungrab_col = has_hurt ? get_hitbox_player_unhit_ungrab_col() : 0;
-    uint32_t misc_hurt_col = has_hurt ? get_hitbox_misc_hurt_col() : 0;
+    uint32_t collision_col = has_collision ? get_hitbox_collision_color() : 0;
+    uint32_t hit_col = has_hit ? get_hitbox_hit_color() : 0;
+    uint32_t player_hurt_col = has_hurt ? get_hitbox_player_hurt_color() : 0;
+    uint32_t player_unhit_col = has_hurt ? get_hitbox_player_unhit_color() : 0;
+    uint32_t player_ungrab_col = has_hurt ? get_hitbox_player_ungrab_color() : 0;
+    uint32_t player_unhit_ungrab_col = has_hurt ? get_hitbox_player_unhit_ungrab_color() : 0;
+    uint32_t misc_hurt_col = has_hurt ? get_hitbox_misc_hurt_color() : 0;
 
     ID3D11DeviceContext* imm = *d3d11_imm;
 

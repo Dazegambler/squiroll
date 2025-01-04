@@ -15,8 +15,8 @@ struct Hitbox {
 
 StructuredBuffer<Hitbox> hitboxes;
 
-float3 decode_color(uint col) {
-    return float3(float((col >> 16) & 0xFF) / 255.0, float((col >> 8) & 0xFF) / 255.0, float(col & 0xFF) / 255.0);
+float4 decode_color(uint col) {
+    return float4(float((col >> 16) & 0xFF) / 255.0, float((col >> 8) & 0xFF) / 255.0, float(col & 0xFF) / 255.0, float((col >> 24) & 0xFF) / 255.0);
 }
 
 float2 snap_to_pixel(float2 pos) {

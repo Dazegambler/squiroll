@@ -14,9 +14,9 @@ float4 main(PSInput input) : SV_TARGET {
             discard;
 
         bool is_border = sq_dist >= input.thresholds[0];
-        return float4(input.col, alphas[is_border]);
+        return float4(input.col.rgb, input.col.a * alphas[is_border]);
     } else {
         bool is_border = abs(input.uv.x) >= input.thresholds[0] || abs(input.uv.y) >= input.thresholds[1];
-        return float4(input.col, alphas[is_border]);
+        return float4(input.col.rgb, input.col.a * alphas[is_border]);
     }
 }

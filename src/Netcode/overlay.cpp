@@ -285,16 +285,24 @@ static ID3D11Buffer* hitbox_sb = nullptr;
 static ID3D11ShaderResourceView* hitbox_sb_srv = nullptr;
 static ID3D11Buffer* hitbox_cb = nullptr;
 
+#define CHECK_RES(x) \
+    res = x; \
+    if (FAILED(res)) { \
+        mboxf("D3D11 Exception", MB_OK | MB_ICONERROR, [=](auto add_text) { \
+            add_text(#x "\nfailed with result 0x%08X", res); \
+        }); \
+    }
 void overlay_init() {
+    HRESULT res;
     ID3D11Device* dev = *d3d11_dev;
 
-    dev->CreateVertexShader(hitbox_vert_cso, sizeof(hitbox_vert_cso), nullptr, &hitbox_vs);
-    dev->CreatePixelShader(hitbox_frag_cso, sizeof(hitbox_frag_cso), nullptr, &hitbox_ps);
+    CHECK_RES(dev->CreateVertexShader(hitbox_vert_cso, sizeof(hitbox_vert_cso), nullptr, &hitbox_vs));
+    CHECK_RES(dev->CreatePixelShader(hitbox_frag_cso, sizeof(hitbox_frag_cso), nullptr, &hitbox_ps));
 
 	static constexpr D3D11_INPUT_ELEMENT_DESC input_layout[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
-    dev->CreateInputLayout(input_layout, countof(input_layout), hitbox_vert_cso, sizeof(hitbox_vert_cso), &hitbox_il);
+    CHECK_RES(dev->CreateInputLayout(input_layout, countof(input_layout), hitbox_vert_cso, sizeof(hitbox_vert_cso), &hitbox_il));
 
 	static constexpr D3D11_BUFFER_DESC vertex_desc = {
 		.ByteWidth = sizeof(HitboxVertex) * MAX_HITBOXES * 4,
@@ -304,7 +312,7 @@ void overlay_init() {
 		.MiscFlags = 0,
 		.StructureByteStride = 0,
 	};
-    dev->CreateBuffer(&vertex_desc, NULL, &hitbox_vb);
+    CHECK_RES(dev->CreateBuffer(&vertex_desc, NULL, &hitbox_vb));
 
 	uint16_t* index_vec = new uint16_t[MAX_HITBOXES * 6];
 	for (size_t i = 0; i < MAX_HITBOXES; i++) {
@@ -326,7 +334,7 @@ void overlay_init() {
 	D3D11_SUBRESOURCE_DATA index_init = {
 		.pSysMem = index_vec,
 	};
-	dev->CreateBuffer(&index_desc, &index_init, &hitbox_ib);
+	CHECK_RES(dev->CreateBuffer(&index_desc, &index_init, &hitbox_ib));
     delete[] index_vec;
 
     static constexpr D3D11_BUFFER_DESC struct_desc = {
@@ -337,7 +345,7 @@ void overlay_init() {
 		.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED,
 		.StructureByteStride = sizeof(HitboxGPUData),
 	};
-    dev->CreateBuffer(&struct_desc, NULL, &hitbox_sb);
+    CHECK_RES(dev->CreateBuffer(&struct_desc, NULL, &hitbox_sb));
 
     static constexpr D3D11_SHADER_RESOURCE_VIEW_DESC struct_srv = {
         .Format = DXGI_FORMAT_UNKNOWN,
@@ -347,7 +355,7 @@ void overlay_init() {
             .NumElements = MAX_HITBOXES,
         }
     };
-    dev->CreateShaderResourceView(hitbox_sb, &struct_srv, &hitbox_sb_srv);
+    CHECK_RES(dev->CreateShaderResourceView(hitbox_sb, &struct_srv, &hitbox_sb_srv));
 
     static constexpr D3D11_BUFFER_DESC constant_desc = {
 		.ByteWidth = sizeof(HitboxConstantBuffer),
@@ -357,19 +365,26 @@ void overlay_init() {
 		.MiscFlags = 0,
 		.StructureByteStride = 0,
 	};
-    dev->CreateBuffer(&constant_desc, NULL, &hitbox_cb);
+    CHECK_RES(dev->CreateBuffer(&constant_desc, NULL, &hitbox_cb));
 }
+#undef CHECK_RES
 
+#define SAFE_RELEASE(x) \
+    if (x) { \
+        x->Release(); \
+        x = nullptr; \
+    }
 void overlay_destroy() {
-    hitbox_vs->Release();
-    hitbox_ps->Release();
-    hitbox_il->Release();
-    hitbox_vb->Release();
-    hitbox_ib->Release();
-    hitbox_sb->Release();
-    hitbox_sb_srv->Release();
-    hitbox_cb->Release();
+    SAFE_RELEASE(hitbox_vs);
+    SAFE_RELEASE(hitbox_ps);
+    SAFE_RELEASE(hitbox_il);
+    SAFE_RELEASE(hitbox_vb);
+    SAFE_RELEASE(hitbox_ib);
+    SAFE_RELEASE(hitbox_sb);
+    SAFE_RELEASE(hitbox_sb_srv);
+    SAFE_RELEASE(hitbox_cb);
 }
+#undef SAFE_RELEASE
 
 static std::vector<DrawObj> overlay_collision;
 static std::vector<DrawObj> overlay_hurt;

@@ -1,3 +1,8 @@
+#if __INTELLISENSE__
+#undef _HAS_CXX20
+#define _HAS_CXX20 0
+#endif
+
 #include <d3d11.h>
 #include <vector>
 #include <memory>
@@ -26,6 +31,7 @@ struct btVector3;
 //#define draw_rect ((void (vectorcall*)(const float*, float, float, float, float))0x39600_R)
 
 typedef struct _D3DMATRIX {
+    /*
     union {
         struct {
             float _11, _12, _13, _14;
@@ -35,6 +41,8 @@ typedef struct _D3DMATRIX {
         };
         float m[4][4];
     };
+    */
+    vec<float, 4> m[4];
 } D3DMATRIX;
 
 // TODO: Move this stuff to its own header. It might be useful for rollback too
@@ -54,7 +62,8 @@ static_assert(sizeof(SqratFunction) == 0x14);
 
 // Bullet's Vector3 actually has 4 elements because of SIMD
 struct alignas(16) btVector3 {
-    float v[4];
+    //float v[4];
+    vec<float, 4, true> v;
 };
 
 static_assert(sizeof(btVector3) == 0x10);
@@ -73,6 +82,7 @@ struct btTransform {
 static_assert(sizeof(btTransform) == 0x40);
 
 struct btCollisionShape {
+    // TODO: Make vtable explicit instead of trusting compiler with function order
     virtual void unk0();
     virtual void getAabb(btTransform* t, btVector3* aabbMin, btVector3* aabbMax);
 
@@ -222,7 +232,7 @@ struct ManbowActor2DGroup {
     char __unk7C[4]; // 0x7C
     SqratObject camera_obj; // 0x80
     ManbowCamera2D* camera; // 0x94
-    void (__thiscall *update_func)(ManbowActor2DGroup*); // 0x98
+    void (thiscall *update_func)(ManbowActor2DGroup*); // 0x98
     // 0x9C
 };
 
@@ -237,24 +247,27 @@ struct DrawObj {
     DrawType prim;
     uint16_t group;
     union {
-        struct {
+        union {
             float points[2 * 4];
+            vec<float, 4> points_vec[2];
         } rect;
-        struct {
+        union {
             float aabb[2 * 2];
+            vec<float, 4> aabb_vec;
         } circle;
     };
+
+    // This avoids calling memset when resizing vectors
+    inline DrawObj() {}
 };
 
 struct HitboxVertex {
     float pos[2];
 };
 
-struct HitboxConstantBuffer {
+// Constant buffer sizes have to be 16-byte aligned
+struct alignas(16) HitboxConstantBuffer {
     float alphas[2];
-
-    // Constant buffer sizes have to be 16-byte aligned
-    char pad[8];
 };
 
 struct HitboxGPUData {
@@ -278,12 +291,12 @@ void overlay_init() {
     dev->CreateVertexShader(hitbox_vert_cso, sizeof(hitbox_vert_cso), nullptr, &hitbox_vs);
     dev->CreatePixelShader(hitbox_frag_cso, sizeof(hitbox_frag_cso), nullptr, &hitbox_ps);
 
-	D3D11_INPUT_ELEMENT_DESC input_layout[] = {
+	static constexpr D3D11_INPUT_ELEMENT_DESC input_layout[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
     dev->CreateInputLayout(input_layout, countof(input_layout), hitbox_vert_cso, sizeof(hitbox_vert_cso), &hitbox_il);
 
-	D3D11_BUFFER_DESC vertex_desc = {
+	static constexpr D3D11_BUFFER_DESC vertex_desc = {
 		.ByteWidth = sizeof(HitboxVertex) * MAX_HITBOXES * 4,
 		.Usage = D3D11_USAGE_DYNAMIC,
 		.BindFlags = D3D11_BIND_VERTEX_BUFFER,
@@ -302,7 +315,7 @@ void overlay_init() {
 		index_vec[i * 6 + 4] = i * 4 + 2;
 		index_vec[i * 6 + 5] = i * 4 + 3;
 	}
-    D3D11_BUFFER_DESC index_desc = {
+    static constexpr D3D11_BUFFER_DESC index_desc = {
 		.ByteWidth = MAX_HITBOXES * 6 * sizeof(*index_vec),
 		.Usage = D3D11_USAGE_IMMUTABLE,
 		.BindFlags = D3D11_BIND_INDEX_BUFFER,
@@ -316,7 +329,7 @@ void overlay_init() {
 	dev->CreateBuffer(&index_desc, &index_init, &hitbox_ib);
     delete[] index_vec;
 
-    D3D11_BUFFER_DESC struct_desc = {
+    static constexpr D3D11_BUFFER_DESC struct_desc = {
 		.ByteWidth = sizeof(HitboxGPUData) * MAX_HITBOXES,
 		.Usage = D3D11_USAGE_DYNAMIC,
 		.BindFlags = D3D11_BIND_SHADER_RESOURCE,
@@ -326,7 +339,7 @@ void overlay_init() {
 	};
     dev->CreateBuffer(&struct_desc, NULL, &hitbox_sb);
 
-    D3D11_SHADER_RESOURCE_VIEW_DESC struct_srv = {
+    static constexpr D3D11_SHADER_RESOURCE_VIEW_DESC struct_srv = {
         .Format = DXGI_FORMAT_UNKNOWN,
         .ViewDimension = D3D11_SRV_DIMENSION_BUFFER,
         .Buffer = {
@@ -336,7 +349,7 @@ void overlay_init() {
     };
     dev->CreateShaderResourceView(hitbox_sb, &struct_srv, &hitbox_sb_srv);
 
-    D3D11_BUFFER_DESC constant_desc = {
+    static constexpr D3D11_BUFFER_DESC constant_desc = {
 		.ByteWidth = sizeof(HitboxConstantBuffer),
 		.Usage = D3D11_USAGE_DYNAMIC,
 		.BindFlags = D3D11_BIND_CONSTANT_BUFFER,
@@ -362,54 +375,121 @@ static std::vector<DrawObj> overlay_collision;
 static std::vector<DrawObj> overlay_hurt;
 static std::vector<DrawObj> overlay_hit;
 
-static void forceinline transform_vec2(float* dst, float* src, const D3DMATRIX* mat) {
+static forceinline void transform_vec2(float* dst, const float* src, const D3DMATRIX* mat) {
     dst[0] = mat->m[0][0] * src[0] + mat->m[1][0] * src[1] + mat->m[3][0];
     dst[1] = mat->m[0][1] * src[0] + mat->m[1][1] * src[1] + mat->m[3][1];
 }
 
-static void forceinline transform_vec2(float* dst, float x, float y, const btTransform* mat) {
+/*
+static forceinline void transform_vec4(float* dst, const float* src, const D3DMATRIX* mat) {
+    dst[0] = mat->m[0][0] * src[0] + mat->m[1][0] * src[1] + mat->m[3][0];
+    dst[1] = mat->m[0][1] * src[0] + mat->m[1][1] * src[1] + mat->m[3][1];
+    dst[2] = mat->m[0][0] * src[2] + mat->m[1][0] * src[3] + mat->m[3][0];
+    dst[3] = mat->m[0][1] * src[2] + mat->m[1][1] * src[3] + mat->m[3][1];
+}
+*/
+
+static forceinline vec<float, 4> transform_vec4(vec<float, 4> src, vec<float, 4> m0, vec<float, 4> m1, vec<float, 4> m3) {
+    vec<float, 4> src_even = shufflevec(src, src, 0, 0, 2, 2);
+    vec<float, 4> src_odd = shufflevec(src, src, 1, 1, 3, 3);
+
+    return m0 * src_even + m1 * src_odd + m3;
+}
+
+static forceinline void transform_vec2(float* dst, float x, float y, const btTransform* mat) {
     dst[0] = mat->basis.m[0].v[0] * x + mat->basis.m[0].v[1] * y + mat->origin.v[0];
     dst[1] = mat->basis.m[1].v[0] * x + mat->basis.m[1].v[1] * y + mat->origin.v[1];
 }
 
+/*
+static forceinline void transform_vec4(float* dst, float x, float y, const btTransform* mat) {
+    dst[0] = mat->basis.m[0].v[0] * x + mat->basis.m[0].v[1] * y + mat->origin.v[0];
+    dst[1] = mat->basis.m[1].v[0] * x + mat->basis.m[1].v[1] * y + mat->origin.v[1];
+    dst[2] = mat->basis.m[0].v[0] * -x + mat->basis.m[0].v[1] * y + mat->origin.v[0];
+    dst[3] = mat->basis.m[1].v[0] * -x + mat->basis.m[1].v[1] * y + mat->origin.v[1];
+}
+*/
+
+static forceinline vec<float, 4> transform_vec4(vec<float, 4> basisX, vec<float, 4> basisY, vec<float, 4> origin) {
+    return basisX + basisY + origin;
+}
+
 static void get_boxes(std::vector<DrawObj>& dst, const std::vector<std::shared_ptr<ManbowActorCollisionData>>& src, const ManbowCamera2D* camera) {
-    DrawObj draw;
     union {
         btVector3 rect_extents;
         btVector3 aabb[2];
     };
-    float world_points[2 * 4];
+
+    size_t prev_size = dst.size();
+    dst.resize(prev_size + src.size());
+    DrawObj* draw_ptr = &dst[prev_size];
+
+    vec<float, 4> view_proj0 = shufflevec(camera->view_proj_matrix.m[0], camera->view_proj_matrix.m[0], 0, 1, 0, 1);
+    vec<float, 4> view_proj1 = shufflevec(camera->view_proj_matrix.m[1], camera->view_proj_matrix.m[1], 0, 1, 0, 1);
+    vec<float, 4> view_proj3 = shufflevec(camera->view_proj_matrix.m[3], camera->view_proj_matrix.m[3], 0, 1, 0, 1);
 
     for (const auto& data : src) {
         btGhostObject* obj = data->obj_ptr;
+
+        draw_ptr->group = obj->m_broadphaseProxy ? obj->m_broadphaseProxy->m_collisionFilterGroup : 0;
+
         switch (obj->m_collisionShape->shape) {
-            case 17:
+            case 17: {
                 btBox2dShape_getHalfExtentsWithMargin(obj->m_collisionShape, &rect_extents);
-                draw.prim = DRAW_RECT;
+                draw_ptr->prim = DRAW_RECT;
+                //draw.prim = DRAW_RECT;
 
                 // The vertices get transformed on the CPU to calculate the border thresholds later
                 // TODO: It might be faster to multiply the two matrices together and use that instead
+                
+                /*
+                float world_points[4];
                 transform_vec2(&world_points[0], -rect_extents.v[0], -rect_extents.v[1], &obj->m_worldTransform);
                 transform_vec2(&world_points[2], rect_extents.v[0], -rect_extents.v[1], &obj->m_worldTransform);
-                transform_vec2(&world_points[4], rect_extents.v[0], rect_extents.v[1], &obj->m_worldTransform);
-                transform_vec2(&world_points[6], -rect_extents.v[0], rect_extents.v[1], &obj->m_worldTransform);
                 transform_vec2(&draw.rect.points[0], &world_points[0], &camera->view_proj_matrix);
                 transform_vec2(&draw.rect.points[2], &world_points[2], &camera->view_proj_matrix);
-                transform_vec2(&draw.rect.points[4], &world_points[4], &camera->view_proj_matrix);
-                transform_vec2(&draw.rect.points[6], &world_points[6], &camera->view_proj_matrix);
+                transform_vec2(&world_points[0], rect_extents.v[0], rect_extents.v[1], &obj->m_worldTransform);
+                transform_vec2(&world_points[2], -rect_extents.v[0], rect_extents.v[1], &obj->m_worldTransform);
+                transform_vec2(&draw.rect.points[4], &world_points[0], &camera->view_proj_matrix);
+                transform_vec2(&draw.rect.points[6], &world_points[2], &camera->view_proj_matrix);
+                */
+
+                /*
+                float world_points[4];
+                transform_vec4(&world_points[0], -rect_extents.v[0], -rect_extents.v[1], &obj->m_worldTransform);
+                transform_vec4(&draw.rect.points[0], &world_points[0], &camera->view_proj_matrix);
+                transform_vec4(&world_points[0], rect_extents.v[0], rect_extents.v[1], &obj->m_worldTransform);
+                transform_vec4(&draw.rect.points[4], &world_points[0], &camera->view_proj_matrix);
+                */
+                
+                vec<float, 4> world_origin = shufflevec(obj->m_worldTransform.origin.v, obj->m_worldTransform.origin.v, 0, 1, 0, 1);
+                vec<float, 4> world_basisX = shufflevec(obj->m_worldTransform.basis.m[0].v, obj->m_worldTransform.basis.m[1].v, 0, 4, 0, 4);
+                vec<float, 4> world_basisY = shufflevec(obj->m_worldTransform.basis.m[0].v, obj->m_worldTransform.basis.m[1].v, 1, 5, 1, 5);
+                vec<float, 4> extentsX = { -rect_extents.v[0], -rect_extents.v[0], rect_extents.v[0], rect_extents.v[0] };
+                vec<float, 4> extentsY = { rect_extents.v[1], rect_extents.v[1], rect_extents.v[1], rect_extents.v[1] };
+
+                vec<float, 4> world_points[2];
+                world_points[0] = transform_vec4(world_basisX * extentsX, world_basisY * -extentsY, world_origin);
+                world_points[1] = transform_vec4(world_basisX * -extentsX, world_basisY * extentsY, world_origin);
+
+                draw_ptr->rect.points_vec[0] = transform_vec4(world_points[0], view_proj0, view_proj1, view_proj3);
+                draw_ptr->rect.points_vec[1] = transform_vec4(world_points[1], view_proj0, view_proj1, view_proj3);
                 break;
-            case 8:
+            }
+            case 8: {
                 obj->m_collisionShape->getAabb(&obj->m_worldTransform, &aabb[0], &aabb[1]);
-                draw.prim = DRAW_CIRCLE;
-                transform_vec2(&draw.circle.aabb[0], aabb[0].v, &camera->view_proj_matrix);
-                transform_vec2(&draw.circle.aabb[2], aabb[1].v, &camera->view_proj_matrix);
+                draw_ptr->prim = DRAW_CIRCLE;
+                //transform_vec2(&draw.circle.aabb[0], (float*)&aabb[0].v, &camera->view_proj_matrix);
+                //transform_vec2(&draw.circle.aabb[2], (float*)&aabb[1].v, &camera->view_proj_matrix);
+                vec<float, 4> aabb_vec = { aabb[0].v[0], aabb[0].v[1], aabb[1].v[0], aabb[1].v[1] };
+                draw_ptr->circle.aabb_vec = transform_vec4(aabb_vec, view_proj0, view_proj1, view_proj3);
                 break;
+            }
             default:
                 log_printf("Unhandled hitbox shape %u\n", obj->m_collisionShape->shape);
                 break;
         }
-        draw.group = obj->m_broadphaseProxy ? obj->m_broadphaseProxy->m_collisionFilterGroup : 0;
-        dst.push_back(draw);
+        ++draw_ptr;
     }
 }
 
@@ -418,8 +498,8 @@ static HitboxVertex* hitbox_vertices = nullptr;
 static HitboxGPUData* hitbox_gpu_data = nullptr;
 static int hitbox_player_flags[2] = {};
 void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags) {
+    overlay_clear();
     if (!get_hitbox_vis_enabled()) {
-        overlay_clear();
         return;
     }
 
@@ -427,93 +507,97 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
     hitbox_player_flags[0] = p1_flags;
     hitbox_player_flags[1] = p2_flags;
 
-    overlay_clear();
-    for (size_t i = 0; i < group->size; i++) {
-        ManbowActor2D* actor = group->actor_vec[i];
-        if (!actor || !actor->anim_controller || (actor->active_flags & 1) == 0 || (actor->group_flags & group->update_mask) == 0)
-            continue;
+    if (uint32_t group_size = group->size) {
+        ManbowActor2D** actor_ptr = group->actor_vec.data();
+        do {
+            ManbowActor2D* actor = *actor_ptr++;
+            if (!actor || !actor->anim_controller || (actor->active_flags & 1) == 0 || (actor->group_flags & group->update_mask) == 0)
+                continue;
 
-        get_boxes(overlay_collision, actor->anim_controller->collision_boxes, camera);
-        get_boxes(overlay_hurt, actor->anim_controller->hurt_boxes, camera);
-        get_boxes(overlay_hit, actor->anim_controller->hit_boxes, camera);
+            get_boxes(overlay_collision, actor->anim_controller->collision_boxes, camera);
+            get_boxes(overlay_hurt, actor->anim_controller->hurt_boxes, camera);
+            get_boxes(overlay_hit, actor->anim_controller->hit_boxes, camera);
+
+        } while (--group_size);
+
     }
 }
 
-static void forceinline clip_to_screen(float* dst, const float* src) {
-    dst[0] = (src[0] + 1.0f) * (1280.0f / 2.0f);
+static forceinline void clip_to_screen(float* dst, const float* src) {
+    dst[0] = (1.0f + src[0]) * (1280.0f / 2.0f);
     dst[1] = (1.0f - src[1]) * (720.0f / 2.0f);
 }
 
-static float forceinline vec2_distance(const float* p0, const float* p1) {
+static forceinline vec<float, 4> clip_to_screen(vec<float, 4> src) {
+    vec<float, 4> one = { 1.0f, 1.0f, 1.0f, 1.0f };
+    vec<float, 4> src_signed = { src[0], -src[1], src[2], -src[3] };
+    vec<float, 4> mult = { 1280.0f / 2.0f, 720.0f / 2.0f, 1280.0f / 2.0f, 720.0f / 2.0f };
+    return (one + src_signed) * mult;
+}
+
+static forceinline float vec2_distance(const float* p0, const float* p1) {
     float x = p0[0] - p1[0];
     float y = p0[1] - p1[1];
     return sqrtf(x * x + y * y);
 }
 
+static forceinline float vec4_distance(vec<float, 4> p) {
+    float x = p[0] - p[2];
+    float y = p[1] - p[3];
+    return sqrtf(x * x + y * y);
+}
+
 static float hitbox_border_width = 0.0f;
-static void draw_rect(uint32_t col, const float* points) {
-    if (hitbox_write_idx == MAX_HITBOXES)
-        return;
+static void draw_rect(uint32_t col, size_t index, const vec<float, 4>* points) {
 
-    memcpy(&hitbox_vertices[hitbox_write_idx * 4], points, sizeof(float) * 2 * 4);
+    vec<float, 4> points_low = points[0];
+    vec<float, 4> points_high = points[1];
+    *(vec<float, 4>*)&hitbox_vertices[index * 4] = points_low;
+    *(vec<float, 4>*)&hitbox_vertices[index * 4 + 2] = points_high;
 
-    float p0[2];
-    float p1[2];
-    float p2[2];
-    clip_to_screen(p0, &points[0]);
-    clip_to_screen(p1, &points[2]);
-    clip_to_screen(p2, &points[6]);
+    points_low = clip_to_screen(points_low);
+    points_high = clip_to_screen(points_high);
 
-    float width = vec2_distance(p0, p1);
-    float height = vec2_distance(p0, p2);
-    hitbox_gpu_data[hitbox_write_idx].thresholds[0] = 1.0f - hitbox_border_width / width;
-    hitbox_gpu_data[hitbox_write_idx].thresholds[1] = 1.0f - hitbox_border_width / height;
-    hitbox_gpu_data[hitbox_write_idx].col = col;
-    hitbox_gpu_data[hitbox_write_idx].flags = 0;
-
-    hitbox_write_idx++;
+    float width = vec4_distance(points_low);
+    float height = vec4_distance(shufflevec(points_low, points_high, 0, 1, 4, 5));
+    hitbox_gpu_data[index].thresholds[0] = 1.0f - hitbox_border_width / width;
+    hitbox_gpu_data[index].thresholds[1] = 1.0f - hitbox_border_width / height;
+    hitbox_gpu_data[index].col = col;
+    hitbox_gpu_data[index].flags = 0;
 }
 
-static void draw_circle(uint32_t col, const float* aabb) {
-    if (hitbox_write_idx == MAX_HITBOXES)
-        return;
+static void draw_circle(uint32_t col, size_t index, vec<float, 4> aabb) {
+    vec<float, 4> low_pos = shufflevec(aabb, aabb, 0, 1, 2, 1);
+    *(vec<float, 4>*)&hitbox_vertices[index * 4] = low_pos;
+    *(vec<float, 4>*)&hitbox_vertices[index * 4 + 2] = shufflevec(aabb, aabb, 2, 3, 0, 3);
 
-    hitbox_vertices[hitbox_write_idx * 4].pos[0] = aabb[0];
-    hitbox_vertices[hitbox_write_idx * 4].pos[1] = aabb[1];
-    hitbox_vertices[hitbox_write_idx * 4 + 1].pos[0] = aabb[2];
-    hitbox_vertices[hitbox_write_idx * 4 + 1].pos[1] = aabb[1];
-    hitbox_vertices[hitbox_write_idx * 4 + 2].pos[0] = aabb[2];
-    hitbox_vertices[hitbox_write_idx * 4 + 2].pos[1] = aabb[3];
-    hitbox_vertices[hitbox_write_idx * 4 + 3].pos[0] = aabb[0];
-    hitbox_vertices[hitbox_write_idx * 4 + 3].pos[1] = aabb[3];
-
-    float p0[2];
-    float p1[2];
-    clip_to_screen(p0, hitbox_vertices[hitbox_write_idx * 4].pos);
-    clip_to_screen(p1, hitbox_vertices[hitbox_write_idx * 4 + 1].pos);
-
-    float threshold = 1.0f - hitbox_border_width / vec2_distance(p0, p1);
-    hitbox_gpu_data[hitbox_write_idx].thresholds[0] = threshold * threshold;
-    hitbox_gpu_data[hitbox_write_idx].col = col;
-    hitbox_gpu_data[hitbox_write_idx].flags = 1;
-
-    hitbox_write_idx++;
+    float threshold = 1.0f - hitbox_border_width / vec4_distance(clip_to_screen(low_pos));
+    hitbox_gpu_data[index].thresholds[0] = threshold * threshold;
+    hitbox_gpu_data[index].col = col;
+    hitbox_gpu_data[index].flags = 1;
 }
 
-template<std::invocable<const DrawObj&> F>
+template <typename F> requires(std::is_invocable_v<F, const DrawObj&>)
 static void draw_objs(const std::vector<DrawObj>& vec, F&& col_func) {
-    for (const auto& obj : vec) {
-        uint32_t col = col_func(obj);
+    size_t index = hitbox_write_idx;
+    if (index != MAX_HITBOXES) {
+        for (const auto& obj : vec) {
+            uint32_t col = col_func(obj);
 
-        switch (obj.prim) {
-            case DRAW_RECT:
-                draw_rect(col, obj.rect.points);
-                break;
-            case DRAW_CIRCLE: {
-                draw_circle(col, obj.circle.aabb);
+            switch (obj.prim) {
+                case DRAW_RECT:
+                    draw_rect(col, index, obj.rect.points_vec);
+                    break;
+                case DRAW_CIRCLE:
+                    draw_circle(col, index, obj.circle.aabb_vec);
+                    break;
+            }
+
+            if (++index == MAX_HITBOXES) {
                 break;
             }
         }
+        hitbox_write_idx = index;
     }
 }
 

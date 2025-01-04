@@ -341,7 +341,10 @@ static void patch_file_loading() {
 #endif
 
 static inline void disable_original_game_logging() {
+    // Disable regular printf
     hotpatch_ret(0x25270_R, 0);
+    // Skip libpng warning fprintf calls
+    mem_write(0x13BBD1, PATCH_BYTES<0x09>);
 }
 
 typedef bool thisfastcall parse_archive_t(

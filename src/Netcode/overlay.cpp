@@ -93,8 +93,8 @@ struct btCollisionShape {
 
 struct btBroadphaseProxy {
     void* m_clientObject;
-	uint16_t m_collisionFilterGroup;
-	uint16_t m_collisionFilterMask;
+    uint16_t m_collisionFilterGroup;
+    uint16_t m_collisionFilterMask;
 };
 
 struct btGhostObject {
@@ -299,52 +299,52 @@ void overlay_init() {
     CHECK_RES(dev->CreateVertexShader(hitbox_vert_cso, sizeof(hitbox_vert_cso), nullptr, &hitbox_vs));
     CHECK_RES(dev->CreatePixelShader(hitbox_frag_cso, sizeof(hitbox_frag_cso), nullptr, &hitbox_ps));
 
-	static constexpr D3D11_INPUT_ELEMENT_DESC input_layout[] = {
-		{ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};
+    static constexpr D3D11_INPUT_ELEMENT_DESC input_layout[] = {
+        { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    };
     CHECK_RES(dev->CreateInputLayout(input_layout, countof(input_layout), hitbox_vert_cso, sizeof(hitbox_vert_cso), &hitbox_il));
 
-	static constexpr D3D11_BUFFER_DESC vertex_desc = {
-		.ByteWidth = sizeof(HitboxVertex) * MAX_HITBOXES * 4,
-		.Usage = D3D11_USAGE_DYNAMIC,
-		.BindFlags = D3D11_BIND_VERTEX_BUFFER,
-		.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
-		.MiscFlags = 0,
-		.StructureByteStride = 0,
-	};
+    static constexpr D3D11_BUFFER_DESC vertex_desc = {
+        .ByteWidth = sizeof(HitboxVertex) * MAX_HITBOXES * 4,
+        .Usage = D3D11_USAGE_DYNAMIC,
+        .BindFlags = D3D11_BIND_VERTEX_BUFFER,
+        .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
+        .MiscFlags = 0,
+        .StructureByteStride = 0,
+    };
     CHECK_RES(dev->CreateBuffer(&vertex_desc, NULL, &hitbox_vb));
 
-	uint16_t* index_vec = new uint16_t[MAX_HITBOXES * 6];
-	for (size_t i = 0; i < MAX_HITBOXES; i++) {
-		index_vec[i * 6] = i * 4;
-		index_vec[i * 6 + 1] = i * 4 + 1;
-		index_vec[i * 6 + 2] = i * 4 + 2;
-		index_vec[i * 6 + 3] = i * 4;
-		index_vec[i * 6 + 4] = i * 4 + 2;
-		index_vec[i * 6 + 5] = i * 4 + 3;
-	}
+    uint16_t* index_vec = new uint16_t[MAX_HITBOXES * 6];
+    for (size_t i = 0; i < MAX_HITBOXES; i++) {
+        index_vec[i * 6] = i * 4;
+        index_vec[i * 6 + 1] = i * 4 + 1;
+        index_vec[i * 6 + 2] = i * 4 + 2;
+        index_vec[i * 6 + 3] = i * 4;
+        index_vec[i * 6 + 4] = i * 4 + 2;
+        index_vec[i * 6 + 5] = i * 4 + 3;
+    }
     static constexpr D3D11_BUFFER_DESC index_desc = {
-		.ByteWidth = MAX_HITBOXES * 6 * sizeof(*index_vec),
-		.Usage = D3D11_USAGE_IMMUTABLE,
-		.BindFlags = D3D11_BIND_INDEX_BUFFER,
-		.CPUAccessFlags = 0,
-		.MiscFlags = 0,
-		.StructureByteStride = 0,
-	};
-	D3D11_SUBRESOURCE_DATA index_init = {
-		.pSysMem = index_vec,
-	};
-	CHECK_RES(dev->CreateBuffer(&index_desc, &index_init, &hitbox_ib));
+        .ByteWidth = MAX_HITBOXES * 6 * sizeof(*index_vec),
+        .Usage = D3D11_USAGE_IMMUTABLE,
+        .BindFlags = D3D11_BIND_INDEX_BUFFER,
+        .CPUAccessFlags = 0,
+        .MiscFlags = 0,
+        .StructureByteStride = 0,
+    };
+    D3D11_SUBRESOURCE_DATA index_init = {
+        .pSysMem = index_vec,
+    };
+    CHECK_RES(dev->CreateBuffer(&index_desc, &index_init, &hitbox_ib));
     delete[] index_vec;
 
     static constexpr D3D11_BUFFER_DESC struct_desc = {
-		.ByteWidth = sizeof(HitboxGPUData) * MAX_HITBOXES,
-		.Usage = D3D11_USAGE_DYNAMIC,
-		.BindFlags = D3D11_BIND_SHADER_RESOURCE,
-		.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
-		.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED,
-		.StructureByteStride = sizeof(HitboxGPUData),
-	};
+        .ByteWidth = sizeof(HitboxGPUData) * MAX_HITBOXES,
+        .Usage = D3D11_USAGE_DYNAMIC,
+        .BindFlags = D3D11_BIND_SHADER_RESOURCE,
+        .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
+        .MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED,
+        .StructureByteStride = sizeof(HitboxGPUData),
+    };
     CHECK_RES(dev->CreateBuffer(&struct_desc, NULL, &hitbox_sb));
 
     static constexpr D3D11_SHADER_RESOURCE_VIEW_DESC struct_srv = {
@@ -358,13 +358,13 @@ void overlay_init() {
     CHECK_RES(dev->CreateShaderResourceView(hitbox_sb, &struct_srv, &hitbox_sb_srv));
 
     static constexpr D3D11_BUFFER_DESC constant_desc = {
-		.ByteWidth = sizeof(HitboxConstantBuffer),
-		.Usage = D3D11_USAGE_DYNAMIC,
-		.BindFlags = D3D11_BIND_CONSTANT_BUFFER,
-		.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
-		.MiscFlags = 0,
-		.StructureByteStride = 0,
-	};
+        .ByteWidth = sizeof(HitboxConstantBuffer),
+        .Usage = D3D11_USAGE_DYNAMIC,
+        .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
+        .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
+        .MiscFlags = 0,
+        .StructureByteStride = 0,
+    };
     CHECK_RES(dev->CreateBuffer(&constant_desc, NULL, &hitbox_cb));
 }
 #undef CHECK_RES

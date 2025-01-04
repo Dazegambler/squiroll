@@ -26,7 +26,7 @@ this.ping_task <- null;
 this.input_task <- null;
 this.ping_obj <- null;
 this.frame_task <- null;
-this.UI <- false;
+this.UI_task <- false;
 class this.InitializeParam
 {
 	game_mode = 1;
@@ -108,6 +108,7 @@ function Create( param )
 	case 40:
 		::manbow.CompileFile("data/actor/status/gauge_vs.nut", this.gauge);
 		::manbow.CompileFile("data/script/battle/battle_practice.nut", this);
+		HideUISetup();
 		//framedisplaysetup();
 		inputdisplaysetup(0);
 		inputdisplaysetup(1);
@@ -131,6 +132,7 @@ function Create( param )
 		if (::network.IsActive())
 		{
 			::manbow.CompileFile("data/script/battle/battle_watch.nut", this);
+			HideUISetup();
 			inputdisplaysetup(1);
 			inputdisplaysetup(0);
 		}
@@ -141,6 +143,7 @@ function Create( param )
 		else
 		{
 			::manbow.CompileFile("data/script/battle/battle_replay.nut", this);
+			HideUISetup();
 			inputdisplaysetup(0);
 			inputdisplaysetup(1);
 		}
@@ -392,6 +395,22 @@ function getinputs(player,none)
 	return str;
 }
 
+function HideUISetup() {
+	local ui = {};
+	ui.active <- true;
+	ui.Update <- function () {
+		local b2 = ::input_all.b2;
+		local b4 = ::input_all.b4;
+		if ((b2 != 0 && b4 != 0) &&
+			b2 % 120 == 0 && b4 % 120 == 0){
+			if (!(active = !active))::battle.gauge.Hide();
+			else{::battle.gauge.Show(0);}
+		}
+	}
+	this.UI_task = ui;
+	AddTask(this.UI_task);
+}
+
 function Release()
 {
 	::discord.rpc_set_small_img_key("");
@@ -412,6 +431,10 @@ function Release()
 	if (this.frame_task != null) {
 		DeleteTask(this.frame_task);
 		this.frame_task = null;
+	}
+	if (this.UI_task != null) {
+		DeleteTask(this.UI_task);
+		this.UI_task = null;
 	}
 	this.task = {};
 	this.gauge.Terminate();
@@ -489,14 +512,4 @@ this.UpdateMain = function() {
 		::menu.pause_hack = false;
 	else if (::loop.pause_count == 0 && !this.is_time_stop && !::network.IsPlaying())
 		::overlay.set_hitboxes(this.group_player, this.team[0].current.hit_state, this.team[1].current.hit_state);
-
-	local b2 = ::battle.team[0].input.b2;
-	local b4 = ::battle.team[0].input.b4;
-	if ((b2 != 0 && b4 != 0) &&
-		b2 % 120 == 0 && b4 % 120 == 0){
-		this.UI = !this.UI;
-		if (!this.UI)::battle.gauge.Hide();
-		else{::battle.gauge.Show(0);}
 	}
-
-}

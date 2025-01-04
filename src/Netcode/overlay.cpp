@@ -526,7 +526,7 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
         ManbowActor2D** actor_ptr = group->actor_vec.data();
         do {
             ManbowActor2D* actor = *actor_ptr++;
-            if (!actor || !actor->anim_controller || (actor->active_flags & 1) == 0 || (actor->group_flags & group->update_mask) == 0)
+            if (!actor->anim_controller || (actor->active_flags & 1) == 0 || (actor->group_flags & group->update_mask) == 0 || !actor->callback_group)
                 continue;
 
             get_boxes(overlay_collision, actor->anim_controller->collision_boxes, camera);

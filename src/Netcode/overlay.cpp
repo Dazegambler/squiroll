@@ -574,7 +574,7 @@ static void draw_rect(uint32_t col, size_t index, const vec<float, 4>* points) {
     points_high = clip_to_screen(points_high);
 
     float width = vec4_distance(points_low);
-    float height = vec4_distance(shufflevec(points_low, points_high, 0, 1, 4, 5));
+    float height = vec4_distance(shufflevec(points_low, points_high, 0, 1, 6, 7));
     hitbox_gpu_data[index].thresholds[0] = 1.0f - hitbox_border_width / width;
     hitbox_gpu_data[index].thresholds[1] = 1.0f - hitbox_border_width / height;
     hitbox_gpu_data[index].col = col;

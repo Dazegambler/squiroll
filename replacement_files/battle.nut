@@ -108,8 +108,8 @@ function Create( param )
 	case 40:
 		::manbow.CompileFile("data/actor/status/gauge_vs.nut", this.gauge);
 		::manbow.CompileFile("data/script/battle/battle_practice.nut", this);
-		HideUISetup();
-		//framedisplaysetup();
+		HideUISetup(60);
+		framedisplaysetup();
 		inputdisplaysetup(0);
 		inputdisplaysetup(1);
 		break;
@@ -132,7 +132,7 @@ function Create( param )
 		if (::network.IsActive())
 		{
 			::manbow.CompileFile("data/script/battle/battle_watch.nut", this);
-			HideUISetup();
+			HideUISetup(15);
 			inputdisplaysetup(1);
 			inputdisplaysetup(0);
 		}
@@ -143,7 +143,7 @@ function Create( param )
 		else
 		{
 			::manbow.CompileFile("data/script/battle/battle_replay.nut", this);
-			HideUISetup();
+			HideUISetup(15);
 			inputdisplaysetup(0);
 			inputdisplaysetup(1);
 		}
@@ -223,6 +223,7 @@ function Create( param )
 			  // [329]  OP_JMP            0      0    0    0
 		}
 	}
+	// ::debug.fprint_value(::battle.team[0].current.collisionGroup,"cgroup.txt");
 }
 
 function framedisplaysetup() {
@@ -276,7 +277,7 @@ function framedisplaysetup() {
 	frame.Update <- function () {
 		local p1 = ::battle.team[0].current;
 		local frameData = p1.GetKeyFrameData();
-		// ::debug.print_value(p1.flagAttack);
+		// ::debug.print_value(p1.group);
 		// return;
 		local fre = p1.IsFree();
 		// local att = p1.IsAttack();
@@ -291,7 +292,7 @@ function framedisplaysetup() {
 				this.motion = mot
 			}
 			// data[flag & 32 ? 2 : dmg != 0 && flag & 0x220 ? 1 : 0]++;
-			data[dmg != 0 && flag & 0x220 ? 1 : flag & 32 ? 2 : 0]++;//was 0x320
+			data[dmg != 0 && ((flag & 0x620)) ? 1 : flag & 32 ? 2 : 0]++;//was 0x320 0x220
 			// if (dmg != 0){
 			// 	data[1]++;
 			// }else{
@@ -395,14 +396,14 @@ function getinputs(player,none)
 	return str;
 }
 
-function HideUISetup() {
+function HideUISetup(hold) {
 	local ui = {};
 	ui.active <- true;
 	ui.Update <- function () {
 		local b2 = ::input_all.b2;
 		local b4 = ::input_all.b4;
 		if ((b2 != 0 && b4 != 0) &&
-			b2 % 120 == 0 && b4 % 120 == 0){
+			b2 % hold == 0 && b4 % hold == 0){
 			if (!(active = !active))::battle.gauge.Hide();
 			else{::battle.gauge.Show(0);}
 		}

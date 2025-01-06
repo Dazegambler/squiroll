@@ -228,8 +228,6 @@ function Create( param )
 
 function framedisplaysetup() {
 	/*
-	Endto*(freemove,loop,stand) seemed promising but doesn't seem existent on most of the time somehow
-	same for releaseActor
 	IsAttack() continously attacking still increases the count
 	value types:
 	0 nothing
@@ -240,16 +238,51 @@ function framedisplaysetup() {
 	5 LW C+E
 	6 tag E
 	IsFree() doesn't really work, seems to always increase
-	IsRecover() only affects opponent(i.e amount of knockback dealt)
-	flagAttack only triggers on melee attacks
-	attack_state doesn't reset??
 	GetKeyFrameData() seems to have useful things
-	recover true recovery frames??
 	damagePoint active frames
 	check p1.motion to have frame data of one attack only
 	CHECK FLAGSTATE
-	0x320
-	0x220
+	bit 1 is input lock, no matter what you press nothing will happen while bit 1 is active
+	MELEE:
+	F5A
+	startup 256
+	active (512,256,32)(1024,512,256,32)
+	recovery 1024,32
+	J5A
+	startup 256
+	active (512,256,32)(1024,512,256,32)
+	recovery (1024,512,32)(1024,32)
+	C5A,4A
+	startup 0
+	active,recovery 1024,512,32
+	6A
+	startup 256
+	active (1024,512,256,32)(1024,256,32)
+	recovery 1024,512,32
+	8A
+	startup 256
+	active (16777216,256,32)(16777216,1024,256,32)
+	recovery (16777216,1024,512,32)(16777216,1024,32)
+	H.J8A
+	startup 256
+	active (16777216,256,32)(16777216,1024,256,32)
+	recovery (1024,512,32)(1024,32)
+	L.J8A
+	startup 16777216,256
+	active (16777216,256,32)(16777216,1024,256,32)
+	recovery (16777216,1024,512,32)(16777216,1024,32)(1024,32)
+	4A
+	startup 16777216,256
+	active  (16777216,256,32)(16777216,512,256,32)(16777216,512,32)
+	recovery 1024,32
+	H.J4A
+	startup 16777216,256
+	active  16777216,256,32
+	recovery (1024,512,32)(1024,32)
+	L.J4A
+	startup 16777216,256
+	active  (16777216,256,32)(16777216,512,256,32)(16777216,1024,512,32)
+	recovery (1024,512,32)(1024,32)
 	32 is for recovery
 	512 is for active
 	288 maybe for some moves?
@@ -277,7 +310,7 @@ function framedisplaysetup() {
 	frame.Update <- function () {
 		local p1 = ::battle.team[0].current;
 		local frameData = p1.GetKeyFrameData();
-		// ::debug.print_value(p1.group);
+		// ::debug.print_value(p1.attackLV);
 		// return;
 		local fre = p1.IsFree();
 		// local att = p1.IsAttack();
@@ -291,22 +324,23 @@ function framedisplaysetup() {
 				this.data = [0,0,0];
 				this.motion = mot
 			}
-			// data[flag & 32 ? 2 : dmg != 0 && flag & 0x220 ? 1 : 0]++;
-			data[dmg != 0 && ((flag & 0x620)) ? 1 : flag & 32 ? 2 : 0]++;//was 0x320 0x220
-			// if (dmg != 0){
-			// 	data[1]++;
-			// }else{
-			// 	// if (flag != 0) data[2]++;
-			// 	// else{data[0]++;}
-			// }
+			data[dmg!= 0 && ((flag & 0x320) || (flag & 0x120)) ? 1 : ((flag & 0x420)) ? 2 : 0]++;//was 0x320 0x220
 		}
 		else {this.data = [0,0,0];this.timer--;}
 		//local str = format("startup:%d||active:%d||recovery:%d||frame:%d\n",data[0],data[1],data[2],p1.frame);
-		local bin = "";
-		for (local i = 16 -1; i >= 0; i--){
-			bin += (p1.flagState & (1 << i)) ? "1 " : "0 ";
+		local bin = "[";
+		for (local i = 32 -1; i >= 0; i--){
+			local v = 1 << i;
+			if (p1.flagState & v)bin += format("%d,",v);
 		}
-		local str = format("startup:%2d||active:%2d||recovery:%2d||dmg:%5s||flag:%s\n",data[0]+1,data[1],data[2],(dmg!=0).tostring(),bin);
+		bin += "]";
+		local bin1 = "[";
+		for (local i = 32 -1; i >= 0; i--){
+			local v = 1 << i;
+			if (p1.flagAttack & v)bin1 += format("%d,",v);
+		}
+		bin1 += "]";
+		local str = format("startup:%2d||active:%2d||recovery:%2d||dmg:%5s||flag:%s||attack:%s\n",data[0]+1,data[1],data[2],(dmg!=0).tostring(),bin,bin1);
 		if (this.str != str && fre == false){
 			::debug.print((this.str = str));
 		}

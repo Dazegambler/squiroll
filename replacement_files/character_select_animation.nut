@@ -194,7 +194,7 @@ function Initialize()
 			local custom_icon = ::manbow.Texture();
 			v = {};
 			v.icon <- ::manbow.Sprite();
-			if (!::config.misc.hide_profile_pictures() && ::network.icon[i] != null && custom_icon.CreateFromBase64(::network.icon[i], 32, 32)) {
+			if (!::setting.misc.hide_profile_pictures() && ::network.icon[i] != null && custom_icon.CreateFromBase64(::network.icon[i], 32, 32)) {
 				v.icon.Initialize(custom_icon, 0, 0, 32, 32);
 			} else {
 				v.icon.Initialize(::menu.cursor.texture, 160, i * 32, 32, 32);

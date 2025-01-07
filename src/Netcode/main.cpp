@@ -546,6 +546,10 @@ bool common_init(
     }
 #endif
 
+    // Force Manbow::Texture::GetBase64 to not load from pak files
+    mem_write(0x5B9A1_R, PATCH_BYTES<0x6A, 0x00>);
+    mem_write(0x5B9A3_R, NOP_BYTES(4));
+
     return true;
 }
 

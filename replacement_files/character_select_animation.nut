@@ -191,9 +191,14 @@ function Initialize()
 
 		for( local i = 0; i < 2; i = ++i )
 		{
+			local custom_icon = ::manbow.Texture();
 			v = {};
 			v.icon <- ::manbow.Sprite();
-			v.icon.Initialize(::menu.cursor.texture, 160, i * 32, 32, 32);
+			if (!::config.misc.hide_profile_pictures() && ::network.icon[i] != null && custom_icon.CreateFromBase64(::network.icon[i], 32, 32)) {
+				v.icon.Initialize(custom_icon, 0, 0, 32, 32);
+			} else {
+				v.icon.Initialize(::menu.cursor.texture, 160, i * 32, 32, 32);
+			}
 			v.icon.ConnectRenderSlot(::graphics.slot.ui, 40000);
 			v.icon.x = i == 0 ? 16 : 1280 - 16 - 32;
 			v.icon.y = 36;

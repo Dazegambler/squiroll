@@ -116,6 +116,7 @@ CONFIG_BOL(NETWORK, HIDE_IP, "hide_ip", false);
 CONFIG_BOL(NETWORK, SHARE_WATCH_IP, "share_watch_ip", false);
 CONFIG_BOL(NETWORK, HIDE_NAME, "hide_name", false);
 CONFIG_BOL(NETWORK, PREVENT_INPUT_DROPS, "prevent_input_drops", true);
+CONFIG_BOL(NETWORK, HIDE_PROFILE_PICTURES, "hide_profile_pictures", false);
 
 #define PERF_SECTION_NAME "performance"
 CONFIG_BOL(PERF, CACHE_RSA, "cache_rsa", true);
@@ -190,6 +191,7 @@ static inline constexpr const char *const DEFAULT_CONFIGS[END_COUNTER - START_CO
     CONFIG_DEFAULT(NETWORK, SHARE_WATCH_IP),
     CONFIG_DEFAULT(NETWORK, HIDE_NAME),
     CONFIG_DEFAULT(NETWORK, PREVENT_INPUT_DROPS),
+    CONFIG_DEFAULT(NETWORK, HIDE_PROFILE_PICTURES),
 
     CONFIG_DEFAULT(PERF, CACHE_RSA),
     CONFIG_DEFAULT(PERF, BETTER_GAME_LOOP),
@@ -619,6 +621,11 @@ bool get_hide_name_enabled() {
 static char NETWORK_PREVENT_INPUT_DROPS_BUFFER[8]{ '\0' };
 bool get_prevent_input_drops() {
     return GET_BOOL_CONFIG(NETWORK, PREVENT_INPUT_DROPS);
+}
+
+static char NETWORK_HIDE_PROFILE_PICTURES_BUFFER[8]{ '\0' };
+bool get_hide_profile_pictures_enabled() {
+    return GET_BOOL_CONFIG(NETWORK, HIDE_PROFILE_PICTURES);
 }
 
 void set_ipv6_state(bool state) {

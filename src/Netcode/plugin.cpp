@@ -361,6 +361,7 @@ extern "C" {
                     sq_setbool(v, _SC("skip_intro"), get_skip_intro_enabled()); // This isn't a function because it only runs once anyway
                     //only add to config file if needed
                     //sq_setbool(v, _SC("hide_lobby"), false);//more useful once we get custom lobbies
+                    sq_setfunc(v, _SC("hide_profile_pictures"), SQPUSH_BOOL_FUNC(get_hide_profile_pictures_enabled()));
                 });
                 sq_createtable(v, _SC("ping"), [](HSQUIRRELVM v) {
                     sq_setfunc(v, _SC("update_consts"), update_ping_constants);

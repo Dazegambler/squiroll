@@ -245,8 +245,10 @@ static_assert(sizeof(ManbowNetworkInputSession) == 0x68);
 
 static std::atomic<bool> respond_to_punch_ping = {};
 
+#if !ALT_PACKET9_FIX
 // TODO: Is this variable name inverted?
 static bool not_in_match = false;
+#endif
 
 #define USE_ORIGINAL_RESYNC 1
 
@@ -435,6 +437,7 @@ int WSAAPI my_WSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWO
     switch (packet->type) {
         default:
             break;
+#if !ALT_PACKET9_FIX
         case PACKET_TYPE_9:
             if (not_in_match) {
                 if (lpNumberOfBytesSent) {
@@ -447,6 +450,7 @@ int WSAAPI my_WSASendTo(SOCKET s, LPWSABUF lpBuffers, DWORD dwBufferCount, LPDWO
         case PACKET_TYPE_11:
             not_in_match = false;
             break;
+#endif
         case PACKET_TYPE_18:
             if (
                 enable_netplay &&
@@ -492,6 +496,7 @@ void thisfastcall packet_parser_hook(
     switch (packet_raw->type) {
         default:
             break;
+#if !ALT_PACKET9_FIX
         // TODO: These packet numbers don't seem quite
         // right based on the variable name...
         case PACKET_TYPE_0: case PACKET_TYPE_12: case PACKET_TYPE_13:
@@ -505,6 +510,7 @@ void thisfastcall packet_parser_hook(
         case PACKET_TYPE_19:
             not_in_match = false;
             break;
+#endif
         case PACKET_TYPE_PUNCH_PING: {
             if (
                 respond_to_punch_ping &&
@@ -867,5 +873,10 @@ void patch_netplay() {
         mem_write(0x172AAF_R, AF_INET6);
     }
     */
+
+#if ALT_PACKET9_FIX
+    // Increase timeout until the client sends another packet 9
+    mem_write(0x1797A9_R, (uint32_t)2048);
+#endif
 }
 

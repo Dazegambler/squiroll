@@ -358,6 +358,7 @@ extern "C" {
                     sq_setfunc(v, _SC("share_watch_ip"), SQPUSH_BOOL_FUNC(get_share_watch_ip_enabled()));
                     sq_setfunc(v, _SC("hide_wip"), SQPUSH_BOOL_FUNC(get_hide_wip_enabled()));
                     sq_setfunc(v, _SC("hide_name"), SQPUSH_BOOL_FUNC(get_hide_name_enabled()));
+                    sq_setbool(v, _SC("auto_switch"),get_auto_switch());
                     sq_setbool(v, _SC("skip_intro"), get_skip_intro_enabled()); // This isn't a function because it only runs once anyway
                     //only add to config file if needed
                     //sq_setbool(v, _SC("hide_lobby"), false);//more useful once we get custom lobbies

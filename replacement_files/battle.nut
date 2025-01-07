@@ -109,7 +109,7 @@ function Create( param )
 		::manbow.CompileFile("data/actor/status/gauge_vs.nut", this.gauge);
 		::manbow.CompileFile("data/script/battle/battle_practice.nut", this);
 		HideUISetup(60);
-		framedisplaysetup();
+		//framedisplaysetup();
 		inputdisplaysetup(0);
 		inputdisplaysetup(1);
 		break;
@@ -243,6 +243,7 @@ function framedisplaysetup() {
 	check p1.motion to have frame data of one attack only
 	CHECK FLAGSTATE
 	bit 1 is input lock, no matter what you press nothing will happen while bit 1 is active
+	bit 16777216 is center lane fall exception
 	MELEE:
 	F5A
 	startup 256
@@ -310,7 +311,8 @@ function framedisplaysetup() {
 	frame.Update <- function () {
 		local p1 = ::battle.team[0].current;
 		local frameData = p1.GetKeyFrameData();
-		// ::debug.print_value(p1.attackLV);
+		local attackData = p1.temp_atk_data;
+		// ::debug.print_value(p1.cancelLV);
 		// return;
 		local fre = p1.IsFree();
 		// local att = p1.IsAttack();
@@ -340,7 +342,8 @@ function framedisplaysetup() {
 			if (p1.flagAttack & v)bin1 += format("%d,",v);
 		}
 		bin1 += "]";
-		local str = format("startup:%2d||active:%2d||recovery:%2d||dmg:%5s||flag:%s||attack:%s\n",data[0]+1,data[1],data[2],(dmg!=0).tostring(),bin,bin1);
+		local str = format("startup:%2d||active:%2d||recovery:%2d||dmg:%5s||flag:%s%s\n",
+							data[0]+1,data[1],data[2],(dmg!=0).tostring(),bin,bin1);
 		if (this.str != str && fre == false){
 			::debug.print((this.str = str));
 		}

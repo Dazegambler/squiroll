@@ -635,7 +635,7 @@ function UpdateMatch()
 				return;
 			}
 		}else if (::LOBBY.GetLobbyUserState() == 200){
-			if (this.timeout++ > 1280){
+			if (this.timeout++ > 31250){//roughly 5 mins 60 fps
 				// ::debug.print("HOSTING NOW!!!\n");
 				::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING);
 				this.timeout = 0;

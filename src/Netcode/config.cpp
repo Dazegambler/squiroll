@@ -96,6 +96,15 @@ CONFIG_BOL(INPUT2, SPACING, "spacing", false);
 CONFIG_INT(INPUT2, TIMER, "timer", 200);
 CONFIG_BOL(INPUT2, RAW_INPUT, "raw_input", false);
 
+#define FRAME_DATA_SECTION_NAME "frame_data_display"
+CONFIG_BOL(FRAME_DATA, ENABLED, "enabled", false);
+CONFIG_INT(FRAME_DATA, X, "x", 640);
+CONFIG_INT(FRAME_DATA, Y, "y", 705);
+CONFIG_FLT(FRAME_DATA, SCALE_X, "scale_x", 1.0);
+CONFIG_FLT(FRAME_DATA, SCALE_Y, "scale_y", 1.0);
+CONFIG_HEX(FRAME_DATA, COLOR, "color", FFFFFFFF);
+CONFIG_INT(FRAME_DATA,TIMER,"timer",180);
+
 #define HITBOX_VIS_SECTION_NAME "hitbox_vis"
 CONFIG_BOL(HITBOX_VIS, ENABLED, "enabled", false);
 CONFIG_INT(HITBOX_VIS, BORDER_WIDTH, "border_width", 2);
@@ -185,6 +194,14 @@ static inline constexpr const char *const DEFAULT_CONFIGS[END_COUNTER - START_CO
     CONFIG_DEFAULT(HITBOX_VIS, PLAYER_UNGRAB_COLOR),
     CONFIG_DEFAULT(HITBOX_VIS, PLAYER_UNHIT_UNGRAB_COLOR),
     CONFIG_DEFAULT(HITBOX_VIS, MISC_HURT_COLOR),
+
+    CONFIG_DEFAULT(FRAME_DATA, ENABLED),
+    CONFIG_DEFAULT(FRAME_DATA, X),
+    CONFIG_DEFAULT(FRAME_DATA, Y),
+    CONFIG_DEFAULT(FRAME_DATA, SCALE_X),
+    CONFIG_DEFAULT(FRAME_DATA, SCALE_Y),
+    CONFIG_DEFAULT(FRAME_DATA, COLOR),
+    CONFIG_DEFAULT(FRAME_DATA, TIMER),
 
     CONFIG_DEFAULT(NETWORK, IPV6),
     CONFIG_DEFAULT(NETWORK, NETPLAY),
@@ -665,6 +682,45 @@ bool get_dev_mode_enabled() {
 
 void set_discord_enabled(bool state) {
     set_config_string(MISC_SECTION_NAME, MISC_DISCORD_KEY, bool_str(state));
+}
+
+// ====================
+// FRAME DATA
+// ====================
+
+static char FRAME_DATA_ENABLED_BUFFER[8]{ '\0' };
+bool get_frame_data_enabled() {
+    return GET_BOOL_CONFIG(PING, ENABLED);
+}
+
+static char FRAME_DATA_X_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
+int32_t get_frame_data_x() {
+    return GET_INT_CONFIG(PING, X);
+}
+
+static char FRAME_DATA_Y_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{'\0'};
+int32_t get_frame_data_y() {
+    return GET_INT_CONFIG(PING, Y);
+}
+
+static char FRAME_DATA_SCALE_X_BUFFER[FLOAT_BUFFER_SIZE<float>]{'\0'};
+float get_frame_data_scale_x() {
+    return GET_FLOAT_CONFIG(PING, SCALE_X);
+}
+
+static char FRAME_DATA_SCALE_Y_BUFFER[FLOAT_BUFFER_SIZE<float>]{'\0'};
+float get_frame_data_scale_y() {
+    return GET_FLOAT_CONFIG(PING, SCALE_Y);
+}
+
+static char FRAME_DATA_COLOR_BUFFER[INTEGER_BUFFER_SIZE<uint32_t>]{'\0'};
+uint32_t get_frame_data_color() {
+    return GET_HEX_CONFIG(PING, COLOR);
+}
+
+static char FRAME_DATA_TIMER_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
+int32_t get_frame_data_timer() {
+    return GET_INT_CONFIG(FRAME_DATA, TIMER);
 }
 
 // ====================

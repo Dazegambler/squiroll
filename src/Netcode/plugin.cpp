@@ -163,6 +163,20 @@ static inline void set_inputp2_constants(HSQUIRRELVM v) {
     sq_setbool(v, _SC("raw_input"), get_inputp2_raw_input());
 }
 
+static inline void set_frame_data_constants(HSQUIRRELVM v) {
+    sq_setbool(v, _SC("enabled"), get_frame_data_enabled());
+    sq_setinteger(v, _SC("X"), get_frame_data_x());
+    sq_setinteger(v, _SC("Y"), get_frame_data_y());
+    sq_setfloat(v, _SC("SX"), get_frame_data_scale_x());
+    sq_setfloat(v, _SC("SY"), get_frame_data_scale_y());
+    uint32_t color = get_frame_data_color();
+    sq_setfloat(v, _SC("blue"), (float)(uint8_t)color / 255.0f);
+    sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);
+    sq_setfloat(v, _SC("red"), (float)(uint8_t)(color >> 16) / 255.0f);
+    sq_setfloat(v, _SC("alpha"), (float)(uint8_t)(color >> 24) / 255.0f);
+    sq_setinteger(v, _SC("timer"),get_frame_data_timer());
+}
+
 SQInteger update_ping_constants(HSQUIRRELVM v) {
     sq_pushroottable(v);
 
@@ -182,6 +196,17 @@ SQInteger update_input_constants(HSQUIRRELVM v) {
             sq_edit(v, _SC("p1"), set_inputp1_constants);
             sq_edit(v, _SC("p2"), set_inputp2_constants);
         });
+    });
+
+    sq_pop(v, 1);
+    return 0;
+}
+
+SQInteger update_frame_data_constants(HSQUIRRELVM v) {
+    sq_pushroottable(v);
+
+    sq_edit(v, _SC("setting"), [](HSQUIRRELVM v) {
+        sq_edit(v, _SC("frame_data"), set_frame_data_constants);
     });
 
     sq_pop(v, 1);
@@ -367,6 +392,24 @@ extern "C" {
                 sq_createtable(v, _SC("ping"), [](HSQUIRRELVM v) {
                     sq_setfunc(v, _SC("update_consts"), update_ping_constants);
                     set_ping_constants(v);
+                });
+                sq_createtable(v, _SC("frame_data"), [](HSQUIRRELVM v) {
+                    sq_setfunc(v, _SC("update_consts"), update_frame_data_constants);
+                    sq_setfunc(v, _SC("IsFrameActive"), [](HSQUIRRELVM v) -> SQInteger {
+                    void* inst;
+                    if (sq_gettop(v) != 2 ||
+                        SQ_FAILED(sq_getinstanceup(v, 2, &inst, nullptr)))
+                    {
+                        return sq_throwerror(v, "Invalid arguments, expected: <instance>");
+                    }
+                    sq_pushbool(v,IsFrameActive((ManbowActor2D*)inst));
+                    return 1;
+                });
+                sq_setfunc(v, _SC("clear"), [](HSQUIRRELVM v) -> SQInteger {
+                    overlay_clear();
+                    return 0;
+                });
+                    set_frame_data_constants(v);
                 });
                 sq_createtable(v, _SC("input_display"), [](HSQUIRRELVM v) {
                     sq_setfunc(v, _SC("update_consts"), update_input_constants);

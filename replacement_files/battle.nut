@@ -109,7 +109,7 @@ function Create( param )
 		::manbow.CompileFile("data/actor/status/gauge_vs.nut", this.gauge);
 		::manbow.CompileFile("data/script/battle/battle_practice.nut", this);
 		HideUISetup(60);
-		//framedisplaysetup();
+		framedisplaysetup();
 		inputdisplaysetup(0);
 		inputdisplaysetup(1);
 		break;
@@ -228,18 +228,6 @@ function Create( param )
 
 function framedisplaysetup() {
 	/*
-	IsAttack() continously attacking still increases the count
-	value types:
-	0 nothing
-	1 melee,grab A
-	2 bullet,occult B A+B
-	3 special C
-	4 SC A
-	5 LW C+E
-	6 tag E
-	IsFree() doesn't really work, seems to always increase
-	GetKeyFrameData() seems to have useful things
-	damagePoint active frames
 	check p1.motion to have frame data of one attack only
 	CHECK FLAGSTATE
 	bit 1 is input lock, no matter what you press nothing will happen while bit 1 is active
@@ -290,9 +278,9 @@ function framedisplaysetup() {
 	256
 	check flagattack
 	*/
+	::setting.frame_data.update_consts();
 	local frame = {};
 	frame.motion <- 0;
-	frame.test <- false;
 	frame.data <- [
 		0,//startup
 		0,//active
@@ -300,56 +288,50 @@ function framedisplaysetup() {
 	];
 	frame.timer <- 0;
 	frame.text <- ::font.CreateSystemString("");
-	frame.text.sx = ::setting.ping.SX;
-	frame.text.sy = ::setting.ping.SY;
-	frame.text.red = ::setting.ping.red;
-	frame.text.green = ::setting.ping.green;
-	frame.text.blue = ::setting.ping.blue;
-	frame.text.alpha = ::setting.ping.alpha;
-	frame.text.ConnectRenderSlot(::graphics.slot.front, 1);
+	frame.text.sx = ::setting.frame_data.SX;
+	frame.text.sy = ::setting.frame_data.SY;
+	frame.text.red = ::setting.frame_data.red;
+	frame.text.green = ::setting.frame_data.green;
+	frame.text.blue = ::setting.frame_data.blue;
+	frame.text.alpha = ::setting.frame_data.alpha;
+	frame.text.ConnectRenderSlot(::graphics.slot.status, 1);
 	frame.str <- "";
 	frame.Update <- function () {
 		local p1 = ::battle.team[0].current;
-		local frameData = p1.GetKeyFrameData();
-		local attackData = p1.temp_atk_data;
-		// ::debug.print_value(p1.cancelLV);
-		// return;
 		local fre = p1.IsFree();
-		// local att = p1.IsAttack();
-		// local rcvr = frameData.recover;
 		local flag = p1.flagState;
-		local dmg = frameData.damagePoint;
+		local dmg = ::setting.frame_data.IsFrameActive(::battle.team[0].current);
 		local mot = p1.motion;
 		if ( fre == false ) {
-			this.timer = 120;
+			this.timer = ::setting.frame_data.timer;
 			if (this.motion != mot) {
 				this.data = [0,0,0];
 				this.motion = mot
 			}
-			data[dmg!= 0 && ((flag & 0x320) || (flag & 0x120)) ? 1 : ((flag & 0x420)) ? 2 : 0]++;//was 0x320 0x220
+			data[dmg && ((flag & 0x320) || (flag & 0x120)) ? 1 : ((flag & 0x420)) ? 2 : 0]++;//was 0x320 0x220
 		}
 		else {this.data = [0,0,0];this.timer--;}
 		//local str = format("startup:%d||active:%d||recovery:%d||frame:%d\n",data[0],data[1],data[2],p1.frame);
-		local bin = "[";
-		for (local i = 32 -1; i >= 0; i--){
-			local v = 1 << i;
-			if (p1.flagState & v)bin += format("%d,",v);
-		}
-		bin += "]";
-		local bin1 = "[";
-		for (local i = 32 -1; i >= 0; i--){
-			local v = 1 << i;
-			if (p1.flagAttack & v)bin1 += format("%d,",v);
-		}
-		bin1 += "]";
-		local str = format("startup:%2d||active:%2d||recovery:%2d||dmg:%5s||flag:%s%s\n",
-							data[0]+1,data[1],data[2],(dmg!=0).tostring(),bin,bin1);
+		// local bin = "[";
+		// for (local i = 32 -1; i >= 0; i--){
+		// 	local v = 1 << i;
+		// 	if (p1.flagState & v)bin += format("%d,",v);
+		// }
+		// bin += "]";
+		// local bin1 = "[";
+		// for (local i = 32 -1; i >= 0; i--){
+		// 	local v = 1 << i;
+		// 	if (p1.flagAttack & v)bin1 += format("%d,",v);
+		// }
+		// bin1 += "]";
+		local str = format("startup:%2d||active:%2d||recovery:%2d\n",
+							data[0]+1,data[1],data[2]);
 		if (this.str != str && fre == false){
-			::debug.print((this.str = str));
+			this.str = str;
 		}
 		this.text.Set(this.timer > 0 ? this.str : "");
-		this.text.x = ::setting.ping.X - (this.text.width / 2);
-		this.text.y = (::setting.ping.Y - this.text.height);
+		this.text.x = ::setting.frame_data.X - (this.text.width / 2);
+		this.text.y = (::setting.frame_data.Y - this.text.height);
 	}
 	AddTask(frame);
 	this.frame_task = frame;

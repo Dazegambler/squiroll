@@ -538,6 +538,12 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
     }
 }
 
+bool IsFrameActive(ManbowActor2D* actor) {
+    for (const auto& data : actor->anim_controller->hit_boxes) {
+    return data->obj_ptr->m_collisionShape->shape != 0;
+    }
+}
+
 static forceinline void clip_to_screen(float* dst, const float* src) {
     dst[0] = (1.0f + src[0]) * (1280.0f / 2.0f);
     dst[1] = (1.0f - src[1]) * (720.0f / 2.0f);

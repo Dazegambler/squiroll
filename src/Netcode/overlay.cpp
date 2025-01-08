@@ -542,6 +542,7 @@ bool IsFrameActive(ManbowActor2D* actor) {
     for (const auto& data : actor->anim_controller->hit_boxes) {
     return data->obj_ptr->m_collisionShape->shape != 0;
     }
+    return false;//make compiler shut up
 }
 
 static forceinline void clip_to_screen(float* dst, const float* src) {

@@ -99,9 +99,9 @@ CONFIG_BOL(INPUT2, RAW_INPUT, "raw_input", false);
 #define FRAME_DATA_SECTION_NAME "frame_data_display"
 CONFIG_BOL(FRAME_DATA, ENABLED, "enabled", false);
 CONFIG_INT(FRAME_DATA, X, "x", 640);
-CONFIG_INT(FRAME_DATA, Y, "y", 705);
-CONFIG_FLT(FRAME_DATA, SCALE_X, "scale_x", 1.0);
-CONFIG_FLT(FRAME_DATA, SCALE_Y, "scale_y", 1.0);
+CONFIG_INT(FRAME_DATA, Y, "y", 135);
+CONFIG_FLT(FRAME_DATA, SCALE_X, "scale_x", 0.9);
+CONFIG_FLT(FRAME_DATA, SCALE_Y, "scale_y", 0.9);
 CONFIG_HEX(FRAME_DATA, COLOR, "color", FFFFFFFF);
 CONFIG_INT(FRAME_DATA,TIMER,"timer",180);
 
@@ -690,32 +690,32 @@ void set_discord_enabled(bool state) {
 
 static char FRAME_DATA_ENABLED_BUFFER[8]{ '\0' };
 bool get_frame_data_enabled() {
-    return GET_BOOL_CONFIG(PING, ENABLED);
+    return GET_BOOL_CONFIG(FRAME_DATA, ENABLED);
 }
 
 static char FRAME_DATA_X_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
 int32_t get_frame_data_x() {
-    return GET_INT_CONFIG(PING, X);
+    return GET_INT_CONFIG(FRAME_DATA, X);
 }
 
 static char FRAME_DATA_Y_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{'\0'};
 int32_t get_frame_data_y() {
-    return GET_INT_CONFIG(PING, Y);
+    return GET_INT_CONFIG(FRAME_DATA, Y);
 }
 
 static char FRAME_DATA_SCALE_X_BUFFER[FLOAT_BUFFER_SIZE<float>]{'\0'};
 float get_frame_data_scale_x() {
-    return GET_FLOAT_CONFIG(PING, SCALE_X);
+    return GET_FLOAT_CONFIG(FRAME_DATA, SCALE_X);
 }
 
 static char FRAME_DATA_SCALE_Y_BUFFER[FLOAT_BUFFER_SIZE<float>]{'\0'};
 float get_frame_data_scale_y() {
-    return GET_FLOAT_CONFIG(PING, SCALE_Y);
+    return GET_FLOAT_CONFIG(FRAME_DATA, SCALE_Y);
 }
 
 static char FRAME_DATA_COLOR_BUFFER[INTEGER_BUFFER_SIZE<uint32_t>]{'\0'};
 uint32_t get_frame_data_color() {
-    return GET_HEX_CONFIG(PING, COLOR);
+    return GET_HEX_CONFIG(FRAME_DATA, COLOR);
 }
 
 static char FRAME_DATA_TIMER_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };

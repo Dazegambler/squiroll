@@ -109,7 +109,7 @@ function Create( param )
 		::manbow.CompileFile("data/actor/status/gauge_vs.nut", this.gauge);
 		::manbow.CompileFile("data/script/battle/battle_practice.nut", this);
 		HideUISetup(60);
-		framedisplaysetup();
+		if (::setting.frame_data.enabled)framedisplaysetup();
 		inputdisplaysetup(0);
 		inputdisplaysetup(1);
 		break;
@@ -281,6 +281,7 @@ function framedisplaysetup() {
 	::setting.frame_data.update_consts();
 	local frame = {};
 	frame.motion <- 0;
+	frame.hitstop <- 0;
 	frame.data <- [
 		0,//startup
 		0,//active
@@ -300,17 +301,20 @@ function framedisplaysetup() {
 		local p1 = ::battle.team[0].current;
 		local fre = p1.IsFree();
 		local flag = p1.flagState;
-		local dmg = ::setting.frame_data.IsFrameActive(::battle.team[0].current);
+		local active = ::setting.frame_data.IsFrameActive(::battle.team[0].current);
 		local mot = p1.motion;
-		if ( fre == false ) {
+		local hstop = p1.hitStopTime;
+		if ( fre == false) {
 			this.timer = ::setting.frame_data.timer;
 			if (this.motion != mot) {
 				this.data = [0,0,0];
+				this.hitstop = 0;
 				this.motion = mot
 			}
-			data[dmg && ((flag & 0x320) || (flag & 0x120)) ? 1 : ((flag & 0x420)) ? 2 : 0]++;//was 0x320 0x220
+			this.data[active && ((flag & 0x320) || (flag & 0x120)) ? 1 : ((flag & 0x420)) ? 2 : 0]++;
+			if(hstop != 0)this.hitstop++;
 		}
-		else {this.data = [0,0,0];this.timer--;}
+		else {this.data = [0,0,0];this.hitstop = 0;this.timer--;}
 		//local str = format("startup:%d||active:%d||recovery:%d||frame:%d\n",data[0],data[1],data[2],p1.frame);
 		// local bin = "[";
 		// for (local i = 32 -1; i >= 0; i--){
@@ -324,14 +328,14 @@ function framedisplaysetup() {
 		// 	if (p1.flagAttack & v)bin1 += format("%d,",v);
 		// }
 		// bin1 += "]";
-		local str = format("startup:%2d||active:%2d||recovery:%2d\n",
-							data[0]+1,data[1],data[2]);
+		local str = format("startup:%2d||active:%2d||recovery:%2d",
+							data[0]+1,data[1]-this.hitstop,data[2]);
 		if (this.str != str && fre == false){
 			this.str = str;
 		}
 		this.text.Set(this.timer > 0 ? this.str : "");
-		this.text.x = ::setting.frame_data.X - (this.text.width / 2);
-		this.text.y = (::setting.frame_data.Y - this.text.height);
+		this.text.x = ::setting.frame_data.X - ((this.text.width * this.text.sx) / 2);
+		this.text.y = ::setting.frame_data.Y - this.text.height;
 	}
 	AddTask(frame);
 	this.frame_task = frame;

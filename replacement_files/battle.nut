@@ -315,7 +315,6 @@ function framedisplaysetup() {
 			if(hstop != 0)this.hitstop++;
 		}
 		else {this.data = [0,0,0];this.hitstop = 0;this.timer--;}
-		//local str = format("startup:%d||active:%d||recovery:%d||frame:%d\n",data[0],data[1],data[2],p1.frame);
 		// local bin = "[";
 		// for (local i = 32 -1; i >= 0; i--){
 		// 	local v = 1 << i;
@@ -332,6 +331,7 @@ function framedisplaysetup() {
 							data[0]+1,data[1]-this.hitstop,data[2]);
 		if (this.str != str && fre == false){
 			this.str = str;
+			// ::debug.print(str);
 		}
 		this.text.Set(this.timer > 0 ? this.str : "");
 		this.text.x = ::setting.frame_data.X - ((this.text.width * this.text.sx) / 2);
@@ -427,7 +427,7 @@ function HideUISetup(hold) {
 		local b4 = ::input_all.b4;
 		if ((b2 != 0 && b4 != 0) &&
 			b2 % hold == 0 && b4 % hold == 0){
-			if (!(active = !active))::battle.gauge.Hide();
+			if (!(this.active = !this.active))::battle.gauge.Hide();
 			else{::battle.gauge.Show(0);}
 		}
 	}

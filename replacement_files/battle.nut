@@ -357,7 +357,7 @@ function framedisplaysetup() {
 					case 0x8000://32768
 						str = "melee immune,";
 						break;
-					case 0x10000:
+					case 0x10000://65536
 						str = "bullet immune,";
 						break;
 					case 0x1000000://16777216

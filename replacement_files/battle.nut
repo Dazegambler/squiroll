@@ -321,7 +321,7 @@ function framedisplaysetup() {
 		local bin = "[";
 		for (local i = 32 -1; i >= 0; i--){
 			local v = 1 << i;
-			local str;
+			local str = "";
 			if (p1.flagState & v){
 				switch (v){
 					case 1:

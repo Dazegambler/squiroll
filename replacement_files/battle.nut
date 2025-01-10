@@ -274,8 +274,11 @@ function framedisplaysetup() {
 	recovery (1024,512,32)(1024,32)
 	32 is for recovery
 	512 is for active
+	1024 is for not dash cancel
+	16777216 is no land
+	1 is input lock
 	288 maybe for some moves?
-	256
+	256 startup
 	check flagattack
 	*/
 	::setting.frame_data.update_consts();
@@ -311,27 +314,52 @@ function framedisplaysetup() {
 				this.hitstop = 0;
 				this.motion = mot
 			}
-			this.data[active && ((flag & 0x320) || (flag & 0x120)) ? 1 : ((flag & 0x420)) ? 2 : 0]++;
+			this.data[active && ((flag & 0x320) || (flag & 0x120)) ? 1 : ((flag & 0x421)) ? 2 : 0]++;
 			if(hstop != 0)this.hitstop++;
 		}
 		else {this.data = [0,0,0];this.hitstop = 0;this.timer--;}
-		// local bin = "[";
-		// for (local i = 32 -1; i >= 0; i--){
-		// 	local v = 1 << i;
-		// 	if (p1.flagState & v)bin += format("%d,",v);
-		// }
-		// bin += "]";
-		// local bin1 = "[";
-		// for (local i = 32 -1; i >= 0; i--){
-		// 	local v = 1 << i;
-		// 	if (p1.flagAttack & v)bin1 += format("%d,",v);
-		// }
-		// bin1 += "]";
-		local str = format("startup:%2d||active:%2d||recovery:%2d",
-							data[0]+1,data[1]-this.hitstop,data[2]);
+		local bin = "[";
+		for (local i = 32 -1; i >= 0; i--){
+			local v = 1 << i;
+			local str;
+			if (p1.flagState & v){
+				switch (v){
+					case 1:
+						str = "no input,";
+						break;
+					case 32:
+						str = "recovery,";
+						break;
+					case 256:
+						str = "startup,";
+					case 512:
+						str = "active,";
+						break;
+					case 1024:
+						str = "no dash cancel,";
+						break;
+					case 16777216:
+						str = "no landing,";
+						break;
+					default:
+						str = format("%d,",v);
+						break;
+				}
+			}
+			bin += str;
+		}
+		bin += "]";
+		local bin1 = "[";
+		for (local i = 32 -1; i >= 0; i--){
+			local v = 1 << i;
+			if (p1.flagAttack & v)bin1 += format("%d,",v);
+		}
+		bin1 += "]";
+		local str = format("startup:%2d||active:%2d||recovery:%2d||test:%d||flag:%s%s\n",
+							data[0]+1,data[1]-this.hitstop,data[2],p1.IsAttack(),bin,bin1);
 		if (this.str != str && fre == false){
 			this.str = str;
-			// ::debug.print(str);
+			::debug.print(str);
 		}
 		this.text.Set(this.timer > 0 ? this.str : "");
 		this.text.x = ::setting.frame_data.X - ((this.text.width * this.text.sx) / 2);

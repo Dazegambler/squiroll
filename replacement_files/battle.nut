@@ -302,19 +302,19 @@ function framedisplaysetup() {
 	frame.str <- "";
 	frame.Update <- function () {
 		local p1 = ::battle.team[0].current;
-		local fre = p1.IsFree();
 		local flag = p1.flagState;
+		local fre = p1.IsFree();
 		local active = ::setting.frame_data.IsFrameActive(::battle.team[0].current);
 		local mot = p1.motion;
 		local hstop = p1.hitStopTime;
-		if ( fre == false) {
+		if ( !fre && p1.IsAttack() != 0) {
 			this.timer = ::setting.frame_data.timer;
 			if (this.motion != mot) {
 				this.data = [0,0,0];
 				this.hitstop = 0;
 				this.motion = mot
 			}
-			this.data[active && ((flag & 0x320) || (flag & 0x120)) ? 1 : ((flag & 0x421)) ? 2 : 0]++;
+			this.data[active && ((flag & 0x320) || (flag & 0x120)) ? 1 : ((flag & 0x420)) ? 2 : 0]++;
 			if(hstop != 0)this.hitstop++;
 		}
 		else {this.data = [0,0,0];this.hitstop = 0;this.timer--;}
@@ -324,22 +324,47 @@ function framedisplaysetup() {
 			local str = "";
 			if (p1.flagState & v){
 				switch (v){
-					case 1:
+					case 0x1://1
 						str = "no input,";
 						break;
-					case 32:
-						str = "recovery,";
+					case 0x10://16
+						str = "grab,";
 						break;
-					case 256:
-						str = "startup,";
-					case 512:
-						str = "active,";
+					case 0x20://32
+						str = "special cancel,";
 						break;
-					case 1024:
-						str = "no dash cancel,";
+					case 0x100://256
+						str = "can be counter hit,";
 						break;
-					case 16777216:
+					case 0x200://512
+						str = "can dial,";
+						break;
+					case 0x400://1024
+						str = "bullet cancel,";
+						break;
+					case 0x800://2048
+						str = "attack block,";
+						break;
+					case 0x1000://4096
+						str = "graze,";
+						break;
+					case 0x2000://8192
+						str = "no grab,";
+						break;
+					case 0x4000://16384
+						str = "dash cancel,";
+						break;
+					case 0x8000://32768
+						str = "melee immune,";
+						break;
+					case 0x10000:
+						str = "bullet immune,";
+						break;
+					case 0x1000000://16777216
 						str = "no landing,";
+						break;
+					case 0x80000000://2147483648
+						str = "invisible,";
 						break;
 					default:
 						str = format("%d,",v);
@@ -357,7 +382,7 @@ function framedisplaysetup() {
 		bin1 += "]";
 		local str = format("startup:%2d||active:%2d||recovery:%2d||test:%d||flag:%s%s\n",
 							data[0]+1,data[1]-this.hitstop,data[2],p1.IsAttack(),bin,bin1);
-		if (this.str != str && fre == false){
+		if (this.str != str && !fre && p1.IsAttack != 0){
 			this.str = str;
 			::debug.print(str);
 		}

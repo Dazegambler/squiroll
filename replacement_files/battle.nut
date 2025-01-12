@@ -316,7 +316,7 @@ function framedisplaysetup() {
 				this.motion = mot
 			}
 			// this.data[active && ((flag & 0x320) || (flag & 0x120)) ? 1 : ((flag & 0x420)) ? 2 : 0]++;//keeping just to be sure
-			this.data[(flag & 0x420) ? active ? 1 : 2 : 0]++;
+			this.data[(flag & 0x420) ? active ? function () {if(data[2] != 0){data[3] = data[2];data[2] = 0;};return 1;}() : data[1] != 0 ? 2 : 0 : 0]++;
 			if(hstop != 0)this.hitstop++;
 		}
 		else {this.data = [0,0,0,0];this.hitstop = 0;this.timer--;}

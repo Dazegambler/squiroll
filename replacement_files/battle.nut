@@ -289,6 +289,7 @@ function framedisplaysetup() {
 		0,//startup
 		0,//active
 		0//recovery
+		0,//misc
 	];
 	frame.timer <- 0;
 	frame.text <- ::font.CreateSystemString("");
@@ -310,14 +311,15 @@ function framedisplaysetup() {
 		if ( !fre && p1.IsAttack() != 0) {
 			this.timer = ::setting.frame_data.timer;
 			if (this.motion != mot) {
-				this.data = [0,0,0];
+				this.data = [0,0,0,0];
 				this.hitstop = 0;
 				this.motion = mot
 			}
-			this.data[active && ((flag & 0x320) || (flag & 0x120)) ? 1 : ((flag & 0x420)) ? 2 : 0]++;
+			// this.data[active && ((flag & 0x320) || (flag & 0x120)) ? 1 : ((flag & 0x420)) ? 2 : 0]++;//keeping just to be sure
+			this.data[(flag & 0x420) ? active ? 1 : 2 : 0]++;
 			if(hstop != 0)this.hitstop++;
 		}
-		else {this.data = [0,0,0];this.hitstop = 0;this.timer--;}
+		else {this.data = [0,0,0,0];this.hitstop = 0;this.timer--;}
 		local bin = "[";
 		for (local i = 32 -1; i >= 0; i--){
 			local v = 1 << i;
@@ -328,7 +330,7 @@ function framedisplaysetup() {
 						str = "no input,";
 						break;
 					case 0x10://16
-						str = "grab,";
+						str = "block,";
 						break;
 					case 0x20://32
 						str = "special cancel,";
@@ -360,6 +362,9 @@ function framedisplaysetup() {
 					case 0x10000://65536
 						str = "bullet immune,";
 						break;
+					case 0x200000://2097152
+						str = "knock check,";
+						break;
 					case 0x1000000://16777216
 						str = "no landing,";
 						break;
@@ -374,15 +379,15 @@ function framedisplaysetup() {
 			bin += str;
 		}
 		bin += "]";
-		local bin1 = "[";
-		for (local i = 32 -1; i >= 0; i--){
-			local v = 1 << i;
-			if (p1.flagAttack & v)bin1 += format("%d,",v);
-		}
-		bin1 += "]";
-		local str = format("startup:%2d||active:%2d||recovery:%2d||test:%d||flag:%s%s\n",
-							data[0]+1,data[1]-this.hitstop,data[2],p1.IsAttack(),bin,bin1);
-		if (this.str != str && !fre && p1.IsAttack != 0){
+		// local bin1 = "[";
+		// for (local i = 32 -1; i >= 0; i--){
+		// 	local v = 1 << i;
+		// 	if (p1.flagAttack & v)bin1 += format("%d,",v);
+		// }
+		// bin1 += "]";
+		local str = format("startup:%2d||active:%2d/%2d||recovery:%2d||flag:%2s\n",
+							data[0]+1,data[1]-this.hitstop,data[3],data[2],bin);
+		if (this.str != str && !fre && p1.IsAttack() != 0){
 			this.str = str;
 			::debug.print(str);
 		}

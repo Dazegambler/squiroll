@@ -538,12 +538,33 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
     }
 }
 
+// bool IsFrameActive(ManbowActor2D* actor) {
+//     for (const auto& data : actor->anim_controller->hit_boxes) {
+//     return data->obj_ptr->m_collisionShape->shape != 0;
+//     }
+//     return false;//make compiler shut up
+// }
+
 bool IsFrameActive(ManbowActor2D* actor) {
-    for (const auto& data : actor->anim_controller->hit_boxes) {
-    return data->obj_ptr->m_collisionShape->shape != 0;
+    if (uint32_t group_size = actor->actor2d_group->size){
+        ManbowActor2D** actor_ptr = actor->actor2d_group->actor_vec.data();
+        do{
+            ManbowActor2D* _actor = *actor_ptr++;
+            if (!_actor->anim_controller || 
+                (_actor->active_flags & 1) == 0 || 
+                (_actor->group_flags & actor->actor2d_group->update_mask) == 0 || 
+                !_actor->callback_group)
+                continue;
+            for (const auto& data : _actor->anim_controller->hit_boxes) {
+                if(data->obj_ptr->m_collisionShape->shape != 0){
+                    return true;
+                }
+            }
+        }while (--group_size);
     }
     return false;//make compiler shut up
 }
+
 
 static forceinline void clip_to_screen(float* dst, const float* src) {
     dst[0] = (1.0f + src[0]) * (1280.0f / 2.0f);

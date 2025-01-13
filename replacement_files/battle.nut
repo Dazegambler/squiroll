@@ -245,9 +245,8 @@ function framedisplaysetup() {
 	frame.hitstop <- 0;
 	frame.data <- [
 		0,//startup
-		0,//active
-		0//recovery
-		0,//misc
+		[0],//active
+		0,//recovery
 	];
 	frame.timer <- 0;
 	frame.text <- ::font.CreateSystemString("");
@@ -279,20 +278,29 @@ function framedisplaysetup() {
 		if ( !fre && (p1.IsAttack() > 0 && p1.IsAttack() < 6)) {
 			this.timer = ::setting.frame_data.timer;
 			if (this.motion != p1.motion) {
-				this.data = [0,0,0,0];
+				this.data = [0,[0],0];
 				this.hitstop = 0;
 				this.motion = p1.motion;
 			}
-			// this.data[(p1.flagState & 0x420) ? active ? function () {if(data[2] != 0){data[3] = data[2];data[2] = 0;};return 1;}() : data[1] != 0 ? 2 : 0 : 0]++;
-			this.data[active ? function () {if(data[2] != 0){data[3] = data[2];data[2] = 0;};return 1;}() : data[1] != 0 ? 2 : 0]++;
+			// this.data[active ?function () {if(this.data[2] != 0){this.data[3] = this.data[2];this.data[2] = 0;}return 1;}() : data[1] != 0 ? 2 : 0]++;
+			if (active){
+				if (this.data[2] != 0){
+					this.data[1].append(data[2]);
+					this.data[2] = 0;
+					this.data[1].append(0);
+				}
+				this.data[1][this.data[1].len()-1]++;
+			}else{this.data[this.data[1][0] != 0 ? 2 : 0]++;}
 			if(p1.hitStopTime != 0)this.hitstop++;
 		}
-		else {this.data = [0,0,0,0];this.hitstop = 0;this.timer--;}
+		else {this.data = [0,[0],0];this.hitstop = 0;this.timer--;}
 		local log = "";
+		local activeStr = "";
+		for(local i = 0; i < this.data[1].len(); i++)activeStr += format(!(i & 1) ? "%2d" : ">%2d not active>",data[1][i] - (!(i & 1) ? this.hitstop : 0));
 		local frame = format("%s%s%s",
-			this.data[0] > 0 ? format("startup:%3d ",this.data[0]+1) : "",
-			(this.data[1]-this.hitstop) > 0 ? this.data[3] > 0 ? format("active%3d>%3d ", this.data[1]-this.hitstop, this.data[3]) : format("active:%3d ",this.data[1]-this.hitstop) : "",
-			this.data[2] > 0 ? format("recovery:%3d ",this.data[2]) : "");
+			this.data[0] > 0 ? format("startup:%2d ",this.data[0]+1) : "",
+			this.data[1][0] != 0 ? "active:"+activeStr+" " : "",
+			this.data[2] > 0 ? format("recovery:%2d ",this.data[2]) : "");
 		if (frame != "" && !fre && (p1.IsAttack() > 0 && p1.IsAttack() < 6)){
 			this.frameStr = frame;
 			log+=frame;

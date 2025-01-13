@@ -268,6 +268,7 @@ function framedisplaysetup() {
 		frame.flags.alpha = ::setting.frame_data.alpha;
 		frame.flags.ConnectRenderSlot(::graphics.slot.status,1);
 	}
+	frame.frameStr <- "";
 	frame.flagStr <- "";
 	frame.attackStr <- "";
 	frame.lastLog <- "";
@@ -279,8 +280,6 @@ function framedisplaysetup() {
 			this.timer = ::setting.frame_data.timer;
 			if (this.motion != p1.motion) {
 				this.data = [0,0,0,0];
-				this.attackStr = "";
-				this.flagStr = "";
 				this.hitstop = 0;
 				this.motion = p1.motion;
 			}
@@ -289,20 +288,17 @@ function framedisplaysetup() {
 			else {this.data[(p1.flagState & 0x420) ? active ? 1 : 2 : 0]++;}
 			if(p1.hitStopTime != 0)this.hitstop++;
 		}
-		else {
-			this.data = [0,0,0,0];
-			this.hitstop = 0;
-			this.timer--;
-		}
+		else {this.data = [0,0,0,0];this.hitstop = 0;this.timer--;}
 		local log = "";
 		local frame = format("%s%s%s",
 			this.data[0] > 0 ? format("startup:%3d ",this.data[0]+1) : "",
 			(this.data[1]-this.hitstop) > 0 ? this.data[3] > 0 ? format("active%3d +%3d ", this.data[1]-this.hitstop, this.data[3]) : format("active:%3d ",this.data[1]-this.hitstop) : "",
 			this.data[2] > 0 ? format("recovery:%3d ",this.data[2]) : "");
 		if (frame != "" && !fre && (p1.IsAttack() > 0 && p1.IsAttack() < 6)){
+			this.frameStr = frame;
 			log+=frame;
 		}
-		this.text.Set(this.timer > 0 ? frame : "");
+		this.text.Set(this.timer > 0 ? this.frameStr : "");
 		this.text.x = ::setting.frame_data.X - ((this.text.width * this.text.sx) / 2);
 		this.text.y = ::setting.frame_data.Y - this.text.height;
 		if (true){//placeholder check

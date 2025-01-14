@@ -256,7 +256,7 @@ function framedisplaysetup() {
 	frame.text.blue = ::setting.frame_data.blue;
 	frame.text.alpha = ::setting.frame_data.alpha;
 	frame.text.ConnectRenderSlot(::graphics.slot.status, 1);
-	if (true){//placeholder check
+	if (::setting.frame_data.input_flags){
 		frame.flags <- ::font.CreateSystemString("");
 		frame.flags.sx = ::setting.frame_data.SX;
 		frame.flags.sy = ::setting.frame_data.SY;

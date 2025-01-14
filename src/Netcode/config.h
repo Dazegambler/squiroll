@@ -86,6 +86,7 @@ float get_frame_data_scale_x();
 float get_frame_data_scale_y();
 uint32_t get_frame_data_color();
 int32_t get_frame_data_timer();
+bool get_frame_data_flags();
 
 int8_t get_ipv6_state();
 bool get_netplay_state();

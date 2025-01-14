@@ -242,7 +242,6 @@ function framedisplaysetup() {
 	::setting.frame_data.update_consts();
 	local frame = {};
 	frame.motion <- 0;
-	frame.hitstop <- 0;
 	frame.data <- [
 		0,//startup
 		[0],//active
@@ -269,8 +268,8 @@ function framedisplaysetup() {
 	}
 	frame.frameStr <- "";
 	frame.flagStr <- "";
-	frame.attackStr <- "";
-	frame.lastLog <- "";
+	// frame.attackStr <- "";
+	// frame.lastLog <- "";
 	frame.Update <- function () {
 		local p1 = ::battle.team[0].current;
 		local fre = p1.IsFree();
@@ -279,36 +278,40 @@ function framedisplaysetup() {
 			this.timer = ::setting.frame_data.timer;
 			if (this.motion != p1.motion) {
 				this.data = [0,[0],0];
-				this.hitstop = 0;
 				this.motion = p1.motion;
 			}
-			// this.data[active ?function () {if(this.data[2] != 0){this.data[3] = this.data[2];this.data[2] = 0;}return 1;}() : data[1] != 0 ? 2 : 0]++;
-			if (active){
+			if (active && p1.hitStopTime == 0){
 				if (this.data[2] != 0){
 					this.data[1].append(data[2]);
 					this.data[2] = 0;
 					this.data[1].append(0);
 				}
 				this.data[1][this.data[1].len()-1]++;
-			}else{this.data[this.data[1][0] != 0 ? 2 : 0]++;}
-			if(p1.hitStopTime != 0)this.hitstop++;
+			}else if (!active && p1.hitStopTime == 0){this.data[this.data[1][0] != 0 ? 2 : 0]++;}
 		}
-		else {this.data = [0,[0],0];this.hitstop = 0;this.timer--;}
-		local log = "";
+		else {this.data = [0,[0],0];this.timer--;}
+		// local log = "";
 		local activeStr = "";
-		for(local i = 0; i < this.data[1].len(); i++)activeStr += format(!(i & 1) ? "%2d" : ">%2d not active>",data[1][i] - (!(i & 1) ? this.hitstop : 0));
+		for(local i = 0; i < this.data[1].len(); i++){
+			if (i > 2 && i != this.data[1].len()-1){
+				if (this.data[1][i] == this.data[1][i - 2])activeStr += "+";
+				continue;
+			}
+			activeStr += format(!(i & 1) ? "%2d" : "%2d not active",data[1][i]);
+			activeStr += i != (this.data[1].len()-1) ? ">" : "";
+		}
 		local frame = format("%s%s%s",
 			this.data[0] > 0 ? format("startup:%2d ",this.data[0]+1) : "",
 			this.data[1][0] != 0 ? "active:"+activeStr+" " : "",
 			this.data[2] > 0 ? format("recovery:%2d ",this.data[2]) : "");
 		if (frame != "" && !fre && (p1.IsAttack() > 0 && p1.IsAttack() < 6)){
 			this.frameStr = frame;
-			log+=frame;
+			// log+=frame;
 		}
 		this.text.Set(this.timer > 0 ? this.frameStr : "");
 		this.text.x = ::setting.frame_data.X - ((this.text.width * this.text.sx) / 2);
 		this.text.y = ::setting.frame_data.Y - this.text.height;
-		if (true){//placeholder check
+		if (::setting.frame_data.input_flags){
 			local flags = "";
 			for (local i = 32 -1; i >= 0; i--){
 				local v = 1 << i;
@@ -369,26 +372,25 @@ function framedisplaysetup() {
 			}
 			if (this.flagStr != flags && !fre && (p1.IsAttack() > 0 && p1.IsAttack() < 6)){
 				this.flagStr = flags;
-				log += flags != "" ? format("[%s]",flags) : "none";
+				// log += flags != "" ? format("[%s]",flags) : "none";
 			}
 			this.flags.Set(this.timer > 0 ? format("[%s]",this.flagStr) : "");
 			this.flags.x = ::setting.frame_data.X - ((this.flags.width * this.flags.sx) / 2);
 			this.flags.y = ::setting.frame_data.Y;
-			local bin1 = "";
-			for (local i = 32 -1; i >= 0; i--){
-				local v = 1 << i;
-				if (p1.flagAttack & v)bin1 += format("%d,",v);
-			}
-			if (this.attackStr != bin1 && !fre && (p1.IsAttack() > 0 && p1.IsAttack() < 6)){
-				this.attackStr = bin1;
-				log += bin1 != "" ? format("[%s]",bin1) : "//none";
-			}
+			// local bin1 = "";
+			// for (local i = 32 -1; i >= 0; i--){
+			// 	local v = 1 << i;
+			// 	if (p1.flagAttack & v)bin1 += format("%d,",v);
+			// }
+			// if (this.attackStr != bin1 && !fre && (p1.IsAttack() > 0 && p1.IsAttack() < 6)){
+			// 	this.attackStr = bin1;
+			// 	log += bin1 != "" ? format("[%s]",bin1) : "//none";
+			// }
 		}
-
-		if (log != "" && this.lastLog != log+"\n"){
-			this.lastLog = log+"\n";
-			::debug.print(this.lastLog);
-		}
+		// if (log != "" && this.lastLog != log+"\n"){
+		// 	this.lastLog = log+"\n";
+		// 	::debug.print(this.lastLog);
+		// }
 	}
 	AddTask(frame);
 	this.frame_task = frame;

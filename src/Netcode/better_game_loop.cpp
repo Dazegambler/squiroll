@@ -39,7 +39,7 @@ typedef void fastcall run_update_list_t(void*);
 
 #if PROFILING
 typedef struct {
-	int64_t SuppressTailCall[3];
+    int64_t SuppressTailCall[3];
 } PerformanceAPI_SuppressTailCallOptimization;
 typedef void (PerformanceAPI_BeginEvent_Func)(const char* inID, const char* inData, uint32_t inColor);
 typedef PerformanceAPI_SuppressTailCallOptimization (PerformanceAPI_EndEvent_Func)();

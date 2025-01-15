@@ -43,6 +43,20 @@ this.help <- {};
 ::manbow.CompileFile("data/system/help/help.nut", this.help);
 scene.append(this.help);
 
+this.pause_hack <- false;
+this.PauseInitializeOrig <- this.pause.Initialize;
+this.pause.Initialize = function(_mode) {
+	::menu.pause_hack = true;
+	::overlay.clear();
+	::menu.PauseInitializeOrig.call(this, _mode);
+}
+this.PracticeInitializeOrig <- this.practice.Initialize;
+this.practice.Initialize = function() {
+	::menu.pause_hack = true;
+	::overlay.clear();
+	::menu.PracticeInitializeOrig.call(this);
+}
+
 foreach (key,str in {
 	["copy_host"]="copy IP/port to clipboard",
 	["copy_watch"]="copy watch IP/port to clipboard"

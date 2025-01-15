@@ -26,32 +26,32 @@ extern mbox_t* log_mbox;
 
 template <typename L>
 static void mboxf(const char* caption, UINT type, const L& generator) {
-	char* text = NULL;
-	size_t text_len = 0;
+    char* text = NULL;
+    size_t text_len = 0;
 
-	generator([&](const char* format, ...) lambda_forceinline {
-		va_list va;
-		va_start(va, format);
-		int char_count = vsnprintf(NULL, 0, format, va);
-		if (char_count > 0) {
-			size_t full_len = text_len + char_count;
-			if (char* new_text = (char*)realloc(text, full_len + 1)) {
-				text = new_text;
-				vsprintf(&text[text_len], format, va);
-				text_len = full_len;
-			}
-		}
-		va_end(va);
-	});
+    generator([&](const char* format, ...) lambda_forceinline {
+        va_list va;
+        va_start(va, format);
+        int char_count = vsnprintf(NULL, 0, format, va);
+        if (char_count > 0) {
+            size_t full_len = text_len + char_count;
+            if (char* new_text = (char*)realloc(text, full_len + 1)) {
+                text = new_text;
+                vsprintf(&text[text_len], format, va);
+                text_len = full_len;
+            }
+        }
+        va_end(va);
+    });
 
-	if (text) {
-		// Try to avoid adding an extra newline at the end
-		if (text[text_len] == '\n') {
-			text[text_len] = '\0';
-		}
-		log_mbox(caption, type, text);
-		free(text);
-	}
+    if (text) {
+        // Try to avoid adding an extra newline at the end
+        if (text[text_len] == '\n') {
+            text[text_len] = '\0';
+        }
+        log_mbox(caption, type, text);
+        free(text);
+    }
 }
 
 #if !DISABLE_ALL_LOGGING_FOR_BUILD

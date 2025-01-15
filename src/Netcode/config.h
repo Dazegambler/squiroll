@@ -15,16 +15,16 @@ static inline constexpr size_t PLUGIN_VERSION = 1;
 // Increase the revision number for bugfixing builds and
 // other sorts of changes that don't make the netcode
 // incompatible. Reset to 0 whenever increasing the main version.
-static inline constexpr size_t PLUGIN_REVISION = 3;
+static inline constexpr size_t PLUGIN_REVISION = 4;
 
 extern int32_t GAME_VERSION;
 
 void init_config_file();
 
 enum ConfigTestState : int8_t {
-	ConfigNeedsTest = -1,
-	ConfigDisabled = 0,
-	ConfigEnabled = 1
+    ConfigNeedsTest = -1,
+    ConfigDisabled = 0,
+    ConfigEnabled = 1
 };
 
 #define TST_CONFIG_MAYBE(...) ((__VA_ARGS__)<0)
@@ -67,11 +67,35 @@ bool get_inputp2_spacing();
 int32_t get_inputp2_timer();
 bool get_inputp2_raw_input();
 
+bool get_hitbox_vis_enabled();
+int32_t get_hitbox_border_width();
+float get_hitbox_inner_alpha();
+float get_hitbox_border_alpha();
+uint32_t get_hitbox_collision_color();
+uint32_t get_hitbox_hit_color();
+uint32_t get_hitbox_player_hurt_color();
+uint32_t get_hitbox_player_unhit_color();
+uint32_t get_hitbox_player_ungrab_color();
+uint32_t get_hitbox_player_unhit_ungrab_color();
+uint32_t get_hitbox_misc_hurt_color();
+
+bool get_frame_data_enabled();
+int32_t get_frame_data_x();
+int32_t get_frame_data_y();
+float get_frame_data_scale_x();
+float get_frame_data_scale_y();
+uint32_t get_frame_data_color();
+int32_t get_frame_data_timer();
+bool get_frame_data_flags();
+
 int8_t get_ipv6_state();
 bool get_netplay_state();
 bool get_hide_ip_enabled();
+bool get_share_watch_ip_enabled();
 bool get_hide_name_enabled();
 bool get_prevent_input_drops();
+bool get_hide_profile_pictures_enabled();
+bool get_auto_switch();
 void set_ipv6_state(bool state);
 
 bool get_cache_rsa_enabled();

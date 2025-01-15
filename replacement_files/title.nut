@@ -1,4 +1,4 @@
-if (!::setting.misc.hide_wip){
+if (!::setting.misc.hide_wip()){
 	this.item <- [
 	"story",
 	"tutorial",

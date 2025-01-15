@@ -451,7 +451,7 @@ static_assert(std::bit_width(DELAY_PACKET_COUNT - 1) <= 7 && DELAY_PACKET_COUNT 
 static int64_t sending_times[DELAY_PACKET_COUNT] = {};
 static char pong_recv[sizeof(PacketPunchDelayPong) + 64];
 
-using delay_mask_t = UBitIntType<std::max(DELAY_PACKET_COUNT, (size_t)32)>;
+using delay_mask_t = UBitIntType<(std::max)(DELAY_PACKET_COUNT, (size_t)32)>;
 
 static constexpr uint64_t DELAY_PACKET_SPACING_US =     5000;
 static constexpr uint64_t DELAY_RECV_SPACING_US =        100;

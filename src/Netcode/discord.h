@@ -19,24 +19,24 @@
 #endif
 
 #define RPC_FIELDS \
-	RPC_FIELD(state) \
-	RPC_FIELD(details) \
-	RPC_FIELD(large_img_key) \
-	RPC_FIELD(large_img_text) \
-	RPC_FIELD(small_img_key) \
-	RPC_FIELD(small_img_text) \
+    RPC_FIELD(state) \
+    RPC_FIELD(details) \
+    RPC_FIELD(large_img_key) \
+    RPC_FIELD(large_img_text) \
+    RPC_FIELD(small_img_key) \
+    RPC_FIELD(small_img_text) \
 
 #if ENABLE_DISCORD_INTEGRATION
 
 extern bool DISCORD_ENABLED;
 
 struct DiscordRPCPresence {
-	char state[128];
-	char details[128] = "Idle";
-	char large_img_key[32] = "mainicon";
-	char large_img_text[128];
-	char small_img_key[32];
-	char small_img_text[128];
+    char state[128];
+    char details[128] = "Idle";
+    char large_img_key[32] = "mainicon";
+    char large_img_text[128];
+    char small_img_key[32];
+    char small_img_text[128];
 };
 
 void discord_rpc_start();

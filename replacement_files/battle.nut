@@ -26,6 +26,7 @@ this.ping_task <- null;
 this.input_task <- null;
 this.ping_obj <- null;
 this.frame_task <- null;
+this.UI_task <- false;
 class this.InitializeParam
 {
 	game_mode = 1;
@@ -107,7 +108,8 @@ function Create( param )
 	case 40:
 		::manbow.CompileFile("data/actor/status/gauge_vs.nut", this.gauge);
 		::manbow.CompileFile("data/script/battle/battle_practice.nut", this);
-		//framedisplaysetup();
+		HideUISetup(60);
+		if (::setting.frame_data.enabled)framedisplaysetup();
 		inputdisplaysetup(0);
 		inputdisplaysetup(1);
 		break;
@@ -130,6 +132,7 @@ function Create( param )
 		if (::network.IsActive())
 		{
 			::manbow.CompileFile("data/script/battle/battle_watch.nut", this);
+			HideUISetup(15);
 			inputdisplaysetup(1);
 			inputdisplaysetup(0);
 		}
@@ -140,6 +143,7 @@ function Create( param )
 		else
 		{
 			::manbow.CompileFile("data/script/battle/battle_replay.nut", this);
+			HideUISetup(15);
 			inputdisplaysetup(0);
 			inputdisplaysetup(1);
 		}
@@ -172,7 +176,21 @@ function Create( param )
 	this.CreateTeam(1, param.team[1]);
 	this.InitializeUser();
 	::camera.Reset();
-	this.gauge.Initialize();
+ 	this.gauge.Initialize();
+
+	if (::network.inst && !::setting.misc.hide_profile_pictures()){
+		for( local i = 0; i < 2; i = ++i ){
+			local icon = ::manbow.Sprite();
+			local custom_icon = ::manbow.Texture();
+			if (::network.icon[i] != null && custom_icon.CreateFromBase64(::network.icon[i], 32, 32)) {
+				icon.Initialize(custom_icon, 0, 0, 32, 32);
+				icon.x = i == 0 ? 116 : 1280 - 116 - 32;
+				icon.y = 4;
+				icon.ConnectRenderSlot(::graphics.slot.status, 3000);
+				this.gauge.AddParts(icon, i == 0 ? this.gauge.mat_left_top : this.gauge.mat_right_top);
+			}
+		}
+	}
 
 	if (::network.IsPlaying()) {
 		::setting.ping.update_consts();
@@ -193,7 +211,7 @@ function Create( param )
 				if (::setting.ping.ping_in_frames) str += " [" + ::rollback.get_buffered_frames() + "f]";
 				if (::rollback.resyncing()) str += " (resyncing)";
 				this.text.Set(str);
-				this.text.x = ::setting.ping.X - (this.text.width / 2);
+				this.text.x = ::setting.ping.X - ((this.text.width * this.text.sx) / 2);
 				this.text.y = (::setting.ping.Y - this.text.height);
 			};
 			this.ping_task = this.ping_obj;
@@ -222,31 +240,170 @@ function Create( param )
 }
 
 function framedisplaysetup() {
-	//get frame count post flagattack
+	/*
+	IsAttack() continously attacking still increases the count
+	value types:
+	0 nothing
+	1 melee,grab A
+	2 bullet,occult B A+B
+	3 special C
+	4 SC A
+	5 LW C+E
+	6 tag E
+	check p1.motion to have frame data of one attack only
+	*/
+	::setting.frame_data.update_consts();
 	local frame = {};
-	frame.last <- 0;
-	frame.current <- 0;
-	frame.previous <- 0;
-	//frame.count <- 0;
-	//frame.recover <- 0;
+	frame.motion <- 0;
+	frame.data <- [
+		0,//startup
+		[0],//active
+		0,//recovery
+	];
+	frame.timer <- 0;
+	frame.text <- ::font.CreateSystemString("");
+	frame.text.sx = ::setting.frame_data.SX;
+	frame.text.sy = ::setting.frame_data.SY;
+	frame.text.red = ::setting.frame_data.red;
+	frame.text.green = ::setting.frame_data.green;
+	frame.text.blue = ::setting.frame_data.blue;
+	frame.text.alpha = ::setting.frame_data.alpha;
+	frame.text.ConnectRenderSlot(::graphics.slot.status, 1);
+	if (::setting.frame_data.input_flags){
+		frame.flags <- ::font.CreateSystemString("");
+		frame.flags.sx = ::setting.frame_data.SX;
+		frame.flags.sy = ::setting.frame_data.SY;
+		frame.flags.red = ::setting.frame_data.red;
+		frame.flags.green = ::setting.frame_data.green;
+		frame.flags.blue = ::setting.frame_data.blue;
+		frame.flags.alpha = ::setting.frame_data.alpha;
+		frame.flags.ConnectRenderSlot(::graphics.slot.status,1);
+	}
+	frame.frameStr <- "";
+	frame.flagStr <- "";
+	// frame.attackStr <- "";
+	// frame.lastLog <- "";
 	frame.Update <- function () {
-		// ::debug.print_value(::battle.team[0].current.keyTake);
-		// return;
-		local flag = ::battle.team[0].current.keyTake;//atkRank,flagAttack
-		local count = this.current;
-		if (this.last == flag && (::battle.team[0].input.x == 0 && ::battle.team[0].input.y == 0)){
-			if (flag != 0){
-				count++;
-			}else{
-				count = 0;
+		local p1 = ::battle.team[0].current;
+		local fre = p1.IsFree();
+		local active = ::setting.frame_data.IsFrameActive(::battle.team[0].current);
+		if ( !fre && (p1.IsAttack() > 0 && p1.IsAttack() < 6)) {
+			this.timer = ::setting.frame_data.timer;
+			if (this.motion != p1.motion) {
+				this.data = [0,[0],0];
+				this.motion = p1.motion;
 			}
-		} else if (::battle.team[0].input.x == 0 && ::battle.team[0].input.y == 0){
-			count++;
+			if (active && p1.hitStopTime == 0){
+				if (this.data[2] != 0){
+					this.data[1].append(data[2]);
+					this.data[2] = 0;
+					this.data[1].append(0);
+				}
+				this.data[1][this.data[1].len()-1]++;
+			}else if (!active && p1.hitStopTime == 0){this.data[this.data[1][0] != 0 ? 2 : 0]++;}
 		}
-		this.last = flag;
-		this.current = count != this.current ? (function (){
-			::debug.print("frames:"+::battle.team[0].current.frame+"||count:"+count+"\n");
-			return count;}()) : this.current;
+		else {this.data = [0,[0],0];this.timer--;}
+		// local log = "";
+		local activeStr = "";
+		for(local i = 0; i < this.data[1].len(); i++){
+			if (i > 2 && i != this.data[1].len()-1){
+				if (this.data[1][i] == this.data[1][i - 2])activeStr += "+";
+				continue;
+			}
+			activeStr += format(!(i & 1) ? "%2d" : "%2d not active",data[1][i]);
+			activeStr += i != (this.data[1].len()-1) ? ">" : "";
+		}
+		local frame = format("%s%s%s",
+			this.data[0] > 0 ? format("startup:%2d ",this.data[0]+1) : "",
+			this.data[1][0] != 0 ? "active:"+activeStr+" " : "",
+			this.data[2] > 0 ? format("recovery:%2d ",this.data[2]) : "");
+		if (frame != "" && !fre && (p1.IsAttack() > 0 && p1.IsAttack() < 6)){
+			this.frameStr = frame;
+			// log+=frame;
+		}
+		this.text.Set(this.timer > 0 ? this.frameStr : "");
+		this.text.x = ::setting.frame_data.X - ((this.text.width * this.text.sx) / 2);
+		this.text.y = ::setting.frame_data.Y - this.text.height;
+		if (::setting.frame_data.input_flags){
+			local flags = "";
+			for (local i = 32 -1; i >= 0; i--){
+				local v = 1 << i;
+				local str = "";
+				if (p1.flagState & v){
+					switch (v){
+						case 0x1://1
+							str = "no input,";
+							break;
+						case 0x10://16
+							str = "block,";
+							break;
+						case 0x20://32
+							str = "special cancel,";
+							break;
+						case 0x100://256
+							str = "can be counter hit,";
+							break;
+						case 0x200://512
+							str = "can dial,";
+							break;
+						case 0x400://1024
+							str = "bullet cancel,";
+							break;
+						case 0x800://2048
+							str = "attack block,";
+							break;
+						case 0x1000://4096
+							str = "graze,";
+							break;
+						case 0x2000://8192
+							str = "no grab,";
+							break;
+						case 0x4000://16384
+							str = "dash cancel,";
+							break;
+						case 0x8000://32768
+							str = "melee immune,";
+							break;
+						case 0x10000://65536
+							str = "bullet immune,";
+							break;
+						case 0x200000://2097152
+							str = "knock check,";
+							break;
+						case 0x1000000://16777216
+							str = "no landing,";
+							break;
+						case 0x80000000://2147483648
+							str = "invisible,";
+							break;
+						default:
+							str = format("%d,",v);
+							break;
+					}
+				}
+				flags += str;
+			}
+			if (this.flagStr != flags && !fre && (p1.IsAttack() > 0 && p1.IsAttack() < 6)){
+				this.flagStr = flags;
+				// log += flags != "" ? format("[%s]",flags) : "none";
+			}
+			this.flags.Set(this.timer > 0 ? format("[%s]",this.flagStr) : "");
+			this.flags.x = ::setting.frame_data.X - ((this.flags.width * this.flags.sx) / 2);
+			this.flags.y = ::setting.frame_data.Y;
+			// local bin1 = "";
+			// for (local i = 32 -1; i >= 0; i--){
+			// 	local v = 1 << i;
+			// 	if (p1.flagAttack & v)bin1 += format("%d,",v);
+			// }
+			// if (this.attackStr != bin1 && !fre && (p1.IsAttack() > 0 && p1.IsAttack() < 6)){
+			// 	this.attackStr = bin1;
+			// 	log += bin1 != "" ? format("[%s]",bin1) : "//none";
+			// }
+		}
+		// if (log != "" && this.lastLog != log+"\n"){
+		// 	this.lastLog = log+"\n";
+		// 	::debug.print(this.lastLog);
+		// }
 	}
 	AddTask(frame);
 	this.frame_task = frame;
@@ -330,6 +487,22 @@ function getinputs(player,none)
 	return str;
 }
 
+function HideUISetup(hold) {
+	local ui = {};
+	ui.active <- true;
+	ui.Update <- function () {
+		local b2 = ::input_all.b2;
+		local b4 = ::input_all.b4;
+		if ((b2 != 0 && b4 != 0) &&
+			b2 % hold == 0 && b4 % hold == 0){
+			if (!(this.active = !this.active))::battle.gauge.Hide();
+			else{::battle.gauge.Show(0);}
+		}
+	}
+	this.UI_task = ui;
+	AddTask(this.UI_task);
+}
+
 function Release()
 {
 	::discord.rpc_set_small_img_key("");
@@ -350,6 +523,10 @@ function Release()
 	if (this.frame_task != null) {
 		DeleteTask(this.frame_task);
 		this.frame_task = null;
+	}
+	if (this.UI_task != null) {
+		DeleteTask(this.UI_task);
+		this.UI_task = null;
 	}
 	this.task = {};
 	this.gauge.Terminate();
@@ -377,6 +554,8 @@ function Release()
 	::talk.Clear();
 	::effect.Clear();
 	::manbow.SetTerminateFunction(null);
+
+	::overlay.clear();
 }
 
 function Begin()
@@ -417,3 +596,12 @@ function SetSlow( n )
 	this.slow_count = n;
 }
 
+this.UpdateMainOrig <- this.UpdateMain;
+this.UpdateMain = function() {
+	this.UpdateMainOrig();
+
+	if (::menu.pause_hack)
+		::menu.pause_hack = false;
+	else if (::loop.pause_count == 0 && !this.is_time_stop && !::network.IsPlaying())
+		::overlay.set_hitboxes(this.group_player, this.team[0].current.hit_state, this.team[1].current.hit_state);
+	}

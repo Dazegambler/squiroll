@@ -1,7 +1,8 @@
-::menu.character_select.help_copy <- clone ::menu.character_select.help;
-::menu.character_select.help_copy.insert(6, "B3");
-::menu.character_select.help_copy.insert(7, "copy_watch");
-::menu.character_select.help_copy.insert(8, null);
+::menu.character_select.help_network_copy <- clone ::menu.character_select.help_network;
+::menu.character_select.help_network_copy.insert(7, "B3");
+::menu.character_select.help_network_copy.insert(8, "copy_watch");
+::menu.character_select.help_network_copy.insert(9, null);
+local help_is_swapped = false;
 function Initialize()
 {
 	::discord.rpc_set_state("Choosing a character");
@@ -169,6 +170,12 @@ function Initialize()
 
 	if (::network.IsPlaying())
 	{
+		if (help_is_swapped) {
+			help_is_swapped = false;
+			local temp = ::menu.character_select.help_network;
+			::menu.character_select.help_network = ::menu.character_select.help_network_copy;
+			::menu.character_select.help_network_copy = temp;
+		}
 		v = {};
 		v.text <- ::font.CreateSystemStringSmall("");
 		v.text.ConnectRenderSlot(::graphics.slot.ui, 60000);
@@ -184,9 +191,14 @@ function Initialize()
 
 		for( local i = 0; i < 2; i = ++i )
 		{
+			local custom_icon = ::manbow.Texture();
 			v = {};
 			v.icon <- ::manbow.Sprite();
-			v.icon.Initialize(::menu.cursor.texture, 160, i * 32, 32, 32);
+			if (!::setting.misc.hide_profile_pictures() && ::network.icon[i] != null && custom_icon.CreateFromBase64(::network.icon[i], 32, 32)) {
+				v.icon.Initialize(custom_icon, 0, 0, 32, 32);
+			} else {
+				v.icon.Initialize(::menu.cursor.texture, 160, i * 32, 32, 32);
+			}
 			v.icon.ConnectRenderSlot(::graphics.slot.ui, 40000);
 			v.icon.x = i == 0 ? 16 : 1280 - 16 - 32;
 			v.icon.y = 36;
@@ -200,25 +212,42 @@ function Initialize()
 			};
 			this.data.push(v);
 		}
-		if (::network.allow_watch && !::network.is_parent_vs){
-			local ip_str = {};
-			if (!::setting.misc.hide_ip) {
-				ip_str.text <- ::font.CreateSystemStringSmall(::punch.get_ip());
-				ip_str.text.x = 10;
-				ip_str.text.y = 10;
-				ip_str.text.sx = ip_str.text.sy = 1.2;
-				ip_str.text.ConnectRenderSlot(::graphics.slot.front,-1);
-			}
-			ip_str.Update <- function () {
-				if (::input_all.b2 == 1) {
-					::punch.copy_ip_to_clipboard();
+		if (::network.allow_watch && (!::network.is_parent_vs || !::network.hide_host_ip)){
+			local ip_manager = {};
+			ip_manager.Apply <- function (text_func) {
+				if (!::setting.misc.hide_ip()) {
+					this.text <- ::font.CreateSystemStringSmall("Watch IP: " + text_func());
+					this.text.x = 5;
+					this.text.y = 1;
+					this.text.sx = this.text.sy = 1.2;
+					this.text.ConnectRenderSlot(::graphics.slot.front,-1);
 				}
-				if(!::network.IsPlaying())this = null;
+				help_is_swapped = true;
+				local temp = ::menu.character_select.help_network;
+				::menu.character_select.help_network = ::menu.character_select.help_network_copy;
+				::menu.character_select.help_network_copy = temp;
 			};
-			this.data.push(ip_str);
-			if (::menu.network.update_help_text || ::punch.ip_available()) {
-				::menu.help.Set(::menu.character_select.help_copy);
+			if (!::network.is_parent_vs) {
+				ip_manager.Update <- function () {
+					if (::menu.network.update_help_text || ::punch.ip_available()) {
+						this.Apply(::punch.get_ip);
+						this.Update = function () {
+							if (::input_all.b2 == 1) {
+								::punch.copy_ip_to_clipboard();
+							}
+						};
+					}
+				};
 			}
+			else {
+				ip_manager.Apply(@() ::network.host_ip);
+				ip_manager.Update <- function () {
+					if (::input_all.b2 == 1) {
+						::manbow.SetClipboardString(::network.host_ip);
+					}
+				};
+			}
+			this.data.push(ip_manager);
 		}
 	}
 }

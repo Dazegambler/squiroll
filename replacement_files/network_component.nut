@@ -9,6 +9,8 @@ this.is_client <- false;
 this.is_parent_vs <- false;
 this.allow_watch <- false;
 this.is_watch <- false;
+this.hide_host_ip <- true;
+this.host_ip <- "";
 this.is_disconnect <- false;
 this.use_lobby <- false;
 this.upnp_port <- 0;
@@ -36,6 +38,7 @@ this.icon <- [
 	null,
 	null
 ];
+this.local_icon <- "";
 function func_get_delay()
 {
 	return 0;
@@ -50,6 +53,8 @@ function Initialize()
 	this.is_client = false;
 	this.is_parent_vs = false;
 	this.is_watch = false;
+	this.hide_host_ip = true;
+	this.host_ip = "";
 	this.allow_watch = false;
 	this.is_disconnect = false;
 	this.client_num = 0;
@@ -61,6 +66,8 @@ function Initialize()
 	{
 		return 0;
 	};
+
+	this.local_icon = ::manbow.Texture().GetBase64("profile.bmp", 32, 32);
 }
 
 function Terminate()
@@ -185,14 +192,16 @@ function StartupServer( port, mode )
 		this.rand_seed = ::manbow.timeGetTime();
 		this.srand(this.rand_seed);
 		this.player_name[0] = ::config.network.player_name;
-		this.player_name[1] = ::setting.misc.hide_name ? "P2" : table_src.name.len() > 16 ? "" : table_src.name;
+		this.player_name[1] = ::setting.misc.hide_name() || table_src.name.len() > 16 ? "P2" : table_src.name;
 		this.color_num[0] = ::savedata.GetColorNum();
 		this.color_num[1] = table_src.color;
+		this.icon[0] = this.local_icon;
 		this.icon[1] = "icon" in table_src ? table_src.icon : null;
 		this.allow_watch = ::config.network.allow_watch && table_src.allow_watch;
 		table_dst.rand_seed <- this.rand_seed;
 		table_dst.is_parent_vs <- true;
 		table_dst.allow_watch <- this.allow_watch;
+		table_dst.hide_ip <- ::setting.misc.hide_ip() || !::setting.misc.share_watch_ip();
 		table_dst.use_lobby <- this.use_lobby;
 		table_dst.name <- ::config.network.player_name.len() > 16 ? "" : ::config.network.player_name;
 		table_dst.color <- this.color_num[0];
@@ -300,12 +309,14 @@ function StartupClient( addr, port, mode )
 		this.is_client = true;
 		this.rand_seed = _reply_table.rand_seed;
 		this.srand(this.rand_seed);
-		this.player_name[0] = ::setting.misc.hide_name ? "P1" : _reply_table.name.len() > 16 ? "" : _reply_table.name;
+		this.player_name[0] = ::setting.misc.hide_name() || _reply_table.name.len() > 16 ? "P1" : _reply_table.name;
 		this.player_name[1] = ::config.network.player_name;
 		this.color_num[0] = _reply_table.color;
 		this.color_num[1] = ::savedata.GetColorNum();
 		this.icon[0] = "icon" in _reply_table ? _reply_table.icon : null;
+		this.icon[1] = this.local_icon;
 		this.allow_watch = _reply_table.allow_watch;
+		this.hide_host_ip = !("hide_ip" in _reply_table) || _reply_table.hide_ip;
 		this.use_lobby = _reply_table.use_lobby;
 		this.func_get_delay = function ()
 		{
@@ -395,13 +406,14 @@ function StartupClient( addr, port, mode )
 	connect_param.allow_watch <- ::config.network.allow_watch;
 	connect_param.name <- ::config.network.player_name.len() > 16 ? "" : ::config.network.player_name;
 	connect_param.color <- ::savedata.GetColorNum();
-	connect_param.extra <- this.icon[1];
+	connect_param.icon <- this.local_icon;
 	connect_param.battle_num <- 1;
 
 	if (mode & 1)
 	{
 		connect_param.is_watch <- false;
 	}
+	this.host_ip = addr + ":" + port;
 
 	this.inst_connect = mb_client;
 	return mb_client.Connect(addr, port, connect_param);

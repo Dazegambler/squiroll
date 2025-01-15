@@ -34,7 +34,11 @@ function Update()
 	if (::punch.ip_available()) {
 		::menu.network.update_help_text = true;
 		if (::menu.network.display_ip_on_wait) {
-			this.obj[1].Set(::menu.network.item_table.wait_incomming[0] + " " + (!::setting.misc.hide_ip ? ::punch.get_ip() : ""));
+			local str = ::menu.network.item_table.wait_incomming[0];
+			if (!::setting.misc.hide_ip()) {
+				str = str + " " + ::punch.get_ip();
+			}
+			this.obj[1].Set(str);
 			this.obj[1].x = 20 + -this.obj[1].width / 2;
 		}
 	}

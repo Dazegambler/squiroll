@@ -188,7 +188,7 @@ bool execute_program_inject(InitFuncData* init_data, bool wait_for_exit) {
         
         bootstrap_program(pi.hProcess, pi.hThread);
         
-		InjectReturnCode inject_result = inject(pi.hProcess, L"Netcode.dll", "netcode_init", init_data);
+        InjectReturnCode inject_result = inject(pi.hProcess, L"Netcode.dll", "netcode_init", init_data);
         if (inject_result == INJECT_SUCCESS) {
             ResumeThread(pi.hThread);
             if (wait_for_exit) {

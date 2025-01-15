@@ -15,6 +15,7 @@
 #include <limits>
 #include <atomic>
 #include <bit>
+#include <utility>
 
 #include <immintrin.h>
 
@@ -102,7 +103,12 @@ static inline constexpr bool is_constexpr(...) { return false; }
 #undef vectorcall
 #endif
 
-#if GCC_COMPAT || CLANG_COMPAT
+#if CLANG_COMPAT
+#define cdecl __attribute__((cdecl))
+#define stdcall __attribute__((stdcall))
+#define fastcall __attribute__((fastcall))
+#define thiscall __attribute__((thiscall))
+#elif GCC_COMPAT
 #define cdecl __attribute__((cdecl))
 #define stdcall __attribute__((stdcall))
 #define fastcall __attribute__((fastcall))
@@ -300,6 +306,50 @@ static inline const uintptr_t dummy_ip = 0;
 #define IGNORE_DESIGNATED_INITIALIZER_WARNING()
 #endif
 
+template <typename T, size_t count, bool is_aligned>
+struct $vec_impl {
+    using type __attribute__((__vector_size__(count * sizeof(T)), __aligned__(alignof(T)))) = T;
+};
+
+template <typename T, size_t count>
+struct $vec_impl<T, count, true> {
+    using type __attribute__((__vector_size__(count * sizeof(T)))) = T;
+};
+
+template <typename T, size_t count, bool is_aligned = false>
+using vec = $vec_impl<T, count, is_aligned>::type;
+
+template <typename T, typename = void>
+struct is_vector : std::false_type {};
+
+template <typename T>
+struct is_vector<T, std::void_t<decltype(std::declval<T>()[0])>> {
+private:
+    using B = std::remove_reference_t<decltype(std::declval<T>()[0])>;
+public:
+    static constexpr bool value = !(std::is_pointer_v<T> || std::is_array_v<T> || std::is_class_v<T> || std::is_union_v<T>) && sizeof(B) <= sizeof(T);
+};
+
+template<typename T>
+inline constexpr bool is_vector_v = is_vector<T>::value;
+
+template <typename T>
+struct vector_type {
+    using type = std::remove_reference_t<decltype(std::declval<T>()[0])>;
+};
+
+template <typename T>
+using vector_type_t = vector_type<T>::type;
+
+template <typename T>
+struct vector_length {
+    static constexpr size_t value = sizeof(T) / sizeof(vector_type_t<T>);
+};
+
+template <typename T>
+inline constexpr size_t vector_length_v = vector_length<T>::value;
+
+#define shufflevec __builtin_shufflevector
 
 #define countof(array_type) \
 (sizeof(array_type) / sizeof(array_type[0]))
@@ -310,16 +360,16 @@ static inline const uintptr_t dummy_ip = 0;
 
 template <size_t bit_count>
 using SBitIntType = std::conditional_t<bit_count <= 8, int8_t,
-					std::conditional_t<bit_count <= 16, int16_t,
-					std::conditional_t<bit_count <= 32, int32_t,
-					std::conditional_t<bit_count <= 64, int64_t,
-					void>>>>;
+                    std::conditional_t<bit_count <= 16, int16_t,
+                    std::conditional_t<bit_count <= 32, int32_t,
+                    std::conditional_t<bit_count <= 64, int64_t,
+                    void>>>>;
 template <size_t bit_count>
 using UBitIntType = std::conditional_t<bit_count <= 8, uint8_t,
-					std::conditional_t<bit_count <= 16, uint16_t,
-					std::conditional_t<bit_count <= 32, uint32_t,
-					std::conditional_t<bit_count <= 64, uint64_t,
-					void>>>>;
+                    std::conditional_t<bit_count <= 16, uint16_t,
+                    std::conditional_t<bit_count <= 32, uint32_t,
+                    std::conditional_t<bit_count <= 64, uint64_t,
+                    void>>>>;
 
 #if !__has_builtin(__builtin_add_overflow)
 #define __builtin_add_overflow __builtin_add_overflow_impl

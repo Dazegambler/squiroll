@@ -298,20 +298,53 @@ static void patch_file_loading() {
 
     hotpatch_call(file_replacement_hook_addrB, file_replacement_hook);
 
-    static constexpr uint8_t patch[] = {
+    static constexpr uint8_t patchA[] = {
         0x85, 0xD2,                         // TEST EDX, EDX
         0x0F, 0x85, 0xBF, 0x00, 0x00, 0x00, // JNZ Rx24064
         0x0F, 0x1F, 0x44, 0x00, 0x00        // NOP
     };
-    mem_write(file_replacement_hook_addrB + 5, patch);
+    mem_write(file_replacement_hook_addrB + 5, patchA);
+
+
+    // Attempt at fixing CSV loading
+    // Might confuse thcrap by omitting seek?
+    static constexpr uint8_t patchB[] = {
+        0x89, 0x95, 0x80, 0xFF, 0xFE, 0xFF, // MOV DWORD PTR [EBP-10080], EDX
+        0x81, 0xFA, 0x54, 0x46, 0x43, 0x53, // CMP EDX, 0x53434654
+        0x0F, 0x85, 0x89, 0x03, 0x00, 0x00, // JNE Rx15296A
+        0x89, 0x4D, 0xC8,                   // MOV DWORD PTR [EBP-38], ECX
+        0x89, 0x75, 0xE0,                   // MOV DWORD PTR [EBP-20], ESI
+        0x8D, 0x8D, 0xA4, 0xFF, 0xFE, 0xFF  // LEA ECX, [EBP-1005C]
+    };
+
+    static constexpr uint8_t patchC[] = {
+        0xCC, 0xCC,
+        0xC7, 0x45, 0xB0, 0x00, 0x00, 0x00, 0x00, // MOV DWORD [EBP-50], 0
+    };
+
+    mem_write(0x1525CF_R, patchB);
+    mem_write(0x152968_R, patchC);
 
 #endif
 
+#if DUMP_TFCS_FILES
+    static constexpr uint8_t patchD[] = {
+        BASE_NOP(36),
+        0x89, 0xD9,         // MOV ECX, EBX
+        0x8B, 0x55, 0x08,   // MOV EDX, DWORD PTR [EBP+8]
+        0xE8                // CALL
+    };
+    mem_write(0x1526C8_R, patchD);
+    hotpatch_rel32(0x1526F2_R, dump_tfcs);
+#endif
 }
 #endif
 
 static inline void disable_original_game_logging() {
+    // Disable regular printf
     hotpatch_ret(0x25270_R, 0);
+    // Skip libpng warning fprintf calls
+    mem_write(0x13BBD1_R, PATCH_BYTES<0x09>);
 }
 
 typedef bool thisfastcall parse_archive_t(
@@ -512,6 +545,10 @@ bool common_init(
         discord_rpc_start();
     }
 #endif
+
+    // Force Manbow::Texture::GetBase64 to not load from pak files
+    mem_write(0x5B9A1_R, PATCH_BYTES<0x6A, 0x00>);
+    mem_write(0x5B9A3_R, NOP_BYTES(4));
 
     return true;
 }

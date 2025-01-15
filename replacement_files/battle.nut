@@ -188,7 +188,6 @@ function Create( param )
 				icon.x = i == 0 ? 116 : 1280 - 116 - 32;
 				icon.y = 4;
 				icon.ConnectRenderSlot(::graphics.slot.status, 3000);
-				local original = this.gauge.parts[0+(i*2)].actor;
 				this.gauge.AddParts(icon, i == 0 ? this.gauge.mat_left_top : this.gauge.mat_right_top);
 			}
 		}

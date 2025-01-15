@@ -15,7 +15,7 @@ static inline constexpr size_t PLUGIN_VERSION = 1;
 // Increase the revision number for bugfixing builds and
 // other sorts of changes that don't make the netcode
 // incompatible. Reset to 0 whenever increasing the main version.
-static inline constexpr size_t PLUGIN_REVISION = 4;
+static inline constexpr size_t PLUGIN_REVISION = 5;
 
 extern int32_t GAME_VERSION;
 

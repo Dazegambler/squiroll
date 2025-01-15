@@ -184,7 +184,6 @@ function Create( param )
 			local custom_icon = ::manbow.Texture();
 			if (::network.icon[i] != null && custom_icon.CreateFromBase64(::network.icon[i], 32, 32)) {
 				icon.Initialize(custom_icon, 0, 0, 32, 32);
-				icon.ConnectRenderSlot(::graphics.slot.ui, 40000);
 				icon.x = i == 0 ? 116 : 1280 - 116 - 32;
 				icon.y = 4;
 				icon.ConnectRenderSlot(::graphics.slot.status, 3000);

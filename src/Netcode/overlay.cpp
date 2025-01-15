@@ -276,6 +276,8 @@ struct HitboxGPUData {
     float thresholds[2];
 };
 
+static bool overlay_supported = true;
+
 static ID3D11VertexShader* hitbox_vs = nullptr;
 static ID3D11PixelShader* hitbox_ps = nullptr;
 static ID3D11InputLayout* hitbox_il = nullptr;
@@ -295,6 +297,12 @@ static ID3D11Buffer* hitbox_cb = nullptr;
 void overlay_init() {
     HRESULT res;
     ID3D11Device* dev = *d3d11_dev;
+
+    if (dev->GetFeatureLevel() < D3D_FEATURE_LEVEL_11_0) {
+        log_printf("D3D11 feature level is too low to support the overlay!\n");
+        overlay_supported = false;
+        return;
+    }
 
     CHECK_RES(dev->CreateVertexShader(hitbox_vert_cso, sizeof(hitbox_vert_cso), nullptr, &hitbox_vs));
     CHECK_RES(dev->CreatePixelShader(hitbox_frag_cso, sizeof(hitbox_frag_cso), nullptr, &hitbox_ps));
@@ -659,6 +667,9 @@ void overlay_clear() {
 
 static HitboxConstantBuffer hitbox_last_cb = {};
 void overlay_draw() {
+    if (!overlay_supported)
+        return;
+
     bool has_collision = !overlay_collision.empty();
     bool has_hurt = !overlay_hurt.empty();
     bool has_hit = !overlay_hit.empty();

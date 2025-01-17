@@ -109,7 +109,7 @@ function Create( param )
 		::manbow.CompileFile("data/actor/status/gauge_vs.nut", this.gauge);
 		::manbow.CompileFile("data/script/battle/battle_practice.nut", this);
 		HideUISetup(60);
-		if (::setting.frame_data.enabled)framedisplaysetup();
+		framedisplaysetup();
 		inputdisplaysetup(0);
 		inputdisplaysetup(1);
 		break;
@@ -253,6 +253,7 @@ function framedisplaysetup() {
 	check p1.motion to have frame data of one attack only
 	*/
 	::setting.frame_data.update_consts();
+    if (!::setting.frame_data.enabled) return;
 	local frame = {};
 	frame.motion <- 0;
 	frame.data <- [
@@ -269,7 +270,7 @@ function framedisplaysetup() {
 	frame.text.blue = ::setting.frame_data.blue;
 	frame.text.alpha = ::setting.frame_data.alpha;
 	frame.text.ConnectRenderSlot(::graphics.slot.status, 1);
-	if (::setting.frame_data.input_flags){
+	if (::setting.frame_data.input_flags) {
 		frame.flags <- ::font.CreateSystemString("");
 		frame.flags.sx = ::setting.frame_data.SX;
 		frame.flags.sy = ::setting.frame_data.SY;
@@ -277,7 +278,7 @@ function framedisplaysetup() {
 		frame.flags.green = ::setting.frame_data.green;
 		frame.flags.blue = ::setting.frame_data.blue;
 		frame.flags.alpha = ::setting.frame_data.alpha;
-		frame.flags.ConnectRenderSlot(::graphics.slot.status,1);
+		frame.flags.ConnectRenderSlot(::graphics.slot.status, 1);
 	}
 	frame.frameStr <- "";
 	frame.flagStr <- "";
@@ -285,117 +286,121 @@ function framedisplaysetup() {
 	// frame.lastLog <- "";
 	frame.Update <- function () {
 		local p1 = ::battle.team[0].current;
-		local fre = p1.IsFree();
-		local active = ::setting.frame_data.IsFrameActive(::battle.team[0].current);
-		if ( !fre && (p1.IsAttack() > 0 && p1.IsAttack() < 6)) {
+		local idk = !p1.IsFree() && (p1.IsAttack() > 0 && p1.IsAttack() < 6);
+		if (idk) {
 			this.timer = ::setting.frame_data.timer;
 			if (this.motion != p1.motion) {
-				this.data = [0,[0],0];
 				this.motion = p1.motion;
+				this.data = [0,[0],0];
 			}
-			if (active && p1.hitStopTime == 0){
-				if (this.data[2] != 0){
-					this.data[1].append(data[2]);
-					this.data[2] = 0;
-					this.data[1].append(0);
-				}
-				this.data[1][this.data[1].len()-1]++;
-			}else if (!active && p1.hitStopTime == 0){this.data[this.data[1][0] != 0 ? 2 : 0]++;}
+            if (!p1.hitStopTime) {
+                if (::setting.frame_data.IsFrameActive(p1)){
+                    if (this.data[2] != 0){
+                        this.data[1].append(data[2]);
+                        this.data[2] = 0;
+                        this.data[1].append(0);
+                    }
+                    ++this.data[1][this.data[1].len()-1];
+                }
+                else {
+                    ++this.data[this.data[1][0] != 0 ? 2 : 0];
+                }
+            }
 		}
-		else {this.data = [0,[0],0];this.timer--;}
-		// local log = "";
-		local activeStr = "";
-		for(local i = 0; i < this.data[1].len(); i++){
-			if (i > 2 && i != this.data[1].len()-1){
-				if (this.data[1][i] == this.data[1][i - 2])activeStr += "+";
-				continue;
-			}
-			activeStr += format(!(i & 1) ? "%2d" : "%2d not active",data[1][i]);
-			activeStr += i != (this.data[1].len()-1) ? ">" : "";
+		else {
+            this.data = [0,[0],0];
+            if (this.timer) --this.timer;
+        }
+		if (idk){
+            local frame = "";
+            if (this.data[0] > 0) {
+                frame = format("startup:%2d ", this.data[0]+1);
+            }
+            if (this.data[1][0] != 0) {
+                local activeStr = "";
+                for (local i = 0; i < this.data[1].len(); ++i){
+                    if (i > 2 && i != this.data[1].len()-1){
+                        if (this.data[1][i] == this.data[1][i - 2]) activeStr += "+";
+                        continue;
+                    }
+                    activeStr += format(!(i & 1) ? "%2d" : "%2d not active",data[1][i]);
+                    activeStr += i != (this.data[1].len()-1) ? ">" : "";
+                }
+                frame += format("active:%s ", activeStr);
+            }
+            if (this.data[2] > 0) {
+                frame += format("recovery:%2d ", this.data[2]);
+            }
+            if (this.frameStr != frame) {
+                this.frameStr = frame;
+                this.text.Set(frame);
+                this.text.x = ::setting.frame_data.X - ((this.text.width * this.text.sx) / 2);
+                this.text.y = ::setting.frame_data.Y - this.text.height;
+            }
+			// log += frame;
 		}
-		local frame = format("%s%s%s",
-			this.data[0] > 0 ? format("startup:%2d ",this.data[0]+1) : "",
-			this.data[1][0] != 0 ? "active:"+activeStr+" " : "",
-			this.data[2] > 0 ? format("recovery:%2d ",this.data[2]) : "");
-		if (frame != "" && !fre && (p1.IsAttack() > 0 && p1.IsAttack() < 6)){
-			this.frameStr = frame;
-			// log+=frame;
-		}
-		this.text.Set(this.timer > 0 ? this.frameStr : "");
-		this.text.x = ::setting.frame_data.X - ((this.text.width * this.text.sx) / 2);
-		this.text.y = ::setting.frame_data.Y - this.text.height;
+        if (!this.timer) {
+            this.text.Set("");
+            this.text.x = ::setting.frame_data.X - ((this.text.width * this.text.sx) / 2);
+            this.text.y = ::setting.frame_data.Y - this.text.height;
+        }
 		if (::setting.frame_data.input_flags){
-			local flags = "";
-			for (local i = 32 -1; i >= 0; i--){
-				local v = 1 << i;
-				local str = "";
-				if (p1.flagState & v){
-					switch (v){
-						case 0x1://1
-							str = "no input,";
-							break;
-						case 0x10://16
-							str = "block,";
-							break;
-						case 0x20://32
-							str = "special cancel,";
-							break;
-						case 0x100://256
-							str = "can be counter hit,";
-							break;
-						case 0x200://512
-							str = "can dial,";
-							break;
-						case 0x400://1024
-							str = "bullet cancel,";
-							break;
-						case 0x800://2048
-							str = "attack block,";
-							break;
-						case 0x1000://4096
-							str = "graze,";
-							break;
-						case 0x2000://8192
-							str = "no grab,";
-							break;
-						case 0x4000://16384
-							str = "dash cancel,";
-							break;
-						case 0x8000://32768
-							str = "melee immune,";
-							break;
-						case 0x10000://65536
-							str = "bullet immune,";
-							break;
-						case 0x200000://2097152
-							str = "knock check,";
-							break;
-						case 0x1000000://16777216
-							str = "no landing,";
-							break;
-						case 0x80000000://2147483648
-							str = "invisible,";
-							break;
-						default:
-							str = format("%d,",v);
-							break;
-					}
-				}
-				flags += str;
-			}
-			if (this.flagStr != flags && !fre && (p1.IsAttack() > 0 && p1.IsAttack() < 6)){
-				this.flagStr = flags;
-				// log += flags != "" ? format("[%s]",flags) : "none";
-			}
-			this.flags.Set(this.timer > 0 ? format("[%s]",this.flagStr) : "");
-			this.flags.x = ::setting.frame_data.X - ((this.flags.width * this.flags.sx) / 2);
-			this.flags.y = ::setting.frame_data.Y;
+            if (idk) {
+                local flags = "";
+                if (p1.flagState) {
+                    if (p1.flagState & 0x1) flags += "no input,"; // 1
+                    if (p1.flagState & 0x2) flags += "2,"; // 2
+                    if (p1.flagState & 0x4) flags += "4,"; // 4
+                    if (p1.flagState & 0x8) flags += "8,"; // 4
+                    if (p1.flagState & 0x10) flags += "block,"; // 16
+                    if (p1.flagState & 0x20) flags += "special cancel,"; // 32
+                    if (p1.flagState & 0x40) flags += "64,"; // 64
+                    if (p1.flagState & 0x80) flags += "128,"; // 128
+                    if (p1.flagState & 0x100) flags += "can be counter hit,"; // 256
+                    if (p1.flagState & 0x200) flags += "can dial,"; // 512
+                    if (p1.flagState & 0x400) flags += "bullet cancel,"; // 1024
+                    if (p1.flagState & 0x800) flags += "attack block,"; // 2048
+                    if (p1.flagState & 0x1000) flags += "graze,"; // 4096
+                    if (p1.flagState & 0x2000) flags += "no grab,"; // 8192
+                    if (p1.flagState & 0x4000) flags += "dash cancel,"; // 16384
+                    if (p1.flagState & 0x8000) flags += "melee immune,"; // 32768
+                    if (p1.flagState & 0x10000) flags += "bullet immune,"; // 65536
+                    if (p1.flagState & 0x20000) flags += "131072,"; // 131072
+                    if (p1.flagState & 0x40000) flags += "262144,"; // 262144
+                    if (p1.flagState & 0x80000) flags += "524288,"; // 524288
+                    if (p1.flagState & 0x100000) flags += "1048576,"; // 1048576
+                    if (p1.flagState & 0x200000) flags += "knock check,"; // 2097152
+                    if (p1.flagState & 0x400000) flags += "4194304,"; // 4194304
+                    if (p1.flagState & 0x800000) flags += "8388608,"; // 8388608
+                    if (p1.flagState & 0x1000000) flags += "no landing,"; // 16777216
+                    if (p1.flagState & 0x2000000) flags += "33554432,"; // 33554432
+                    if (p1.flagState & 0x4000000) flags += "67108864,"; // 67108864
+                    if (p1.flagState & 0x8000000) flags += "134217728,"; // 134217728
+                    if (p1.flagState & 0x10000000) flags += "268435456,"; // 268435456
+                    if (p1.flagState & 0x20000000) flags += "536870912,"; // 536870912
+                    if (p1.flagState & 0x40000000) flags += "1073741824,"; // 1073741824
+                    if (p1.flagState & 0x80000000) flags += "invisible,"; // 2147483648
+                    flags = flags.slice(0, -1); // Slice removes the trailing comma
+                }
+                if (this.flagStr != flags) {
+                    this.flagStr = flags;
+                    this.flags.Set(format("[%s]", flags));
+                    this.flags.x = ::setting.frame_data.X - ((this.flags.width * this.flags.sx) / 2);
+                    this.flags.y = ::setting.frame_data.Y;
+                }
+                // log += flags != "" ? format("[%s]",flags) : "none";
+            }
+            if (!this.timer) {
+                this.flags.Set("");
+                this.flags.x = ::setting.frame_data.X - ((this.flags.width * this.flags.sx) / 2);
+                this.flags.y = ::setting.frame_data.Y;
+            }
 			// local bin1 = "";
 			// for (local i = 32 -1; i >= 0; i--){
 			// 	local v = 1 << i;
 			// 	if (p1.flagAttack & v)bin1 += format("%d,",v);
 			// }
-			// if (this.attackStr != bin1 && !fre && (p1.IsAttack() > 0 && p1.IsAttack() < 6)){
+			// if (this.attackStr != bin1 && idk){
 			// 	this.attackStr = bin1;
 			// 	log += bin1 != "" ? format("[%s]",bin1) : "//none";
 			// }

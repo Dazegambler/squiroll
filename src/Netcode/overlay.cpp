@@ -556,7 +556,7 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
 bool IsFrameActive(ManbowActor2D* actor) {
     if (uint32_t group_size = actor->actor2d_group->size){
         ManbowActor2D** actor_ptr = actor->actor2d_group->actor_vec.data();
-        do{
+        do {
             ManbowActor2D* _actor = *actor_ptr++;
             if (!_actor->anim_controller || 
                 (_actor->active_flags & 1) == 0 || 
@@ -564,11 +564,11 @@ bool IsFrameActive(ManbowActor2D* actor) {
                 !_actor->callback_group)
                 continue;
             for (const auto& data : _actor->anim_controller->hit_boxes) {
-                if(data->obj_ptr->m_collisionShape->shape != 0){
+                if (data->obj_ptr->m_collisionShape->shape != 0) {
                     return true;
                 }
             }
-        }while (--group_size);
+        } while (--group_size);
     }
     return false;//make compiler shut up
 }

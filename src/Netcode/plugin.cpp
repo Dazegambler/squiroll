@@ -175,7 +175,7 @@ static inline void set_frame_data_constants(HSQUIRRELVM v) {
     sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);
     sq_setfloat(v, _SC("red"), (float)(uint8_t)(color >> 16) / 255.0f);
     sq_setfloat(v, _SC("alpha"), (float)(uint8_t)(color >> 24) / 255.0f);
-    sq_setinteger(v, _SC("timer"),get_frame_data_timer());
+    sq_setinteger(v, _SC("timer"), get_frame_data_timer());
 }
 
 SQInteger update_ping_constants(HSQUIRRELVM v) {
@@ -397,19 +397,19 @@ extern "C" {
                 sq_createtable(v, _SC("frame_data"), [](HSQUIRRELVM v) {
                     sq_setfunc(v, _SC("update_consts"), update_frame_data_constants);
                     sq_setfunc(v, _SC("IsFrameActive"), [](HSQUIRRELVM v) -> SQInteger {
-                    void* inst;
-                    if (sq_gettop(v) != 2 ||
-                        SQ_FAILED(sq_getinstanceup(v, 2, &inst, nullptr)))
-                    {
-                        return sq_throwerror(v, "Invalid arguments, expected: <instance>");
-                    }
-                    sq_pushbool(v,IsFrameActive((ManbowActor2D*)inst));
-                    return 1;
-                });
-                sq_setfunc(v, _SC("clear"), [](HSQUIRRELVM v) -> SQInteger {
-                    overlay_clear();
-                    return 0;
-                });
+                        void* inst;
+                        if (sq_gettop(v) != 2 ||
+                            SQ_FAILED(sq_getinstanceup(v, 2, &inst, nullptr))
+                        ) {
+                            return sq_throwerror(v, "Invalid arguments, expected: <instance>");
+                        }
+                        sq_pushbool(v, IsFrameActive((ManbowActor2D*)inst));
+                        return 1;
+                    });
+                    sq_setfunc(v, _SC("clear"), [](HSQUIRRELVM v) -> SQInteger {
+                        overlay_clear();
+                        return 0;
+                    });
                     set_frame_data_constants(v);
                 });
                 sq_createtable(v, _SC("input_display"), [](HSQUIRRELVM v) {
@@ -518,8 +518,8 @@ extern "C" {
                     if (sq_gettop(v) != 4 ||
                         SQ_FAILED(sq_getinstanceup(v, 2, &inst, nullptr)) ||
                         SQ_FAILED(sq_getinteger(v, 3, &p1_flags)) ||
-                        SQ_FAILED(sq_getinteger(v, 4, &p2_flags)))
-                    {
+                        SQ_FAILED(sq_getinteger(v, 4, &p2_flags))
+                    ) {
                         return sq_throwerror(v, "Invalid arguments, expected: <instance> <integer> <integer>");
                     }
                     overlay_set_hitboxes((ManbowActor2DGroup*)inst, p1_flags, p2_flags);

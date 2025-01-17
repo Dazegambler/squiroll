@@ -175,7 +175,8 @@ static inline void set_frame_data_constants(HSQUIRRELVM v) {
     sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);
     sq_setfloat(v, _SC("red"), (float)(uint8_t)(color >> 16) / 255.0f);
     sq_setfloat(v, _SC("alpha"), (float)(uint8_t)(color >> 24) / 255.0f);
-    sq_setinteger(v, _SC("timer"), get_frame_data_timer());
+    int32_t timer = get_frame_data_timer();
+    sq_setinteger(v, _SC("timer"), timer > 0 ? timer : 0);
 }
 
 SQInteger update_ping_constants(HSQUIRRELVM v) {

@@ -765,7 +765,7 @@ void init_config_file() {
                     memcpy(&CONFIG_FILE_PATH[filename_length + 1], TASOFRO_CONFIG_FILE_NAME, sizeof(TASOFRO_CONFIG_FILE_NAME));
 
                     if (file_exists(CONFIG_FILE_PATH)) {
-                        GAME_VERSION = get_int_setting<false>("updater", "version", TASOFRO_GAME_VERSION_BUFFER, 0);
+                        GAME_VERSION = get_int_setting<false>("updater", "version", TASOFRO_GAME_VERSION_BUFFER, GAME_VERSION);
                     }
                 }
                 if (filename_length < countof(CONFIG_FILE_PATH) - countof(CONFIG_FILE_NAME)) {

@@ -469,6 +469,7 @@ bool common_init(
     init_config_file();
 
     if (expect(GAME_VERSION != 1211, false)) {
+        MessageBoxA(NULL, "Your game appears to be too old. Please update it to v1.21b.\nIf you already updated it, delete config.ini in the game directory.", "squiroll", MB_ICONERROR);
         return false;
     }
 

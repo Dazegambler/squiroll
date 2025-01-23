@@ -247,10 +247,13 @@ function framedisplaysetup() {
 	1 melee,grab A
 	2 bullet,occult B A+B
 	3 special C
-	4 SC A
+	4 SC A+C
 	5 LW C+E
 	6 tag E
 	check p1.motion to have frame data of one attack only
+	2500 SCs
+	melee 2048,128,2
+	projectile 4096,128,4
 	*/
 	::setting.frame_data.update_consts();
     if (!::setting.frame_data.enabled) return;
@@ -282,35 +285,49 @@ function framedisplaysetup() {
 	}
 	frame.frameStr <- "";
 	frame.flagStr <- "";
-	// frame.attackStr <- "";
-	// frame.lastLog <- "";
+	frame.attackStr <- "";
+	frame.combo <- 0;
+	frame.advantage <- 0;
+	frame.lastLog <- "";
 	frame.Update <- function () {
-		local p1 = ::battle.team[0].current;
-		local idk = !p1.IsFree() && (p1.IsAttack() > 0 && p1.IsAttack() < 6);
+		local t1 = ::battle.team[0];
+		local p1 = t1.current;
+		local p2 = ::battle.team[1].current;
+		local mot1 = p1.motion;
+		local idk = !p1.IsFree();
+		local active = ::setting.frame_data.IsFrameActive(p1);
+		local isProjectile = (mot1 >= 2000 && mot1 < 2500);
 		if (idk) {
 			this.timer = ::setting.frame_data.timer;
-			if (this.motion != p1.motion) {
+			if (abs(p1.motion - this.motion) > 10 || this.combo != t1.combo_count) {
 				this.motion = p1.motion;
+				this.combo = t1.combo_count;
 				this.data = [0,[0],0];
 			}
+			// if (::input_all.b6 != 1){
+			// 	p1.hitStopTime = p1.hitStopTime < 1 ? 1 : p1.hitStopTime;
+			// 	p2.hitStopTime = p2.hitStopTime < 1 ? 1 : p2.hitStopTime;
+			// }
             if (!p1.hitStopTime) {
-                if (::setting.frame_data.IsFrameActive(p1)){
-                    if (this.data[2] != 0){
+                if (active){
+                    if (this.data[2] != 0 && !isProjectile){
                         this.data[1].append(data[2]);
                         this.data[2] = 0;
                         this.data[1].append(0);
                     }
                     ++this.data[1][this.data[1].len()-1];
+					if (isProjectile)++this.data[2];
                 }
                 else {
                     ++this.data[this.data[1][0] != 0 ? 2 : 0];
                 }
             }
-		}
-		else {
-            this.data = [0,[0],0];
-            if (this.timer) --this.timer;
+		}else{
+			this.data = [0,[0],0];
+			this.combo = 0;
+			if (this.timer) --this.timer;
         }
+		local log = "";
 		if (idk){
             local frame = "";
             if (this.data[0] > 0) {
@@ -336,8 +353,8 @@ function framedisplaysetup() {
                 this.text.Set(frame);
                 this.text.x = ::setting.frame_data.X - ((this.text.width * this.text.sx) / 2);
                 this.text.y = ::setting.frame_data.Y - this.text.height;
+				log += frame;
             }
-			// log += frame;
 		}
         if (!this.timer) {
             this.text.Set("");
@@ -387,28 +404,30 @@ function framedisplaysetup() {
                     this.flags.Set(format("[%s]", flags));
                     this.flags.x = ::setting.frame_data.X - ((this.flags.width * this.flags.sx) / 2);
                     this.flags.y = ::setting.frame_data.Y;
+					log += flags != "" ? format("[%s]",flags) : "none";
                 }
-                // log += flags != "" ? format("[%s]",flags) : "none";
+				local bin1 = "";
+				for (local i = 32 -1; i >= 0; i--){
+					local v = 1 << i;
+					if (p1.flagAttack & v)bin1 += format("%d,",v);
+				}
+				if (this.attackStr != bin1 && idk){
+					this.attackStr = bin1;
+					log += bin1 != "" ? format("[%s]",bin1) : "//none ";
+				}
+				log += format(" motion:%4d", p1.motion);
+				// log += format(" collisionGroup:%d",p1.collisionGroup);
             }
             if (!this.timer) {
                 this.flags.Set("");
                 this.flags.x = ::setting.frame_data.X - ((this.flags.width * this.flags.sx) / 2);
                 this.flags.y = ::setting.frame_data.Y;
             }
-			// local bin1 = "";
-			// for (local i = 32 -1; i >= 0; i--){
-			// 	local v = 1 << i;
-			// 	if (p1.flagAttack & v)bin1 += format("%d,",v);
-			// }
-			// if (this.attackStr != bin1 && idk){
-			// 	this.attackStr = bin1;
-			// 	log += bin1 != "" ? format("[%s]",bin1) : "//none";
-			// }
 		}
-		// if (log != "" && this.lastLog != log+"\n"){
-		// 	this.lastLog = log+"\n";
-		// 	::debug.print(this.lastLog);
-		// }
+		if (log != "" && this.lastLog != log+"\n"){
+			this.lastLog = log+"\n";
+			::debug.print(this.lastLog);
+		}
 	}
 	AddTask(frame);
 	this.frame_task = frame;
@@ -496,10 +515,8 @@ function HideUISetup(hold) {
 	local ui = {};
 	ui.active <- true;
 	ui.Update <- function () {
-		local b2 = ::input_all.b2;
-		local b4 = ::input_all.b4;
-		if ((b2 != 0 && b4 != 0) &&
-			b2 % hold == 0 && b4 % hold == 0){
+		local b6 = ::input_all.b6;
+		if (b6 != 0 && b6 % hold == 0){
 			if (!(this.active = !this.active))::battle.gauge.Hide();
 			else{::battle.gauge.Show(0);}
 		}

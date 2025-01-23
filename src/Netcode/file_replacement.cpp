@@ -148,6 +148,11 @@ static constexpr uint8_t item_config_csv[] = {
 #include "replacement_files/item_config.csv.h"
 #endif
 };
+static constexpr uint8_t input_nut[] = {
+#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+#include "replacement_files/input.nut.h"
+#endif
+};
 
 static const std::unordered_map<std::string_view, const EmbedData> replacements = {
     {"data/system/network/network.nut"sv, network_nut},
@@ -167,6 +172,7 @@ static const std::unordered_map<std::string_view, const EmbedData> replacements 
     {"data/system/watch/watch.nut"sv, watch_nut},
     {"data/system/replay_select/replay_select_view.nut"sv, replay_select_view_nut},
     {"data/system/config/item.csv"sv, item_config_csv},
+    {"data/script/input.nut"sv, input_nut},
 };
 
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP

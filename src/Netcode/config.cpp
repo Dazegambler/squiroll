@@ -103,8 +103,9 @@ CONFIG_INT(FRAME_DATA, Y, "y", 135);
 CONFIG_FLT(FRAME_DATA, SCALE_X, "scale_x", 0.9);
 CONFIG_FLT(FRAME_DATA, SCALE_Y, "scale_y", 0.9);
 CONFIG_HEX(FRAME_DATA, COLOR, "color", FFFFFFFF);
-CONFIG_INT(FRAME_DATA, TIMER, "timer", 180);
+CONFIG_INT(FRAME_DATA, TIMER, "timer", 240);
 CONFIG_BOL(FRAME_DATA, FLAGS, "input_flags", false);
+CONFIG_BOL(FRAME_DATA, FRAME_STEP, "frame_stepping", false);
 
 #define HITBOX_VIS_SECTION_NAME "hitbox_vis"
 CONFIG_BOL(HITBOX_VIS, ENABLED, "enabled", false);
@@ -205,6 +206,7 @@ static inline constexpr const char
         CONFIG_DEFAULT(FRAME_DATA, COLOR),
         CONFIG_DEFAULT(FRAME_DATA, TIMER),
         CONFIG_DEFAULT(FRAME_DATA, FLAGS),
+        CONFIG_DEFAULT(FRAME_DATA, FRAME_STEP),
 
         CONFIG_DEFAULT(NETWORK, IPV6),
         CONFIG_DEFAULT(NETWORK, NETPLAY),
@@ -698,6 +700,11 @@ bool get_frame_data_enabled() {
 static char FRAME_DATA_FLAGS_BUFFER[8]{ '\0' };
 bool get_frame_data_flags() {
     return GET_BOOL_CONFIG(FRAME_DATA, FLAGS);
+}
+
+static char FRAME_DATA_FRAME_STEP_BUFFER[8]{ '\0' };
+bool get_frame_data_frame_stepping() {
+    return GET_BOOL_CONFIG(FRAME_DATA, FRAME_STEP);
 }
 
 static char FRAME_DATA_X_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };

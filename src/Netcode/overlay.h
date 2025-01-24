@@ -12,6 +12,7 @@ void overlay_destroy();
 void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags);
 void overlay_clear();
 void overlay_draw();
-bool IsFrameActive(ManbowActor2D *actor);
+bool IsFrameActive(ManbowActor2DGroup *group);
+bool hasData(ManbowActor2DGroup *group);
 
 #endif

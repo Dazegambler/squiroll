@@ -27,6 +27,7 @@ this.input_task <- null;
 this.ping_obj <- null;
 this.frame_task <- null;
 this.UI_task <- false;
+this.frame_lock <- false;
 class this.InitializeParam
 {
 	game_mode = 1;
@@ -252,6 +253,7 @@ function framedisplaysetup() {
 	6 tag E
 	check p1.motion to have frame data of one attack only
 	2500 SCs
+	1800-1802 grab
 	melee 2048,128,2
 	projectile 4096,128,4
 	*/
@@ -294,34 +296,33 @@ function framedisplaysetup() {
 		local p1 = t1.current;
 		local p2 = ::battle.team[1].current;
 		local mot1 = p1.motion;
-		local idk = !p1.IsFree();
-		local active = ::setting.frame_data.IsFrameActive(p1);
+		local idk = (!p1.IsFree() || mot1 == 41 || mot1 == 43) && (mot1 != 118 && mot1 != 3990);
+		::battle.frame_lock = idk && ::setting.frame_data.hasData(::battle.group_player);
+		local active = ::setting.frame_data.IsFrameActive(::battle.group_player);
 		local isProjectile = (mot1 >= 2000 && mot1 < 2500);
 		if (idk) {
 			this.timer = ::setting.frame_data.timer;
-			if (abs(p1.motion - this.motion) > 10 || this.combo != t1.combo_count) {
-				this.motion = p1.motion;
-				this.combo = t1.combo_count;
-				this.data = [0,[0],0];
+			if (::setting.frame_data.hasData(::battle.group_player)){
+				if (abs(p1.motion - this.motion) > 10 || this.combo != t1.combo_count) {
+					this.motion = p1.motion;
+					this.combo = t1.combo_count;
+					this.data = [0,[0],0];
+				}
+				if (!p1.hitStopTime) {
+					if (active){
+						if (this.data[2] != 0 && !isProjectile){
+							this.data[1].append(data[2]);
+							this.data[2] = 0;
+							this.data[1].append(0);
+						}
+						++this.data[1][this.data[1].len()-1];
+						if (isProjectile)++this.data[2];
+					}
+					else {
+						++this.data[this.data[1][0] != 0 ? 2 : 0];
+					}
+				}
 			}
-			// if (::input_all.b6 != 1){
-			// 	p1.hitStopTime = p1.hitStopTime < 1 ? 1 : p1.hitStopTime;
-			// 	p2.hitStopTime = p2.hitStopTime < 1 ? 1 : p2.hitStopTime;
-			// }
-            if (!p1.hitStopTime) {
-                if (active){
-                    if (this.data[2] != 0 && !isProjectile){
-                        this.data[1].append(data[2]);
-                        this.data[2] = 0;
-                        this.data[1].append(0);
-                    }
-                    ++this.data[1][this.data[1].len()-1];
-					if (isProjectile)++this.data[2];
-                }
-                else {
-                    ++this.data[this.data[1][0] != 0 ? 2 : 0];
-                }
-            }
 		}else{
 			this.data = [0,[0],0];
 			this.combo = 0;
@@ -620,6 +621,12 @@ function SetSlow( n )
 
 this.UpdateMainOrig <- this.UpdateMain;
 this.UpdateMain = function() {
+	if (!::network.inst &&
+		::setting.frame_data.frame_stepping &&
+		this.frame_lock &&
+		(::input_all.b6 != 1)){
+		return;
+	}
 	this.UpdateMainOrig();
 
 	if (::menu.pause_hack)

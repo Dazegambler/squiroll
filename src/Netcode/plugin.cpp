@@ -166,6 +166,7 @@ static inline void set_inputp2_constants(HSQUIRRELVM v) {
 static inline void set_frame_data_constants(HSQUIRRELVM v) {
     sq_setbool(v, _SC("enabled"), get_frame_data_enabled());
     sq_setbool(v, _SC("input_flags"), get_frame_data_flags());
+    sq_setbool(v, _SC("frame_stepping"), get_frame_data_frame_stepping());
     sq_setinteger(v, _SC("X"), get_frame_data_x());
     sq_setinteger(v, _SC("Y"), get_frame_data_y());
     sq_setfloat(v, _SC("SX"), get_frame_data_scale_x());
@@ -404,7 +405,17 @@ extern "C" {
                         ) {
                             return sq_throwerror(v, "Invalid arguments, expected: <instance>");
                         }
-                        sq_pushbool(v, IsFrameActive((ManbowActor2D*)inst));
+                        sq_pushbool(v, IsFrameActive((ManbowActor2DGroup*)inst));
+                        return 1;
+                    });
+                    sq_setfunc(v, _SC("hasData"), [](HSQUIRRELVM v) -> SQInteger {
+                        void* inst;
+                        if (sq_gettop(v) != 2 ||
+                            SQ_FAILED(sq_getinstanceup(v, 2, &inst, nullptr))
+                        ) {
+                            return sq_throwerror(v, "Invalid arguments, expected: <instance>");
+                        }
+                        sq_pushbool(v, hasData((ManbowActor2DGroup*)inst));
                         return 1;
                     });
                     sq_setfunc(v, _SC("clear"), [](HSQUIRRELVM v) -> SQInteger {

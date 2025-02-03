@@ -400,12 +400,16 @@ extern "C" {
                     sq_setfunc(v, _SC("update_consts"), update_frame_data_constants);
                     sq_setfunc(v, _SC("IsFrameActive"), [](HSQUIRRELVM v) -> SQInteger {
                         void* inst;
-                        if (sq_gettop(v) != 2 ||
-                            SQ_FAILED(sq_getinstanceup(v, 2, &inst, nullptr))
+                        void* p1;
+                        void* p2;
+                        if (sq_gettop(v) != 4 ||
+                            SQ_FAILED(sq_getinstanceup(v, 2, &inst, nullptr)) ||
+                            SQ_FAILED(sq_getinstanceup(v, 3, &p1, nullptr)) ||
+                            SQ_FAILED(sq_getinstanceup(v, 4, &p2, nullptr))
                         ) {
-                            return sq_throwerror(v, "Invalid arguments, expected: <instance>");
+                            return sq_throwerror(v, "Invalid arguments, expected: <group> <p1> <p2>");
                         }
-                        sq_pushbool(v, IsFrameActive((ManbowActor2DGroup*)inst));
+                        sq_pushinteger(v, IsFrameActive((ManbowActor2DGroup*)inst,(ManbowActor2D*)p1,(ManbowActor2D*)p2));
                         return 1;
                     });
                     sq_setfunc(v, _SC("hasData"), [](HSQUIRRELVM v) -> SQInteger {

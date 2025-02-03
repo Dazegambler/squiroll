@@ -175,6 +175,42 @@ static const std::unordered_map<std::string_view, const EmbedData> replacements 
     {"data/script/input.nut"sv, input_nut},
 };
 
+static constexpr uint8_t debug_nut[] = {
+#include "new_files/debug.nut.h"
+};
+
+static constexpr uint8_t mod_config_nut[] = {
+#include "new_files/mod_config.nut.h"
+};
+
+static constexpr uint8_t mod_config_animation_nut[] = {
+#include "new_files/mod_config_animation.nut.h"
+};
+
+static constexpr uint8_t UI_nut[] = {
+#include "new_files/UI.nut.h"
+};
+
+static constexpr uint8_t frame_data_nut[] = {
+#include "new_files/frame_data.nut.h"
+};
+
+static const std::unordered_map<std::string_view, const EmbedData> new_files = {
+    {"debug.nut"sv, debug_nut},
+    {"UI.nut"sv, UI_nut},
+    {"frame_data.nut"sv, frame_data_nut},
+    //{"mod_config.nut"sv, mod_config_nut},
+    //{"mod_config_animation.nut"sv, mod_config_animation_nut},
+};
+
+EmbedData get_new_file_data(const char* name) {
+    auto new_file = new_files.find(name);
+    if (new_file != new_files.end()) {
+        return new_file->second;
+    }
+    return {};
+}
+
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
 
 static std::unordered_map<HANDLE, EmbedData> current_replacements;
@@ -247,32 +283,6 @@ naked void file_replacement_hook() {
 }
 
 #endif
-
-static constexpr uint8_t debug_nut[] = {
-#include "new_files/debug.nut.h"
-};
-
-static constexpr uint8_t mod_config_nut[] = {
-#include "new_files/mod_config.nut.h"
-};
-
-static constexpr uint8_t mod_config_animation_nut[] = {
-#include "new_files/mod_config_animation.nut.h"
-};
-
-static const std::unordered_map<std::string_view, const EmbedData> new_files = {
-    {"debug.nut"sv, debug_nut},
-    //{"mod_config.nut"sv, mod_config_nut},
-    //{"mod_config_animation.nut"sv, mod_config_animation_nut},
-};
-
-EmbedData get_new_file_data(const char* name) {
-    auto new_file = new_files.find(name);
-    if (new_file != new_files.end()) {
-        return new_file->second;
-    }
-    return {};
-}
 
 #if DUMP_TFCS_FILES
 

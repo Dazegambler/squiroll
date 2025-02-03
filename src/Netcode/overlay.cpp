@@ -1,3 +1,4 @@
+#include <cstdint>
 #if __INTELLISENSE__
 #undef _HAS_CXX20
 #define _HAS_CXX20 0
@@ -598,6 +599,49 @@ bool IsFrameActive(ManbowActor2DGroup* group) {
     }
     return false;
 }
+
+int IsFrameActive(ManbowActor2DGroup* group,ManbowActor2D* actor1,ManbowActor2D* actor2) {
+    if (uint32_t group_size = group->size) {
+        ManbowActor2D** actor_ptr = group->actor_vec.data();
+        do {
+            ManbowActor2D* actor = *actor_ptr++;
+            if (!actor->anim_controller || (actor->active_flags & 1) == 0 || (actor->group_flags & group->update_mask) == 0 || !actor->callback_group)
+                continue;
+
+            for (const auto& data : actor->anim_controller->hit_boxes) {
+                if (data->obj_ptr->m_collisionShape->shape != 0) {
+                    if(actor->id != actor1->id && actor->id != actor2->id)return 2;
+                    return 1;
+                }
+            }
+        } while (--group_size);
+    }
+    return 0;
+}
+
+// int FrameDataCheck(ManbowActor2DGroup* group,ManbowActor2D* target,ManbowActor2D* p1,ManbowActor2D* p2) {
+//     auto result = 0;
+//     if (uint32_t group_size = group->size) {
+//         ManbowActor2D** actor_ptr = group->actor_vec.data();
+//         do {
+//             ManbowActor2D* actor = *actor_ptr++;
+//             if (!actor->anim_controller || 
+//             (actor->active_flags & 1) == 0 || 
+//             (actor->group_flags & group->update_mask) == 0 || 
+//             !actor->callback_group ||
+//             (actor->id != p1->id && actor->id != p2->id) ||
+//             actor->id != target->id)
+//                 continue;
+
+//             for (const auto& data : actor->anim_controller->hit_boxes) {
+//                 if (data->obj_ptr->m_collisionShape->shape != 0) {
+//                     return true;
+//                 }
+//             }
+//         } while (--group_size);
+//     }
+//     return result;
+// }
 
 static forceinline void clip_to_screen(float* dst, const float* src) {
     dst[0] = (1.0f + src[0]) * (1280.0f / 2.0f);

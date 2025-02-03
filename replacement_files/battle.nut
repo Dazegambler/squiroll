@@ -16,6 +16,8 @@ function TerminateUser()
 }
 
 ::manbow.CompileFile("data/actor/script/battle.nut", this);
+::manbow.compilebuffer("UI.nut", this);
+::manbow.compilebuffer("frame_data.nut", this);
 this.gauge <- {};
 ::manbow.CompileFile("data/actor/status/gauge_common.nut", this.gauge);
 ::manbow.CompileFile("data/actor/status/spellcard.nut", this);
@@ -196,25 +198,26 @@ function Create( param )
 	if (::network.IsPlaying()) {
 		::setting.ping.update_consts();
 		if (::setting.ping.enabled) {
-			this.ping_obj = {};
-			this.ping_obj.text <- ::font.CreateSystemString("");
-			this.ping_obj.text.sx = ::setting.ping.SX;
-			this.ping_obj.text.sy = ::setting.ping.SY;
-			this.ping_obj.text.red = ::setting.ping.red;
-			this.ping_obj.text.green = ::setting.ping.green;
-			this.ping_obj.text.blue = ::setting.ping.blue;
-			this.ping_obj.text.alpha = ::setting.ping.alpha;
-			this.ping_obj.text.ConnectRenderSlot(::graphics.slot.front, 1);
-			this.ping_obj.Update <- function() {
-				local delay = ::network.GetDelay();
-				::rollback.update_delay(delay);
-				local str = "ping:" + delay;
-				if (::setting.ping.ping_in_frames) str += " [" + ::rollback.get_buffered_frames() + "f]";
-				if (::rollback.resyncing()) str += " (resyncing)";
-				this.text.Set(str);
-				this.text.x = ::setting.ping.X - ((this.text.width * this.text.sx) / 2);
-				this.text.y = (::setting.ping.Y - this.text.height);
-			};
+			this.ping_obj = this.CreateText(
+				0,"",
+				::setting.ping.SX,
+				::setting.ping.SY,
+				::setting.ping.red,
+				::setting.ping.green,
+				::setting.ping.blue,
+				::setting.ping.alpha,
+				::graphics.slot.status,1,
+				function () {
+					local delay = ::network.GetDelay();
+					::rollback.update_delay(delay);
+					local str = "ping:" + delay;
+					if (::setting.ping.ping_in_frames) str += " [" + ::rollback.get_buffered_frames() + "f]";
+					if (::rollback.resyncing()) str += " (resyncing)";
+					this.text.Set(str);
+					this.text.x = ::setting.ping.X - ((this.text.width * this.text.sx) / 2);
+					this.text.y = (::setting.ping.Y - this.text.height);
+				}
+			);
 			this.ping_task = this.ping_obj;
 			::loop.AddTask(this.ping_obj);
 		}
@@ -242,6 +245,11 @@ function Create( param )
 
 function framedisplaysetup() {
 	/*
+	subState
+	team.combo_count is for how much you're being comboed
+	current issues:
+	projectiles and delayed child actors fucking up frame data
+	installs
 	IsAttack() continously attacking still increases the count
 	value types:
 	0 nothing
@@ -260,170 +268,72 @@ function framedisplaysetup() {
 	::setting.frame_data.update_consts();
     if (!::setting.frame_data.enabled) return;
 	local frame = {};
-	frame.motion <- 0;
-	frame.data <- [
-		0,//startup
-		[0],//active
-		0,//recovery
-	];
-	frame.timer <- 0;
-	frame.text <- ::font.CreateSystemString("");
-	frame.text.sx = ::setting.frame_data.SX;
-	frame.text.sy = ::setting.frame_data.SY;
-	frame.text.red = ::setting.frame_data.red;
-	frame.text.green = ::setting.frame_data.green;
-	frame.text.blue = ::setting.frame_data.blue;
-	frame.text.alpha = ::setting.frame_data.alpha;
-	frame.text.ConnectRenderSlot(::graphics.slot.status, 1);
 	if (::setting.frame_data.input_flags) {
-		frame.flags <- ::font.CreateSystemString("");
-		frame.flags.sx = ::setting.frame_data.SX;
-		frame.flags.sy = ::setting.frame_data.SY;
-		frame.flags.red = ::setting.frame_data.red;
-		frame.flags.green = ::setting.frame_data.green;
-		frame.flags.blue = ::setting.frame_data.blue;
-		frame.flags.alpha = ::setting.frame_data.alpha;
-		frame.flags.ConnectRenderSlot(::graphics.slot.status, 1);
+		frame.flag_state_display <- this.CreateFlag_state_Display();
+		frame.flag_attack_display <- this.CreateFlag_attack_Display();
 	}
-	frame.frameStr <- "";
-	frame.flagStr <- "";
-	frame.attackStr <- "";
-	frame.combo <- 0;
-	frame.advantage <- 0;
+	frame.data_display <- this.CreateFrame_data_Display();
+	frame.timer <- 0;
 	frame.lastLog <- "";
+	frame.onBlacklist <- function(motion) {
+		switch (motion){
+			case 118://5D
+			case 3990://SC declare
+			// case 3030://mokou's 8C flight
+			case 2025://[B] hold
+				// ::debug.print(format("blocked:%d\n",motion));
+				return true;
+			default:
+				return false;
+		}
+	};
+	frame.onWhitelist <- function(motion) {
+		switch (motion) {
+			case 41://mid backdash
+			case 43://air backdash
+				return true;
+			default:
+				// ::debug.print(format("blocked:%d\n",motion));
+				return false;
+		}
+	}
 	frame.Update <- function () {
-		local t1 = ::battle.team[0];
-		local p1 = t1.current;
+		local p1 = ::battle.team[0].current;
 		local p2 = ::battle.team[1].current;
-		local mot1 = p1.motion;
-		local idk = (!p1.IsFree() || mot1 == 41 || mot1 == 43) && (mot1 != 118 && mot1 != 3990);
-		::battle.frame_lock = idk && ::setting.frame_data.hasData(::battle.group_player);
-		local active = ::setting.frame_data.IsFrameActive(::battle.group_player);
-		local isProjectile = (mot1 >= 2000 && mot1 < 2500);
-		if (idk) {
+		local motion = p1.motion;
+		local onMove = (!p1.IsFree() || this.onWhitelist(motion));
+		local log = "";
+		if (onMove) {
 			this.timer = ::setting.frame_data.timer;
-			if (::setting.frame_data.hasData(::battle.group_player)){
-				if (abs(p1.motion - this.motion) > 10 || this.combo != t1.combo_count) {
-					this.motion = p1.motion;
-					this.combo = t1.combo_count;
-					this.data = [0,[0],0];
-				}
-				if (!p1.hitStopTime) {
-					if (active){
-						if (this.data[2] != 0 && !isProjectile){
-							this.data[1].append(data[2]);
-							this.data[2] = 0;
-							this.data[1].append(0);
-						}
-						++this.data[1][this.data[1].len()-1];
-						if (isProjectile)++this.data[2];
+			if (!this.onBlacklist(motion)){
+				if (::setting.frame_data.hasData(::battle.group_player)){
+					::battle.frame_lock = ::setting.frame_data.frame_stepping ? true : false;
+					if (!p1.hitStopTime){
+						if (abs(motion - this.data_display.motion) > 10)this.data_display.clear(motion);
+						this.data_display.tick(::setting.frame_data.IsFrameActive(::battle.group_player,p1,p2));
 					}
-					else {
-						++this.data[this.data[1][0] != 0 ? 2 : 0];
-					}
+				}else{::battle.frame_lock = false}
+				this.data_display.render();
+				if (::setting.frame_data.input_flags){
+					if (p1.flagState)this.flag_state_display.render(p1.flagState);
+					if (p1.flagAttack)this.flag_attack_display.render(p1.flagAttack);
+					log += format(" combo_count:%d", t2.combo_count);
+					// log += format(" motion:%4d", p1.motion);
+					// log += format(" substate:%5s",(p1.subState != null).tostring());
+					// log += format(" endtofreemove:%5s",(p1.EndtoFreeMove != null).tostring());
+					// log += format(" statelabel:%5s",(p1.stateLabel != null).tostring());
 				}
 			}
 		}else{
-			this.data = [0,[0],0];
-			this.combo = 0;
+			this.data_display.clear();
 			if (this.timer) --this.timer;
         }
-		local log = "";
-		if (idk){
-            local frame = "";
-            if (this.data[0] > 0) {
-                frame = format("startup:%2d ", this.data[0]+1);
-            }
-            if (this.data[1][0] != 0) {
-                local activeStr = "";
-                for (local i = 0; i < this.data[1].len(); ++i){
-                    if (i > 2 && i != this.data[1].len()-1){
-                        if (this.data[1][i] == this.data[1][i - 2]) activeStr += "+";
-                        continue;
-                    }
-                    activeStr += format(!(i & 1) ? "%2d" : "%2d not active",data[1][i]);
-                    activeStr += i != (this.data[1].len()-1) ? ">" : "";
-                }
-                frame += format("active:%s ", activeStr);
-            }
-            if (this.data[2] > 0) {
-                frame += format("recovery:%2d ", this.data[2]);
-            }
-            if (this.frameStr != frame) {
-                this.frameStr = frame;
-                this.text.Set(frame);
-                this.text.x = ::setting.frame_data.X - ((this.text.width * this.text.sx) / 2);
-                this.text.y = ::setting.frame_data.Y - this.text.height;
-				log += frame;
-            }
-		}
-        if (!this.timer) {
-            this.text.Set("");
-            this.text.x = ::setting.frame_data.X - ((this.text.width * this.text.sx) / 2);
-            this.text.y = ::setting.frame_data.Y - this.text.height;
-        }
-		if (::setting.frame_data.input_flags){
-            if (idk) {
-                local flags = "";
-                if (p1.flagState) {
-                    if (p1.flagState & 0x1) flags += "no input,"; // 1
-                    if (p1.flagState & 0x2) flags += "2,"; // 2
-                    if (p1.flagState & 0x4) flags += "4,"; // 4
-                    if (p1.flagState & 0x8) flags += "8,"; // 4
-                    if (p1.flagState & 0x10) flags += "block,"; // 16
-                    if (p1.flagState & 0x20) flags += "special cancel,"; // 32
-                    if (p1.flagState & 0x40) flags += "64,"; // 64
-                    if (p1.flagState & 0x80) flags += "128,"; // 128
-                    if (p1.flagState & 0x100) flags += "can be counter hit,"; // 256
-                    if (p1.flagState & 0x200) flags += "can dial,"; // 512
-                    if (p1.flagState & 0x400) flags += "bullet cancel,"; // 1024
-                    if (p1.flagState & 0x800) flags += "attack block,"; // 2048
-                    if (p1.flagState & 0x1000) flags += "graze,"; // 4096
-                    if (p1.flagState & 0x2000) flags += "no grab,"; // 8192
-                    if (p1.flagState & 0x4000) flags += "dash cancel,"; // 16384
-                    if (p1.flagState & 0x8000) flags += "melee immune,"; // 32768
-                    if (p1.flagState & 0x10000) flags += "bullet immune,"; // 65536
-                    if (p1.flagState & 0x20000) flags += "131072,"; // 131072
-                    if (p1.flagState & 0x40000) flags += "262144,"; // 262144
-                    if (p1.flagState & 0x80000) flags += "524288,"; // 524288
-                    if (p1.flagState & 0x100000) flags += "1048576,"; // 1048576
-                    if (p1.flagState & 0x200000) flags += "knock check,"; // 2097152
-                    if (p1.flagState & 0x400000) flags += "4194304,"; // 4194304
-                    if (p1.flagState & 0x800000) flags += "8388608,"; // 8388608
-                    if (p1.flagState & 0x1000000) flags += "no landing,"; // 16777216
-                    if (p1.flagState & 0x2000000) flags += "33554432,"; // 33554432
-                    if (p1.flagState & 0x4000000) flags += "67108864,"; // 67108864
-                    if (p1.flagState & 0x8000000) flags += "134217728,"; // 134217728
-                    if (p1.flagState & 0x10000000) flags += "268435456,"; // 268435456
-                    if (p1.flagState & 0x20000000) flags += "536870912,"; // 536870912
-                    if (p1.flagState & 0x40000000) flags += "1073741824,"; // 1073741824
-                    if (p1.flagState & 0x80000000) flags += "invisible,"; // 2147483648
-                    flags = flags.slice(0, -1); // Slice removes the trailing comma
-                }
-                if (this.flagStr != flags) {
-                    this.flagStr = flags;
-                    this.flags.Set(format("[%s]", flags));
-                    this.flags.x = ::setting.frame_data.X - ((this.flags.width * this.flags.sx) / 2);
-                    this.flags.y = ::setting.frame_data.Y;
-					log += flags != "" ? format("[%s]",flags) : "none";
-                }
-				local bin1 = "";
-				for (local i = 32 -1; i >= 0; i--){
-					local v = 1 << i;
-					if (p1.flagAttack & v)bin1 += format("%d,",v);
-				}
-				if (this.attackStr != bin1 && idk){
-					this.attackStr = bin1;
-					log += bin1 != "" ? format("[%s]",bin1) : "//none ";
-				}
-				log += format(" motion:%4d", p1.motion);
-				// log += format(" collisionGroup:%d",p1.collisionGroup);
-            }
-            if (!this.timer) {
-                this.flags.Set("");
-                this.flags.x = ::setting.frame_data.X - ((this.flags.width * this.flags.sx) / 2);
-                this.flags.y = ::setting.frame_data.Y;
-            }
+		if (!this.timer) {
+			this.data_display.text.Set("");
+			if(::setting.frame_data.input_flags){
+				this.flag_state_display.text.Set("");
+				this.flag_attack_display.text.Set("");
+			}
 		}
 		if (log != "" && this.lastLog != log+"\n"){
 			this.lastLog = log+"\n";

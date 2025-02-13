@@ -76,6 +76,10 @@ function LookupName(name) {
 
 function Create( param )
 {
+	if (::network.IsActive() && ::setting.misc.hide_name){
+		::network.player_name[0] = "P1";
+		::network.player_name[1] = "P2";
+	}
 	if (::replay.GetState() == ::replay.PLAY && ::network.inst == null)
 		::discord.rpc_set_details("Watching a replay");
 	::discord.rpc_set_state(param.game_mode < 10 ? "Starting match" : "");
@@ -181,7 +185,7 @@ function Create( param )
 	::camera.Reset();
  	this.gauge.Initialize();
 
-	if (::network.inst && !::setting.misc.hide_profile_pictures()){
+	if (::network.IsActive() && !::setting.misc.hide_profile_pictures()){
 		for( local i = 0; i < 2; i = ++i ){
 			local icon = ::manbow.Sprite();
 			local custom_icon = ::manbow.Texture();
@@ -275,6 +279,7 @@ function framedisplaysetup() {
 	frame.data_display <- this.CreateFrame_data_Display();
 	frame.timer <- 0;
 	frame.lastLog <- "";
+	frame.boxes <- [];
 	frame.onBlacklist <- function(motion) {
 		switch (motion){
 			case 118://5D
@@ -297,11 +302,23 @@ function framedisplaysetup() {
 				return false;
 		}
 	}
+	frame.getboxes <- function (team) {
+		local boxes = [];
+		local data = ::setting.frame_data.GetHitboxes(::battle.group_player);
+		if(data.len() > 0){
+			local size = data.len()-1;
+			do{
+				if(data[size].owner == team.master || data[size].owner == team.slave)boxes.append(data[size]);
+			}while(--size > -1);
+		}
+		return boxes;
+	};
 	frame.Update <- function () {
 		local p1 = ::battle.team[0].current;
 		local p2 = ::battle.team[1].current;
 		local motion = p1.motion;
 		local onMove = (!p1.IsFree() || this.onWhitelist(motion));
+		local hitboxes = this.getboxes(::battle.team[0]);
 		local log = "";
 		if (onMove) {
 			this.timer = ::setting.frame_data.timer;
@@ -310,6 +327,9 @@ function framedisplaysetup() {
 					::battle.frame_lock = ::setting.frame_data.frame_stepping ? true : false;
 					if (!p1.hitStopTime){
 						if (abs(motion - this.data_display.motion) > 10)this.data_display.clear(motion);
+						// ::battle.CheckFlags(::setting.frame_data.GetHitboxes(::battle.group_player),p1,p2);
+						// this.data_display.tick(::setting.frame_data.GetHitboxes(::battle.group_player),p1);//new one
+						log += format(" actors:%d",hitboxes.len());
 						this.data_display.tick(::setting.frame_data.IsFrameActive(::battle.group_player,p1,p2));
 					}
 				}else{::battle.frame_lock = false}
@@ -317,7 +337,6 @@ function framedisplaysetup() {
 				if (::setting.frame_data.input_flags){
 					if (p1.flagState)this.flag_state_display.render(p1.flagState);
 					if (p1.flagAttack)this.flag_attack_display.render(p1.flagAttack);
-					log += format(" combo_count:%d", t2.combo_count);
 					// log += format(" motion:%4d", p1.motion);
 					// log += format(" substate:%5s",(p1.subState != null).tostring());
 					// log += format(" endtofreemove:%5s",(p1.EndtoFreeMove != null).tostring());
@@ -326,6 +345,7 @@ function framedisplaysetup() {
 			}
 		}else{
 			this.data_display.clear();
+			::battle.frame_lock = false;
 			if (this.timer) --this.timer;
         }
 		if (!this.timer) {

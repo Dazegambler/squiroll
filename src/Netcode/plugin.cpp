@@ -412,6 +412,21 @@ extern "C" {
                         sq_pushinteger(v, IsFrameActive((ManbowActor2DGroup*)inst,(ManbowActor2D*)p1,(ManbowActor2D*)p2));
                         return 1;
                     });
+                    sq_setfunc(v, _SC("GetHitboxes"), [](HSQUIRRELVM v)-> SQInteger {
+                        void* group;
+                        if (sq_gettop(v) != 2 ||
+                            SQ_FAILED(sq_getinstanceup(v, 2, &group, nullptr))
+                        ) {
+                            return sq_throwerror(v, "Invalid arguments, expected: <group>");
+                        }
+                        auto arr = GetHitboxes((ManbowActor2DGroup*)group);
+                        sq_newarray(v, 0);
+                        for(int i = 0;i<arr.size();i++){
+                            sq_pushobject(v, (HSQOBJECT)arr[i]);
+                            sq_arrayappend(v, -2);
+                        }
+                        return 1;
+                    });
                     sq_setfunc(v, _SC("hasData"), [](HSQUIRRELVM v) -> SQInteger {
                         void* inst;
                         if (sq_gettop(v) != 2 ||

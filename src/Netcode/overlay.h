@@ -14,6 +14,8 @@ void overlay_clear();
 void overlay_draw();
 bool IsFrameActive(ManbowActor2DGroup *group);
 int IsFrameActive(ManbowActor2DGroup* group,ManbowActor2D* actor1,ManbowActor2D* actor2);
+std::vector<SQObject> GetHitboxes(ManbowActor2DGroup* group);
+void Rollback(ManbowActor2DGroup* val, ManbowActor2DGroup* tgt);
 bool hasData(ManbowActor2DGroup *group);
 
 #endif

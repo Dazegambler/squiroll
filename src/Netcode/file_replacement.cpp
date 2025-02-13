@@ -154,6 +154,12 @@ static constexpr uint8_t input_nut[] = {
 #endif
 };
 
+// static constexpr uint8_t vs_nut[] = {
+// #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+// #include "replacement_files/vs.nut.h"
+// #endif
+// };
+
 static const std::unordered_map<std::string_view, const EmbedData> replacements = {
     {"data/system/network/network.nut"sv, network_nut},
     {"data/system/component/network.nut"sv, network_component_nut},
@@ -173,6 +179,7 @@ static const std::unordered_map<std::string_view, const EmbedData> replacements 
     {"data/system/replay_select/replay_select_view.nut"sv, replay_select_view_nut},
     {"data/system/config/item.csv"sv, item_config_csv},
     {"data/script/input.nut"sv, input_nut},
+    // {"data/script/scene/vs.nut"sv, vs_nut},
 };
 
 static constexpr uint8_t debug_nut[] = {

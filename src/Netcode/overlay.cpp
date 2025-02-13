@@ -619,6 +619,25 @@ int IsFrameActive(ManbowActor2DGroup* group,ManbowActor2D* actor1,ManbowActor2D*
     return 0;
 }
 
+std::vector<SQObject> GetHitboxes(ManbowActor2DGroup* group) {
+    std::vector<SQObject> boxes = {};
+    if (uint32_t group_size = group->size) {
+        ManbowActor2D** actor_ptr = group->actor_vec.data();
+        do {
+            ManbowActor2D* actor = *actor_ptr++;
+            if (!actor->anim_controller || (actor->active_flags & 1) == 0 || (actor->group_flags & group->update_mask) == 0 || !actor->callback_group)
+                continue;
+            for (const auto &data : actor->anim_controller->hurt_boxes) {
+                boxes.push_back(actor->sq_obj);
+            }
+            for (const auto& data : actor->anim_controller->hit_boxes) {
+                boxes.push_back(actor->sq_obj);
+            }
+        } while (--group_size);
+    }
+    return boxes;
+}
+
 // int FrameDataCheck(ManbowActor2DGroup* group,ManbowActor2D* target,ManbowActor2D* p1,ManbowActor2D* p2) {
 //     auto result = 0;
 //     if (uint32_t group_size = group->size) {

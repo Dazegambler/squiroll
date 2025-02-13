@@ -9,6 +9,8 @@
 #include <limits>
 #include <charconv>
 #include <system_error>
+#include <atomic>
+#include <unordered_map>
 
 #include <windows.h>
 
@@ -236,6 +238,15 @@ static inline constexpr size_t VALIDATE_DEFAULT_CONFIGS() {
 
 static_assert(VALIDATE_DEFAULT_CONFIGS() == 0, "Missing default config entries!");
 
+// The string pointers are intentionally used as the key because the config functions are always called with const strings
+template<typename T, typename U>
+struct ptr_pair_hash {
+    size_t operator()(const std::pair<T, U>& x) const {
+        return (size_t)x.first ^ std::rotl((size_t)x.second, 16);
+    }
+};
+static std::unordered_map<std::pair<const char*, const char*>, std::vector<char>, ptr_pair_hash<const char*, const char*>> config_cache;
+
 static inline bool create_dummy_file(const char* path) {
     HANDLE handle = CreateFileA(
         path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
@@ -250,6 +261,7 @@ static inline bool create_dummy_file(const char* path) {
 
 static inline void set_config_string(const char* section, const char* key, const char* value) {
     WritePrivateProfileStringA(section, key, value, CONFIG_FILE_PATH);
+    config_cache.erase({section, key});
 }
 
 enum ConfigTruncType {
@@ -259,13 +271,23 @@ enum ConfigTruncType {
 
 template <ConfigTruncType trunc = TruncationIsFail, size_t N = 0>
 static inline size_t get_config_string(const char* section, const char* key, char(&value_buffer)[N]) {
-    size_t written = GetPrivateProfileStringA(section, key, NULL, value_buffer, N, CONFIG_FILE_PATH);
-    if constexpr (trunc != AllowTruncation) {
-        if (expect(written == N - 1, false)) {
-            written = 0;
+    auto it = config_cache.find({section, key});
+
+    if (it != config_cache.end()) {
+        auto& entry = it->second;
+        memcpy(value_buffer, entry.data(), entry.size());
+        value_buffer[entry.size()] = '\0';
+        return entry.size();
+    } else {
+        size_t written = GetPrivateProfileStringA(section, key, NULL, value_buffer, N, CONFIG_FILE_PATH);
+        if constexpr (trunc != AllowTruncation) {
+            if (expect(written == N - 1, false)) {
+                written = 0;
+            }
         }
+        config_cache.emplace(std::make_pair(section, key), std::vector(value_buffer, &value_buffer[written]));
+        return written;
     }
-    return written;
 }
 
 static inline void fill_default_config_string(const char* section, const char* key, const char* default_value) {
@@ -756,6 +778,50 @@ float get_timer_leniency() {
 }
 
 
+static HANDLE config_watcher_thread = NULL;
+static std::atomic_bool config_watcher_exit = false;
+static std::atomic_bool config_flush_queued = false;
+static DWORD stdcall config_watcher_proc(void*) {
+    HANDLE file = CreateFileA(
+        CONFIG_FILE_NAME, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+        NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL
+    );
+    if (file == INVALID_HANDLE_VALUE)
+        return 0;
+
+    // Using the proper file change watcher API seems overkill for this
+    FILETIME last_last_write = {};
+    FILETIME last_write = {};
+    while (!config_watcher_exit) {
+        if (
+            GetFileTime(file, NULL, NULL, &last_write) &&
+            memcmp(&last_last_write, &last_write, sizeof(FILETIME)) &&
+            last_last_write.dwLowDateTime != 0 && last_last_write.dwHighDateTime != 0)
+        {
+            config_flush_queued = true;
+        }
+        last_last_write = last_write;
+        Sleep(64);
+    }
+
+    CloseHandle(file);
+    return 0;
+}
+
+void config_watcher_check() {
+    if (config_flush_queued) {
+        config_cache.clear();
+        config_flush_queued = false;
+    }
+}
+
+void config_watcher_stop() {
+    config_watcher_exit = true;
+    if (config_watcher_thread)
+        WaitForSingleObject(config_watcher_thread, 1000);
+}
+
+
 static char TASOFRO_GAME_VERSION_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
 int32_t GAME_VERSION = 1211;
 
@@ -787,6 +853,8 @@ void init_config_file() {
                         nounroll for (size_t i = 0; i < countof(DEFAULT_CONFIGS); ++i) {
                             fill_default_config_string(DEFAULT_CONFIGS[i][0], DEFAULT_CONFIGS[i][1], DEFAULT_CONFIGS[i][2]);
                         }
+
+                        config_watcher_thread = CreateThread(NULL, 0, config_watcher_proc, NULL, 0, NULL);
                     }
                 }
                 return;

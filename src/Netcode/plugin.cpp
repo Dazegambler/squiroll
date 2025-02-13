@@ -569,6 +569,7 @@ extern "C" {
 
     dll_export int stdcall release_instance() {
         overlay_destroy();
+        config_watcher_stop();
         return 1;
     }
 
@@ -590,6 +591,8 @@ extern "C" {
 #if ALLOCATION_PATCH_TYPE != PATCH_NO_ALLOCS
         update_allocs();
 #endif
+
+        config_watcher_check();
 
         return 1;
     }

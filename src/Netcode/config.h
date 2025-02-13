@@ -21,6 +21,9 @@ extern int32_t GAME_VERSION;
 
 void init_config_file();
 
+void config_watcher_check();
+void config_watcher_stop();
+
 enum ConfigTestState : int8_t {
     ConfigNeedsTest = -1,
     ConfigDisabled = 0,

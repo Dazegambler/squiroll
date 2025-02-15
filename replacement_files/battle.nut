@@ -84,7 +84,7 @@ function Create( param )
 		::discord.rpc_set_details("Watching a replay");
 	::discord.rpc_set_state(param.game_mode < 10 ? "Starting match" : "");
 	::discord.rpc_set_large_img_key("stage" + ::stage.background.id);
-	if (::replay.GetState() != ::replay.PLAY && (::network.IsPlaying() || param.game_mode != 1)) {
+	if (::replay.GetState() != ::replay.PLAY && (::network.IsPlaying() || (param.game_mode != 1 && param.game_mode != 10))) {
 		local p1m = param.team[0].master.name;
 		local p1s = param.team[0].slave.name;
 		local p2m = param.team[1].master.name;

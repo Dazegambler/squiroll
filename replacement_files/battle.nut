@@ -329,7 +329,7 @@ function framedisplaysetup() {
 						if (abs(motion - this.data_display.motion) > 10)this.data_display.clear(motion);
 						// ::battle.CheckFlags(::setting.frame_data.GetHitboxes(::battle.group_player),p1,p2);
 						// this.data_display.tick(::setting.frame_data.GetHitboxes(::battle.group_player),p1);//new one
-						log += format(" actors:%d",hitboxes.len());
+						// log += format(" actors:%d",hitboxes.len());
 						this.data_display.tick(::setting.frame_data.IsFrameActive(::battle.group_player,p1,p2));
 					}
 				}else{::battle.frame_lock = false}
@@ -350,6 +350,7 @@ function framedisplaysetup() {
         }
 		if (!this.timer) {
 			this.data_display.text.Set("");
+			if(true)this.data_display.framebar.text.Set("");
 			if(::setting.frame_data.input_flags){
 				this.flag_state_display.text.Set("");
 				this.flag_attack_display.text.Set("");
@@ -368,17 +369,39 @@ function inputdisplaysetup(player) {
 	::setting.input_display.update_consts();
 	local p = player != 1 ? ::setting.input_display.p1 : ::setting.input_display.p2;
 	if (p.enabled) {
+		//flag distribution:
+		//0x1-A
+		//0x2-B
+		//0x4-C
+		//0x8-E
+		//0x10-D
+		//0x20-X- 0x200-X+ 4 priority
+		//0x40-Y+ 0x400-Y- 8 prioritY
 		local input = {};
-		input.list <- [];
-		input.buf <- [];
-		input.lastinput <- "";
-		input.sincelast <- 0; //frames
-		input.autodeletetimer <- p.timer; //frames
-		input.getinputs <- getinputs;
-		input.padding <- p.spacing ? " " : "";
-		input.listmax <- p.list_max;
+		input.data <- [[0,0]];
+		input.text <- [];
+		// input.sincelast <- 0; //frames
+		input.timer <- p.timer; //frames
+		input.buttons <- [ "b0", "b1", "b2", "b3", "b4" ];
+		input.getinputs <- function (player){
+			local inputs = 0;
+			local setting = player != 1 ? ::setting.input_display.p1 : ::setting.input_display.p2;
+			local team = ::battle.team[(::network.IsPlaying() ? ::network.is_parent_vs : player == 1) ? 1 : 0];
+			local input = team.input;
+			local x_axis = setting.raw_input || team.current.direction > 0 ? input.x : -input.x;
+			if (x_axis != 0)inputs = inputs | (x_axis < 0 ? 0x20 : 0x200);
+			if (input.y != 0)inputs = inputs | (input.y > 0 ? 0x40 : 0x400);
 
-		for (local i = 0; i < input.listmax; ++i) {
+			for(local i = 0; i < 5; ++i){
+				local v = input[this.buttons[i]];
+				if(v)inputs = inputs | (i << i);
+			}
+			return inputs;
+		};
+		input.padding <- p.spacing ? " " : "";
+		input.size <- p.list_max;
+
+		for (local i = 0; i < input.size; ++i) {
 			local t = ::manbow.String();
 			t.Initialize(::talk.font);
 			t.red = p.red;
@@ -389,58 +412,103 @@ function inputdisplaysetup(player) {
 			t.sx = p.SX;
 			t.x = p.X;
 			t.y = p.Y - (i * p.offset);
-			t.ConnectRenderSlot(::graphics.slot.ui, 60000);
-			input.list.append(t);
-			input.buf.append("");
+			t.ConnectRenderSlot(::graphics.slot.ui, 1);
+			input.text.append(t);
 		}
 		input.Update <- function () {
-			local str = this.getinputs(player,this.padding);
-			if (str != this.lastinput && str != "") {
-				for (local i = this.listmax-1; i > 0; --i) {
-					this.buf[i] = this.buf[i-1];
-					this.list[i].Set(this.buf[i-1]);
-				}
-				this.buf[0] = str;
-				this.list[0].Set(str);
-				this.lastinput = str;
-				this.sincelast = this.autodeletetimer;
-			} else if (this.sincelast && !--this.sincelast) {
-				for (local i = 0; i < this.listmax; ++i) {
-					this.buf[i] = "";
-					this.list[i].Set("");
-				}
-				this.lastinput = "";
+			local inputs = [this.getinputs(player),0];
+			local len = this.data.len()-1;
+			if(this.data[len][0] == inputs[0])inputs[1] = ++this.data[len][1];
+			if(inputs[1] == 0){
+				this.data.append(inputs);
+				if(this.data.len() > this.size)do{this.data.pop();}while(this.data.len() > this.size);
 			}
+			if(this.data[this.data.len()-1][1] > this.timer)this.data = [[0,0]];
+			// if(this.sincelast && !--this.sincelast)this.list = [[0,0]];
+			for (local i = 0; i < this.text.len(); ++i){
+				if (i < (this.data.len()-1) && this.data[i][0] != 0){
+					local str = "";
+					if(this.data[i][0] & 0x20 && this.data[i][0] & 0x40)str += "7";
+					else if(this.data[i][0] & 0x200 && this.data[i][0] & 0x40)str += "9";
+					else if(this.data[i][0] & 0x20 && this.data[i][0] & 0x400)str += "1";
+					else if(this.data[i][0] & 0x200 && this.data[i][0] & 0x400)str += "3";
+					else{str += this.padding;}
+					str += (this.data[i][0] & 0x1) ? "A" : this.padding;
+					str += this.data[i][0] & 0x2 ? this.data[i][1] > 12 ? "[B]" : "B" : this.padding;
+					str += this.data[i][0] & 0x4 ? "C" : this.padding;
+					str += this.data[i][0] & 0x8 ? "E" : this.padding;
+					str += this.data[i][0] & 0x10 ? "D" : this.padding;
+					str += " "+this.padding+(this.data[i][1] > 0 ? this.data[i][1] : "");
+					this.text[i].Set(str);
+				}
+			}
+			// for(local i = 0; i < this.list.len(); ++i){
+			// 	::debug.print(format("[%d,%d]\n",this.list[i][0],this.list[i][1]));
+			// }
+			// if (str != this.lastinput && str != "") {
+			// 	for (local i = this.listmax-1; i > 0; --i) {
+			// 		this.buf[i] = this.buf[i-1];
+			// 		this.list[i].Set(this.buf[i-1]);
+			// 	}
+			// 	this.buf[0] = str;
+			// 	this.list[0].Set(str);
+			// 	this.lastinput = str;
+			// 	this.sincelast = this.autodeletetimer;
+			// } else if (this.sincelast && !--this.sincelast) {
+			// 	for (local i = 0; i < this.listmax; ++i) {
+			// 		this.buf[i] = "";
+			// 		this.list[i].Set("");
+			// 	}
+			// 	this.lastinput = "";
+			// }
 		};
 		this.input_task = input;
 		AddTask(input);
 	}
 }
 
-function getinputs(player,none)
-{
-	local str = "";
-	local setting = player != 1 ? ::setting.input_display.p1 : ::setting.input_display.p2;
-	local team = ::battle.team[(::network.IsPlaying() ? ::network.is_parent_vs : player == 1) ? 1 : 0];
-	local input = team.input;
-	local x_axis = setting.raw_input || team.current.direction > 0 ? input.x : -input.x;
-	if (input.y < 0) {
-		str = x_axis < 0 ? "7" : !x_axis ? "8" : "9";
-	}
-	else if (!input.y) {
-		str = x_axis < 0 ? "4" : !x_axis ? none : "6";
-	}
-	else {
-		str = x_axis < 0 ? "1" : !x_axis ? "2" : "3";
-	}
-	str += none;
-	str += input.b0 ? "A" : none;
-	str += input.b1 ? input.b1 > 12 ? "[B]" : none + "B" + none : none + none + none;
-	str += input.b2 ? "C" : none;
-	str += input.b4 ? "D" : none;
-	str += input.b3 ? "E" : none;
-	return str;
-}
+// function getinputs(player)
+// {
+// 	//flag distribution:
+// 	//0x1-A  0x100-[A]
+// 	//0x2-B  0x200-[B]
+// 	//0x4-C  0x400-[C]
+// 	//0x8-E  0x800-[E]
+// 	//0x10-D 0x1000-[D]
+// 	//0x20-X- 0x2000-X+ 4 priority
+// 	//0x40-Y+ 0x4000-Y- 8 priority
+// 	local inputs = 0;
+// 	local setting = player != 1 ? ::setting.input_display.p1 : ::setting.input_display.p2;
+// 	local team = ::battle.team[(::network.IsPlaying() ? ::network.is_parent_vs : player == 1) ? 1 : 0];
+// 	local input = team.input;
+// 	local x_axis = setting.raw_input || team.current.direction > 0 ? input.x : -input.x;
+// 	if (x_axis != 0){
+// 		inputs |= x_axis < 0 ? 0x20 : 0x2000;
+// 	}
+// 	if(input.y != 0){
+// 		inputs |= input.y > 0 ? 0x40 : 0x4000;
+// 	}
+
+// 	// if (input.y < 0) {
+// 	// 	str = x_axis < 0 ? "7" : !x_axis ? "8" : "9";
+// 	// }
+// 	// else if (!input.y) {
+// 	// 	str = x_axis < 0 ? "4" : !x_axis ? none : "6";
+// 	// }
+// 	// else {
+// 	// 	str = x_axis < 0 ? "1" : !x_axis ? "2" : "3";
+// 	// }
+// 	for(local i = 0; i < 5; ++i){
+// 		if(local v = input[buttons[i]])inputs |= v > 12 ? (i << i | (1 << i + 7)) : i << i;
+// 	}
+// 	// str += none;
+// 	// str += input.b0 ? "A" : none;
+// 	// str += input.b1 ? input.b1 > 12 ? "[B]" : none + "B" + none : none + none + none;
+// 	// str += input.b2 ? "C" : none;
+// 	// str += input.b4 ? "D" : none;
+// 	// str += input.b3 ? "E" : none;
+// 	return inputs;
+// }
 
 function HideUISetup(hold) {
 	local ui = {};

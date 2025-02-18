@@ -143,32 +143,25 @@ function CreateFrame_data_Display () {
                 function (root) {
                     root.render <- function (data) {
                         local bar = "";
+                        local size = 0;
                         if (data[0] > 0){
-                            for (local i = 0; i <= data[0]; ++i){
-                                bar += i % 3 ? ">" : "";
-                            }
+                            size = data[0];
+                            do{bar += !(size % (3*(size/10))) ? ">" : ""}while(--size > -1);
                         }
                         if (data[1][0] > 0){
                             for (local i = 0; i < data[1].len(); ++i){
                                 local size = data[1][i] - 1;
-                                do {
-                                    // if(!(size % 3))continue;
-                                    bar += !(i & 1) ? "+" : "-";
-                                }while(--size > -1);
+                                do {bar += !(size % (1*(size/10))) ? !(i & 1) ? "+" : "-" : "";}while(--size > -1);
                             }
                         }
                         if (data[2] > 0){
-                            for (local i = 0; i <= data[2]; ++i){
-                                bar += i % 3 ? "<" : "";
-                            }
+                            size = data[2];
+                            do{bar += !(size % (3*(size/10))) ? "<" : ""}while(--size > -1);
                         }
                         this.text.Set(bar);
                         this.text.x = 640 - ((this.text.sx * this.text.width)/2);
                         this.text.y = 360 - (this.text.sy * this.text.height);
                     };
-                    root.clear <- function () {
-                        this.text.Set("");
-                    }
                 }
             );
             root.render <- function () {
@@ -251,6 +244,9 @@ function CreateFrame_data_Display () {
             //     }
             // };
             root.tick <- function (active) {
+                //active bits:
+                // 1 - same source
+                // 2 - different source
                 switch (active) {
                     case 2:
                         if (this.data[2] != 0){
@@ -261,6 +257,7 @@ function CreateFrame_data_Display () {
                         ++this.data[3][this.data[3].len()-1];
                         break;
                     case 1:
+                    case 3:
                         if (this.data[2] != 0){
                             this.data[1].append(this.data[2]);
                             this.data[2] = 0;

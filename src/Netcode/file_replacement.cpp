@@ -206,8 +206,8 @@ static const std::unordered_map<std::string_view, const EmbedData> new_files = {
     {"debug.nut"sv, debug_nut},
     {"UI.nut"sv, UI_nut},
     {"frame_data.nut"sv, frame_data_nut},
-    //{"mod_config.nut"sv, mod_config_nut},
-    //{"mod_config_animation.nut"sv, mod_config_animation_nut},
+    {"mod_config.nut"sv, mod_config_nut},
+    {"mod_config_animation.nut"sv, mod_config_animation_nut},
 };
 
 EmbedData get_new_file_data(const char* name) {

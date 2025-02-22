@@ -382,7 +382,6 @@ function inputdisplaysetup(player) {
 		input.text <- [];
 		// input.sincelast <- 0; //frames
 		input.timer <- p.timer; //frames
-		input.buttons <- [ "b0", "b1", "b2", "b3", "b4" ];
 		input.getinputs <- function (player){
 			local inputs = 0;
 			local setting = player != 1 ? ::setting.input_display.p1 : ::setting.input_display.p2;
@@ -392,75 +391,83 @@ function inputdisplaysetup(player) {
 			if (x_axis != 0)inputs = inputs | (x_axis < 0 ? 0x20 : 0x200);
 			if (input.y != 0)inputs = inputs | (input.y > 0 ? 0x40 : 0x400);
 
-			for(local i = 0; i < 5; ++i){
-				local v = input[this.buttons[i]];
-				if(v)inputs = inputs | (i << i);
-			}
+			if(input.b0)inputs = inputs | 0x1;
+			if(input.b1)inputs = inputs | 0x2;
+			if(input.b2)inputs = inputs | 0x4;
+			if(input.b3)inputs = inputs | 0x8;
+			if(input.b4)inputs = inputs | 0x10;
 			return inputs;
 		};
 		input.padding <- p.spacing ? " " : "";
 		input.size <- p.list_max;
+		input.lastlog <- "";
 
 		for (local i = 0; i < input.size; ++i) {
-			local t = ::manbow.String();
-			t.Initialize(::talk.font);
-			t.red = p.red;
-			t.green = p.green;
-			t.blue = p.blue;
-			t.alpha = p.alpha;
-			t.sy = p.SY;
-			t.sx = p.SX;
-			t.x = p.X;
-			t.y = p.Y - (i * p.offset);
-			t.ConnectRenderSlot(::graphics.slot.ui, 1);
-			input.text.append(t);
+			input.text.append(this.CreateText(
+				0,"",
+				p.SX,p.SY,
+				p.red,p.green,p.blue,p.alpha,
+				::graphics.slot.ui,1,
+				null,
+				function (root){
+					root.text.x = p.SX*p.X;
+					root.text.y = p.SY*(p.Y - (i * p.offset));
+					root.Set <- function (text) {this.text.Set(text);}
+				}
+			));
 		}
 		input.Update <- function () {
+			//todo
+			//invert array and filter out 0 inputs
 			local inputs = [this.getinputs(player),0];
 			local len = this.data.len()-1;
 			if(this.data[len][0] == inputs[0])inputs[1] = ++this.data[len][1];
-			if(inputs[1] == 0){
+			if(!inputs[1]){
 				this.data.append(inputs);
-				if(this.data.len() > this.size)do{this.data.pop();}while(this.data.len() > this.size);
+				if(this.data.len() > this.size)do{this.data.remove(0);}while(this.data.len() > this.size);
 			}
 			if(this.data[this.data.len()-1][1] > this.timer)this.data = [[0,0]];
-			// if(this.sincelast && !--this.sincelast)this.list = [[0,0]];
 			for (local i = 0; i < this.text.len(); ++i){
-				if (i < (this.data.len()-1) && this.data[i][0] != 0){
-					local str = "";
+				local str = "";
+				if (i < (this.data.len()) && this.data[i][0] != 0){
+					local direction = this.data[i][0] & 0x660;
+					switch(direction){
+						case 0x20:
+							str += "4";
+							break;
+						case 0x40:
+							str += "8";
+							break;
+						case 0x60:
+							str += "7";
+							break;
+						case 0x200:
+							str += "6";
+							break;
+						case 0x240:
+							str += "9";
+							break;
+						case 0x400:
+							str += "2";
+							break;
+						case 0x420:
+							str += "1";
+							break;
+					}
 					if(this.data[i][0] & 0x20 && this.data[i][0] & 0x40)str += "7";
 					else if(this.data[i][0] & 0x200 && this.data[i][0] & 0x40)str += "9";
 					else if(this.data[i][0] & 0x20 && this.data[i][0] & 0x400)str += "1";
 					else if(this.data[i][0] & 0x200 && this.data[i][0] & 0x400)str += "3";
 					else{str += this.padding;}
-					str += (this.data[i][0] & 0x1) ? "A" : this.padding;
+					str += this.data[i][0] & 0x1 ? "A" : this.padding;
 					str += this.data[i][0] & 0x2 ? this.data[i][1] > 12 ? "[B]" : "B" : this.padding;
 					str += this.data[i][0] & 0x4 ? "C" : this.padding;
 					str += this.data[i][0] & 0x8 ? "E" : this.padding;
 					str += this.data[i][0] & 0x10 ? "D" : this.padding;
 					str += " "+this.padding+(this.data[i][1] > 0 ? this.data[i][1] : "");
-					this.text[i].Set(str);
 				}
+				this.text[i].Set(str);
 			}
-			// for(local i = 0; i < this.list.len(); ++i){
-			// 	::debug.print(format("[%d,%d]\n",this.list[i][0],this.list[i][1]));
-			// }
-			// if (str != this.lastinput && str != "") {
-			// 	for (local i = this.listmax-1; i > 0; --i) {
-			// 		this.buf[i] = this.buf[i-1];
-			// 		this.list[i].Set(this.buf[i-1]);
-			// 	}
-			// 	this.buf[0] = str;
-			// 	this.list[0].Set(str);
-			// 	this.lastinput = str;
-			// 	this.sincelast = this.autodeletetimer;
-			// } else if (this.sincelast && !--this.sincelast) {
-			// 	for (local i = 0; i < this.listmax; ++i) {
-			// 		this.buf[i] = "";
-			// 		this.list[i].Set("");
-			// 	}
-			// 	this.lastinput = "";
-			// }
 		};
 		this.input_task = input;
 		AddTask(input);
@@ -619,7 +626,7 @@ function SetSlow( n )
 
 this.UpdateMainOrig <- this.UpdateMain;
 this.UpdateMain = function() {
-	if (!::network.inst &&
+	if (!::network.IsActive() &&
 		::setting.frame_data.frame_stepping &&
 		this.frame_lock &&
 		(::input_all.b6 != 1)){

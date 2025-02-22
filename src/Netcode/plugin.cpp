@@ -142,6 +142,7 @@ static inline void set_inputp1_constants(HSQUIRRELVM v) {
     int32_t timer = get_inputp1_timer();
     sq_setinteger(v, _SC("timer"), timer > 0 ? timer : 0);
     sq_setbool(v, _SC("raw_input"), get_inputp1_raw_input());
+    sq_setstring(v, _SC("notation"), get_inputp1_notation());
 }
 
 static inline void set_inputp2_constants(HSQUIRRELVM v) {
@@ -161,6 +162,7 @@ static inline void set_inputp2_constants(HSQUIRRELVM v) {
     int32_t timer = get_inputp2_timer();
     sq_setinteger(v, _SC("timer"), timer > 0 ? timer : 0);
     sq_setbool(v, _SC("raw_input"), get_inputp2_raw_input());
+    sq_setstring(v, _SC("notation"), get_inputp2_notation());
 }
 
 static inline void set_frame_data_constants(HSQUIRRELVM v) {

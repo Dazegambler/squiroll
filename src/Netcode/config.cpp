@@ -84,6 +84,7 @@ CONFIG_HEX(INPUT1, COLOR, "color", FF00FF00);
 CONFIG_BOL(INPUT1, SPACING, "spacing", false);
 CONFIG_INT(INPUT1, TIMER, "timer", 200);
 CONFIG_BOL(INPUT1, RAW_INPUT, "raw_input", false);
+CONFIG_STR(INPUT1, NOTATION, "notation","1,2,3,4, ,6,7,8,9,A,B,[B],C,E,D");
 
 #define INPUT2_SECTION_NAME "input_display_p2"
 CONFIG_BOL(INPUT2, ENABLED, "enabled", false);
@@ -97,6 +98,7 @@ CONFIG_HEX(INPUT2, COLOR, "color", FF00FF00);
 CONFIG_BOL(INPUT2, SPACING, "spacing", false);
 CONFIG_INT(INPUT2, TIMER, "timer", 200);
 CONFIG_BOL(INPUT2, RAW_INPUT, "raw_input", false);
+CONFIG_STR(INPUT2, NOTATION, "notation", "1,2,3,4, ,6,7,8,9,A,B,[B],C,E,D");
 
 #define FRAME_DATA_SECTION_NAME "frame_data_display"
 CONFIG_BOL(FRAME_DATA, ENABLED, "enabled", false);
@@ -175,6 +177,7 @@ static inline constexpr const char
         CONFIG_DEFAULT(INPUT1, SPACING),
         CONFIG_DEFAULT(INPUT1, TIMER),
         CONFIG_DEFAULT(INPUT1, RAW_INPUT),
+        CONFIG_DEFAULT(INPUT1, NOTATION),
 
         CONFIG_DEFAULT(INPUT2, ENABLED),
         CONFIG_DEFAULT(INPUT2, X),
@@ -187,6 +190,7 @@ static inline constexpr const char
         CONFIG_DEFAULT(INPUT2, SPACING),
         CONFIG_DEFAULT(INPUT2, TIMER),
         CONFIG_DEFAULT(INPUT2, RAW_INPUT),
+        CONFIG_DEFAULT(INPUT2, NOTATION),
 
         CONFIG_DEFAULT(HITBOX_VIS, ENABLED),
         CONFIG_DEFAULT(HITBOX_VIS, BORDER_WIDTH),
@@ -515,6 +519,18 @@ bool get_inputp1_raw_input() {
     return GET_BOOL_CONFIG(INPUT1, RAW_INPUT);
 }
 
+static char INPUT1_NOTATION_BUFFER[1024]{ '\0' };
+const char* get_inputp1_notation() {
+    const char* notation;
+    if (
+        use_config &&
+        get_config_string(INPUT1_SECTION_NAME, INPUT1_NOTATION_KEY, INPUT1_NOTATION_BUFFER)
+    ) {
+        notation = INPUT1_NOTATION_BUFFER;
+    }
+    return notation;
+}
+
 // ====================
 // INPUT P2
 // ====================
@@ -573,6 +589,18 @@ int32_t get_inputp2_timer() {
 static char INPUT2_RAW_INPUT_BUFFER[8]{ '\0' };
 bool get_inputp2_raw_input() {
     return GET_BOOL_CONFIG(INPUT2, RAW_INPUT);
+}
+
+static char INPUT2_NOTATION_BUFFER[1024]{ '\0' };
+const char* get_inputp2_notation() {
+    const char* notation;
+    if (
+        use_config &&
+        get_config_string(INPUT2_SECTION_NAME, INPUT2_NOTATION_KEY, INPUT2_NOTATION_BUFFER)
+    ) {
+        notation = INPUT2_NOTATION_BUFFER;
+    }
+    return notation;
 }
 
 // ====================

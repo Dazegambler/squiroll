@@ -380,6 +380,7 @@ function inputdisplaysetup(player) {
 		local input = {};
 		input.data <- [[0,0]];
 		input.text <- [];
+		input.notation <- split(p.notation,",");
 		// input.sincelast <- 0; //frames
 		input.timer <- p.timer; //frames
 		input.getinputs <- function (player){
@@ -421,50 +422,48 @@ function inputdisplaysetup(player) {
 			//invert array and filter out 0 inputs
 			local inputs = [this.getinputs(player),0];
 			local len = this.data.len()-1;
-			if(this.data[len][0] == inputs[0])inputs[1] = ++this.data[len][1];
+			if(this.data[0][0] == inputs[0])inputs[1] = ++this.data[0][1];
 			if(!inputs[1]){
-				this.data.append(inputs);
-				if(this.data.len() > this.size)do{this.data.remove(0);}while(this.data.len() > this.size);
+				this.data.insert(0,inputs);
+				if(this.data.len() > this.size)do{this.data.pop();}while(this.data.len() > this.size);
 			}
-			if(this.data[this.data.len()-1][1] > this.timer)this.data = [[0,0]];
+			if(this.data[0][1] > this.timer)this.data = [[0,0]];
 			for (local i = 0; i < this.text.len(); ++i){
 				local str = "";
-				if (i < (this.data.len()) && this.data[i][0] != 0){
+				if (i < (this.data.len())){
+					if(true/*placeholder for config option*/)str += format("%3d%4s",this.data[i][1],"");
 					local direction = this.data[i][0] & 0x660;
 					switch(direction){
 						case 0x20:
-							str += "4";
+							str += this.notation[3];//"4";
 							break;
 						case 0x40:
-							str += "8";
+							str += this.notation[7];//"8";
 							break;
 						case 0x60:
-							str += "7";
+							str += this.notation[6];//"7";
 							break;
 						case 0x200:
-							str += "6";
+							str += this.notation[5];//"6";
 							break;
 						case 0x240:
-							str += "9";
+							str += this.notation[8];//"9";
 							break;
 						case 0x400:
-							str += "2";
+							str += this.notation[1];//"2";
 							break;
 						case 0x420:
-							str += "1";
+							str += this.notation[0];//"1";
+							break;
+						default:
+							str += this.notation[4];//"5";
 							break;
 					}
-					if(this.data[i][0] & 0x20 && this.data[i][0] & 0x40)str += "7";
-					else if(this.data[i][0] & 0x200 && this.data[i][0] & 0x40)str += "9";
-					else if(this.data[i][0] & 0x20 && this.data[i][0] & 0x400)str += "1";
-					else if(this.data[i][0] & 0x200 && this.data[i][0] & 0x400)str += "3";
-					else{str += this.padding;}
-					str += this.data[i][0] & 0x1 ? "A" : this.padding;
-					str += this.data[i][0] & 0x2 ? this.data[i][1] > 12 ? "[B]" : "B" : this.padding;
-					str += this.data[i][0] & 0x4 ? "C" : this.padding;
-					str += this.data[i][0] & 0x8 ? "E" : this.padding;
-					str += this.data[i][0] & 0x10 ? "D" : this.padding;
-					str += " "+this.padding+(this.data[i][1] > 0 ? this.data[i][1] : "");
+					str += this.data[i][0] & 0x1 ? this.notation[9]/*"A"*/ : this.padding;
+					str += this.data[i][0] & 0x2 ? this.data[i][1] > 12 ? this.notation[11]/*"[B]"*/ : this.notation[10]/*"B"*/ : this.padding;
+					str += this.data[i][0] & 0x4 ? this.notation[12]/*"C"*/ : this.padding;
+					str += this.data[i][0] & 0x8 ? this.notation[13]/*"E"*/ : this.padding;
+					str += this.data[i][0] & 0x10 ? this.notation[14]/*"D"*/ : this.padding;
 				}
 				this.text[i].Set(str);
 			}

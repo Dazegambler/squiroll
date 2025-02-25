@@ -87,7 +87,7 @@ function CreateInput_display(idx,player_config){
                     str += format(this.player != 0 ? "%8s%5s" : "%5s%8s",this.player != 0 ? input_str : frames,this.player != 0 ? frames : input_str);
                 }
                 this.text[i].text.Set(str);
-                this.text[i].text.x = this.pos[0] - (this.player > 0 ? this.text[i].text.width : 0);
+                this.text[i].text.x = this.pos[0] - (this.player > 0 ? this.text[i].text.sx*this.text[i].text.width : 0);
             }
         };
     }

@@ -87,7 +87,7 @@ CONFIG_BOL(INPUT1, FRAME_COUNT, "frame_count", false);
 
 #define INPUT2_SECTION_NAME "input_display_p2"
 CONFIG_BOL(INPUT2, ENABLED, "enabled", false);
-CONFIG_INT(INPUT2, X, "x", 1320);
+CONFIG_INT(INPUT2, X, "x", 1280);
 CONFIG_INT(INPUT2, Y, "y", 520);
 CONFIG_FLT(INPUT2, SCALE_X, "scale_x", 0.6);
 CONFIG_FLT(INPUT2, SCALE_Y, "scale_y", 0.6);

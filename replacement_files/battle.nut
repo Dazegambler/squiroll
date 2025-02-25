@@ -18,6 +18,7 @@ function TerminateUser()
 ::manbow.CompileFile("data/actor/script/battle.nut", this);
 ::manbow.compilebuffer("UI.nut", this);
 ::manbow.compilebuffer("frame_data.nut", this);
+::manbow.compilebuffer("input_display.nut",this);
 this.gauge <- {};
 ::manbow.CompileFile("data/actor/status/gauge_common.nut", this.gauge);
 ::manbow.CompileFile("data/actor/status/spellcard.nut", this);
@@ -369,152 +370,11 @@ function inputdisplaysetup(player) {
 	::setting.input_display.update_consts();
 	local p = player != 1 ? ::setting.input_display.p1 : ::setting.input_display.p2;
 	if (p.enabled) {
-		//flag distribution:
-		//0x1-A
-		//0x2-B
-		//0x4-C
-		//0x8-E
-		//0x10-D
-		//0x20-X- 0x200-X+ 4 priority
-		//0x40-Y+ 0x400-Y- 8 prioritY
-		local input = {};
-		input.data <- [[0,0]];
-		input.text <- [];
-		input.notation <- split(p.notation,",");
-		// input.sincelast <- 0; //frames
-		input.timer <- p.timer; //frames
-		input.getinputs <- function (player){
-			local inputs = 0;
-			local setting = player != 1 ? ::setting.input_display.p1 : ::setting.input_display.p2;
-			local team = ::battle.team[(::network.IsPlaying() ? ::network.is_parent_vs : player == 1) ? 1 : 0];
-			local input = team.input;
-			local x_axis = setting.raw_input || team.current.direction > 0 ? input.x : -input.x;
-			if (x_axis != 0)inputs = inputs | (x_axis < 0 ? 0x20 : 0x200);
-			if (input.y != 0)inputs = inputs | (input.y > 0 ? 0x40 : 0x400);
-
-			if(input.b0)inputs = inputs | 0x1;
-			if(input.b1)inputs = inputs | 0x2;
-			if(input.b2)inputs = inputs | 0x4;
-			if(input.b3)inputs = inputs | 0x8;
-			if(input.b4)inputs = inputs | 0x10;
-			return inputs;
-		};
-		input.padding <- p.spacing ? " " : "";
-		input.size <- p.list_max;
-		input.lastlog <- "";
-
-		for (local i = 0; i < input.size; ++i) {
-			input.text.append(this.CreateText(
-				0,"",
-				p.SX,p.SY,
-				p.red,p.green,p.blue,p.alpha,
-				::graphics.slot.ui,1,
-				null,
-				function (root){
-					root.text.x = p.SX*p.X;
-					root.text.y = p.SY*(p.Y - (i * p.offset));
-					root.Set <- function (text) {this.text.Set(text);}
-				}
-			));
-		}
-		input.Update <- function () {
-			//todo
-			//invert array and filter out 0 inputs
-			local inputs = [this.getinputs(player),0];
-			local len = this.data.len()-1;
-			if(this.data[0][0] == inputs[0])inputs[1] = ++this.data[0][1];
-			if(!inputs[1]){
-				this.data.insert(0,inputs);
-				if(this.data.len() > this.size)do{this.data.pop();}while(this.data.len() > this.size);
-			}
-			if(this.data[0][1] > this.timer)this.data = [[0,0]];
-			for (local i = 0; i < this.text.len(); ++i){
-				local str = "";
-				if (i < (this.data.len())){
-					if(true/*placeholder for config option*/)str += format("%3d%4s",this.data[i][1],"");
-					local direction = this.data[i][0] & 0x660;
-					switch(direction){
-						case 0x20:
-							str += this.notation[3];//"4";
-							break;
-						case 0x40:
-							str += this.notation[7];//"8";
-							break;
-						case 0x60:
-							str += this.notation[6];//"7";
-							break;
-						case 0x200:
-							str += this.notation[5];//"6";
-							break;
-						case 0x240:
-							str += this.notation[8];//"9";
-							break;
-						case 0x400:
-							str += this.notation[1];//"2";
-							break;
-						case 0x420:
-							str += this.notation[0];//"1";
-							break;
-						default:
-							str += this.notation[4];//"5";
-							break;
-					}
-					str += this.data[i][0] & 0x1 ? this.notation[9]/*"A"*/ : this.padding;
-					str += this.data[i][0] & 0x2 ? this.data[i][1] > 12 ? this.notation[11]/*"[B]"*/ : this.notation[10]/*"B"*/ : this.padding;
-					str += this.data[i][0] & 0x4 ? this.notation[12]/*"C"*/ : this.padding;
-					str += this.data[i][0] & 0x8 ? this.notation[13]/*"E"*/ : this.padding;
-					str += this.data[i][0] & 0x10 ? this.notation[14]/*"D"*/ : this.padding;
-				}
-				this.text[i].Set(str);
-			}
-		};
+		local input = this.CreateInput_display(player,p);
 		this.input_task = input;
 		AddTask(input);
 	}
 }
-
-// function getinputs(player)
-// {
-// 	//flag distribution:
-// 	//0x1-A  0x100-[A]
-// 	//0x2-B  0x200-[B]
-// 	//0x4-C  0x400-[C]
-// 	//0x8-E  0x800-[E]
-// 	//0x10-D 0x1000-[D]
-// 	//0x20-X- 0x2000-X+ 4 priority
-// 	//0x40-Y+ 0x4000-Y- 8 priority
-// 	local inputs = 0;
-// 	local setting = player != 1 ? ::setting.input_display.p1 : ::setting.input_display.p2;
-// 	local team = ::battle.team[(::network.IsPlaying() ? ::network.is_parent_vs : player == 1) ? 1 : 0];
-// 	local input = team.input;
-// 	local x_axis = setting.raw_input || team.current.direction > 0 ? input.x : -input.x;
-// 	if (x_axis != 0){
-// 		inputs |= x_axis < 0 ? 0x20 : 0x2000;
-// 	}
-// 	if(input.y != 0){
-// 		inputs |= input.y > 0 ? 0x40 : 0x4000;
-// 	}
-
-// 	// if (input.y < 0) {
-// 	// 	str = x_axis < 0 ? "7" : !x_axis ? "8" : "9";
-// 	// }
-// 	// else if (!input.y) {
-// 	// 	str = x_axis < 0 ? "4" : !x_axis ? none : "6";
-// 	// }
-// 	// else {
-// 	// 	str = x_axis < 0 ? "1" : !x_axis ? "2" : "3";
-// 	// }
-// 	for(local i = 0; i < 5; ++i){
-// 		if(local v = input[buttons[i]])inputs |= v > 12 ? (i << i | (1 << i + 7)) : i << i;
-// 	}
-// 	// str += none;
-// 	// str += input.b0 ? "A" : none;
-// 	// str += input.b1 ? input.b1 > 12 ? "[B]" : none + "B" + none : none + none + none;
-// 	// str += input.b2 ? "C" : none;
-// 	// str += input.b4 ? "D" : none;
-// 	// str += input.b3 ? "E" : none;
-// 	return inputs;
-// }
 
 function HideUISetup(hold) {
 	local ui = {};

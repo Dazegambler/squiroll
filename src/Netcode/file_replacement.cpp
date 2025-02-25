@@ -202,12 +202,17 @@ static constexpr uint8_t frame_data_nut[] = {
 #include "new_files/frame_data.nut.h"
 };
 
+static constexpr uint8_t input_display_nut[] = {
+#include "new_files/input_display.nut.h"
+};
+
 static const std::unordered_map<std::string_view, const EmbedData> new_files = {
     {"debug.nut"sv, debug_nut},
     {"UI.nut"sv, UI_nut},
     {"frame_data.nut"sv, frame_data_nut},
     {"mod_config.nut"sv, mod_config_nut},
     {"mod_config_animation.nut"sv, mod_config_animation_nut},
+    {"input_display.nut"sv, input_display_nut},
 };
 
 EmbedData get_new_file_data(const char* name) {

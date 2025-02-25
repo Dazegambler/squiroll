@@ -54,10 +54,9 @@ float get_inputp1_scale_y();
 int32_t get_inputp1_offset();
 int32_t get_inputp1_count();
 uint32_t get_inputp1_color();
-bool get_inputp1_spacing();
 int32_t get_inputp1_timer();
-bool get_inputp1_raw_input();
 const char* get_inputp1_notation();
+bool get_inputp1_frame_count();
 
 bool get_inputp2_enabled();
 int32_t get_inputp2_x();
@@ -67,10 +66,9 @@ float get_inputp2_scale_y();
 int32_t get_inputp2_offset();
 int32_t get_inputp2_count();
 uint32_t get_inputp2_color();
-bool get_inputp2_spacing();
 int32_t get_inputp2_timer();
-bool get_inputp2_raw_input();
 const char* get_inputp2_notation();
+bool get_inputp2_frame_count();
 
 bool get_hitbox_vis_enabled();
 int32_t get_hitbox_border_width();

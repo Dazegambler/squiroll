@@ -133,7 +133,6 @@ static inline void set_inputp1_constants(HSQUIRRELVM v) {
     sq_setfloat(v, _SC("SY"), get_inputp1_scale_y());
     sq_setinteger(v, _SC("offset"), get_inputp1_offset());
     sq_setinteger(v, _SC("list_max"), get_inputp1_count());
-    sq_setbool(v, _SC("spacing"), get_inputp1_spacing());
     uint32_t color = get_inputp1_color();
     sq_setfloat(v, _SC("blue"), (float)(uint8_t)color / 255.0f);
     sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);
@@ -141,8 +140,8 @@ static inline void set_inputp1_constants(HSQUIRRELVM v) {
     sq_setfloat(v, _SC("alpha"), (float)(uint8_t)(color >> 24) / 255.0f);
     int32_t timer = get_inputp1_timer();
     sq_setinteger(v, _SC("timer"), timer > 0 ? timer : 0);
-    sq_setbool(v, _SC("raw_input"), get_inputp1_raw_input());
     sq_setstring(v, _SC("notation"), get_inputp1_notation());
+    sq_setbool(v, _SC("frame_count"), get_inputp1_frame_count());
 }
 
 static inline void set_inputp2_constants(HSQUIRRELVM v) {
@@ -153,7 +152,6 @@ static inline void set_inputp2_constants(HSQUIRRELVM v) {
     sq_setfloat(v, _SC("SY"), get_inputp2_scale_y());
     sq_setinteger(v, _SC("offset"), get_inputp2_offset());
     sq_setinteger(v, _SC("list_max"), get_inputp2_count());
-    sq_setbool(v, _SC("spacing"), get_inputp2_spacing());
     uint32_t color = get_inputp2_color();
     sq_setfloat(v, _SC("blue"), (float)(uint8_t)color / 255.0f);
     sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);
@@ -161,8 +159,8 @@ static inline void set_inputp2_constants(HSQUIRRELVM v) {
     sq_setfloat(v, _SC("alpha"), (float)(uint8_t)(color >> 24) / 255.0f);
     int32_t timer = get_inputp2_timer();
     sq_setinteger(v, _SC("timer"), timer > 0 ? timer : 0);
-    sq_setbool(v, _SC("raw_input"), get_inputp2_raw_input());
     sq_setstring(v, _SC("notation"), get_inputp2_notation());
+    sq_setbool(v, _SC("frame_count"),get_inputp2_frame_count());
 }
 
 static inline void set_frame_data_constants(HSQUIRRELVM v) {

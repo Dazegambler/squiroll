@@ -74,31 +74,29 @@ CONFIG_BOL(PING, FRAMES, "frames", true);
 
 #define INPUT1_SECTION_NAME "input_display_p1"
 CONFIG_BOL(INPUT1, ENABLED, "enabled", false);
-CONFIG_INT(INPUT1, X, "x", 5);
-CONFIG_INT(INPUT1, Y, "y", 650);
-CONFIG_FLT(INPUT1, SCALE_X, "scale_x", 0.8);
-CONFIG_FLT(INPUT1, SCALE_Y, "scale_y", 0.8);
+CONFIG_INT(INPUT1, X, "x", 0);
+CONFIG_INT(INPUT1, Y, "y", 520);
+CONFIG_FLT(INPUT1, SCALE_X, "scale_x", 0.6);
+CONFIG_FLT(INPUT1, SCALE_Y, "scale_y", 0.6);
 CONFIG_INT(INPUT1, OFFSET, "offset", 30);
-CONFIG_INT(INPUT1, COUNT, "count", 16);
+CONFIG_INT(INPUT1, COUNT, "count", 13);
 CONFIG_HEX(INPUT1, COLOR, "color", FF00FF00);
-CONFIG_BOL(INPUT1, SPACING, "spacing", false);
 CONFIG_INT(INPUT1, TIMER, "timer", 200);
-CONFIG_BOL(INPUT1, RAW_INPUT, "raw_input", false);
-CONFIG_STR(INPUT1, NOTATION, "notation","1,2,3,4, ,6,7,8,9,A,B,[B],C,E,D");
+CONFIG_STR(INPUT1, NOTATION, "notation","1,2,3,4, ,6,7,8,9,A,B,C,E,D,[B]");
+CONFIG_BOL(INPUT1, FRAME_COUNT, "frame_count", false);
 
 #define INPUT2_SECTION_NAME "input_display_p2"
 CONFIG_BOL(INPUT2, ENABLED, "enabled", false);
-CONFIG_INT(INPUT2, X, "x", 1210);
-CONFIG_INT(INPUT2, Y, "y", 515);
-CONFIG_FLT(INPUT2, SCALE_X, "scale_x", 1.0);
-CONFIG_FLT(INPUT2, SCALE_Y, "scale_y", 1.0);
+CONFIG_INT(INPUT2, X, "x", 1320);
+CONFIG_INT(INPUT2, Y, "y", 520);
+CONFIG_FLT(INPUT2, SCALE_X, "scale_x", 0.6);
+CONFIG_FLT(INPUT2, SCALE_Y, "scale_y", 0.6);
 CONFIG_INT(INPUT2, OFFSET, "offset", 30);
-CONFIG_INT(INPUT2, COUNT, "count", 12);
+CONFIG_INT(INPUT2, COUNT, "count", 13);
 CONFIG_HEX(INPUT2, COLOR, "color", FF00FF00);
-CONFIG_BOL(INPUT2, SPACING, "spacing", false);
 CONFIG_INT(INPUT2, TIMER, "timer", 200);
-CONFIG_BOL(INPUT2, RAW_INPUT, "raw_input", false);
-CONFIG_STR(INPUT2, NOTATION, "notation", "1,2,3,4, ,6,7,8,9,A,B,[B],C,E,D");
+CONFIG_STR(INPUT2, NOTATION, "notation", "1,2,3,4, ,6,7,8,9,A,B,C,E,D,[B]");
+CONFIG_BOL(INPUT2, FRAME_COUNT, "frame_count", false);
 
 #define FRAME_DATA_SECTION_NAME "frame_data_display"
 CONFIG_BOL(FRAME_DATA, ENABLED, "enabled", false);
@@ -174,10 +172,9 @@ static inline constexpr const char
         CONFIG_DEFAULT(INPUT1, OFFSET),
         CONFIG_DEFAULT(INPUT1, COUNT),
         CONFIG_DEFAULT(INPUT1, COLOR),
-        CONFIG_DEFAULT(INPUT1, SPACING),
         CONFIG_DEFAULT(INPUT1, TIMER),
-        CONFIG_DEFAULT(INPUT1, RAW_INPUT),
         CONFIG_DEFAULT(INPUT1, NOTATION),
+        CONFIG_DEFAULT(INPUT1, FRAME_COUNT),
 
         CONFIG_DEFAULT(INPUT2, ENABLED),
         CONFIG_DEFAULT(INPUT2, X),
@@ -187,10 +184,9 @@ static inline constexpr const char
         CONFIG_DEFAULT(INPUT2, OFFSET),
         CONFIG_DEFAULT(INPUT2, COUNT),
         CONFIG_DEFAULT(INPUT2, COLOR),
-        CONFIG_DEFAULT(INPUT2, SPACING),
         CONFIG_DEFAULT(INPUT2, TIMER),
-        CONFIG_DEFAULT(INPUT2, RAW_INPUT),
         CONFIG_DEFAULT(INPUT2, NOTATION),
+        CONFIG_DEFAULT(INPUT2, FRAME_COUNT),
 
         CONFIG_DEFAULT(HITBOX_VIS, ENABLED),
         CONFIG_DEFAULT(HITBOX_VIS, BORDER_WIDTH),
@@ -504,19 +500,9 @@ uint32_t get_inputp1_color() {
     return GET_HEX_CONFIG(INPUT1, COLOR);
 }
 
-static char INPUT1_SPACING_BUFFER[8]{ '\0' };
-bool get_inputp1_spacing() {
-    return GET_BOOL_CONFIG(INPUT1, SPACING);
-}
-
 static char INPUT1_TIMER_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
 int32_t get_inputp1_timer() {
     return GET_INT_CONFIG(INPUT1, TIMER);
-}
-
-static char INPUT1_RAW_INPUT_BUFFER[8]{'\0'};
-bool get_inputp1_raw_input() {
-    return GET_BOOL_CONFIG(INPUT1, RAW_INPUT);
 }
 
 static char INPUT1_NOTATION_BUFFER[1024]{ '\0' };
@@ -529,6 +515,11 @@ const char* get_inputp1_notation() {
         notation = INPUT1_NOTATION_BUFFER;
     }
     return notation;
+}
+
+static char INPUT1_FRAME_COUNT_BUFFER[8]{ '\0' };
+bool get_inputp1_frame_count() {
+    return GET_BOOL_CONFIG(INPUT1, FRAME_COUNT);
 }
 
 // ====================
@@ -576,19 +567,9 @@ uint32_t get_inputp2_color() {
     return GET_HEX_CONFIG(INPUT2, COLOR);
 }
 
-static char INPUT2_SPACING_BUFFER[8]{ '\0' };
-bool get_inputp2_spacing() {
-    return GET_BOOL_CONFIG(INPUT2, SPACING);
-}
-
 static char INPUT2_TIMER_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
 int32_t get_inputp2_timer() {
     return GET_INT_CONFIG(INPUT2, TIMER);
-}
-
-static char INPUT2_RAW_INPUT_BUFFER[8]{ '\0' };
-bool get_inputp2_raw_input() {
-    return GET_BOOL_CONFIG(INPUT2, RAW_INPUT);
 }
 
 static char INPUT2_NOTATION_BUFFER[1024]{ '\0' };
@@ -602,6 +583,12 @@ const char* get_inputp2_notation() {
     }
     return notation;
 }
+
+static char INPUT2_FRAME_COUNT_BUFFER[8]{ '\0' };
+bool get_inputp2_frame_count() {
+    return GET_BOOL_CONFIG(INPUT2, FRAME_COUNT);
+}
+
 
 // ====================
 // HITBOX VISUALIZER

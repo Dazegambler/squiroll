@@ -84,7 +84,7 @@ function CreateInput_display(idx,player_config){
                     for( local z = 0; z < 5; ++z){
                         if(this.data[i][0] & 1 << z)input_str += (this.data[i][1] > 12 && z == 1) ? this.notation[14] : this.notation[9+z];
                     }
-                    str += format(this.player != 0 ? "%8s%5s" : "%5s%8s",this.player != 0 ? input_str : frames,this.player != 0 ? frames : input_str);
+                    str += format(this.player != 0 ? "%s%5s" : "%5s%s",this.player != 0 ? input_str : frames,this.player != 0 ? frames : input_str);
                 }
                 this.text[i].text.Set(str);
                 this.text[i].text.x = this.pos[0] - (this.player > 0 ? this.text[i].text.sx*this.text[i].text.width : 0);

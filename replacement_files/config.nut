@@ -324,7 +324,7 @@ this.proc.misc <- function ()
 	if (this.cursor_item.ok)
 	{
 		this.Suspend();
-		::menu.key_config.Initialize(0);
+		::menu.mod_config.Initialize();
 		return;
 	}
 };

@@ -42,6 +42,10 @@ scene.append(this.key_config);
 this.help <- {};
 ::manbow.CompileFile("data/system/help/help.nut", this.help);
 scene.append(this.help);
+this.mod_config <- {};
+::manbow.compilebuffer("mod_config.nut", this.mod_config);
+scene.append(this.mod_config);
+
 
 this.pause_hack <- false;
 this.PauseInitializeOrig <- this.pause.Initialize;
@@ -64,8 +68,6 @@ foreach (key,str in {
 	this.help.src[0][key] <- this.help.func_init_text(str);
 	this.help.src[1][key] <- this.help.func_init_text(str);
 }
-//this.mod_config <- {};
-//::manbow.compilebuffer("mod_config.nut", this.mod_config);
 function BeginAct()
 {
 	this.act.pl.BeginStage(0);

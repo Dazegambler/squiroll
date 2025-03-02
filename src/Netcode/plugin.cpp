@@ -480,6 +480,9 @@ extern "C" {
             sq_edit(v, _SC("manbow"), [](HSQUIRRELVM v) {
                 sq_setfunc(v, _SC("compilebuffer"), sq_compile_buffer);
                 sq_setfunc(v, _SC("SetClipboardString"), copy_to_clipboard);
+                // sq_setfunc(v, _SC("ImageBuffer"),[](HSQUIRRELVM v) -> SQInteger {
+
+                // });
             });
 
             // custom lobby table

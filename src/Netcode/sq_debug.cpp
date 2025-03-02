@@ -180,6 +180,19 @@ static void CompileScriptBuffer(HSQUIRRELVM v, const char *Src, HSQOBJECT root) 
   }
 }*/
 
+void CompileAndRun(HSQUIRRELVM v, const char *Src) {
+  bool is_compiled = false;
+  if (Src) {
+    is_compiled = SQ_SUCCEEDED(sq_compilebuffer(v, Src, strlen(Src), _SC("repl"), SQTrue));
+    if (is_compiled) {
+        sq_call(v, 1, SQFalse, SQTrue);
+        sq_pop(v, -1);
+    } else{
+        sq_throwerror(v, _SC("failed to compile script...\n"));
+    }
+  }
+}
+
 /*
 HSQOBJECT SQGetObjectByName(HSQUIRRELVM v, const SQChar *name) {
     sq_pushstring(v, name, -1);

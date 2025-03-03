@@ -194,7 +194,7 @@ function Initialize()
 			local custom_icon = ::manbow.Texture();
 			v = {};
 			v.icon <- ::manbow.Sprite();
-			if (!::setting.misc.hide_profile_pictures() && ::network.icon[i] != null && custom_icon.CreateFromBase64(::network.icon[i], 32, 32)) {
+			if (!::setting.network.hide_profile_pictures && ::network.icon[i] != null && custom_icon.CreateFromBase64(::network.icon[i], 32, 32)) {
 				v.icon.Initialize(custom_icon, 0, 0, 32, 32);
 			} else {
 				v.icon.Initialize(::menu.cursor.texture, 160, i * 32, 32, 32);
@@ -202,7 +202,7 @@ function Initialize()
 			v.icon.ConnectRenderSlot(::graphics.slot.ui, 40000);
 			v.icon.x = i == 0 ? 16 : 1280 - 16 - 32;
 			v.icon.y = 36;
-			v.text <- ::font.CreateSystemString(::setting.misc.hide_name ? "P"+(i+1) : ::network.player_name[i]);
+			v.text <- ::font.CreateSystemString(::setting.network.hide_opponent_name ? "P"+(i+1) : ::network.player_name[i]);
 			v.text.sx = v.text.sy = 0.66000003;
 			v.text.x = i == 0 ? v.icon.x + 32 : v.icon.x - v.text.width * v.text.sx;
 			v.text.y = v.icon.y + 2;
@@ -215,7 +215,7 @@ function Initialize()
 		if (::network.allow_watch && (!::network.is_parent_vs || !::network.hide_host_ip)){
 			local ip_manager = {};
 			ip_manager.Apply <- function (text_func) {
-				if (!::setting.misc.hide_ip()) {
+				if (!::setting.network.hide_ip) {
 					this.text <- ::font.CreateSystemStringSmall("Watch IP: " + text_func());
 					this.text.x = 5;
 					this.text.y = 1;

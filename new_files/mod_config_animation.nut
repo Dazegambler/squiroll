@@ -18,8 +18,18 @@ function Initialize(){
 		ui.ox = 0;
 		this.pager.Append(ui);
 		t.item <- [];
-		local w_max0 = 0;
 		local w_max1 = 0;
+
+		local section = ::font.CreateSystemString(_page[0].section);
+		section.sx = section.sy = 1.5;
+		section.x = ::graphics.width - ((section.sx * section.width) / 2);
+		section.y = 50 - ((section.sy * section.height) / 2);
+		section.red = 0.0;
+		section.green = 1.0;
+		section.blue = 0.0;
+		section.alpha = 1.0;
+		section.ConnectRenderSlot(::graphics.slot.front, 0);
+		t.item.push([section]);
 
 		foreach( i, v in _page )
 		{
@@ -31,11 +41,6 @@ function Initialize(){
 			obj.push(text);
 			w = text.width + space;
 			t.item.push(obj);
-
-			if (w_max0 < text.width)
-			{
-				w_max0 = text.width;
-			}
 
 			if (w_max1 < w)
 			{
@@ -83,16 +88,6 @@ function Update()
 				if (obj.visible)
 				{
 					obj.SetWorldTransform(mat);
-
-					// if (i == this.action.cur_index && p == this.action.cur_page)
-					// {
-					// 	obj.red = obj.green = 1.00000000;
-					// 	obj.blue = 0.50000000;
-					// }
-					// else
-					// {
-					// 	obj.red = obj.green = obj.blue = i == this.action.cursor.val ? 1 : 0.50000000;
-					// }
 				}
 			}
 		}

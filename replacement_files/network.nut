@@ -616,7 +616,7 @@ function UpdateMatch()
 		}
 	}
 
-	if (::setting.misc.auto_switch){
+	if (::setting.misc.auto_lobby_state_switch){
 		// ::debug.print(::LOBBY.GetLobbyUserState()+"\n");
 		if (::LOBBY.GetLobbyUserState() == 102){
 			//100 hosting

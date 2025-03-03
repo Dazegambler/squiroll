@@ -180,6 +180,16 @@ static inline void set_frame_data_constants(HSQUIRRELVM v) {
     sq_setinteger(v, _SC("timer"), timer > 0 ? timer : 0);
 }
 
+static inline void set_network_constants(HSQUIRRELVM v) {
+    sq_setbool(v, _SC("hide_opponent_name"), get_hide_name_enabled());
+    sq_setbool(v,_SC("hide_ip"), get_hide_ip_enabled());
+    sq_setbool(v, _SC("share_watch_ip"), get_share_watch_ip_enabled());
+    sq_setbool(v, _SC("hide_profile_pictures"), get_hide_profile_pictures_enabled());
+    sq_setbool(v, _SC("auto_lobby_state_switch"), get_auto_switch());
+    //only add to config file if needed
+    //sq_setbool(v, _SC("hide_lobby"), false);//more useful once we get custom lobbies
+}
+
 SQInteger update_ping_constants(HSQUIRRELVM v) {
     sq_pushroottable(v);
 
@@ -212,6 +222,17 @@ SQInteger update_frame_data_constants(HSQUIRRELVM v) {
         sq_edit(v, _SC("frame_data"), set_frame_data_constants);
     });
 
+    sq_pop(v, 1);
+    return 0;
+}
+
+SQInteger update_network_constants(HSQUIRRELVM v) {
+    sq_pushroottable(v);
+
+    sq_edit(v, _SC("setting"),[](HSQUIRRELVM v){
+        sq_edit(v, _SC("network"),set_network_constants);
+    });
+    
     sq_pop(v, 1);
     return 0;
 }
@@ -382,15 +403,12 @@ extern "C" {
                 sq_setinteger(v, _SC("version"), PLUGIN_VERSION);
                 sq_setinteger(v, _SC("revision"), PLUGIN_REVISION);
                 sq_createtable(v, _SC("misc"), [](HSQUIRRELVM v){
-                    sq_setfunc(v,_SC("hide_ip"), SQPUSH_BOOL_FUNC(get_hide_ip_enabled()));
-                    sq_setfunc(v, _SC("share_watch_ip"), SQPUSH_BOOL_FUNC(get_share_watch_ip_enabled()));
                     sq_setfunc(v, _SC("hide_wip"), SQPUSH_BOOL_FUNC(get_hide_wip_enabled()));
-                    sq_setfunc(v, _SC("hide_name"), SQPUSH_BOOL_FUNC(get_hide_name_enabled()));
-                    sq_setbool(v, _SC("auto_switch"),get_auto_switch());
                     sq_setbool(v, _SC("skip_intro"), get_skip_intro_enabled()); // This isn't a function because it only runs once anyway
-                    //only add to config file if needed
-                    //sq_setbool(v, _SC("hide_lobby"), false);//more useful once we get custom lobbies
-                    sq_setfunc(v, _SC("hide_profile_pictures"), SQPUSH_BOOL_FUNC(get_hide_profile_pictures_enabled()));
+                });
+                sq_createtable(v, _SC("network"),[](HSQUIRRELVM v){
+                    sq_setfunc(v, _SC("update_consts"), update_network_constants);
+                    set_network_constants(v);
                 });
                 sq_createtable(v, _SC("ping"), [](HSQUIRRELVM v) {
                     sq_setfunc(v, _SC("update_consts"), update_ping_constants);

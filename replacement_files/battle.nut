@@ -77,7 +77,8 @@ function LookupName(name) {
 
 function Create( param )
 {
-	if (::network.IsActive() && ::setting.misc.hide_name){
+	::setting.network.update_consts();
+	if (::network.IsActive() && ::setting.network.hide_opponent_name){
 		::network.player_name[0] = "P1";
 		::network.player_name[1] = "P2";
 	}
@@ -186,7 +187,7 @@ function Create( param )
 	::camera.Reset();
  	this.gauge.Initialize();
 
-	if (::network.IsActive() && !::setting.misc.hide_profile_pictures()){
+	if (::network.IsActive() && !::setting.network.hide_profile_pictures){
 		for( local i = 0; i < 2; i = ++i ){
 			local icon = ::manbow.Sprite();
 			local custom_icon = ::manbow.Texture();

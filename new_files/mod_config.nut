@@ -12,7 +12,18 @@ this.help <- [
 	"page"
 ];
 
+//put general configs first
 this.item <- [
+	//misc
+	"misc.hide_wip",
+	"misc.skip_intro",
+	//network
+	"network.hide_opponent_name",
+	"network.hide_ip",
+	"network.share_watch_ip",
+	"network.hide_profile_pictures",
+	"network.auto_lobby_state_switch",
+	//ping display
 	"ping.enabled",
 	"ping.X",
 	"ping.Y",
@@ -23,6 +34,20 @@ this.item <- [
 	"ping.blue",
 	"ping.alpha",
 	"ping.input_delay",
+	//frame data
+	"frame_data.enabled",
+	"frame_data.input_flags",
+	"frame_data.frame_stepping",
+	"frame_data.X",
+	"frame_data.Y",
+	"frame_data.SX",
+	"frame_data.SY",
+	"frame_data.red",
+	"frame_data.green",
+	"frame_data.blue",
+	"frame_data.alpha",
+	"frame_data.timer",
+	//input display 1
 	"input_display.p1.enabled",
 	"input_display.p1.X",
 	"input_display.p1.Y",
@@ -35,7 +60,21 @@ this.item <- [
 	"input_display.p1.blue",
 	"input_display.p1.alpha",
 	"input_display.p1.timer",
-	"input_display.p1.notation"
+	"input_display.p1.notation",
+	//input_display 2
+	"input_display.p2.enabled",
+	"input_display.p2.X",
+	"input_display.p2.Y",
+	"input_display.p2.SX",
+	"input_display.p2.SY",
+	"input_display.p2.offset",
+	"input_display.p2.list_max",
+	"input_display.p2.red",
+	"input_display.p2.green",
+	"input_display.p2.blue",
+	"input_display.p2.alpha",
+	"input_display.p2.timer",
+	"input_display.p2.notation"
 ];
 
 this.data <- [];
@@ -46,20 +85,15 @@ this.cur_index <- -1;
 
 this.anime <- {};
 ::manbow.compilebuffer("mod_config_animation.nut", this.anime);
+::manbow.compilebuffer("mod_config_proc.nut",this);
 function Initialize(){
-	//sort the configs so tables are at the end
-	//use the combined size of all tables to reduce the check to one loop that can adapt to any table
-	//but i end up doing a recursive search regardless
-	//time to come out with a different solution
-	//do while loop that once it detects a table it increases size and switches target??
 	::loop.Begin(this);
 	local page_num = 0;
 	local page_index = 0;
 	local history = [];
 
-	local size = this.item.len()-1;
-	do{
-		local path = split(this.item[size],".");
+	foreach(i, v in this.item){
+		local path = split(this.item[i],".");
 		local key = path.pop();
 		local value = ::setting;
 
@@ -74,37 +108,14 @@ function Initialize(){
 			value = value[v];
 		}
 		value = value[key];
-		// ::debug.print(value+"\n");
 		local t = {};
+		t.section <- v.slice(0,v.len()-key.len()-1);
 		t.page <- page_num;
 		t.index <- ++page_index;
 		t.key <- key;
 		t.value <- value;
 		this.data.append(t);
-	}while(--size > -1);
-
-	// foreach( k, v in ::setting){
-	// 	if(typeof(v) == "table"){
-	// 		local t = {};
-	// 		t.page <- ++page_num;
-	// 		t.table <- k;
-	// 		local i = 0;
-	// 		foreach( _k, _v in ::setting[k]){
-	// 			t.index <- i++;
-	// 			t.key <- _k;
-	// 			t.value <- _v;
-	// 		}
-	// 		this.data.append(t);
-	// 	}
-	// }
-	this.data.sort(function (a, b){
-		if ( a.page > b.page)return 1;
-		else if( a.page < b.page)return -1;
-		if( a.index > b.index)return 1;
-		else if( a.index < b.index)return -1;
-		return 0;
-	});
-	// ::debug.print_value(this.data);
+	};
 	local current_page = -1;
 	foreach( i, v in this.data){
 		if( current_page != v.page){
@@ -148,19 +159,13 @@ function Update()
 
 	if (this.cursor.ok)
 	{
-		::debug.print(this.cursor.val+"\n");
-		this.cur_index = this.cursor.val;
-		this.cur_page = this.cursor_page.val;
-		local dialog_type = null;
-		local cur_item = this.page[this.cur_page][this.cur_index];
-		switch (typeof(cur_item.value)){
-			default:
-				::Dialog(2,cur_item.key,function ( ret ){
-					if (ret){
-						::setting[cur_item.table][cur_item.key] = ret;
-					}
-				});
-				break;
+		local true_index = this.cursor.val;
+		for(local i = 0; i < this.cursor_page.val; ++i){
+			true_index += this.page[i].len();
+		}
+		local cur_item = this.item[true_index];
+		if (cur_item in this.proc){
+			this.proc[cur_item].call(this);
 		}
 		return;
 	}

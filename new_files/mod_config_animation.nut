@@ -46,17 +46,6 @@ function Initialize(){
 		foreach( v in t.item )
 		{
 			v[0].x = (::graphics.width - w_max1) / 2;
-			// v[1].x = v[0].x + w_max0 + space;
-
-			// if (v.len() >= 3)
-			// {
-			// 	v[2].x = v[1].x;
-			// }
-
-			// if (v.len() >= 4)
-			// {
-			// 	v[3].x = v[1].x;
-			// }
 		}
 	}
     this.pager.Activate(0);
@@ -95,15 +84,15 @@ function Update()
 				{
 					obj.SetWorldTransform(mat);
 
-					if (i == this.action.cur_index && p == this.action.cur_page)
-					{
-						obj.red = obj.green = 1.00000000;
-						obj.blue = 0.50000000;
-					}
-					else
-					{
-						obj.red = obj.green = obj.blue = i == this.action.cursor.val ? 1 : 0.50000000;
-					}
+					// if (i == this.action.cur_index && p == this.action.cur_page)
+					// {
+					// 	obj.red = obj.green = 1.00000000;
+					// 	obj.blue = 0.50000000;
+					// }
+					// else
+					// {
+					// 	obj.red = obj.green = obj.blue = i == this.action.cursor.val ? 1 : 0.50000000;
+					// }
 				}
 			}
 		}

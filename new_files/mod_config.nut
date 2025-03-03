@@ -12,38 +12,31 @@ this.help <- [
 	"page"
 ];
 
-// this.item <- [
-// 	[
-// 		"ping_display_enabled",
-// 		"ping_display_x",
-// 		"ping_display_y",
-// 		"ping_display_sx",
-// 		"ping_display_sy",
-// 		"ping_display_color",
-// 		"ping_display_framedelay",
-// 		null,
-// 		"exit"
-// 	],
-// 	[
-// 		"input_display_p1_enabled",
-// 		"input_display_p1_x",
-// 		"input_display_p1_y",
-// 		"input_display_p1_sx",
-// 		"input_display_p1_sy",
-// 		"input_display_p1_offset",
-// 		"input_display_p1_count",
-// 		"input_display_p1_color",
-// 		"input_display_p1_spacing",
-// 		"input_display_p1_timer",
-// 		"input_display_p1_notation",
-// 		null,
-// 		"exit"
-// 	],
-// 	[
-// 		null,
-// 		"exit"
-// 	],
-// ]
+this.item <- [
+	"ping.enabled",
+	"ping.X",
+	"ping.Y",
+	"ping.SY",
+	"ping.SY",
+	"ping.red",
+	"ping.green",
+	"ping.blue",
+	"ping.alpha",
+	"ping.input_delay",
+	"input_display.p1.enabled",
+	"input_display.p1.X",
+	"input_display.p1.Y",
+	"input_display.p1.SX",
+	"input_display.p1.SY",
+	"input_display.p1.offset",
+	"input_display.p1.list_max",
+	"input_display.p1.red",
+	"input_display.p1.green",
+	"input_display.p1.blue",
+	"input_display.p1.alpha",
+	"input_display.p1.timer",
+	"input_display.p1.notation"
+];
 
 this.data <- [];
 this.page <- [];
@@ -61,25 +54,49 @@ function Initialize(){
 	//do while loop that once it detects a table it increases size and switches target??
 	::loop.Begin(this);
 	local page_num = 0;
-	local configs = [];
-	local parent_index = ::setting.len()-1;
-	local children_index = 0;
-	local cur_index = parent_index;
+	local page_index = 0;
+	local history = [];
 
-	foreach( k, v in ::setting){
-		if(typeof(v) == "table"){
-			local t = {};
-			t.page <- ++page_num;
-			t.table <- k;
-			local i = 0;
-			foreach( _k, _v in ::setting[k]){
-				t.index <- i++;
-				t.key <- _k;
-				t.value <- _v;
-			}
-			this.data.append(t);
+	local size = this.item.len()-1;
+	do{
+		local path = split(this.item[size],".");
+		local key = path.pop();
+		local value = ::setting;
+
+		//unless someone adds a repeated config entry this should properly create
+		//pages with their respective indexes
+		if(!history.len() || history[0] != path[0]){
+			page_num++;
+			page_index = 0;
+			history = path;
 		}
-	}
+		foreach(i,v in path){
+			value = value[v];
+		}
+		value = value[key];
+		// ::debug.print(value+"\n");
+		local t = {};
+		t.page <- page_num;
+		t.index <- ++page_index;
+		t.key <- key;
+		t.value <- value;
+		this.data.append(t);
+	}while(--size > -1);
+
+	// foreach( k, v in ::setting){
+	// 	if(typeof(v) == "table"){
+	// 		local t = {};
+	// 		t.page <- ++page_num;
+	// 		t.table <- k;
+	// 		local i = 0;
+	// 		foreach( _k, _v in ::setting[k]){
+	// 			t.index <- i++;
+	// 			t.key <- _k;
+	// 			t.value <- _v;
+	// 		}
+	// 		this.data.append(t);
+	// 	}
+	// }
 	this.data.sort(function (a, b){
 		if ( a.page > b.page)return 1;
 		else if( a.page < b.page)return -1;
@@ -87,7 +104,7 @@ function Initialize(){
 		else if( a.index < b.index)return -1;
 		return 0;
 	});
-	::debug.print_value(this.data);
+	// ::debug.print_value(this.data);
 	local current_page = -1;
 	foreach( i, v in this.data){
 		if( current_page != v.page){
@@ -109,7 +126,7 @@ function Initialize(){
 function Terminate(){
 	this.page.resize(0);
 	this.data.resize(0);
-	this.EndAnimeDelayed();
+	this.EndAnime();
 	::menu.back.Deactivate(true);
 	::menu.cursor.Deactivate();
 	::menu.help.Reset();
@@ -131,6 +148,7 @@ function Update()
 
 	if (this.cursor.ok)
 	{
+		::debug.print(this.cursor.val+"\n");
 		this.cur_index = this.cursor.val;
 		this.cur_page = this.cursor_page.val;
 		local dialog_type = null;
@@ -148,6 +166,6 @@ function Update()
 	}
 	else if (this.cursor.cancel)
 	{
-		::loop.EndWithFade();
+		::loop.End();
 	}
 }

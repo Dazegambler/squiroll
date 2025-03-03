@@ -122,7 +122,7 @@ static inline void set_ping_constants(HSQUIRRELVM v) {
     sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);
     sq_setfloat(v, _SC("red"), (float)(uint8_t)(color >> 16) / 255.0f);
     sq_setfloat(v, _SC("alpha"), (float)(uint8_t)(color >> 24) / 255.0f);
-    sq_setbool(v, _SC("ping_in_frames"), get_ping_frames());
+    sq_setbool(v, _SC("input_delay"), get_ping_frames());
 }
 
 static inline void set_inputp1_constants(HSQUIRRELVM v) {

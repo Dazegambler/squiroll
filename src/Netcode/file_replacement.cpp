@@ -198,6 +198,10 @@ static constexpr uint8_t mod_config_proc_nut[] = {
 #include "new_files/mod_config_proc.nut.h"
 };
 
+static constexpr uint8_t mod_config_set_nut[] = {
+#include "new_files/mod_config_set.nut.h"
+};
+
 static constexpr uint8_t UI_nut[] = {
 #include "new_files/UI.nut.h"
 };
@@ -217,6 +221,7 @@ static const std::unordered_map<std::string_view, const EmbedData> new_files = {
     {"mod_config.nut"sv, mod_config_nut},
     {"mod_config_animation.nut"sv, mod_config_animation_nut},
     {"mod_config_proc.nut"sv, mod_config_proc_nut},
+    {"mod_config_set.nut"sv, mod_config_set_nut},
     {"input_display.nut"sv, input_display_nut},
 };
 

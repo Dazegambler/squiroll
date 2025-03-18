@@ -35,7 +35,7 @@ function Update()
 		::menu.network.update_help_text = true;
 		if (::menu.network.display_ip_on_wait) {
 			local str = ::menu.network.item_table.wait_incomming[0];
-			if (!::setting.misc.hide_ip()) {
+			if (!::setting.network.hide_ip) {
 				str = str + " " + ::punch.get_ip();
 			}
 			this.obj[1].Set(str);

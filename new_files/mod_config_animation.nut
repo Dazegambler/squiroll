@@ -1,64 +1,130 @@
-function Initialize(){
-    this.action <- ::menu.mod_config.weakref();
-    this.pager <- this.UIPager();
-    this.page <- [];
-    this.margin <- 42;
-    local space = 20;
-    local scale = 0.69;
+::manbow.compilebuffer("mod_config_set.nut",this);
+// function Initialize(){
+//     this.action <- ::menu.mod_config.weakref();
+//     this.pager <- this.UIPager();
+//     this.page <- [];
+// 	local item_width = 548;
+// 	local left = ::menu.common.item_x - item_width / 2;
+//     this.margin <- 42;
+//     local space = 20;
 
-    foreach( p, _page in this.action.page )
-	{
+//     foreach( p, _page in this.action.page )
+// 	{
+// 		local t = {};
+// 		t.x <- 1280;
+// 		t.y <- 0;
+// 		t.visible <- true;
+// 		this.page.append(t);
+// 		local ui = this.UIBase();
+// 		ui.target = t.weakref();
+// 		ui.ox = 0;
+// 		this.pager.Append(ui);
+// 		t.item <- [];
+// 		local w_max0 = 0;
+// 		local w_max1 = 0;
+
+// 		local section = ::font.CreateSystemString(_page[0].section);
+// 		section.sx = section.sy = 1.5;
+// 		section.x = ::graphics.width - ((section.sx * section.width) / 2);
+// 		section.y = 50 - ((section.sy * section.height) / 2);
+// 		section.red = 0.0;
+// 		section.green = 1.0;
+// 		section.blue = 0.0;
+// 		section.alpha = 1.0;
+// 		section.ConnectRenderSlot(::graphics.slot.front, 0);
+// 		// t.item.push([section]);
+
+// 		foreach( i, v in _page )
+// 		{
+// 			local obj = [];
+// 			local w = 0;
+// 			local text = ::font.CreateSystemString(v.key);
+// 			text.ConnectRenderSlot(::graphics.slot.front, 0);
+// 			text.y = ::menu.common.item_y + i * this.margin - 24 - 10;
+// 			obj.push(text);
+// 			w = text.width + space;
+
+// 			local value = ::font.CreateSystemString(v.value);
+// 			value.ConnectRenderSlot(::graphics.slot.front, 0);
+// 			value.y = text.y;
+// 			obj.push(value);
+// 			w = w + value.width * value.sx;
+
+// 			t.item.push(obj);
+
+// 			if (w_max0 < text.width)
+// 			{
+// 				w_max0 = text.width;
+// 			}
+
+// 			if (w_max1 < w)
+// 			{
+// 				w_max1 = w;
+// 			}
+// 		}
+
+// 		foreach(i, v in t.item )
+// 		{
+// 			v[0].x = (::graphics.width - w_max1) / 2;
+// 			v[1].x = v[0].x + w_max0 + space;
+// 		}
+// 	}
+//     this.pager.Activate(0);
+//     this.cur_page <- this.action.cursor_page.val;
+//     // this.page_index <- ::font.CreateSystemString("page 1/1");
+//     // this.page_index.x = 1200;
+//     // this.page_index.y = 660;
+//     // this.page_index.ConnectRenderSlot(::graphics.slot.front, 0);
+//     ::loop.AddTask(this);
+// }
+
+this.action <- ::menu.mod_config.weakref();
+this.pager <- this.UIPager();
+this.page <- [];
+this.margin <- 42;
+
+function Initialize(){
+	local item_width = 548;
+	local left = ::menu.common.item_x - item_width / 2;
+	local cursor_x = left - 20;
+	local select_x = left + 320;
+	foreach(v in this.action.data){
 		local t = {};
 		t.x <- 1280;
 		t.y <- 0;
 		t.visible <- true;
-		this.page.append(t);
+		this.page.Append(t);
 		local ui = this.UIBase();
 		ui.target = t.weakref();
 		ui.ox = 0;
 		this.pager.Append(ui);
 		t.item <- [];
-		local w_max1 = 0;
-
-		local section = ::font.CreateSystemString(_page[0].section);
-		section.sx = section.sy = 1.5;
-		section.x = ::graphics.width - ((section.sx * section.width) / 2);
-		section.y = 50 - ((section.sy * section.height) / 2);
-		section.red = 0.0;
-		section.green = 1.0;
-		section.blue = 0.0;
-		section.alpha = 1.0;
-		section.ConnectRenderSlot(::graphics.slot.front, 0);
-		t.item.push([section]);
-
-		foreach( i, v in _page )
-		{
+		foreach(i,_v in v){
 			local obj = [];
-			local w = 0;
-			local text = ::font.CreateSystemString(v.key);
-			text.ConnectRenderSlot(::graphics.slot.front, 0);
+			local text = ::font.CreateSystemString(_v.text[::config.lang]);
+			text.ConnectRenderSlot(::graphics.slot.front,0);
 			text.y = ::menu.common.item_y + i * this.margin - 24 - 10;
+			t.x = left;
 			obj.push(text);
-			w = text.width + space;
-			t.item.push(obj);
-
-			if (w_max1 < w)
-			{
-				w_max1 = w;
+			if("value" in key){
+				local s = this.UIItemSelectorSingle(
+					_v.values[0+::config.lang],
+					select_x,text.y,this.mat_world,
+					this.action.cursors[(_v.depth+"/"+_v.text)]);
+				s.SetColor(1,1,0);
+				obj.push(text);
+			}else{
+				local value = ::font.CreateSystemString(v.value);
+				value.ConnectRenderSlot(::graphics.slot.front, 0);
+				value.y = text.y;
+				obj.push(value);
 			}
-		}
 
-		foreach( v in t.item )
-		{
-			v[0].x = (::graphics.width - w_max1) / 2;
+			t.item.push(obj);
 		}
 	}
     this.pager.Activate(0);
     this.cur_page <- this.action.cursor_page.val;
-    this.page_index <- ::font.CreateSystemString("page 1/1");
-    this.page_index.x = 1200;
-    this.page_index.y = 660;
-    this.page_index.ConnectRenderSlot(::graphics.slot.front, 0);
     ::loop.AddTask(this);
 }
 
@@ -67,7 +133,6 @@ function Terminate()
 	::loop.DeleteTask(this);
 	this.pager = null;
 	this.page = null;
-	this.page_index = null;
 }
 
 function Update()
@@ -92,9 +157,4 @@ function Update()
 			}
 		}
 	}
-
-	local t = this.page[this.action.cursor_page.val].item[this.action.cursor.val][0];
-	::menu.cursor.SetTarget(t.x - 20, t.y + 23, 0.69999999);
-	this.page_index.Set("page " + (this.action.cursor_page.val + 1) + "/" + this.action.cursor_page.item_num);
-	this.page_index.x = 1200 - this.page_index.width;
 }

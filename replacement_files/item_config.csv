@@ -1,13 +1,13 @@
-exit,–ß‚é,exit
-se,SE‰¹—Ê,SE volume
-bgm,BGM‰¹—Ê,BGM volume
-screen,‰æ–Ê•\¦,screen mode,ƒEƒBƒ“ƒhƒE,window,ƒtƒ‹ƒXƒNƒŠ[ƒ“,fullscreen
-vsync,‚’¼“¯Šú,vsync,–³Œø,disable,—LŒø,enable
-background,”wŒi,stage backgrounds,’Êí,normal,ŠÈˆÕ,simple
-fps,FPS‚Ì•\¦,show FPS,–³Œø,disable,—LŒø,enable
-key1p,1PƒL[ƒRƒ“ƒtƒBƒO,keyconfig 1P
-key2p,2PƒL[ƒRƒ“ƒtƒBƒO,keyconfig 2P
-replay_save,ƒŠƒvƒŒƒC‚Ì•Û‘¶,replay save,‚·‚é,auto save,‚µ‚È‚¢,not save,‘I‘ğ,select each time
-replay_save_online,ƒŠƒvƒŒƒC‚Ì•Û‘¶(ƒIƒ“ƒ‰ƒCƒ“),replay save(online),‚·‚é,auto save,‚µ‚È‚¢,not save
-lang,Œ¾Œê/language,language/Œ¾Œê,“ú–{Œê,“ú–{Œê,English,English
-misc,G‘½,misc
+exit,ï¿½ß‚ï¿½,exit
+se,SEï¿½ï¿½ï¿½ï¿½,SE volume
+bgm,BGMï¿½ï¿½ï¿½ï¿½,BGM volume
+screen,ï¿½ï¿½Ê•\ï¿½ï¿½,screen mode,ï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½E,window,ï¿½tï¿½ï¿½ï¿½Xï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½,fullscreen
+vsync,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,vsync,ï¿½ï¿½ï¿½ï¿½,disable,ï¿½Lï¿½ï¿½,enable
+background,ï¿½wï¿½i,stage backgrounds,ï¿½Êï¿½,normal,ï¿½Èˆï¿½,simple
+fps,FPSï¿½Ì•\ï¿½ï¿½,show FPS,ï¿½ï¿½ï¿½ï¿½,disable,ï¿½Lï¿½ï¿½,enable
+key1p,1Pï¿½Lï¿½[ï¿½Rï¿½ï¿½ï¿½tï¿½Bï¿½O,keyconfig 1P
+key2p,2Pï¿½Lï¿½[ï¿½Rï¿½ï¿½ï¿½tï¿½Bï¿½O,keyconfig 2P
+replay_save,ï¿½ï¿½ï¿½vï¿½ï¿½ï¿½Cï¿½Ì•Û‘ï¿½,replay save,ï¿½ï¿½ï¿½ï¿½,auto save,ï¿½ï¿½ï¿½È‚ï¿½,not save,ï¿½Iï¿½ï¿½,select each time
+replay_save_online,ï¿½ï¿½ï¿½vï¿½ï¿½ï¿½Cï¿½Ì•Û‘ï¿½(ï¿½Iï¿½ï¿½ï¿½ï¿½ï¿½Cï¿½ï¿½),replay save(online),ï¿½ï¿½ï¿½ï¿½,auto save,ï¿½ï¿½ï¿½È‚ï¿½,not save
+lang,ï¿½ï¿½ï¿½ï¿½/language,language/ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½{ï¿½ï¿½,ï¿½ï¿½ï¿½{ï¿½ï¿½,English,English
+misc,squiroll,squiroll

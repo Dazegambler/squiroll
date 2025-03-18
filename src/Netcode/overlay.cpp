@@ -147,6 +147,11 @@ struct ManbowActorCollisionData {
     btGhostObject obj; // 0x10
 };
 
+struct AnimationSet2D {
+    char __unk0[0x8]; // 0x0
+    void* inner; // 0x8
+};
+
 struct ManbowAnimationController2D {
     char __unk0[0x78]; // 0x0
     std::vector<std::shared_ptr<ManbowActorCollisionData>> collision_boxes; // 0x78

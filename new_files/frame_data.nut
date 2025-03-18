@@ -196,6 +196,7 @@ function CreateFrame_data_Display () {
                 if (this.data[2] > 0) {
                     frame += format("recovery:%2d ", this.data[2]);
                 }
+                if(::battle.team[0].current.armor != 0) frame += " ["+::battle.team[0].current.armor+"A]";
                 if (this.str != frame) {
                     this.str = frame;
                     if(true)this.framebar.render(this.data);
@@ -204,45 +205,6 @@ function CreateFrame_data_Display () {
                     this.text.y = ::setting.frame_data.Y - (this.text.sy * this.text.height);
                 }
             };
-            // root.render <- function () {
-            //     local frame = "";
-            //     if (this.data[0] > 0) {
-            //         frame = format("startup:%2d ", this.data[0]+1);
-            //     }
-            //     local activeStr = "";
-            //     if (this.data[1][0] != 0) {
-            //         for (local i = 0; i < this.data[1].len(); ++i){
-            //             if (i > 2 && i != this.data[1].len()-1){
-            //                 if (this.data[1][i] == this.data[1][i - 2]) activeStr += "+";
-            //                 continue;
-            //             }
-            //             activeStr += format(!(i & 1) ? "%2d" : "%2d not active",data[1][i]);
-            //             activeStr += i != (this.data[1].len()-1) ? ">" : "";
-            //         }
-            //     }
-            //     if (this.data[3][0] != 0) {
-            //         activeStr += "+(";
-            //         for (local i = 0; i < this.data[3].len(); ++i){
-            //             if (i > 2 && i != this.data[3].len()-1){
-            //                 if (this.data[3][i] == this.data[3][i - 2]) activeStr += "+";
-            //                 continue;
-            //             }
-            //             activeStr += format(!(i & 1) ? "%2d" : "%2d not active",data[3][i]);
-            //             activeStr += i != (this.data[3].len()-1) ? ">" : "";
-            //         }
-            //         activeStr += ")";
-            //     }
-            //     if(activeStr != "")frame += format("active:%s ", activeStr);
-            //     if (this.data[2] > 0) {
-            //         frame += format("recovery:%2d ", this.data[2]);
-            //     }
-            //     if (this.str != frame) {
-            //         this.str = frame;
-            //         this.text.Set(frame);
-            //         this.text.x = ::setting.frame_data.X - ((this.text.width * this.text.sx) / 2);
-            //         this.text.y = ::setting.frame_data.Y - this.text.height;
-            //     }
-            // };
             root.tick <- function (active) {
                 //active bits:
                 // 1 - same source
@@ -270,35 +232,6 @@ function CreateFrame_data_Display () {
                         break;
                 }
             };
-            //::actor.actor_list
-            // root.tick <- function (hitboxes, player) {
-            //     local boxes = [];
-            //     for (local i = 0; i < hitboxes.len(); ++i){
-            //         if (hitboxes[i].owner != player)continue;
-            //         if (hitboxes[i].flagAttack){
-            //             if (this.data[2] != 0){
-            //                 this.data[1].append(this.data[2]);
-            //                 this.data[2] = 0;
-            //                 this.data[1].append(0);
-            //             }
-            //             ++this.data[1][this.data[1].len()-1];
-            //             break;
-            //         }
-            //         if (hitboxes[i].flagState){
-            //             ++this.data[this.data[1][0] != 0 ? 2 : 0];
-            //             break;
-            //         }
-
-            //         if (boxes.len() > 0){
-            //             // local new = true;
-            //             for (local i = 0; i < boxes.len(); ++i){
-            //                 if(boxes[i].flagAttack == hitboxes[i].flagAttack || boxes[i].flagState == hitboxes[i].flagState)continue;
-            //                 boxes.append(hitboxes[i]);
-            //             }
-            //         }else{boxes.append(hitboxes[i])}
-            //     }
-            //     return boxes;
-            // };
             root.clear <- function (motion = 0) {
                 this.data = [0,[0],0,[0]];
                 this.motion = motion;

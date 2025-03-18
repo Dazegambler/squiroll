@@ -201,7 +201,7 @@ function StartupServer( port, mode )
 		table_dst.rand_seed <- this.rand_seed;
 		table_dst.is_parent_vs <- true;
 		table_dst.allow_watch <- this.allow_watch;
-		table_dst.hide_ip <- ::setting.misc.hide_ip() || !::setting.misc.share_watch_ip();
+		table_dst.hide_ip <- ::setting.network.hide_ip || !::setting.network.share_watch_ip;
 		table_dst.use_lobby <- this.use_lobby;
 		table_dst.name <- ::config.network.player_name.len() > 16 ? "" : ::config.network.player_name;
 		table_dst.color <- this.color_num[0];

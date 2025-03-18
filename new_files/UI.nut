@@ -25,3 +25,8 @@ function CreateText(type,str,SY,SX,red,green,blue,alpha,slot,priority,Update = n
     obj.Update <- Update;
     return obj;
 }
+
+function LoadCSVFromBuffer(src/*filename*/) {
+    local item_table = {};
+    return item_table;
+}

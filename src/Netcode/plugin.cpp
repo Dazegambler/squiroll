@@ -403,7 +403,7 @@ extern "C" {
                 sq_setinteger(v, _SC("version"), PLUGIN_VERSION);
                 sq_setinteger(v, _SC("revision"), PLUGIN_REVISION);
                 sq_createtable(v, _SC("misc"), [](HSQUIRRELVM v){
-                    sq_setfunc(v, _SC("hide_wip"), SQPUSH_BOOL_FUNC(get_hide_wip_enabled()));
+                    sq_setbool(v, _SC("hide_wip"), get_hide_wip_enabled());
                     sq_setbool(v, _SC("skip_intro"), get_skip_intro_enabled()); // This isn't a function because it only runs once anyway
                 });
                 sq_createtable(v, _SC("network"),[](HSQUIRRELVM v){
@@ -498,9 +498,27 @@ extern "C" {
             sq_edit(v, _SC("manbow"), [](HSQUIRRELVM v) {
                 sq_setfunc(v, _SC("compilebuffer"), sq_compile_buffer);
                 sq_setfunc(v, _SC("SetClipboardString"), copy_to_clipboard);
-                // sq_setfunc(v, _SC("ImageBuffer"),[](HSQUIRRELVM v) -> SQInteger {
+                sq_setfunc(v, _SC("TextBuffer"),[](HSQUIRRELVM v) -> SQInteger {
+                    const SQChar* src;
+                    if (
+                        sq_gettop(v) == 2 &&
+                        SQ_FAILED(sq_getstring(v, 2, &src))
+                    ) {
+                        sq_throwerror(v, "Invalid arguments, expected: <string>");
+                    }
+                    if(EmbedData embed = get_new_file_data(src)){
+                        sq_pushstring(v, (SQChar*)embed.data, -1);
+                    }else{
+                        sq_pushnull(v);
+                    }
+                    return 1;
+                });
+                // CompileAndRun(v, 
+                // "function LoadJSONBuffertoTable(filename, src){
+                //     local file = TextBuffer(filename);
+                //     //json parsing    
+                // }");
 
-                // });
             });
 
             // custom lobby table

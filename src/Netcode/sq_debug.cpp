@@ -10,8 +10,8 @@
 
 #include "file_replacement.h"
 #include "log.h"
-#include "util.h"
 #include "patch_utils.h"
+#include "util.h"
 
 //NATIVE FUNCTIONS
 
@@ -217,6 +217,34 @@ SQInteger sq_compile_buffer(HSQUIRRELVM v){
     }
     CompileScriptBuffer(v, src, root);
     return 0;
+}
+
+//wip,crashes
+SQInteger loadCSVBuffer(HSQUIRRELVM v) {
+    const char *Csv;
+
+    if (sq_gettop(v) != 2 ||
+        SQ_FAILED(sq_getstring(v, 2, &Csv))) {
+        return sq_throwerror(v, _SC("Invalid arguments...\nusage LoadCSVBuffer <filename>\n"));
+    }
+    if (EmbedData embed = get_new_file_data(Csv)){
+        sq_newarray(v, 0);
+        char *line = strtok((char*)embed.data,"\n");
+        while (line != NULL){
+            sq_newarray(v,0);
+            char *token = strtok(line,",");
+            while(token != NULL){
+                sq_pushstring(v, token, -1);
+                sq_arrayappend(v, -2);
+                token = strtok(NULL,",");
+            }
+            sq_arrayappend(v, -2);
+            line = strtok(NULL,"\n");
+        }
+    }else {
+        sq_pushnull(v);
+    }
+    return 1;
 }
 
 #if !DISABLE_ALL_LOGGING_FOR_BUILD

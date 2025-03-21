@@ -1,12 +1,70 @@
 //due to the sheer amount of config options we have i made all the proc functions
 //be on their separate file
-this.proc <- [
-    //network
-    [@(){},],
-    //ping
-    [@(){},],
-    //input display p1
-    [@(){},],
-    //input display p2,
-    [@(){},]
-];
+this.proc <- {};
+this.proc["network"] <- {
+	hide_opponent_name = function() {};
+	hide_ip = function() {};
+	share_watch_ip = function() {};
+	hide_profile_pictures = function() {};
+	auto_lobby_state_switch = function() {};
+};
+this.proc["ping"] <- {
+	enabled = function() {};
+	X = function() {};
+	Y = function() {};
+	SX = function() {};
+	SY = function() {};
+	red = function() {};
+	green = function() {};
+	blue = function() {};
+	alpha = function() {};
+	input_delay = function() {};
+};
+this.proc["frame_data"] <- {
+	enabled = function() {};
+	input_flags = function() {};
+	frame_stepping = function() {};
+	X = function() {};
+	Y = function() {};
+	SX = function() {};
+	SY = function() {};
+	red = function() {};
+	green = function() {};
+	blue = function() {};
+	alpha = function() {};
+	timer = function() {};
+};
+this.proc["input_display::p1"] <- {
+	enabled = function() {};
+	input_flags = function() {};
+	frame_count = function() {};
+	offset = function() {};
+	list_max = function() {};
+	notation = function() {};
+	X = function() {};
+	Y = function() {};
+	SX = function() {};
+	SY = function() {};
+	red = function() {};
+	green = function() {};
+	blue = function() {};
+	alpha = function() {};
+	timer = function() {};
+};
+this.proc["input_display::p2"] <- {
+	enabled = function() {};
+	input_flags = function() {};
+	frame_count = function() {};
+	offset = function() {};
+	list_max = function() {};
+	notation = function() {};
+	X = function() {};
+	Y = function() {};
+	SX = function() {};
+	SY = function() {};
+	red = function() {};
+	green = function() {};
+	blue = function() {};
+	alpha = function() {};
+	timer = function() {};
+};

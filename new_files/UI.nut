@@ -26,7 +26,9 @@ function CreateText(type,str,SY,SX,red,green,blue,alpha,slot,priority,Update = n
     return obj;
 }
 
-function LoadCSVFromBuffer(src/*filename*/) {
+function LoadCSVBuffer(src) {
     local item_table = {};
+    local raw_text = ::manbow.TextBuffer(src);
+    ::debug.print(raw_text);
     return item_table;
 }

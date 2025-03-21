@@ -497,22 +497,23 @@ extern "C" {
             // modifications to the manbow table
             sq_edit(v, _SC("manbow"), [](HSQUIRRELVM v) {
                 sq_setfunc(v, _SC("compilebuffer"), sq_compile_buffer);
+                sq_setfunc(v, _SC("LoadCSVBuffer"), loadCSVBuffer);
                 sq_setfunc(v, _SC("SetClipboardString"), copy_to_clipboard);
-                sq_setfunc(v, _SC("TextBuffer"),[](HSQUIRRELVM v) -> SQInteger {
-                    const SQChar* src;
-                    if (
-                        sq_gettop(v) == 2 &&
-                        SQ_FAILED(sq_getstring(v, 2, &src))
-                    ) {
-                        sq_throwerror(v, "Invalid arguments, expected: <string>");
-                    }
-                    if(EmbedData embed = get_new_file_data(src)){
-                        sq_pushstring(v, (SQChar*)embed.data, -1);
-                    }else{
-                        sq_pushnull(v);
-                    }
-                    return 1;
-                });
+                // sq_setfunc(v, _SC("TextBuffer"),[](HSQUIRRELVM v) -> SQInteger {
+                //     const SQChar* src;
+                //     if (
+                //         sq_gettop(v) == 2 &&
+                //         SQ_FAILED(sq_getstring(v, 2, &src))
+                //     ) {
+                //         sq_throwerror(v, "Invalid arguments, expected: <string>");
+                //     }
+                //     if(EmbedData embed = get_new_file_data(src)){
+                //         sq_pushstring(v, (SQChar*)embed.data, -1);
+                //     }else{
+                //         sq_pushnull(v);
+                //     }
+                //     return 1;
+                // });
                 // CompileAndRun(v, 
                 // "function LoadJSONBuffertoTable(filename, src){
                 //     local file = TextBuffer(filename);

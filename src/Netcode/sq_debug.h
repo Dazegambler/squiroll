@@ -22,6 +22,7 @@ SQInteger sq_print(HSQUIRRELVM v);
 SQInteger sq_fprint(HSQUIRRELVM v);
 SQInteger sq_print_value(HSQUIRRELVM v);
 SQInteger sq_fprint_value(HSQUIRRELVM v);
+SQInteger loadCSVBuffer(HSQUIRRELVM v);
 #else
 #define sq_print sq_dummy
 #define sq_fprint sq_dummy

@@ -247,6 +247,7 @@ function Create( param )
 			  // [329]  OP_JMP            0      0    0    0
 		}
 	}
+	// ::debug.CheckOffset(::actor.actor_list.master1.mgr.GetAnimationSet2D(),0,100);
 }
 
 function framedisplaysetup() {
@@ -282,6 +283,7 @@ function framedisplaysetup() {
 	frame.timer <- 0;
 	frame.lastLog <- "";
 	frame.boxes <- [];
+	frame.count <- 0;
 	frame.onBlacklist <- function(motion) {
 		switch (motion){
 			case 118://5D
@@ -322,7 +324,15 @@ function framedisplaysetup() {
 		local onMove = (!p1.IsFree() || this.onWhitelist(motion));
 		local hitboxes = this.getboxes(::battle.team[0]);
 		local log = "";
+		// if (!this.count){
+		// 	if(onMove)this.count = ::setting.frame_data.GetFrameCount(::battle.team[0].current);
+		// }else{
+		// 	::debug.print("left"+this.count+"\n");
+		// 	this.count--;
+		// }
 		if (onMove) {
+			// ::debug.CheckOffset(::actor.actor_list.master1.mgr.GetAnimationSet2D(),84,1);
+
 			this.timer = ::setting.frame_data.timer;
 			if (!this.onBlacklist(motion)){
 				if (::setting.frame_data.hasData(::battle.group_player)){

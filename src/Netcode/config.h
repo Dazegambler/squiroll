@@ -91,6 +91,7 @@ uint32_t get_frame_data_color();
 int32_t get_frame_data_timer();
 bool get_frame_data_flags();
 bool get_frame_data_frame_stepping();
+bool get_frame_data_framebar();
 
 int8_t get_ipv6_state();
 bool get_netplay_state();

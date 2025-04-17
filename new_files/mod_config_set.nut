@@ -1,21 +1,21 @@
 //.pat files are cursed so we're just hardcoding what
 //they're translated to directly in squirrel
 //blame tasofro
-this.anime_set <- {
-    title = {
-        name = "title";
-        texture_name = "";
-        width = 192;
-        height = 64;
-        left = 0;
-        top = 448;
-        offset_y = 0;
-        offset_x = 0;
-        scale_x = 1.0;
-        scale_y = 1.0;
-        point = [];
-    }
-};
+// this.anime_set <- {
+//     title = {
+//         name = "title";
+//         texture_name = "";
+//         width = 192;
+//         height = 64;
+//         left = 0;
+//         top = 448;
+//         offset_y = 0;
+//         offset_x = 0;
+//         scale_x = 1.0;
+//         scale_y = 1.0;
+//         point = [];
+//     }
+// };
 
 this.item_table <- {};
 this.item_table["network"] <- {
@@ -86,6 +86,10 @@ this.item_table["frame_data"] <- {
 	frame_stepping = {
 		text = "manual frame stepping";
 		values = ["disable","enable"];
+	};
+	framebar = {
+		text = "framebar";
+		value = ["disabled","enabled"];
 	};
 	X = {
 		text = "X";

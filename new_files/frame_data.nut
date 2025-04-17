@@ -199,7 +199,7 @@ function CreateFrame_data_Display () {
                 if(::battle.team[0].current.armor != 0) frame += " ["+::battle.team[0].current.armor+"A]";
                 if (this.str != frame) {
                     this.str = frame;
-                    if(true)this.framebar.render(this.data);
+                    if(::setting.frame_data.framebar)this.framebar.render(this.data);
                     this.text.Set(frame);
                     this.text.x = ::setting.frame_data.X - ((this.text.width * this.text.sx) / 2);
                     this.text.y = ::setting.frame_data.Y - (this.text.sy * this.text.height);

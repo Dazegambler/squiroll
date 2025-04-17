@@ -167,6 +167,7 @@ static inline void set_frame_data_constants(HSQUIRRELVM v) {
     sq_setbool(v, _SC("enabled"), get_frame_data_enabled());
     sq_setbool(v, _SC("input_flags"), get_frame_data_flags());
     sq_setbool(v, _SC("frame_stepping"), get_frame_data_frame_stepping());
+    sq_setbool(v, _SC("framebar"), get_frame_data_framebar());
     sq_setinteger(v, _SC("X"), get_frame_data_x());
     sq_setinteger(v, _SC("Y"), get_frame_data_y());
     sq_setfloat(v, _SC("SX"), get_frame_data_scale_x());
@@ -428,6 +429,15 @@ extern "C" {
                             return sq_throwerror(v, "Invalid arguments, expected: <group> <p1> <p2>");
                         }
                         sq_pushinteger(v, IsFrameActive((ManbowActor2DGroup*)inst,(ManbowActor2D*)p1,(ManbowActor2D*)p2));
+                        return 1;
+                    });
+                    sq_setfunc(v, _SC("GetFrameCount"), [](HSQUIRRELVM v)-> SQInteger {
+                        void* inst;
+                        if (sq_gettop(v) != 2 ||
+                            SQ_FAILED(sq_getinstanceup(v, 2, &inst, nullptr))){
+                                return sq_throwerror(v, "Invalid arguments, expected: <player>");
+                        }
+                        sq_pushinteger(v, GetFrameCount((ManbowActor2D*)inst));
                         return 1;
                     });
                     sq_setfunc(v, _SC("GetHitboxes"), [](HSQUIRRELVM v)-> SQInteger {

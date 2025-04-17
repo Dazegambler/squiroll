@@ -147,17 +147,43 @@ struct ManbowActorCollisionData {
     btGhostObject obj; // 0x10
 };
 
-struct AnimationSet2D {
-    char __unk0[0x8]; // 0x0
-    void* inner; // 0x8
+struct TakeNode {
+    char __unk0[0xc]; // 0x0
+    uint32_t thresh; // 0xc
 };
 
+struct TakeData {
+    char __unk0[0xc]; // 0x0
+    void* frames; // 0xc
+    void* duration;// 0x18
+};
+
+struct AnimationSet2D {
+    AnimationSet2D* next; // 0x0 
+    uint32_t priority; // 0x4
+    AnimationSet2D* root; // 0x8
+    void* __unkD; // 0xd
+    char __unkE[6]; //0xe
+    TakeData* Takes; // 0x14
+};
+
+// static_assert(sizeof(AnimationSet2D) == 0x18);
+
 struct ManbowAnimationController2D {
-    char __unk0[0x78]; // 0x0
+    char __unk0[0x1c]; // 0x0
+    uint32_t MotionId; // 0x1c
+    void* __unk20; // 0x20
+    uint32_t __unk24; // 0x24
+    char __unk28[0x78 - 0x28]; // 0x28
     std::vector<std::shared_ptr<ManbowActorCollisionData>> collision_boxes; // 0x78
     std::vector<std::shared_ptr<ManbowActorCollisionData>> hit_boxes; // 0x84
     std::vector<std::shared_ptr<ManbowActorCollisionData>> hurt_boxes; // 0x90
-    char __unk9C[0x300 - 0x9C]; // 0x9C
+    char __unk9C[0x124-0x9C]; // 0x9C
+    AnimationSet2D* anim_set;// 0x124
+    TakeData* take; // 0x12C
+    void* __unk130; // 0x130
+    void* __unk134; // 0x134
+    char __unk138[0x300 - 0x134]; // 0x138
 };
 
 static_assert(sizeof(ManbowAnimationController2D) == 0x300);
@@ -552,12 +578,19 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
     }
 }
 
-// bool IsFrameActive(ManbowActor2D* actor) {
-//     for (const auto& data : actor->anim_controller->hit_boxes) {
-//     return data->obj_ptr->m_collisionShape->shape != 0;
-//     }
-//     return false;//make compiler shut up
-// }
+int GetFrameCount(ManbowActor2D* player) {
+    if (!player || !player->anim_controller->anim_set || !player->anim_controller->anim_set->Takes)
+        return 0;
+    AnimationSet2D* current = player->anim_controller->anim_set;
+    uint32_t count = 0;
+    log_printf("%d\n",player->anim_controller->anim_set->Takes->duration);
+    // while (current && current->next) {
+    //     ++count;
+    //     current = current->next;
+    // }
+    
+    return count;
+}
 
 bool hasData(ManbowActor2DGroup* group) {
     if (uint32_t group_size = group->size) {

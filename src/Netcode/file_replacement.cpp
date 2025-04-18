@@ -177,7 +177,7 @@ static const std::unordered_map<std::string_view, const EmbedData> replacements 
     {"data/script/battle/battle_vs_player.nut"sv, battle_vs_player_nut},
     {"data/system/watch/watch.nut"sv, watch_nut},
     {"data/system/replay_select/replay_select_view.nut"sv, replay_select_view_nut},
-    {"data/system/config/item.csv"sv, item_config_csv},
+    // {"data/system/config/item.csv"sv, item_config_csv},
     {"data/script/input.nut"sv, input_nut},
     // {"data/script/scene/vs.nut"sv, vs_nut},
 };

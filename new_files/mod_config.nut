@@ -9,13 +9,46 @@ local text_table = {
 	green = "color(Green)";
 	blue = "color(Blue)";
 	alpha = "color(Alpha)";
-}
-local elems = [
-	ToMenuPage("network",::setting.network,text_table),
-	ToMenuPage("live frame data",::setting.frame_data,text_table)
-];
 
-InitializeMenu(elems);
+	input_delay = "show input delay";
+
+	timer = "duration(frames)";
+
+	offset = "spacing";
+	list_max = "input history size";
+	frame_count = "show input frames";
+	notation = "input notation";
+
+	input_flags = "show move flags";
+	frame_stepping = "manual frame stepping";
+	framebar = "show framebar";
+
+	hide_opponent_name = "hide names";
+	hide_ip = "hide ip address";
+	share_watch_ip = "share ip address";
+	hide_profile_pictures = "hide profile pictures";
+	auto_lobby_state_switch = "auto switch lobby state";
+ }
+local function filter(k,v) {
+	if (typeof(v) != "bool" &&
+		typeof(v) != "integer" &&
+		typeof(v) != "string" &&
+		typeof(v) != "float"){
+			return true;
+	}
+	return false;
+}
+local order_input = ["enabled","X","Y","SX","SY","red","green","blue","alpha","offset","list_max","timer","frame_count","notation"];
+local order_frame = ["enabled","X","Y","SX","SY","red","green","blue","alpha","timer","input_flags","framebar","frame_stepping"];
+local order_ping = ["enabled","X","Y","SX","SY","red","green","blue","alpha","input_delay"];
+local pages = [];
+pages.extend(ToMenuPage("ping display",FilterTable(::setting.ping,filter),text_table,order_ping));
+pages.extend(ToMenuPage("network",FilterTable(::setting.network,filter),text_table));
+pages.extend(ToMenuPage("live frame data",FilterTable(::setting.frame_data,filter),text_table,order_frame));
+pages.extend(ToMenuPage("input display(p1)",FilterTable(::setting.input_display.p1,filter),text_table,order_input));
+pages.extend(ToMenuPage("input display(p2)",FilterTable(::setting.input_display.p2,filter),text_table,order_input));
+
+InitializeMenu(pages);
 // this.help <- [
 // 	"B1",
 // 	"ok",

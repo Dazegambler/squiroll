@@ -35,20 +35,67 @@ function CreateText(type,str,SY,SX,red,green,blue,alpha,slot,priority,Update = n
     return obj;
 }
 
-function ToMenuPage(title,table,text_table = null){
-	local arr = [];
-	foreach(k,v in table){
-		if (typeof(v) != "bool" &&
-			typeof(v) != "integer" &&
-			typeof(v) != "string" &&
-			typeof(v) != "float")continue;
-		local obj = {};
-        obj.section <- title;
-		obj.text <- k in text_table ? text_table[k] : k;
-		obj.value <- v;
-		arr.append(obj);
-	}
-	return arr;
+function FilterTable(table,expr){
+    local tb = clone table;
+    foreach(k,v in tb){
+        if(expr(k,v))tb.rawdelete(k);
+    }
+    return tb;
+}
+// function ToMenuPage(title,table,text_table = null,order = null){
+//     local arr = [];
+//     for(local i = 0; i < 64; ++i)arr.append(null);
+
+//     foreach(k,v in table){
+//         local obj = {};
+//         obj.section <- title;
+//         obj.text <- text_table && k in text_table ? text_table[k] : k;
+//         obj.value <- v;
+
+//         if (order){
+//             arr[order.find(k)] = obj;
+//         }else{
+//             arr.append(obj);
+//         }
+//     }
+//     return [arr.filter(@(i,v)v != null)];
+// }
+
+function ToMenuPage(title,table,text_table = null,order = null){
+    local function iterate(title,table,text_table,order){
+        local arr = [];
+        for(local i = 0; i <= table.len(); ++i)arr.append(null);
+        foreach(k,v in table){
+            local obj = {};
+            obj.section <- title;
+            obj.text <- text_table && k in text_table ? text_table[k] : k;
+            obj.value <- v;
+
+            if (order){
+                arr[order.find(k)] = obj;
+            }else{
+                arr.append(obj);
+            }
+        }
+
+        return arr.filter(@(i,v)v != null);
+    }
+    local arrs = [];
+
+    local elems = iterate(title,table,text_table,order);
+
+    local pages = [[]];
+    local c = 0;
+
+    for(local i = 0; i < elems.len(); ++i){
+        pages.top().append(elems[i]);
+        c++;
+        if(c == 12){
+            pages.append([]);
+            c = 0;
+        }
+    }
+    return pages;
 }
 
 function InitializeMenu(pages){

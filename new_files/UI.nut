@@ -1,10 +1,28 @@
 class ptr {
 	Get = null;
 	Set = null;
-	constructor(get,set){
+	constructor(get,set = null){
 		Get = get;
 		Set = set;
 	}
+}
+
+class tableptr{
+    __ref = null;
+    __keys = null;
+    constructor(table){
+        __ref = table;
+    }
+    function _get(key)return __ref.rawget(key);
+    function _set(key,value)return __ref.rawset(key,value);
+    // function _nexti(prev){
+    //     if(!__keys)__keys = __ref.keys();
+    //     local i = 0;
+    //     if(prev)i = __keys.find(prev) + 1;
+    //     if(i < __keys.len())return __keys[i];
+    //     __keys = null;
+    //     return null;
+    // }
 }
 
 function CreateText(type,str,SY,SX,red,green,blue,alpha,slot,priority,Update = null,init = null){
@@ -35,41 +53,44 @@ function CreateText(type,str,SY,SX,red,green,blue,alpha,slot,priority,Update = n
     return obj;
 }
 
-function FilterTable(table,expr){
-    local tb = clone table;
-    foreach(k,v in tb){
-        if(expr(k,v))tb.rawdelete(k);
-    }
-    return tb;
-}
-// function ToMenuPage(title,table,text_table = null,order = null){
-//     local arr = [];
-//     for(local i = 0; i < 64; ++i)arr.append(null);
-
-//     foreach(k,v in table){
-//         local obj = {};
-//         obj.section <- title;
-//         obj.text <- text_table && k in text_table ? text_table[k] : k;
-//         obj.value <- v;
-
-//         if (order){
-//             arr[order.find(k)] = obj;
-//         }else{
-//             arr.append(obj);
-//         }
+// function FilterTable(table,expr){
+//     local tb = {};
+//     foreach(k,v in table.Get()){
+//         if(expr(k,v))continue;
+//         tb[k] <- tableptr(table.Get(),k);
 //     }
-//     return [arr.filter(@(i,v)v != null)];
+//     return tb;
 // }
 
-function ToMenuPage(title,table,text_table = null,order = null){
-    local function iterate(title,table,text_table,order){
+// {
+//     text;
+//     value;
+//     cursor;
+//     section;
+//     config_section;
+//     key;
+// }
+
+function ToConfigMenuPage(section,table,config_table,text_table = null,order = null){
+    local function iterate(section,table,config_table,text_table,order){
         local arr = [];
         for(local i = 0; i <= table.len(); ++i)arr.append(null);
         foreach(k,v in table){
+            if (typeof(v) != "bool" &&
+                typeof(v) != "integer" &&
+                typeof(v) != "string" &&
+                typeof(v) != "float"){
+                continue;
+	        }
             local obj = {};
-            obj.section <- title;
+            obj.config <- {
+                section = section[1];
+                key = config_table[k];
+            };
+            obj.section <- section[0];
             obj.text <- text_table && k in text_table ? text_table[k] : k;
-            obj.value <- v;
+            obj.table <- table;
+            obj.key <- k;
 
             if (order){
                 arr[order.find(k)] = obj;
@@ -82,7 +103,7 @@ function ToMenuPage(title,table,text_table = null,order = null){
     }
     local arrs = [];
 
-    local elems = iterate(title,table,text_table,order);
+    local elems = iterate(section,table,config_table,text_table,order);
 
     local pages = [[]];
     local c = 0;
@@ -98,7 +119,7 @@ function ToMenuPage(title,table,text_table = null,order = null){
     return pages;
 }
 
-function InitializeMenu(pages){
+function InitializeConfigMenu(pages){
 	//helpers
 	this.help <- ["B1","ok",null,"B2","return",null,"UD","select",null,"LR","page"];
 
@@ -111,11 +132,11 @@ function InitializeMenu(pages){
     this.anime <- {
         title_x = 640;
         title_y = 96;
-        item_x = 480;
+        item_x = 320;
         item_y = 200;
         item_space = 20;
         item_margin = 42;
-
+        item_max_length = 288;
 
         function Initialize(){
             this.pager <- this.UIPager();
@@ -174,27 +195,22 @@ function InitializeMenu(pages){
             local _w = 0;
             foreach(i,v in elems){
                 local obj = [];
-                local wid = 0;
+
                 local text = ::font.CreateSystemString(v.text);
                 text.ConnectRenderSlot(::graphics.slot.front,0);
                 text.y = this.item_y + i * this.item_margin - 34;
-                wid = text.width + this.item_space;
+                if(text.width*text.sx > this.item_max_length)text.sx = this.item_max_length / text.width;
+                text.x = this.item_x;
                 obj.push(text);
 
-                local value = ::font.CreateSystemString(v.value);
+                local value = ::font.CreateSystemString(v.table[v.key]);
                 value.ConnectRenderSlot(::graphics.slot.front,0);
                 value.y = text.y;
+                if(value.width*value.sx > this.item_max_length)value.sx = this.item_max_length / value.width;
+                value.x = ::graphics.width - this.item_x - (value.width * value.sx);
                 obj.push(value);
-                wid += value.width;
 
                 p.item.push(obj);
-
-                if(w < text.width)w = text.width;
-                if(_w < wid)_w = wid;
-                foreach(i in p.item){
-                    i[0].x = (::graphics.width - _w) / 2;
-                    i[1].x = i[0].x + w + this.item_space;
-                }
             }
             local title = [];
             local section = ::font.CreateSystemString(elems[0].section);
@@ -251,10 +267,32 @@ function InitializeMenu(pages){
         this.cursor_index.Update();
 
         if (this.cursor_index.ok){
-            // this.cur_item = this.data[this.cursor_page.val][this.cursor_index.val];
-            // if (this.cur_item.section in this.proc && this.cur_item.key in this.proc[this.cur_item.section]){
-            //     this.proc[this.cur_item.section][this.cur_item.key].call(this);
-            // }
+            local item = this.data[this.cursor_page.val][this.cursor_index.val];
+            local anim = this.anime;
+            local value_txt = anim.page[this.cursor_page.val].item[this.cursor_index.val][1];
+            ::Dialog(2,item.text,function (ret){
+                if (ret){
+                    local r = item.table[item.key];
+                    switch(typeof(r)){
+                        case "bool":
+                            r = ret == "true" ? true : false;
+                            break;
+                        case "integer":
+                            r = ret.tointeger();
+                            break;
+                        case "float":
+                            r = ret.tofloat();
+                            break;
+                    }
+                    item.table[item.key] = r;
+                    ::setting.save(item.config.section,item.config.key,ret);
+
+                    value_txt.Set(ret);
+                    if(value_txt.width*value_txt.sx > anim.item_max_length)value_txt.sx = anim.item_max_length / value_txt.width;
+                    value_txt.x = ::graphics.width - anim.item_x - (value_txt.width * value_txt.sx);
+
+                }
+            },item.table[item.key].tostring());
             return;
         }
         else if (this.cursor_index.cancel){

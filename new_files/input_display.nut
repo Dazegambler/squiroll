@@ -13,13 +13,10 @@ function CreateInput_display(idx,player_config){
         player = idx;
         data = [[0,0]];
         text = [];
+        config = player_config;
         notation = split(player_config.notation,",");
-        timer = player_config.timer; //frames
-        size = player_config.list_max;
         pos = [player_config.X,player_config.Y];
         scale = [player_config.SX,player_config.SY];
-        offset = player_config.offset;
-        frame_count_enabled = player_config.frame_count;
 
         function getinputs(idx){
             local inputs = 0;
@@ -37,19 +34,12 @@ function CreateInput_display(idx,player_config){
             return inputs;
         }
 
-        function Update () {
-            local inputs = [this.getinputs(this.player),0];
-            if(this.data[0][0] == inputs[0])inputs[1] = ++this.data[0][1];
-            if(!inputs[1]){
-                this.data.insert(0,inputs);
-                if(this.data.len() > this.size)do{this.data.pop();}while(this.data.len() > this.size);
-            }
-            if(!this.data[0][0] && this.data[0][1] > this.timer)this.data = [[0,0]];
+        function Render() {
             for (local i = 0; i < this.text.len(); ++i){
                 local str = "";
                 if (this.data.len() > 1 && i < this.data.len()){
                     local frames = "";
-                    if(this.frame_count_enabled)frames += this.data[i][1] < 100 ? format("[%2d]",this.data[i][1]) : "[99+]";
+                    if(this.config.frame_count)frames += this.data[i][1] < 100 ? format("[%2d]",this.data[i][1]) : "[99+]";
                     local input_str = "";
                     local direction = this.data[i][0] & 0x660;
                     switch(direction){
@@ -89,9 +79,20 @@ function CreateInput_display(idx,player_config){
                 this.text[i].text.Set(str);
                 this.text[i].text.x = this.pos[0] - (this.player > 0 ? this.text[i].text.sx*this.text[i].text.width : 0);
             }
+        }
+
+        function Update () {
+            local inputs = [this.getinputs(this.player),0];
+            if(this.data[0][0] == inputs[0])inputs[1] = ++this.data[0][1];
+            if(!inputs[1]){
+                this.data.insert(0,inputs);
+                if(this.data.len() > this.config.list_max)do{this.data.pop();}while(this.data.len() > this.config.list_max);
+            }
+            if((!this.data[0][0] && this.data[0][1] > this.config.timer) || !config.enabled)this.data = [[0,0]];
+            this.Render();
         };
     }
-    for (local i = 0; i < input.size; ++i) {
+    for (local i = 0; i < input.config.list_max; ++i) {
         input.text.append(this.CreateText(
             0,"",
             player_config.SX,player_config.SY,

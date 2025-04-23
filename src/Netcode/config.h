@@ -24,6 +24,8 @@ void init_config_file();
 void config_watcher_check();
 void config_watcher_stop();
 
+void set_config_string(const char* section, const char* key, const char* value);
+
 enum ConfigTestState : int8_t {
     ConfigNeedsTest = -1,
     ConfigDisabled = 0,

@@ -273,12 +273,9 @@ function framedisplaysetup() {
 	projectile 4096,128,4
 	*/
 	::setting.frame_data.update_consts();
-    if (!::setting.frame_data.enabled) return;
 	local frame = {};
-	if (::setting.frame_data.input_flags) {
-		frame.flag_state_display <- this.CreateFlag_state_Display();
-		frame.flag_attack_display <- this.CreateFlag_attack_Display();
-	}
+	frame.flag_state_display <- this.CreateFlag_state_Display();
+	frame.flag_attack_display <- this.CreateFlag_attack_Display();
 	frame.data_display <- this.CreateFrame_data_Display();
 	frame.timer <- 0;
 	frame.lastLog <- "";
@@ -317,7 +314,16 @@ function framedisplaysetup() {
 		}
 		return boxes;
 	};
+	frame.clear <- function () {
+		this.data_display.clear();
+		this.flag_state_display.render(0);
+		this.flag_attack_display.render(0);
+	};
 	frame.Update <- function () {
+		if(!::setting.frame_data.enabled){
+			this.clear();
+			return;
+		}
 		local p1 = ::battle.team[0].current;
 		local p2 = ::battle.team[1].current;
 		local motion = p1.motion;
@@ -331,8 +337,6 @@ function framedisplaysetup() {
 		// 	this.count--;
 		// }
 		if (onMove) {
-			// ::debug.CheckOffset(::actor.actor_list.master1.mgr.GetAnimationSet2D(),84,1);
-
 			this.timer = ::setting.frame_data.timer;
 			if (!this.onBlacklist(motion)){
 				if (::setting.frame_data.hasData(::battle.group_player)){
@@ -346,14 +350,16 @@ function framedisplaysetup() {
 					}
 				}else{::battle.frame_lock = false}
 				this.data_display.render();
-				if (::setting.frame_data.input_flags){
-					if (p1.flagState)this.flag_state_display.render(p1.flagState);
-					if (p1.flagAttack)this.flag_attack_display.render(p1.flagAttack);
-					// log += format(" motion:%4d", p1.motion);
-					// log += format(" substate:%5s",(p1.subState != null).tostring());
-					// log += format(" endtofreemove:%5s",(p1.EndtoFreeMove != null).tostring());
-					// log += format(" statelabel:%5s",(p1.stateLabel != null).tostring());
-				}
+				this.flag_state_display.render(::setting.frame_data.input_flags ? p1.flagState : 0);
+				this.flag_attack_display.render(::setting.frame_data.input_flags ? p1.flagAttack : 0);
+				// if (::setting.frame_data.input_flags){
+				// 	if (p1.flagState)this.flag_state_display.render(p1.flagState);
+				// 	if (p1.flagAttack)this.flag_attack_display.render(p1.flagAttack);
+				// 	// log += format(" motion:%4d", p1.motion);
+				// 	// log += format(" substate:%5s",(p1.subState != null).tostring());
+				// 	// log += format(" endtofreemove:%5s",(p1.EndtoFreeMove != null).tostring());
+				// 	// log += format(" statelabel:%5s",(p1.stateLabel != null).tostring());
+				// }
 			}
 		}else{
 			this.data_display.clear();
@@ -361,12 +367,7 @@ function framedisplaysetup() {
 			if (this.timer) --this.timer;
         }
 		if (!this.timer) {
-			this.data_display.text.Set("");
-			if(true)this.data_display.framebar.text.Set("");
-			if(::setting.frame_data.input_flags){
-				this.flag_state_display.text.Set("");
-				this.flag_attack_display.text.Set("");
-			}
+			this.clear();
 		}
 		if (log != "" && this.lastLog != log+"\n"){
 			this.lastLog = log+"\n";
@@ -380,11 +381,9 @@ function framedisplaysetup() {
 function inputdisplaysetup(player) {
 	::setting.input_display.update_consts();
 	local p = player != 1 ? ::setting.input_display.p1 : ::setting.input_display.p2;
-	if (p.enabled) {
-		local input = this.CreateInput_display(player,p);
-		this.input_task = input;
-		AddTask(input);
-	}
+	local input = this.CreateInput_display(player,p);
+	this.input_task = input;
+	AddTask(input);
 }
 
 function HideUISetup(hold) {

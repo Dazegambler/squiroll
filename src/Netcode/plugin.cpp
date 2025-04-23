@@ -403,6 +403,20 @@ extern "C" {
             sq_createtable(v, _SC("setting"), [](HSQUIRRELVM v) {
                 sq_setinteger(v, _SC("version"), PLUGIN_VERSION);
                 sq_setinteger(v, _SC("revision"), PLUGIN_REVISION);
+                sq_setfunc(v,_SC("save"),[](HSQUIRRELVM v) -> SQInteger {
+                    const char* section;
+                    const char* key;
+                    const char* value;
+                    if (sq_gettop(v) != 4 ||
+                        SQ_FAILED(sq_getstring(v, 2, &section)) ||
+                        SQ_FAILED(sq_getstring(v, 3, &key)) ||
+                        SQ_FAILED(sq_getstring(v, 4, &value))
+                    ) {
+                        return sq_throwerror(v, "Invalid arguments, expected: <section> <key> <value>");
+                    }
+                    set_config_string(section,key,value);
+                    return 0;
+                });
                 sq_createtable(v, _SC("misc"), [](HSQUIRRELVM v){
                     sq_setbool(v, _SC("hide_wip"), get_hide_wip_enabled());
                     sq_setbool(v, _SC("skip_intro"), get_skip_intro_enabled()); // This isn't a function because it only runs once anyway
@@ -475,6 +489,50 @@ extern "C" {
                     sq_setfunc(v, _SC("update_consts"), update_input_constants);
                     sq_createtable(v, _SC("p1"), set_inputp1_constants);
                     sq_createtable(v, _SC("p2"), set_inputp2_constants);
+                });
+            });
+
+            sq_createtable(v, _SC("math"),[](HSQUIRRELVM v) {
+                sq_setfunc(v,_SC("clamp"),[](HSQUIRRELVM v) -> SQInteger {
+                    SQFloat Val,minVal,maxVal;
+                    if (sq_gettop(v) != 4 ||
+                        SQ_FAILED(sq_getfloat(v, 2, &Val)) ||
+                        SQ_FAILED(sq_getfloat(v, 3, &minVal)) ||
+                        SQ_FAILED(sq_getfloat(v, 4, &maxVal)) 
+                    ) {
+                        return sq_throwerror(v, "Invalid arguments, expected: <Val> <minVal> <maxVal>");
+                    }
+                    SQFloat result = Val < minVal ? minVal : (Val > maxVal ? maxVal : Val);
+                    sq_pushfloat(v, result);
+                    return 1;
+                });
+                sq_setfunc(v, _SC("min"),[](HSQUIRRELVM v) -> SQInteger {
+                    SQFloat a,b;
+                    if (sq_gettop(v) != 3 ||
+                        SQ_FAILED(sq_getfloat(v, 2, &a)) ||
+                        SQ_FAILED(sq_getfloat(v, 3, &b)) 
+                    ) {
+                        return sq_throwerror(v, "Invalid arguments, expected: <a> <b>");
+                    }
+                    sq_getfloat(v, 2, &a);
+                    sq_getfloat(v, 3, &b);
+
+                    sq_pushfloat(v, a < b ? a : b);
+                    return 1;
+                });
+                sq_setfunc(v, _SC("max"),[](HSQUIRRELVM v) -> SQInteger {
+                    SQFloat a,b;
+                    if (sq_gettop(v) != 3 ||
+                        SQ_FAILED(sq_getfloat(v, 2, &a)) ||
+                        SQ_FAILED(sq_getfloat(v, 3, &b)) 
+                    ) {
+                        return sq_throwerror(v, "Invalid arguments, expected: <a> <b>");
+                    }
+                    sq_getfloat(v, 2, &a);
+                    sq_getfloat(v, 3, &b);
+
+                    sq_pushfloat(v, a > b ? a : b);
+                    return 1;
                 });
             });
 

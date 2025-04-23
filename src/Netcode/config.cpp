@@ -261,7 +261,7 @@ static inline bool create_dummy_file(const char* path) {
     return false;
 }
 
-static inline void set_config_string(const char* section, const char* key, const char* value) {
+void set_config_string(const char* section, const char* key, const char* value) {
     WritePrivateProfileStringA(section, key, value, CONFIG_FILE_PATH);
     config_cache.erase({section, key});
 }

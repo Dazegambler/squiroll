@@ -143,11 +143,6 @@ static constexpr uint8_t replay_select_view_nut[] = {
 #endif
 };
 
-static constexpr uint8_t item_config_csv[] = {
-#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "replacement_files/item_config.csv.h"
-#endif
-};
 static constexpr uint8_t input_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
 #include "replacement_files/input.nut.h"
@@ -177,7 +172,6 @@ static const std::unordered_map<std::string_view, const EmbedData> replacements 
     {"data/script/battle/battle_vs_player.nut"sv, battle_vs_player_nut},
     {"data/system/watch/watch.nut"sv, watch_nut},
     {"data/system/replay_select/replay_select_view.nut"sv, replay_select_view_nut},
-    // {"data/system/config/item.csv"sv, item_config_csv},
     {"data/script/input.nut"sv, input_nut},
     // {"data/script/scene/vs.nut"sv, vs_nut},
 };
@@ -188,22 +182,6 @@ static constexpr uint8_t debug_nut[] = {
 
 static constexpr uint8_t mod_config_nut[] = {
 #include "new_files/mod_config.nut.h"
-};
-
-static constexpr uint8_t mod_config_animation_nut[] = {
-#include "new_files/mod_config_animation.nut.h"
-};
-
-static constexpr uint8_t mod_config_proc_nut[] = {
-#include "new_files/mod_config_proc.nut.h"
-};
-
-static constexpr uint8_t mod_config_item_csv[] = {
-#include "new_files/mod_config_item.csv.h"
-};
-
-static constexpr uint8_t mod_config_set_nut[] = {
-#include "new_files/mod_config_set.nut.h"
 };
 
 static constexpr uint8_t UI_nut[] = {
@@ -223,10 +201,6 @@ static const std::unordered_map<std::string_view, const EmbedData> new_files = {
     {"UI.nut"sv, UI_nut},
     {"frame_data.nut"sv, frame_data_nut},
     {"mod_config.nut"sv, mod_config_nut},
-    {"mod_config_animation.nut"sv, mod_config_animation_nut},
-    {"mod_config_item.csv"sv, mod_config_item_csv},
-    {"mod_config_proc.nut"sv, mod_config_proc_nut},
-    {"mod_config_set.nut"sv, mod_config_set_nut},
     {"input_display.nut"sv, input_display_nut},
 };
 

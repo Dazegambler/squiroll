@@ -247,7 +247,36 @@ function Create( param )
 			  // [329]  OP_JMP            0      0    0    0
 		}
 	}
-	// ::debug.CheckOffset(::actor.actor_list.master1.mgr.GetAnimationSet2D(),0,100);
+	// this.rolldata <- [];
+	local test = {};
+	test.press <- 0;
+	test.Update <- function () {
+		if(::manbow.GetKeyboardState() == 41){
+			this.press++;
+			// ::debug.print("ROLLBACK!\n");
+			// local data = ::battle.rolldata[0];
+			// ::battle = data.battle;
+			// // ::actor.actor_list = data.actor_list;
+			// // ::actor.effect_mgr = data.effect_mgr;
+			// // ::actor.common_mgr = data.common_mgr;
+			// // ::actor.win = data.win;
+			// ::battle.rolldata <- [];
+		}else{
+			this.press = 0;
+		}
+		if (this.press == 1){
+			::sound.PlaySE("sys_ok");
+		}
+		// ::battle.rolldata.append({
+			// battle = clone ::battle;
+			// group_player = clone ::battle.group_player;
+			// actor_list = clone ::actor.actor_list;
+			// effect_mgr = clone ::actor.effect_mgr;
+			// common_mgr = clone ::actor.common_mgr;
+			// win = clone ::actor.win;
+		// });
+	};
+	::loop.AddTask(test);
 }
 
 function framedisplaysetup() {
@@ -387,11 +416,15 @@ function inputdisplaysetup(player) {
 }
 
 function HideUISetup(hold) {
-	local ui = {};
+	local ui = {
+		input = 0;
+	};
 	ui.active <- true;
 	ui.Update <- function () {
-		local b6 = ::input_all.b6;
-		if (b6 != 0 && b6 % hold == 0){
+		if(::manbow.GetKeyboardState() == 41)this.input++;//' key
+		else{this.input = 0};
+		if (this.input != 0 && this.input % hold == 0){
+			::sound.PlaySE("sys_ok");
 			if (!(this.active = !this.active))::battle.gauge.Hide();
 			else{::battle.gauge.Show(0);}
 		}
@@ -498,7 +531,7 @@ this.UpdateMain = function() {
 	if (!::network.IsActive() &&
 		::setting.frame_data.frame_stepping &&
 		this.frame_lock &&
-		(::input_all.b6 != 1)){
+		!(::manbow.GetKeyboardState() == 41)){
 		return;
 	}
 	this.UpdateMainOrig();

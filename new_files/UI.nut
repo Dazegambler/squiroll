@@ -53,6 +53,32 @@ function CreateText(type,str,SY,SX,red,green,blue,alpha,slot,priority,Update = n
     return obj;
 }
 
+function CreateTextA(type,str,SY,SX,red,green,blue,alpha,slot,priority){
+    local obj = null;
+    switch (type){
+        case 3:
+            obj = ::font.CreateSpellString(str,red,green,blue);
+            break;
+        case 2:
+            obj = ::font.CreateSubtitleString(str);
+                break;
+        case 1:
+            obj = ::font.CreateSystemStringSmall(str);
+            break;
+        default:
+            obj = ::font.CreateSystemString(str);
+            break;
+    }
+	obj.sx = SX;
+	obj.sy = SY;
+	obj.red = red;
+	obj.green = green;
+	obj.blue = blue;
+	obj.alpha = alpha;
+	obj.ConnectRenderSlot(slot, priority);
+    return obj;
+}
+
 // function FilterTable(table,expr){
 //     local tb = {};
 //     foreach(k,v in table.Get()){

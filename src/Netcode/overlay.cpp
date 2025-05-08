@@ -147,27 +147,21 @@ struct ManbowActorCollisionData {
     btGhostObject obj; // 0x10
 };
 
-struct TakeNode {
-    char __unk0[0xc]; // 0x0
-    uint32_t thresh; // 0xc
-};
-
-struct TakeData {
-    char __unk0[0xc]; // 0x0
-    void* frames; // 0xc
-    void* duration;// 0x18
+struct AnimationNode {
+    void*           __unk0; // 0x0 
+    AnimationNode*  node; // 0x4 <
+    AnimationNode*  _node; // 0x8
+    char            __unkC; // 0xC
+    bool            __unkD; // 0xD
+    char            __pad[0x2]; // 0xE
+    uint32_t        __unk10; // 0x10
+    void*           __unk14; // 0x14
 };
 
 struct AnimationSet2D {
-    AnimationSet2D* next; // 0x0 
-    uint32_t priority; // 0x4
-    AnimationSet2D* root; // 0x8
-    void* __unkD; // 0xd
-    char __unkE[6]; //0xe
-    TakeData* Takes; // 0x14
+    char            __unk0[0x8]; // 0x0
+    AnimationNode*  current; // 0x8 <
 };
-
-// static_assert(sizeof(AnimationSet2D) == 0x18);
 
 struct ManbowAnimationController2D {
     char __unk0[0x1c]; // 0x0
@@ -180,7 +174,7 @@ struct ManbowAnimationController2D {
     std::vector<std::shared_ptr<ManbowActorCollisionData>> hurt_boxes; // 0x90
     char __unk9C[0x124-0x9C]; // 0x9C
     AnimationSet2D* anim_set;// 0x124
-    TakeData* take; // 0x12C
+    void* take; // 0x12C
     void* __unk130; // 0x130
     void* __unk134; // 0x134
     char __unk138[0x300 - 0x134]; // 0x138

@@ -163,24 +163,66 @@ struct AnimationSet2D {
     AnimationNode*  current; // 0x8 <
 };
 
-struct ManbowAnimationController2D {
-    char __unk0[0x1c]; // 0x0
+// size: 0x120
+struct ManbowAnimationControllerBase {
+    void* vftable; // 0x0
+    char __unk4[0x18]; // 0x4
     uint32_t MotionId; // 0x1c
     void* __unk20; // 0x20
     uint32_t __unk24; // 0x24
-    char __unk28[0x78 - 0x28]; // 0x28
+    float __float_28; // 0x28
+    float __float_2C; // 0x2C
+    float __float_30; // 0x30
+    float __float_34; // 0x34
+    D3DMATRIX __matrix_38; // 0x38
     std::vector<std::shared_ptr<ManbowActorCollisionData>> collision_boxes; // 0x78
     std::vector<std::shared_ptr<ManbowActorCollisionData>> hit_boxes; // 0x84
     std::vector<std::shared_ptr<ManbowActorCollisionData>> hurt_boxes; // 0x90
-    char __unk9C[0x124-0x9C]; // 0x9C
+    char __unk9C[0x84]; // 0x9C
+    // 0x120
+};
+
+// size: 0x230
+struct ManbowAnimationController2D : ManbowAnimationControllerBase {
+    // ManbowAnimationControllerBase base; // 0x0
+    void* tf4_imaterial_vftable; // 0x120 (this probably does nothing)
     AnimationSet2D* anim_set;// 0x124
     void* take; // 0x12C
     void* __unk130; // 0x130
     void* __unk134; // 0x134
-    char __unk138[0x300 - 0x134]; // 0x138
+    char __unk138[0x230 - 0x138]; // 0x138
+    // 0x230
 };
 
-static_assert(sizeof(ManbowAnimationController2D) == 0x300);
+static_assert(sizeof(ManbowAnimationController2D) == 0x230);
+
+// size: 0x268
+struct ManbowAnimationController3D : ManbowanimationControllerBase {
+    // ManbowAnimationControllerBase base; // 0x0
+    char __unk120[0x148]; // 0x120
+    // 0x268
+};
+
+// size: 0x280
+struct ManbowAnimationControllerDynamic : ManbowAnimationController2D {
+    // ManbowAnimationController2D base; // 0x0
+    char __unk230[0x50]; // 0x230
+    // 0x280
+};
+
+// size: 0x240
+struct ManbowAnimationControllerStencil : ManbowAnimationController2D {
+    // ManbowAnimationController2D base; // 0x0
+    char __unk230[0x10]; // 0x230
+    // 0x240
+};
+
+// size: 0x300
+struct ManbowAnimationControllerTrail : ManbowAnimationController2D {
+    // ManbowAnimationController2D base; // 0x0
+    char __unk230[0xD0]; // 0x230
+    // 0x300
+};
 
 struct ManbowCamera2D {
     char dont_care0[0x1C]; // 0x0

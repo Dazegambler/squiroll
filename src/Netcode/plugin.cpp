@@ -1,3 +1,4 @@
+#include <squirrel.h>
 #if __INTELLISENSE__
 #undef _HAS_CXX20
 #define _HAS_CXX20 0
@@ -560,6 +561,16 @@ extern "C" {
                 sq_setfunc(v, _SC("print_value"), sq_print_value);
                 sq_setfunc(v, _SC("fprint_value"), sq_fprint_value);
                 sq_setfunc(v, _SC("dev"), SQPUSH_BOOL_FUNC(get_dev_mode_enabled()));
+                sq_setfunc(v, _SC("test"), [](HSQUIRRELVM v) -> SQInteger {
+                    void* player;
+                    if (sq_gettop(v) != 2 ||
+                        SQ_FAILED(sq_getinstanceup(v, 2, &player, nullptr))
+                    ) {
+                        return sq_throwerror(v, "Invalid arguments, expected: <player>");
+                    }
+                    GetFrameCount((ManbowActor2D*)player);
+                    return 0;
+                });
             });
 
             // modifications to the manbow table

@@ -465,29 +465,29 @@ function FrameDataDisplay(player){
     // };
 
     display.Update <- function () {
-        local data = {
-            count = 0;
-            frames = [];
-            cancels = [];
-            armor = [];
-        };
+        // local data = {
+        //     count = 0;
+        //     frames = [];
+        //     cancels = [];
+        //     armor = [];
+        // };
 
-        local p = team.current;
+        // local p = team.current;
 
-        local flag_state = 0;
-        local flag_attack = 0;
-        if(::setting.frame_data.enabled){
-            if(::setting.frame_data.input_flags){
-                flag_state = p.flagState;
-                flag_attack = p.flagAttack;
-            }
-            data = this.previous_data ? this.previous_data;
-            // if (::setting.frame_data.IsFrameActive())
-        }
+        // local flag_state = 0;
+        // local flag_attack = 0;
+        // if(::setting.frame_data.enabled){
+        //     if(::setting.frame_data.input_flags){
+        //         flag_state = p.flagState;
+        //         flag_attack = p.flagAttack;
+        //     }
+        //     data = this.previous_data ? this.previous_data;
+        //     // if (::setting.frame_data.IsFrameActive())
+        // }
 
-        this.frame_data.Render(data);
-        this.flag_state.Render(flag_state);
-        this.flag_attack.Render(flag_attack);
+        // this.frame_data.Render(data);
+        // this.flag_state.Render(flag_state);
+        // this.flag_attack.Render(flag_attack);
     };
 
     return display;

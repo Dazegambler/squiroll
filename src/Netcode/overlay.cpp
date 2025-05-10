@@ -147,6 +147,17 @@ struct ManbowActorCollisionData {
     btGhostObject obj; // 0x10
 };
 
+struct Unk130 {
+    char            __unk0[0xc]; // 0x0
+    uint32_t        __unkc; // 0xc
+};
+
+struct Unk14 {
+    char            __unk0[0xc]; // 0x0
+    uint32_t        __unkc; // 0xc
+    uint32_t        __unk10; // 0x10
+};
+
 struct AnimationNode {
     void*           __unk0; // 0x0 
     AnimationNode*  node; // 0x4 <
@@ -154,8 +165,8 @@ struct AnimationNode {
     char            __unkC; // 0xC
     bool            __unkD; // 0xD
     char            __pad[0x2]; // 0xE
-    uint32_t        __unk10; // 0x10
-    void*           __unk14; // 0x14
+    int32_t         __unk10; // 0x10
+    Unk14*          __unk14; // 0x14
 };
 
 struct AnimationSet2D {
@@ -169,7 +180,7 @@ struct ManbowAnimationControllerBase {
     char __unk4[0x18]; // 0x4
     uint32_t MotionId; // 0x1c
     void* __unk20; // 0x20
-    uint32_t __unk24; // 0x24
+    uint32_t keyframe; // 0x24
     float __float_28; // 0x28
     float __float_2C; // 0x2C
     float __float_30; // 0x30
@@ -187,17 +198,18 @@ struct ManbowAnimationController2D : ManbowAnimationControllerBase {
     // ManbowAnimationControllerBase base; // 0x0
     void* tf4_imaterial_vftable; // 0x120 (this probably does nothing)
     AnimationSet2D* anim_set;// 0x124
-    void* take; // 0x12C
-    void* __unk130; // 0x130
-    void* __unk134; // 0x134
-    char __unk138[0x230 - 0x138]; // 0x138
+    Unk14* take; // 0x12C
+    Unk130* __unk130; // 0x130
+    int32_t __unk134; // 0x134
+    uint32_t framecount; // 0x138
+    char __unk13C[0x230 - 0x13C]; // 0x13C
     // 0x230
 };
 
-static_assert(sizeof(ManbowAnimationController2D) == 0x230);
+// static_assert(sizeof(ManbowAnimationController2D) == 0x230); something is not alligned by 4 bytes
 
 // size: 0x268
-struct ManbowAnimationController3D : ManbowanimationControllerBase {
+struct ManbowAnimationController3D : ManbowAnimationControllerBase {
     // ManbowAnimationControllerBase base; // 0x0
     char __unk120[0x148]; // 0x120
     // 0x268
@@ -615,17 +627,27 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
 }
 
 int GetFrameCount(ManbowActor2D* player) {
-    if (!player || !player->anim_controller->anim_set || !player->anim_controller->anim_set->Takes)
+    if (!player || !player->anim_controller->anim_set)
         return 0;
-    AnimationSet2D* current = player->anim_controller->anim_set;
-    uint32_t count = 0;
-    log_printf("%d\n",player->anim_controller->anim_set->Takes->duration);
-    // while (current && current->next) {
-    //     ++count;
-    //     current = current->next;
-    // }
-    
-    return count;
+    auto cont = player->anim_controller;
+    AnimationSet2D* set = cont->anim_set;
+    // log_printf(
+    //     "{\n \
+    //     current:%x||%d\n \
+    //     node:%x||%d\n \
+    //     _node:%x||%d\n} \
+    //     \n", 
+    //     set->current->__unkD,set->current->__unk10,
+    //     set->current->node->__unkD,set->current->node->__unk10,
+    //     set->current->_node->__unkD,set->current->_node->__unk10
+    // );
+    log_printf(
+        "{\n\
+        A:%d\n\
+        }\n",
+        cont->__unk130->__unkc
+    );
+    return 0;
 }
 
 bool hasData(ManbowActor2DGroup* group) {

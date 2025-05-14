@@ -148,43 +148,50 @@ struct ManbowActorCollisionData {
 };
 
 struct Unk130 {
-    char            __unk0[0xc]; // 0x0
+    char            __unk0[0xC]; // 0x0
     uint32_t        __unkc; // 0xc
 };
 
-struct Unk14 {
+struct TakeData {
     char            __unk0[0xc]; // 0x0
+    TakeData*       previous; // 0x4
+    TakeData*       next; // 0x8
     uint32_t        __unkc; // 0xc
-    uint32_t        __unk10; // 0x10
+    int32_t        frame_total; // 0x10
 };
+
+// struct IAnimationTake;
+
+// struct Actor2DTakeData;
 
 struct AnimationNode {
     void*           __unk0; // 0x0 
-    AnimationNode*  node; // 0x4 <
-    AnimationNode*  _node; // 0x8
+    AnimationNode*  next; // 0x4 <
+    AnimationNode*  previous; // 0x8
     char            __unkC; // 0xC
     bool            __unkD; // 0xD
     char            __pad[0x2]; // 0xE
     int32_t         __unk10; // 0x10
-    Unk14*          __unk14; // 0x14
+    TakeData*          __unk14; // 0x14
 };
 
 struct AnimationSet2D {
-    char            __unk0[0x8]; // 0x0
-    AnimationNode*  current; // 0x8 <
+    void*           vtbl; // 0x0
+    void*           __unk4; // 0x4
+    AnimationNode*  head; // 0x8 <
 };
 
 // size: 0x120
 struct ManbowAnimationControllerBase {
     void* vftable; // 0x0
     char __unk4[0x18]; // 0x4
-    uint32_t MotionId; // 0x1c
-    void* __unk20; // 0x20
+    uint32_t motion; // 0x1c
+    int32_t key_take; // 0x20
     uint32_t keyframe; // 0x24
-    float __float_28; // 0x28
-    float __float_2C; // 0x2C
-    float __float_30; // 0x30
-    float __float_34; // 0x34
+    float red; // 0x28
+    float green; // 0x2C
+    float blue; // 0x30
+    float alpha; // 0x34
     D3DMATRIX __matrix_38; // 0x38
     std::vector<std::shared_ptr<ManbowActorCollisionData>> collision_boxes; // 0x78
     std::vector<std::shared_ptr<ManbowActorCollisionData>> hit_boxes; // 0x84
@@ -198,15 +205,17 @@ struct ManbowAnimationController2D : ManbowAnimationControllerBase {
     // ManbowAnimationControllerBase base; // 0x0
     void* tf4_imaterial_vftable; // 0x120 (this probably does nothing)
     AnimationSet2D* anim_set;// 0x124
-    Unk14* take; // 0x12C
+    void* __unk128; // 0x128
+    TakeData* take; // 0x12C
     Unk130* __unk130; // 0x130
     int32_t __unk134; // 0x134
-    uint32_t framecount; // 0x138
-    char __unk13C[0x230 - 0x13C]; // 0x13C
+    uint32_t current_frame; // 0x138
+    char __unk13C[0x224 - 0x13C]; // 0x13C
+    std::vector<std::shared_ptr<TakeData>> __unk224; // 0x224
     // 0x230
 };
 
-// static_assert(sizeof(ManbowAnimationController2D) == 0x230); something is not alligned by 4 bytes
+static_assert(sizeof(ManbowAnimationController2D) == 0x230); //something is not alligned by 4 bytes
 
 // size: 0x268
 struct ManbowAnimationController3D : ManbowAnimationControllerBase {
@@ -630,22 +639,9 @@ int GetFrameCount(ManbowActor2D* player) {
     if (!player || !player->anim_controller->anim_set)
         return 0;
     auto cont = player->anim_controller;
-    AnimationSet2D* set = cont->anim_set;
-    // log_printf(
-    //     "{\n \
-    //     current:%x||%d\n \
-    //     node:%x||%d\n \
-    //     _node:%x||%d\n} \
-    //     \n", 
-    //     set->current->__unkD,set->current->__unk10,
-    //     set->current->node->__unkD,set->current->node->__unk10,
-    //     set->current->_node->__unkD,set->current->_node->__unk10
-    // );
     log_printf(
-        "{\n\
-        A:%d\n\
-        }\n",
-        cont->__unk130->__unkc
+        "%d\n",
+        cont->take->frame_total
     );
     return 0;
 }

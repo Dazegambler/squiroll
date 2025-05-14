@@ -421,15 +421,15 @@ function HideUISetup(hold) {
 	ui.Update <- function () {
 		local i = ::input_all.b6;
 		if (i){
-			::debug.test(::battle.team[0].current);
 			if (i == 1){
 				::sound.PlaySE("sys_ok");
+				::debug.test(::battle.team[0].current);
 			}
-			// if (i % hold == 0){
-			// 	::sound.PlaySE("sys_ok");
-			// 	if (!(this.active = !this.active))::battle.gauge.Hide();
-			// 	else{::battle.gauge.Show(0);}
-			// }
+			if (i % hold == 0){
+				::sound.PlaySE("sys_ok");
+				if (!(this.active = !this.active))::battle.gauge.Hide();
+				else{::battle.gauge.Show(0);}
+			}
 		}
 	}
 	this.UI_task = ui;

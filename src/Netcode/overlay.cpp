@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <shared_mutex>
 #if __INTELLISENSE__
 #undef _HAS_CXX20
 #define _HAS_CXX20 0
@@ -147,17 +148,29 @@ struct ManbowActorCollisionData {
     btGhostObject obj; // 0x10
 };
 
-struct Unk130 {
-    char            __unk0[0xC]; // 0x0
-    uint32_t        __unkc; // 0xc
+struct Unk1 {
+    void*           __unk0; // 0x0
+    void*           __unk4; // 0x4
+    void*           __unk8; // 0x8
+    int32_t         frame_total; // 0xC divide by 100
+    uint32_t        __flag10; // 0x10
+};
+
+struct Unk3 {
+    void*           __unk0; // 0x0
+    void*           __unk4; // 0x4
+    void*           __unk8; // 0x8
+    int32_t         __intc; // 0xc
+    uint32_t        __flag10; // 0x10
+    uint32_t        __flag14; // 0x14
 };
 
 struct TakeData {
-    char            __unk0[0xc]; // 0x0
-    TakeData*       previous; // 0x4
-    TakeData*       next; // 0x8
-    uint32_t        __unkc; // 0xc
-    int32_t        frame_total; // 0x10
+    void*           __unk0; // 0x0
+    TakeData*       next; // 0x4
+    TakeData*       previous; // 0x8
+    Unk3*           __unkc; // 0xc
+    int32_t         frame_total; // 0x10 divide by 100 for true value
 };
 
 // struct IAnimationTake;
@@ -207,22 +220,29 @@ struct ManbowAnimationController2D : ManbowAnimationControllerBase {
     AnimationSet2D* anim_set;// 0x124
     void* __unk128; // 0x128
     TakeData* take; // 0x12C
-    Unk130* __unk130; // 0x130
-    int32_t __unk134; // 0x134
-    uint32_t current_frame; // 0x138
-    char __unk13C[0x224 - 0x13C]; // 0x13C
-    std::vector<std::shared_ptr<TakeData>> __unk224; // 0x224
+    Unk1* animation_data; // 0x130
+    int32_t frame; // 0x134 divide by 100 to get actual value
+    int32_t frame_again; // 0x138
+    uint16_t   speed; // 0x13C
+    char __unk13C[0x224 - 0x140]; // 0x140
+    std::vector<std::shared_ptr<void>> __unk224; // 0x224
     // 0x230
 };
 
-static_assert(sizeof(ManbowAnimationController2D) == 0x230); //something is not alligned by 4 bytes
+static_assert(sizeof(ManbowAnimationController2D) == 0x230);
 
 // size: 0x268
 struct ManbowAnimationController3D : ManbowAnimationControllerBase {
     // ManbowAnimationControllerBase base; // 0x0
-    char __unk120[0x148]; // 0x120
+    char __unk120[0x138]; // 0x120
+    float       __unk258; // 0x258
+    float       __unk25C; // 0x25C
+    float       __unk260; // 0x260
+    float       __unk264; // 0x264
     // 0x268
 };
+
+static_assert(sizeof(ManbowAnimationController3D) == 0x268);
 
 // size: 0x280
 struct ManbowAnimationControllerDynamic : ManbowAnimationController2D {
@@ -638,11 +658,33 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
 int GetFrameCount(ManbowActor2D* player) {
     if (!player || !player->anim_controller->anim_set)
         return 0;
-    auto cont = player->anim_controller;
-    log_printf(
-        "%d\n",
-        cont->take->frame_total
-    );
+    std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
+    TakeData* take = cont->take;
+    int32_t total = take->frame_total / 100;
+    while(take->next){
+        take = take->next;
+        total += take->frame_total / 100;
+    }
+    log_printf("%d\n",total);
+    // Unk2* node = take->next;
+
+    // Unk1* anim_data = cont->animation_data;
+    // int32_t start = take->next ? take->next->frame_total / 100: 0;
+    // int32_t active = take->previous ? take->previous->frame_total / 100 : 0;
+    // int32_t rec = take->__unkc ? take->__unkc->__intc / 100: 0;
+    // if (take){
+    //     uint32_t* ptr = (uint32_t*)take;
+    //     log_printf("{\n");
+    //     for (size_t i = 0; i < 10; ++i){
+    //         uint32_t d = *(ptr + i);
+    //         log_printf("+0x%x = %d\n",i*4,d);
+    //     }
+    //     log_printf("}");
+    // }
+    // log_printf(
+    //     "{%d}{%d,%d,%d}\n",
+    //     take->frame_total / 100,start,active,rec
+    // );
     return 0;
 }
 

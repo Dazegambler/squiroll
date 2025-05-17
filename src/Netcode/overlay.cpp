@@ -153,7 +153,8 @@ struct Unk1 {
     void*           __unk4; // 0x4
     void*           __unk8; // 0x8
     int32_t         frame_total; // 0xC divide by 100
-    uint32_t        __flag10; // 0x10
+    uint32_t        flag_state; // 0x10
+    uint32_t        flag_attack; // 0x14
 };
 
 struct Unk3 {
@@ -185,13 +186,14 @@ struct AnimationNode {
     bool            __unkD; // 0xD
     char            __pad[0x2]; // 0xE
     int32_t         __unk10; // 0x10
-    TakeData*          __unk14; // 0x14
+    TakeData*       __unk14; // 0x14
 };
 
 struct AnimationSet2D {
     void*           vtbl; // 0x0
     void*           __unk4; // 0x4
     AnimationNode*  head; // 0x8 <
+
 };
 
 // size: 0x120
@@ -655,37 +657,35 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
     }
 }
 
-int GetFrameCount(ManbowActor2D* player) {
-    if (!player || !player->anim_controller->anim_set)
-        return 0;
+int debug(ManbowActor2D* player) {
+    if (!player || !player->anim_controller->anim_set)return 0;
     std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
     TakeData* take = cont->take;
-    int32_t total = take->frame_total / 100;
+    Unk1* anim_data = cont->animation_data;
+    auto data = cont->anim_set->head->next;
+    if (data){
+        uint32_t* ptr = (uint32_t*)data;
+        log_printf("{\n");
+        for (size_t i = 0; i < 20; ++i){
+            uint32_t d = *(ptr + i);
+            log_printf("+0x%x = %d\n",i*4,d);
+        }
+        log_printf("}");
+    }
+    return 0;
+}
+
+int GetFrameCount(ManbowActor2D* player){
+    if (!player || !player->anim_controller->anim_set)return 0;
+    std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
+    TakeData* take = cont->take;
+    while(take->previous)take = take->previous;
+    int32_t total = take->frame_total;
     while(take->next){
         take = take->next;
-        total += take->frame_total / 100;
+        total += take->frame_total;
     }
-    log_printf("%d\n",total);
-    // Unk2* node = take->next;
-
-    // Unk1* anim_data = cont->animation_data;
-    // int32_t start = take->next ? take->next->frame_total / 100: 0;
-    // int32_t active = take->previous ? take->previous->frame_total / 100 : 0;
-    // int32_t rec = take->__unkc ? take->__unkc->__intc / 100: 0;
-    // if (take){
-    //     uint32_t* ptr = (uint32_t*)take;
-    //     log_printf("{\n");
-    //     for (size_t i = 0; i < 10; ++i){
-    //         uint32_t d = *(ptr + i);
-    //         log_printf("+0x%x = %d\n",i*4,d);
-    //     }
-    //     log_printf("}");
-    // }
-    // log_printf(
-    //     "{%d}{%d,%d,%d}\n",
-    //     take->frame_total / 100,start,active,rec
-    // );
-    return 0;
+    return total / 100;
 }
 
 bool hasData(ManbowActor2DGroup* group) {
@@ -772,30 +772,6 @@ std::vector<SQObject> GetHitboxes(ManbowActor2DGroup* group) {
     }
     return boxes;
 }
-
-// int FrameDataCheck(ManbowActor2DGroup* group,ManbowActor2D* target,ManbowActor2D* p1,ManbowActor2D* p2) {
-//     auto result = 0;
-//     if (uint32_t group_size = group->size) {
-//         ManbowActor2D** actor_ptr = group->actor_vec.data();
-//         do {
-//             ManbowActor2D* actor = *actor_ptr++;
-//             if (!actor->anim_controller || 
-//             (actor->active_flags & 1) == 0 || 
-//             (actor->group_flags & group->update_mask) == 0 || 
-//             !actor->callback_group ||
-//             (actor->id != p1->id && actor->id != p2->id) ||
-//             actor->id != target->id)
-//                 continue;
-
-//             for (const auto& data : actor->anim_controller->hit_boxes) {
-//                 if (data->obj_ptr->m_collisionShape->shape != 0) {
-//                     return true;
-//                 }
-//             }
-//         } while (--group_size);
-//     }
-//     return result;
-// }
 
 static forceinline void clip_to_screen(float* dst, const float* src) {
     dst[0] = (1.0f + src[0]) * (1280.0f / 2.0f);

@@ -18,5 +18,6 @@ std::vector<SQObject> GetHitboxes(ManbowActor2DGroup* group);
 void Rollback(ManbowActor2DGroup* val, ManbowActor2DGroup* tgt);
 bool hasData(ManbowActor2DGroup *group);
 int GetFrameCount(ManbowActor2D *player);
+int debug(ManbowActor2D* player);
 
 #endif

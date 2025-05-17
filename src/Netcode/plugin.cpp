@@ -568,7 +568,7 @@ extern "C" {
                     ) {
                         return sq_throwerror(v, "Invalid arguments, expected: <player>");
                     }
-                    GetFrameCount((ManbowActor2D*)player);
+                    debug((ManbowActor2D*)player);
                     return 0;
                 });
             });

@@ -1,5 +1,4 @@
-#include <cstdint>
-#include <shared_mutex>
+
 #if __INTELLISENSE__
 #undef _HAS_CXX20
 #define _HAS_CXX20 0
@@ -179,22 +178,53 @@ struct TakeData {
 // struct Actor2DTakeData;
 
 struct AnimationNode {
-    void*           __unk0; // 0x0 
-    AnimationNode*  next; // 0x4 <
-    AnimationNode*  previous; // 0x8
-    char            __unkC; // 0xC
-    bool            __unkD; // 0xD
+    AnimationNode*  __note0; // 0x0 
+    AnimationNode*  start; // 0x4 <
+    AnimationNode*  __node8; // 0x8
+    char            __bytec; // 0xC
+    bool            __boold; // 0xD
     char            __pad[0x2]; // 0xE
-    int32_t         __unk10; // 0x10
-    TakeData*       __unk14; // 0x14
+    int32_t         __int10; // 0x10
+    TakeData*       take; // 0x14
 };
 
 struct AnimationSet2D {
     void*           vtbl; // 0x0
     void*           __unk4; // 0x4
-    AnimationNode*  head; // 0x8 <
-
+    AnimationNode*  __unk8; // 0x8 <
+    uint32_t        __intc; // 0xC
+    void*           __unk10; // 0x10
+    uint32_t        __int14; // 0x14
 };
+
+// for reference
+// bool AnimationController2D::SetMotion(int32_t motion,int32_t take){
+//     auto v1 = this->anim_set->__unk8;
+//     bool v2 = v1->__unk4->__unkd;
+//     auto v3 = v1; //most likely temp storage
+//     auto v4 = v1->__unk4;
+//     auto v5;
+//     while (!v2) {
+//         if (v4->__unk10 < motion){
+//             v5 = v4->__unk8;
+//             v4 = v3;
+//         }else{
+//             v5 = v4;
+//         }
+//         v3 = v4;
+//         v4 = *v5;
+//         v2 = v5->__unkd;
+//     }
+//     if (v3 == v1 || motion < v3->__unk10) {
+//         v3 = v1;
+//     } 
+//     if (v3 != v1) {
+//         this->motion = motion;
+//         this->take = v3->__unk14;
+//         return this->set_take(take);
+//     }
+//     return false;
+// }
 
 // size: 0x120
 struct ManbowAnimationControllerBase {
@@ -659,19 +689,22 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
 
 int debug(ManbowActor2D* player) {
     if (!player || !player->anim_controller->anim_set)return 0;
-    std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
-    TakeData* take = cont->take;
-    Unk1* anim_data = cont->animation_data;
-    auto data = cont->anim_set->head->next;
-    if (data){
-        uint32_t* ptr = (uint32_t*)data;
-        log_printf("{\n");
-        for (size_t i = 0; i < 20; ++i){
-            uint32_t d = *(ptr + i);
-            log_printf("+0x%x = %d\n",i*4,d);
-        }
-        log_printf("}");
-    }
+    // std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
+    // TakeData* take = cont->take;
+    // Unk1* anim_data = cont->animation_data;
+    // AnimationSet2D* set =  cont->anim_set;
+    // void** data1 = (void**)set;
+    // log_printf("\n>>>>>>>>>>>>>>>>data1\n");
+    // if (data1){
+    //     void** ptr = data1;
+    //     log_printf("{\n");
+    //     for (size_t i = 0; i < 20; ++i){
+    //         void** d = (ptr + i);
+    //         log_printf("+0x%x = 0x%p\n",i*4,*d);
+    //     }
+    //     log_printf("}");
+    // }
+    // log_printf("data1<<<<<<<<<<<<<<<<<\n");
     return 0;
 }
 

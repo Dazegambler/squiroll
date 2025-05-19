@@ -247,35 +247,6 @@ function Create( param )
 			  // [329]  OP_JMP            0      0    0    0
 		}
 	}
-	// this.rolldata <- [];
-	// local test = {};
-	// test.press <- 0;
-	// // test.Update <- function () {
-	// // 	if(::manbow.GetKeyboardState() == 41){
-	// // 		this.press++;
-	// // 		// ::debug.print("ROLLBACK!\n");
-	// // 		// local data = ::battle.rolldata[0];
-	// // 		// ::battle = data.battle;
-	// // 		// // ::actor.actor_list = data.actor_list;
-	// // 		// // ::actor.effect_mgr = data.effect_mgr;
-	// // 		// // ::actor.common_mgr = data.common_mgr;
-	// // 		// // ::actor.win = data.win;
-	// // 		// ::battle.rolldata <- [];
-	// // 	}else{
-	// // 		this.press = 0;
-	// // 	}
-	// // 	if (this.press == 1){
-	// // 	}
-	// // 	// ::battle.rolldata.append({
-	// // 		// battle = clone ::battle;
-	// // 		// group_player = clone ::battle.group_player;
-	// // 		// actor_list = clone ::actor.actor_list;
-	// // 		// effect_mgr = clone ::actor.effect_mgr;
-	// // 		// common_mgr = clone ::actor.common_mgr;
-	// // 		// win = clone ::actor.win;
-	// // 	// });
-	// // };
-	// ::loop.AddTask(test);
 }
 
 function framedisplaysetup() {
@@ -361,7 +332,7 @@ function framedisplaysetup() {
 		if (onMove) {
 			this.timer = ::setting.frame_data.timer;
 			if (!this.onBlacklist(motion)){
-				::debug.test(::battle.team[0].current);
+				// ::debug.test(::battle.team[0].current);
 				if (::setting.frame_data.hasData(::battle.group_player)){
 					::battle.frame_lock = ::setting.frame_data.frame_stepping ? true : false;
 					if (!p1.hitStopTime){
@@ -402,12 +373,57 @@ function HideUISetup(hold) {
 	local ui = {
 	};
 	ui.active <- true;
+	ui.data <- [];
+	ui.index <- 0;
+	ui.lasttake <- 0;
 	ui.Update <- function () {
+		// ::debug.print(::battle.team[0].current.frame + "\n");
+		local player = ::battle.team[0].current;
+		if (player.keyTake != this.lasttake){
+			if(this.data.len() > ++index){
+				this.data[index] = {
+					x = player.x;
+					y = player.y;
+					z = player.z;
+					vx = player.vx;
+					vy = player.vy;
+					direction = player.direction;
+					_motion = player.motion;
+					take = player.keyTake;
+				};
+			}else{
+				this.data.append({
+					x = player.x;
+					y = player.y;
+					z = player.z;
+					vx = player.vx;
+					vy = player.vy;
+					direction = player.direction;
+					_motion = player.motion;
+					take = player.keyTake;
+				});
+			}
+		}
 		local i = ::input_all.b6;
 		if (i){
 			if (i == 1){
 				::sound.PlaySE("sys_ok");
-				::debug.print("\n|||||||||||||\n|||||||||||||\n|||||||||||||\n");
+				// ::debug.print("\n|||||||||||||\n|||||||||||||\n|||||||||||||\n");
+				// ::battle.team[0].current.x = 500;
+				// ::battle.team[0].current.SetMotion(1,2);
+				local i = 7;
+				while(this.index > 0){
+					if(!--i)break;
+					this.index--;
+				}
+				local now = this.data[this.index];
+				player.x = now.x;
+				player.y = now.y;
+				player.z = now.z;
+				player.vx = now.vx;
+				player.vy = now.vy;
+				player.direction = now.direction;
+				player.SetMotion(now._motion,now.take);
 			}
 			if (i % hold == 0){
 				::sound.PlaySE("sys_ok");

@@ -110,8 +110,8 @@ function ToConfigMenuPage(section,table,config_table,text_table = null,order = n
 	        }
             local obj = {};
             obj.config <- {
-                section = section[1];
-                key = config_table[k];
+                section = section[1]
+                key = config_table[k]
             };
             obj.section <- section[0];
             obj.text <- text_table && k in text_table ? text_table[k] : k;
@@ -156,13 +156,13 @@ function InitializeConfigMenu(pages){
     this.common_cursor_ok <- null;
     this.common_cursor_cancel <- null;
     this.anime <- {
-        title_x = 640;
-        title_y = 96;
-        item_x = 320;
-        item_y = 200;
-        item_space = 20;
-        item_margin = 42;
-        item_max_length = 288;
+        title_x = 640
+        title_y = 96
+        item_x = 320
+        item_y = 200
+        item_space = 20
+        item_margin = 42
+        item_max_length = 288
 
         function Initialize(){
             this.pager <- this.UIPager();

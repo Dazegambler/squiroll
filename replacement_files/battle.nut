@@ -19,6 +19,8 @@ function TerminateUser()
 ::manbow.compilebuffer("UI.nut", this);
 ::manbow.compilebuffer("frame_data.nut", this);
 ::manbow.compilebuffer("input_display.nut",this);
+this.rollback <- {};
+::manbow.compilebuffer("rollback.nut",this.rollback);
 this.gauge <- {};
 ::manbow.CompileFile("data/actor/status/gauge_common.nut", this.gauge);
 ::manbow.CompileFile("data/actor/status/spellcard.nut", this);
@@ -373,57 +375,15 @@ function HideUISetup(hold) {
 	local ui = {
 	};
 	ui.active <- true;
-	ui.data <- [];
-	ui.index <- 0;
-	ui.lasttake <- 0;
 	ui.Update <- function () {
-		// ::debug.print(::battle.team[0].current.frame + "\n");
 		local player = ::battle.team[0].current;
-		if (player.keyTake != this.lasttake){
-			if(this.data.len() > ++index){
-				this.data[index] = {
-					x = player.x;
-					y = player.y;
-					z = player.z;
-					vx = player.vx;
-					vy = player.vy;
-					direction = player.direction;
-					_motion = player.motion;
-					take = player.keyTake;
-				};
-			}else{
-				this.data.append({
-					x = player.x;
-					y = player.y;
-					z = player.z;
-					vx = player.vx;
-					vy = player.vy;
-					direction = player.direction;
-					_motion = player.motion;
-					take = player.keyTake;
-				});
-			}
-		}
+		::battle.rollback.internetArchive();
 		local i = ::input_all.b6;
 		if (i){
 			if (i == 1){
 				::sound.PlaySE("sys_ok");
-				// ::debug.print("\n|||||||||||||\n|||||||||||||\n|||||||||||||\n");
-				// ::battle.team[0].current.x = 500;
-				// ::battle.team[0].current.SetMotion(1,2);
-				local i = 7;
-				while(this.index > 0){
-					if(!--i)break;
-					this.index--;
-				}
-				local now = this.data[this.index];
-				player.x = now.x;
-				player.y = now.y;
-				player.z = now.z;
-				player.vx = now.vx;
-				player.vy = now.vy;
-				player.direction = now.direction;
-				player.SetMotion(now._motion,now.take);
+				::battle.rollback.neverHappened(4);
+				// player.Team_Change_Slave(null);
 			}
 			if (i % hold == 0){
 				::sound.PlaySE("sys_ok");

@@ -252,12 +252,12 @@ function FrameDataDisplay(player){
     local color = [::setting.frame_data.red,::setting.frame_data.green,::setting.frame_data.blue,::setting.frame_data.alpha];
     local scale = [::seting.frame_data.SX,::setting.frame_data.SY];
     local display = {
-        previous_data = null;
-        team = player;
+        previous_data = null
+        team = player
     };
     display.frame_data <- {
-        str = "";
-        max_w = 128;
+        str = ""
+        max_w = 128
     };
 
     local frame = display.frame_data.text <- ::font.CreateSystemString("");
@@ -302,8 +302,8 @@ function FrameDataDisplay(player){
     };
 
     display.flag_state <- {
-        str = "";
-        max_w = 128;
+        str = ""
+        max_w = 128
     };
 
     local flag_state = display.flag_state.text <- ::font.CreateSystemString("");
@@ -361,8 +361,8 @@ function FrameDataDisplay(player){
     };
 
     display.flag_attack = {
-        str = "";
-        max_w = 128;
+        str = ""
+        max_w = 128
     }
 
     local flag_attack = display.flag_attack.text <- ::font.CreateSystemString("");

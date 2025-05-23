@@ -33,18 +33,18 @@ for FILE in "$REPLACEMENT_COMPRESSED_DIR"/*; do
     $MAKE_EMBED_PATH "$FILE" "$DEST_FILE"
 done
 
-for FILE in "$NEW_FILES_DIR"/*; do
-    FILENAME=$(basename "$FILE")
-    if [[ "$FILE" != *.nut ]]; then
-    DEST_FILE="$NEW_DESTINATION_DIR/$FILENAME.h"
-    $MAKE_EMBED_PATH "$FILE" "$DEST_FILE"
-    else
-    DEST_FILE="$NEW_COMPRESSED_DIR/$FILENAME"
-    $CONDENSE_NUT_PATH "$FILE" "$DEST_FILE" "$DEST_FILE.map"
-    fi
-done
+# for FILE in "$NEW_FILES_DIR"/*; do
+#     FILENAME=$(basename "$FILE")
+#     if [[ "$FILE" != *.nut ]]; then
+#     DEST_FILE="$NEW_DESTINATION_DIR/$FILENAME.h"
+#     $MAKE_EMBED_PATH "$FILE" "$DEST_FILE"
+#     else
+#     DEST_FILE="$NEW_COMPRESSED_DIR/$FILENAME"
+#     $CONDENSE_NUT_PATH "$FILE" "$DEST_FILE" "$DEST_FILE.map"
+#     fi
+# done
 
-for FILE in "$NEW_COMPRESSED_DIR"/*; do
+for FILE in "$NEW_FILES_DIR"/*; do
     FILENAME=$(basename "$FILE")
     DEST_FILE="$NEW_DESTINATION_DIR/$FILENAME.h"
     $MAKE_EMBED_PATH "$FILE" "$DEST_FILE"

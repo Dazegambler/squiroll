@@ -10,13 +10,13 @@ function CreateInput_display(idx,player_config){
     //0x20-X- 0x200-X+ 4 priority
     //0x40-Y+ 0x400-Y- 8 prioritY
     local input = {
-        player = idx;
-        data = [[0,0]];
-        text = [];
-        config = player_config;
-        notation = split(player_config.notation,",");
-        pos = [player_config.X,player_config.Y];
-        scale = [player_config.SX,player_config.SY];
+        player = idx
+        data = [[0,0]]
+        text = []
+        config = player_config
+        notation = split(player_config.notation,",")
+        pos = [player_config.X,player_config.Y]
+        scale = [player_config.SX,player_config.SY]
 
         function getinputs(idx){
             local inputs = 0;
@@ -90,7 +90,7 @@ function CreateInput_display(idx,player_config){
             }
             if((!this.data[0][0] && this.data[0][1] > this.config.timer) || !config.enabled)this.data = [[0,0]];
             this.Render();
-        };
+        }
     }
     for (local i = 0; i < input.config.list_max; ++i) {
         input.text.append(this.CreateText(

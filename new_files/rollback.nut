@@ -25,6 +25,8 @@ function store_team(team) {
     return {
         current = team.current
         diff = {
+            op_stop = team.op_stop
+            op_stop_max = team.op_stop_max
             combo_count = team.combo_count
             combo_damage = team.combo_damage
             damage_scale = team.damage_scale
@@ -32,13 +34,29 @@ function store_team(team) {
             life = team.life
             damage_life = team.damage_life
             current = {
+                // command = {
+                //     rsv_k3_r = team.current.command.rsv_k3_r
+                //     ban_b = team.current.command.ban_b
+                //     reserve_count = team.current.command.reserve_count
+                //     rsv_k12 = team.current.command.rsv_k12
+                //     rsv_k3 = team.current.command.rsv_k3
+                //     rsv_k2 = team.current.command.rsv_k2
+                //     rsv_k1 = team.current.command.rsv_k1
+                //     ban_slide = team.current.command.ban_slide
+                //     rsv_k0 = team.current.command.rsv_k0
+                //     rsv_k5 = team.current.command.rsv_k5
+                //     rsv_k4 = team.current.command.rsv_k4
+                //     rsv_y = team.current.command.rsv_y
+                //     rsv_x = team.current.command.rsv_x
+                //     rsv_k01 = team.current.command.rsv_k01
+                //     rsv_k23 = team.current.command.rsv_k23
+                // }
                 x = team.current.x
                 y = team.current.y
                 z = team.current.z
                 vx = team.current.vx
                 vy = team.current.vy
                 direction = team.current.direction
-                // hit_state = team.current.hit_state
             }
         }
         calls = [
@@ -67,13 +85,12 @@ function store_bullet(bullet){
 }
 
 function undo_players(new_data){
-    foreach(t in ::battle.team){
+    foreach(i,t in ::battle.team){
         local diff = new_data[t];
 
         local char = t.current;
 
-        if(char != diff.current)char.Team_Change_Slave(null);
-
+        if(t.current != diff.current)char.Team_Change_Slave(null);
         merge(t,diff.diff);
         foreach(func in diff.calls)func[0].acall(func[1]);
         // foreach(k,v in data){
@@ -97,12 +114,10 @@ function neverHappened(frames){
         if(!--frames)break;
     }
     local archive = this.data[index];
-    if(archive[0].len()){
-        this.undo_players(archive[0]);
-        // foreach(k,v in archive[1]){
-        //     this.undo(k,v);
-        // }
-    }
+    this.undo_players(archive[0]);
+    // foreach(k,v in archive[1]){
+    //     this.undo(k,v);
+    // }
 }
 
 function internetArchive(){

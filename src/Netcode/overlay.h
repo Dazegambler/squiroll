@@ -3,8 +3,7 @@
 #ifndef OVERLAY_H
 #define OVERLAY_H 1
 
-struct ManbowActor2DGroup;
-struct ManbowActor2D;
+#include "TF4.h"
 
 void overlay_init();
 void overlay_destroy();

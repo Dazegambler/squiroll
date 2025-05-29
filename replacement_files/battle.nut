@@ -177,6 +177,7 @@ function Create( param )
 
 	this.world = ::manbow.World2D();
 	this.world.Init(-1000, -1000, -100, 3560, 2440, 100);
+
 	this.group_player = ::manbow.Actor2DGroup();
 	this.group_player.SetWorld(this.world);
 	this.group_player.SetCamera(::camera.camera2d);
@@ -188,6 +189,11 @@ function Create( param )
 	this.InitializeUser();
 	::camera.Reset();
  	this.gauge.Initialize();
+	// local worldupdate = this.world.Update;
+	// this.world.Update = function () {
+	// 	::debug.print("world update\n");
+	// 	worldupdate();
+	// };
 
 	if (::network.IsActive() && !::setting.network.hide_profile_pictures){
 		for( local i = 0; i < 2; i = ++i ){
@@ -382,7 +388,12 @@ function HideUISetup(hold) {
 		if (i){
 			if (i == 1){
 				::sound.PlaySE("sys_ok");
-				::battle.rollback.neverHappened(4);
+				::battle.frame_lock = false;
+				// ::debug.test(player);
+				// ::battle.team[0].current.Team_Change_Reigeki(null);
+				// ::battle.rollback.neverHappened(5);
+				// ::debug.print_value(::battle.team[0]);
+				// ::debug.print_value(player.command);
 				// player.Team_Change_Slave(null);
 			}
 			if (i % hold == 0){
@@ -393,7 +404,7 @@ function HideUISetup(hold) {
 		}
 	}
 	this.UI_task = ui;
-	AddTask(this.UI_task);
+	// AddTask(this.UI_task);
 }
 
 function Release()
@@ -449,6 +460,7 @@ function Release()
 	::manbow.SetTerminateFunction(null);
 
 	::overlay.clear();
+	this.rollback.data = [];
 }
 
 function Begin()
@@ -491,12 +503,12 @@ function SetSlow( n )
 
 this.UpdateMainOrig <- this.UpdateMain;
 this.UpdateMain = function() {
-	// if (!::network.IsActive() &&
-	// 	::setting.frame_data.frame_stepping &&
-	// 	this.frame_lock &&
-	// 	!(::manbow.GetKeyboardState() == 41)){
-	// 	return;
-	// }
+	this.UI_task.Update();
+	if (!::network.IsActive() &&
+		::setting.frame_data.frame_stepping &&
+		this.frame_lock){
+		return;
+	}
 	this.UpdateMainOrig();
 
 	if (::menu.pause_hack)

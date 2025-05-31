@@ -1,16 +1,18 @@
-#include "TF4.h"
 #if __INTELLISENSE__
 #undef _HAS_CXX20
 #define _HAS_CXX20 0
 #endif
 
+#include <squirrel.h>
+
 #include "rollback.h"
+#include "TF4.h"
 
 diffMan* rollback_Manager;
 
-void Reset(ManbowActor2DGroup* group) {
+void Reset(HSQUIRRELVM v,ManbowActor2DGroup* group) {
     if(rollback_Manager)delete rollback_Manager;
-    rollback_Manager = new diffMan(group);
+    rollback_Manager = new diffMan(v, group);
 }
 
 void Tick() {
@@ -26,6 +28,7 @@ void Undo(size_t frames) {
 void Clear() {
     if(rollback_Manager)delete rollback_Manager;
 }
+
 bool get_slot_path(HSQUIRRELVM vm, const SQObject &root, const std::vector<const char*> &path, SQObject &out) {
     SQObject current = root;
     sq_addref(vm, &current);
@@ -85,7 +88,4 @@ bool set_slot_path(HSQUIRRELVM vm, const SQObject &root, const std::vector<const
     sq_pop(vm, 1);
     sq_release(vm, &current);
     return ok;
-}
-bool rollback(){
-    return true;
 }

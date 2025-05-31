@@ -1,20 +1,36 @@
 #pragma once
-#include <squirrel.h>
 #ifndef ROLLBACK_H
 #define ROLLBACK_H
 
 #include <functional>
+#include <squirrel.h>
+#include <string_view>
+#include <unordered_map>
 #include <vector>
+#include <string.h>
 
 #include "TF4.h"
 #include "kite_api.h"
 
+static const char* SQPaths[] = {
+    "team.op_stop",
+    "team.op_stop_max",
+    "team.combo_count",
+    "team.combo_damage",
+    "team.damage_scale",
+    "team.combo_stun",
+    "team.life",
+    "team.damage_life",
+    "x",
+    "y",
+    "z",
+    "vx",
+    "vy",
+    "direction"
+};
+
 struct data_diff {
-    data_diff* next;
-    std::function<void()> apply;
-    data_diff(std::function<void()> diff){
-        this->apply = diff;
-    }
+    std::unordered_map<std::string_view,SQObject*> SQChanges;
 };
 
 struct frame_diff {
@@ -31,41 +47,28 @@ struct frame_diff {
     }
 
     ~frame_diff() {
-        this->Clear();
+        delete this->change;
     }
 
     inline void Apply() {
         if(!this->change)return;
-        while(this->change->next){
-            this->change->apply();
-            this->change = change->next;
-        }
     }
 
-    inline void AddChange(std::function<void()> diff) {
-        if(!this->change) {
-            this->change = new data_diff(diff);
-        }else {
-            this->change->next = new data_diff(diff);
-        }
+    inline void AddSQChange(std::string_view path, SQObject* val) {
+        if(!this->change)this->change = new data_diff();
+        this->change->SQChanges[path] = val;
     }
 
     private:
-
-    inline void Clear() {
-        while (this->change->next){
-            data_diff* temp = this->change;
-            this->change = this->change->next;
-            delete temp;
-        }   
-    }
 };
 
 struct diffMan {
     frame_diff* current;
     ManbowActor2DGroup* group;
+    HSQUIRRELVM v;
 
-    diffMan(ManbowActor2DGroup* _group) {
+    diffMan(HSQUIRRELVM _v, ManbowActor2DGroup* _group) {
+        v = _v;
         group = _group;
     }
 
@@ -96,7 +99,7 @@ struct diffMan {
             ManbowActor2D** actor_ptr = group->actor_vec.data();
             do {
                 ManbowActor2D* actor = *actor_ptr++;
-                this->Store(actor);
+                this->Store(this->v, actor);
             } while (--group_size);
         }
         return true;
@@ -119,8 +122,50 @@ struct diffMan {
         }    
     }
 
-    bool Store(ManbowActor2D* actor) {
+    inline bool sq_path(HSQUIRRELVM v, const SQObject &root, const char* path, SQObject &out)
+    {
+        sq_pushobject(v, root);
+
+        const char* p = path;
+        const char* dot;
+
+        while ((dot = strchr(p, '.')) != NULL) {
+            sq_pushstring(v, p, (SQInteger)(dot - p));
+            if (SQ_FAILED(sq_get(v, -2))) {
+                sq_pop(v, 2);
+                return false;
+            }
+
+            sq_remove(v, -2);
+
+            p = dot + 1;
+        }
+
+        sq_pushstring(v, p, -1);
+        if (SQ_FAILED(sq_get(v, -2))) {
+            sq_pop(v, 2);
+            return false;
+        }
+
+        sq_getstackobj(v, -1, &out);
+
+        sq_pop(v, 1);
         return true;
+    }
+
+    inline void sq_setval(HSQUIRRELVM v,SQObject* obj,SQObject &val) {
+        if (obj->_type >= OT_STRING && obj->_type <= OT_GENERATOR)sq_release(v, obj);
+        sq_pushobject(v, val);
+        sq_getstackobj(v, -1, obj);
+        sq_pop(v, 1);
+    }
+
+    void Store(HSQUIRRELVM v,ManbowActor2D* actor) {
+        SQObject sqobj = actor->sq_obj;
+        for (auto path : SQPaths){
+            SQObject out;
+            if(sq_path(v, sqobj,path,out))this->current->AddSQChange(path,&out);
+        }
     }
 };
 

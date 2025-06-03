@@ -1,4 +1,3 @@
-#include <squirrel.h>
 #if __INTELLISENSE__
 #undef _HAS_CXX20
 #define _HAS_CXX20 0
@@ -7,6 +6,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <squirrel.h>
+
 #include <string>
 
 #include "kite_api.h"
@@ -22,6 +23,7 @@
 #include "sq_debug.h"
 #include "discord.h"
 #include "overlay.h"
+#include "frame_data_display.h"
 
 const KiteSquirrelAPI* KITE;
 

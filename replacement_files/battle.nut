@@ -334,6 +334,7 @@ function framedisplaysetup() {
 		local p1 = ::battle.team[0].current;
 		local p2 = ::battle.team[1].current;
 		local motion = p1.motion;
+		local freeze_frames = p1.team.time_stop_count;
 		local onMove = (!p1.IsFree() || this.onWhitelist(motion));
 		local hitboxes = this.getboxes(::battle.team[0]);
 		local log = "";
@@ -378,11 +379,36 @@ function inputdisplaysetup(player) {
 }
 
 function HideUISetup(hold) {
-	local ui = {
-	};
+	local ui = {};
 	ui.active <- true;
+	ui.frame_count <- 0;
+	ui.motion <- 0;
+	ui.frame <- 0;
+	ui.bar_prog <- "";
 	ui.Update <- function () {
 		local player = ::battle.team[0].current;
+		local count = ::setting.frame_data.GetFrameCount(player);
+		local motion = player.motion;
+		if (count != this.frame_count || motion != this.motion){
+			::debug.print("animation_"+motion+"_length:"+count+" frames\n");
+			this.frame = 1;
+			::debug.test(player);
+			this.motion = motion;
+			this.frame_count = count;
+		}else if (count == this.frame_count && motion == this.motion) {
+			// this.frame++;
+			// local prog = (player.frame).tofloat() / (count).tofloat() % 0.1;
+			// local prog_left = 10 - prog;
+			// local bar = "[";
+			// // while(prog-- > 0)bar += "|";
+			// // while(prog_left-- > 0)bar += " ";
+			// bar += prog;
+			// bar += "]\n";
+			// if(this.bar_prog != bar){
+			// 	::debug.print(bar);
+			// 	this.bar_prog = bar;
+			// }
+		}
 		::battle.rollback.internetArchive();
 		local i = ::input_all.b6;
 		if (i){
@@ -390,11 +416,7 @@ function HideUISetup(hold) {
 				::sound.PlaySE("sys_ok");
 				::battle.frame_lock = false;
 				// ::debug.test(player);
-				// ::battle.team[0].current.Team_Change_Reigeki(null);
 				// ::battle.rollback.neverHappened(5);
-				// ::debug.print_value(::battle.team[0]);
-				// ::debug.print_value(player.command);
-				// player.Team_Change_Slave(null);
 			}
 			if (i % hold == 0){
 				::sound.PlaySE("sys_ok");

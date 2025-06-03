@@ -29,8 +29,45 @@ static const char* SQPaths[] = {
     "direction"
 };
 
+bool sq_path(HSQUIRRELVM v, const SQObject &root, const char* path, SQObject &out) {
+    sq_pushobject(v, root);
+
+    const char* p = path;
+    const char* dot;
+
+    while ((dot = strchr(p, '.')) != NULL) {
+        sq_pushstring(v, p, (SQInteger)(dot - p));
+        if (SQ_FAILED(sq_get(v, -2))) {
+            sq_pop(v, 2);
+            return false;
+        }
+
+        sq_remove(v, -2);
+
+        p = dot + 1;
+    }
+
+    sq_pushstring(v, p, -1);
+    if (SQ_FAILED(sq_get(v, -2))) {
+        sq_pop(v, 2);
+        return false;
+    }
+
+    sq_getstackobj(v, -1, &out);
+
+    sq_pop(v, 1);
+    return true;
+}
+
+struct SQDiff {
+    SQObject root;
+    SQObject new_val;
+
+    SQDiff(SQObject _root, SQObject _new_val) : root(_root),new_val(_new_val){}
+};
+
 struct data_diff {
-    std::unordered_map<std::string_view,SQObject*> SQChanges;
+    std::unordered_map<std::string_view,SQDiff*> SQChanges;
 };
 
 struct frame_diff {
@@ -50,16 +87,30 @@ struct frame_diff {
         delete this->change;
     }
 
-    inline void Apply() {
+    inline void Apply(HSQUIRRELVM v) {
         if(!this->change)return;
+        for (auto path : SQPaths){
+            SQDiff *diff = this->change->SQChanges.at(path);
+            this->sq_setval(v,diff->root,path,diff->new_val);
+        }
     }
 
-    inline void AddSQChange(std::string_view path, SQObject* val) {
+    inline void AddSQChange(std::string_view path, SQObject root, SQObject val) {
         if(!this->change)this->change = new data_diff();
-        this->change->SQChanges[path] = val;
+        this->change->SQChanges[path] = new SQDiff(root,val);
     }
 
     private:
+
+    void sq_setval(HSQUIRRELVM v,SQObject root, const char* path,SQObject &val) {
+        SQObject obj;
+        if (sq_path(v, root, path, obj)) {
+            if (obj._type >= OT_STRING && obj._type <= OT_GENERATOR)sq_release(v, &obj);
+            sq_pushobject(v, val);
+            sq_getstackobj(v, -1, &obj);
+            sq_pop(v, 1);    
+        }
+    }
 };
 
 struct diffMan {
@@ -108,7 +159,7 @@ struct diffMan {
     bool Undo(size_t frames) {
         if(!this->current)return false;
         while(--frames)this->current = this->current->prev;
-        this->current->Apply();
+        this->current->Apply(v);
         return true;
     }
     private:
@@ -122,49 +173,11 @@ struct diffMan {
         }    
     }
 
-    inline bool sq_path(HSQUIRRELVM v, const SQObject &root, const char* path, SQObject &out)
-    {
-        sq_pushobject(v, root);
-
-        const char* p = path;
-        const char* dot;
-
-        while ((dot = strchr(p, '.')) != NULL) {
-            sq_pushstring(v, p, (SQInteger)(dot - p));
-            if (SQ_FAILED(sq_get(v, -2))) {
-                sq_pop(v, 2);
-                return false;
-            }
-
-            sq_remove(v, -2);
-
-            p = dot + 1;
-        }
-
-        sq_pushstring(v, p, -1);
-        if (SQ_FAILED(sq_get(v, -2))) {
-            sq_pop(v, 2);
-            return false;
-        }
-
-        sq_getstackobj(v, -1, &out);
-
-        sq_pop(v, 1);
-        return true;
-    }
-
-    inline void sq_setval(HSQUIRRELVM v,SQObject* obj,SQObject &val) {
-        if (obj->_type >= OT_STRING && obj->_type <= OT_GENERATOR)sq_release(v, obj);
-        sq_pushobject(v, val);
-        sq_getstackobj(v, -1, obj);
-        sq_pop(v, 1);
-    }
-
     void Store(HSQUIRRELVM v,ManbowActor2D* actor) {
         SQObject sqobj = actor->sq_obj;
         for (auto path : SQPaths){
             SQObject out;
-            if(sq_path(v, sqobj,path,out))this->current->AddSQChange(path,&out);
+            if(sq_path(v, sqobj,path,out))this->current->AddSQChange(path,sqobj,out);
         }
     }
 };

@@ -1,4 +1,5 @@
 #pragma once
+#include "util.h"
 #ifndef TF4_H
 #define TF4_H
 
@@ -106,9 +107,70 @@ struct AnimationSet2D {
 //     return false;
 // }
 
+struct ManbowAnimationController2D;
+
+typedef bool thiscall SetMotion(
+    const ManbowAnimationController2D* self, 
+    int32_t motion, 
+    int32_t take
+); 
+typedef int thiscall SetTake(
+    const ManbowAnimationController2D* self, 
+    int32_t take
+);
+
+struct ManbowAnimationControllerBaseVftable {
+    void *const __method0; // 0x0
+    void *const __method4; // 0x4
+    void *const __method8; // 0x8
+    void *const __methodC; // 0xC
+    void *const __method10; //0x10
+    void *const __method14; // 0x14
+    SetMotion *const SetMotion; // 0x18
+    SetTake *const SetTake; // 0x1C
+    void *const __method20; // 0x20
+    void *const __method24; // 0x24
+    void *const __method28; // 0x28
+    void *const __method2C; // 0x2C
+    void *const __method30; // 0x30
+    void *const __method34; // 0x34
+    void *const __method38; // 0x38
+    void *const __method3C; // 0x3C
+    void *const __method40; // 0x40
+    void *const __method44; // 0x44
+    void *const __method48; // 0x48
+    void *const __method4C; // 0x4C
+    void *const __method50; // 0x50
+    void *const __method54; // 0x54
+    void *const __method58; // 0x58
+    void *const __method5C; // 0x5C
+    void *const __method60; // 0x60
+    void *const __method64; // 0x64
+    void *const __method68; // 0x68
+    void *const __method6C; // 0x6C
+    void *const __method70; // 0x70
+    void *const __method74; // 0x74
+    void *const __method78; // 0x78
+    void *const __method7C; // 0x7C
+    void *const __method80; // 0x80
+    void *const __method84; // 0x84
+    void *const __method88; // 0x88
+    void *const __method8C; // 0x8C
+    void *const __method90; // 0x90
+    void *const __method94; // 0x94
+    void *const __method98; // 0x98
+    void *const __method9C; // 0x9C
+    void *const __methodA0; // 0xA0
+    void *const __methodA4; // 0xA4
+    void *const __methodA8; // 0xA8
+    void *const __methodAC; // 0xAC
+    void *const __methodB0; // 0xB0
+    // 0xB0
+};
+
 // size: 0x120
 struct ManbowAnimationControllerBase {
-    void* vftable; // 0x0
+    ManbowAnimationControllerBaseVftable* vftable; // 0x0
     char __unk4[0x18]; // 0x4
     uint32_t motion; // 0x1c
     int32_t key_take; // 0x20
@@ -208,7 +270,7 @@ struct ManbowActor2D {
     float ox; // 0x48
     float oy; // 0x4C
     float s[3]; // 0x50, skew???
-    float r[3]; // 0x5C, rotation???
+    float r[3]; // 0x5C, rotation in radians
     void* /* Manbow::Actor2DManager* */ actor2d_mgr; // 0x68
     ManbowActor2DGroup* actor2d_group; // 0x6C
     uint8_t active_flags; // 0x70

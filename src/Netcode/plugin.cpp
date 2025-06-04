@@ -24,6 +24,7 @@
 #include "discord.h"
 #include "overlay.h"
 #include "frame_data_display.h"
+#include "rollback.h"
 
 const KiteSquirrelAPI* KITE;
 
@@ -544,6 +545,38 @@ extern "C" {
                 sq_setfunc(v, _SC("update_delay"), update_delay);
                 sq_setfunc(v, _SC("resyncing"), SQPUSH_BOOL_FUNC(resyncing));
                 sq_setfunc(v, _SC("get_buffered_frames"), SQPUSH_INT_FUNC(local_buffered_frames));
+                sq_setfunc(v, _SC("Reset"), [](HSQUIRRELVM v)-> SQInteger {
+                    void* inst;
+                    if (sq_gettop(v) != 2 ||
+                        SQ_FAILED(sq_getinstanceup(v, 2, &inst, nullptr))){
+                            return sq_throwerror(v, "Invalid arguments, expected: <group>");
+                    }
+                    Reset(v, (ManbowActor2DGroup*)inst);
+                    return 0;
+                });
+                sq_setfunc(v, _SC("Tick"), [](HSQUIRRELVM v)-> SQInteger {
+                    if (sq_gettop(v) != 1 ){
+                            return sq_throwerror(v, "Invalid arguments, expected: none");
+                    }
+                    Tick();
+                    return 0;
+                });
+                sq_setfunc(v, _SC("Undo"), [](HSQUIRRELVM v)-> SQInteger {
+                    SQInteger frames;
+                    if (sq_gettop(v) != 2 ||
+                        SQ_FAILED(sq_getinteger(v, 2, &frames))){
+                            return sq_throwerror(v, "Invalid arguments, expected: <frames>");
+                    }
+                    Undo(frames);
+                    return 0;
+                });
+                sq_setfunc(v, _SC("Clear"), [](HSQUIRRELVM v)-> SQInteger {
+                    if (sq_gettop(v) != 1 ){
+                            return sq_throwerror(v, "Invalid arguments, expected: none");
+                    }
+                    Clear();
+                    return 0;
+                });
             });
 
             sq_createtable(v, _SC("punch"), [](HSQUIRRELVM v) {

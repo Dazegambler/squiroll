@@ -107,15 +107,15 @@ struct AnimationSet2D {
 //     return false;
 // }
 
-struct ManbowAnimationController2D;
+struct ManbowAnimationControllerBase;
 
 typedef bool thiscall SetMotion(
-    const ManbowAnimationController2D* self, 
+    const ManbowAnimationControllerBase* self, 
     int32_t motion, 
     int32_t take
 ); 
 typedef int thiscall SetTake(
-    const ManbowAnimationController2D* self, 
+    const ManbowAnimationControllerBase* self, 
     int32_t take
 );
 
@@ -185,6 +185,14 @@ struct ManbowAnimationControllerBase {
     std::vector<std::shared_ptr<ManbowActorCollisionData>> hurt_boxes; // 0x90
     char __unk9C[0x84]; // 0x9C
     // 0x120
+
+    inline bool SetMotion(int32_t motion, int32_t take){
+        return this->vftable->SetMotion(this,motion,take);
+    }
+
+    inline int SetTake(int32_t take){
+        return this->vftable->SetTake(this,take);
+    }
 };
 
 // size: 0x230

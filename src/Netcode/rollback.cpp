@@ -7,12 +7,12 @@
 
 #include "rollback.h"
 #include "TF4.h"
+#include "log.h"
 
-diffMan* rollback_Manager;
+static diffMan* rollback_Manager = new diffMan();
 
 void Reset(HSQUIRRELVM v,ManbowActor2DGroup* group) {
-    if(rollback_Manager)delete rollback_Manager;
-    rollback_Manager = new diffMan(v, group);
+    rollback_Manager->Init(v,group);
 }
 
 void Tick() {
@@ -26,5 +26,7 @@ void Undo(size_t frames) {
 }
 
 void Clear() {
-    if(rollback_Manager)delete rollback_Manager;
+    log_printf("1\n");
+    delete rollback_Manager->current;
+    log_printf("end\n");
 }

@@ -34,9 +34,8 @@ struct SQDiff {
 };
 
 struct data_diff {
-    data_diff* next;
     ManbowActor2D* actor;
-    std::vector<SQDiff*> SQChanges;
+    std::vector<SQDiff> SQChanges;
     float pos[3];
     float vx;
     float vy;
@@ -44,79 +43,53 @@ struct data_diff {
     TakeData* take;
     int32_t key_take;
 
-    data_diff(ManbowActor2D* actor) : actor(actor){}
-    ~data_diff(){
-        while (this->next){
-            auto temp = this;
-            *this = *this->next;
-            delete temp;
-        }
+    data_diff(ManbowActor2D* actor){
+        this->actor = actor;
+        this->pos[0] = actor->pos[0];
+        this->pos[1] = actor->pos[1];
+        this->pos[2] = actor->pos[2];
+        
+        this->vx = actor->vx;
+        this->vy = actor->vy;
+
+        this->take = actor->anim_controller->take;
     }
 };
 
 struct frame_diff {
     frame_diff* next;
     frame_diff* prev;
-    data_diff* change;
-
-    frame_diff() {
-        this->prev = this;
-    }
+    std::vector<data_diff> changes;
 
     frame_diff(frame_diff* previous) {
         this->prev = previous;
     }
 
     ~frame_diff() {
-        delete this->change;
-        while (this->prev != this)*this = this->prev;
-        while (this->next){
-            auto temp = this;
-            *this = this->next;
-            delete temp;
-        }
+        delete this->next;
     }
 
     void Apply(HSQUIRRELVM v) {
-        if(!this->change)return;
-        while(this->change->next){
-            auto change = this->change;
-            if (!change->actor){
-                delete change;
+        if(!this->changes.size())return;
+        for (auto change : this->changes){
+            if (!change.actor){
                 continue;
             }
-            for (auto diff : change->SQChanges){
-                this->sq_setval(v, change->actor->sq_obj, diff->path, diff->new_val);
+            for (auto diff : change.SQChanges){
+                this->sq_setval(v, change.actor->sq_obj, diff.path, diff.new_val);
             }
-            auto actor2d = change->actor;
+            auto actor2d = change.actor;
 
-            actor2d->pos[0] = change->pos[0];
-            actor2d->pos[1] = change->pos[1];
-            actor2d->pos[2] = change->pos[2];
+            actor2d->pos[0] = change.pos[0];
+            actor2d->pos[1] = change.pos[1];
+            actor2d->pos[2] = change.pos[2];
 
-            actor2d->vx = change->vx;
-            actor2d->vy = change->vy;
-            actor2d->direction = change->direction;
+            actor2d->vx = change.vx;
+            actor2d->vy = change.vy;
+            actor2d->direction = change.direction;
 
-            std::shared_ptr<ManbowAnimationController2D> cont = actor2d->anim_controller;
-            cont->take = change->take;
-            cont->vftable->SetTake(cont.get(),change->key_take);
-
-            delete change;
-            this->change = this->change->next;
-        }
-    }
-
-    inline void AddSQChange(ManbowActor2D* actor) {
-        if(!this->change){
-            log_printf("4.1\n");
-            this->change = new data_diff(actor);
-        }else {
-            log_printf("4.2\n");
-            this->change->next = new data_diff(actor); // here
-            log_printf("4.3\n");
-            this->change = this->change->next;
-            log_printf("4.4\n");
+            actor2d->anim_controller->take = change.take;
+            actor2d->anim_controller->SetTake(change.key_take);
         }
     }
 
@@ -168,10 +141,10 @@ struct diffMan {
     ManbowActor2DGroup* group;
     HSQUIRRELVM v;
 
-    diffMan(HSQUIRRELVM _v, ManbowActor2DGroup* _group) {
-        v = _v;
-        group = _group;
-    }
+    // diffMan(HSQUIRRELVM _v, ManbowActor2DGroup* _group) {
+    //     v = _v;
+    //     group = _group;
+    // }
 
     ~diffMan(){
         delete current;
@@ -181,30 +154,23 @@ struct diffMan {
 
     //this is for a more static single manager only approach
     //i'm still not sure whether to take that or not
-    // bool Init(ManbowActor2DGroup* _group) {
-    //     if(this->current) {
-    //         if(this->current->prev != this->current)this->Clear();
-    //         else {
-    //             delete this->current;
-    //         }   
-    //     }    
-    //     this->group = _group;
-    //     return true;
-    // }
+    bool Init(HSQUIRRELVM v, ManbowActor2DGroup* _group) {
+        if (current)delete this->current;
+        this->v = v;
+        this->group = _group;
+        return true;
+    }
 
     bool Tick() {
         if(!this->group)return false;
         if (size_t group_size = group->size) {
-            log_printf("1\n");
             if(this->current){
                 this->current->next = new frame_diff(this->current);
                 this->current = this->current->next;
             }else {
-                this->current = new frame_diff();
+                this->current = new frame_diff(nullptr);
             }
-            log_printf("2\n");
             ManbowActor2D **actor_ptr = group->actor_vec.data();
-            log_printf("3\n");
             do {
               ManbowActor2D *actor = *actor_ptr++;
               this->Store(this->v, actor);
@@ -215,9 +181,13 @@ struct diffMan {
 
     bool Undo(size_t frames) {
         if(!this->current)return false;
-        while(--frames)this->current = this->current->prev;
+        while(frames-- && this->current->prev)this->current = this->current->prev;
         this->current->Apply(v);
         return true;
+    }
+
+    void ClearStored(){
+        
     }
     private:
 
@@ -253,15 +223,12 @@ struct diffMan {
 
     void Store(HSQUIRRELVM v,ManbowActor2D* actor) {
         if(!actor)return;
-        log_printf("4\n");
-        this->current->AddSQChange(actor);
-        log_printf("5\n");
+        this->current->changes.emplace_back(data_diff(actor));
+        auto current = this->current->changes.back();
         SQObject sqobj = actor->sq_obj;
-        log_printf("6\n");
         for (auto path : SQPaths) {
           SQObject out;
-          if (sq_path(v, sqobj, path, out))
-            this->current->change->SQChanges.push_back(new SQDiff(path, out));
+          if (sq_path(v, sqobj, path, out))current.SQChanges.emplace_back(SQDiff(path, out));
         }
     }
 };

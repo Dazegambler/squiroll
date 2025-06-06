@@ -3,6 +3,7 @@
 #define _HAS_CXX20 0
 #endif
 
+#include <vector>
 #include <squirrel.h>
 
 #include "rollback.h"
@@ -20,13 +21,15 @@ void Tick() {
     rollback_Manager->Tick();
 }
 
+void TickA(std::vector<ManbowActor2D*> actors) {
+    rollback_Manager->TickA(actors);
+}
+
 void Undo(size_t frames) {
     if(!rollback_Manager)return;
     rollback_Manager->Undo(frames);
 }
 
 void Clear() {
-    log_printf("1\n");
     delete rollback_Manager->current;
-    log_printf("end\n");
 }

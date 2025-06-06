@@ -344,7 +344,9 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
 
 int debug(ManbowActor2D* player) {
     if (!player || !player->anim_controller->anim_set)return 0;
-    std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
+    auto group = player->actor2d_group;
+    log_printf("size:%d\n",group->actor_list.size());
+    // std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
     // Unk1* anim_data = cont->animation_data;
     // AnimationSet2D* set =  cont->anim_set;
     // void** data1 = (void**)set;

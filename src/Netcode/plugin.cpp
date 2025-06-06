@@ -1,3 +1,4 @@
+#include "TF4.h"
 #if __INTELLISENSE__
 #undef _HAS_CXX20
 #define _HAS_CXX20 0
@@ -330,6 +331,32 @@ SQInteger ignore_lobby_punch_ping(HSQUIRRELVM v) {
     return 0;
 }
 
+// template<typename T>
+// SQInteger ReceiveArray(HSQUIRRELVM v) {
+//     if (sq_gettop(v) != 2 || 
+//         sq_gettype(v, 2) != OT_ARRAY) {
+//         return sq_throwerror(v, _SC("Expected one argument: array of MyClass instances"));
+//     }
+
+//     std::vector<T*> objects;
+
+//     sq_push(v, 2);
+//     sq_pushnull(v);
+//     while (SQ_SUCCEEDED(sq_next(v, -2))) {
+//         void* instance = nullptr;
+//         sq_getinstanceup(v, -1, &instance, 0);
+//         if (!instance) {
+//             sq_pop(v, 4);
+//             return sq_throwerror(v, _SC("Invalid MyClass instance in array"));
+//         }
+//         objects.emplace_back((T*)instance);
+//         sq_pop(v, 2);
+//     }
+//     sq_pop(v, 1);
+//     return 0;
+// }
+
+
 #define SQPUSH_BOOL_FUNC(val) [](HSQUIRRELVM v) -> SQInteger { sq_pushbool(v, (SQBool)(val)); return 1; }
 #define SQPUSH_INT_FUNC(val) [](HSQUIRRELVM v) -> SQInteger { sq_pushinteger(v, (SQInteger)(val)); return 1; }
 #define SQPUSH_FLOAT_FUNC(val) [](HSQUIRRELVM v) -> SQInteger { sq_pushfloat(v, (SQFloat)(val)); return 1; }
@@ -575,6 +602,30 @@ extern "C" {
                             return sq_throwerror(v, "Invalid arguments, expected: none");
                     }
                     Clear();
+                    return 0;
+                });
+                sq_setfunc(v, _SC("TickA"), [](HSQUIRRELVM v)-> SQInteger {
+                    if (sq_gettop(v) != 2 || 
+                    sq_gettype(v, 2) != OT_ARRAY) {
+                    return sq_throwerror(v, _SC("Invalid arguments, expected: <actor[]>"));
+                    }
+                
+                    std::vector<ManbowActor2D*> actors;
+                
+                    sq_push(v, 2);
+                    sq_pushnull(v);
+                    while (SQ_SUCCEEDED(sq_next(v, -2))) {
+                        void* instance;
+                        sq_getinstanceup(v, -1, &instance, 0);
+                        if (!instance) {
+                            sq_pop(v, 4);
+                            return sq_throwerror(v, _SC("Invalid class instance in array"));
+                        }
+                        actors.emplace_back((ManbowActor2D*)instance);
+                        sq_pop(v, 2);
+                    }
+                    sq_pop(v, 1);
+                    TickA(actors);
                     return 0;
                 });
             });

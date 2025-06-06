@@ -255,7 +255,7 @@ function Create( param )
 			  // [329]  OP_JMP            0      0    0    0
 		}
 	}
-	::rollback.Reset(this.group_player);
+	// ::rollback.Reset(this.group_player);
 }
 
 function framedisplaysetup() {
@@ -380,55 +380,54 @@ function inputdisplaysetup(player) {
 }
 
 function HideUISetup(hold) {
-	local ui = {};
-	// ui.active <- true;
-	// ui.frame_count <- 0;
-	// ui.motion <- 0;
-	// ui.frame <- 0;
-	// ui.bar_prog <- "";
-	ui.Update <- function () {
-		::rollback.Tick();
-
-		// local player = ::battle.team[0].current;
-		// local count = ::setting.frame_data.GetFrameCount(player);
-		// local motion = player.motion;
-		// if (count != this.frame_count || motion != this.motion){
-		// 	// ::debug.print("animation_"+motion+"_length:"+count+" frames\n");
-		// 	this.frame = 1;
-		// 	// ::debug.test(player);
-		// 	this.motion = motion;
-		// 	this.frame_count = count;
-		// }else if (count == this.frame_count && motion == this.motion) {
-		// 	// this.frame++;
-		// 	// local prog = (player.frame).tofloat() / (count).tofloat() % 0.1;
-		// 	// local prog_left = 10 - prog;
-		// 	// local bar = "[";
-		// 	// // while(prog-- > 0)bar += "|";
-		// 	// // while(prog_left-- > 0)bar += " ";
-		// 	// bar += prog;
-		// 	// bar += "]\n";
-		// 	// if(this.bar_prog != bar){
-		// 	// 	::debug.print(bar);
-		// 	// 	this.bar_prog = bar;
-		// 	// }
-		// }
-		// ::battle.rollback.internetArchive();
-		local i = ::input_all.b6;
-		if (i){
-			if (i == 1){
-				::sound.PlaySE("sys_ok");
-				::battle.frame_lock = false;
-				::rollback.Undo(4);
-				// ::debug.test(player);
-				// ::battle.rollback.neverHappened(5);
+	local ui = {
+		// active = true;
+		// frame_count = 0;
+		// motion = 0;
+		// frame = 0;
+		// bar_prog = 0;
+		function Update() {
+			// ::battle.rollback.Tick(::battle.team[0].current,::battle.team[1].current);
+			local player = ::battle.team[0].current;
+			// local count = ::setting.frame_data.GetFrameCount(player);
+			// local motion = player.motion;
+			// if (count != this.frame_count || motion != this.motion){
+			// 	// ::debug.print("animation_"+motion+"_length:"+count+" frames\n");
+			// 	this.frame = 1;
+			// 	// ::debug.test(player);
+			// 	this.motion = motion;
+			// 	this.frame_count = count;
+			// }else if (count == this.frame_count && motion == this.motion) {
+			// 	// this.frame++;
+			// 	// local prog = (player.frame).tofloat() / (count).tofloat() % 0.1;
+			// 	// local prog_left = 10 - prog;
+			// 	// local bar = "[";
+			// 	// // while(prog-- > 0)bar += "|";
+			// 	// // while(prog_left-- > 0)bar += " ";
+			// 	// bar += prog;
+			// 	// bar += "]\n";
+			// 	// if(this.bar_prog != bar){
+			// 	// 	::debug.print(bar);
+			// 	// 	this.bar_prog = bar;
+			// 	// }
+			// }
+			// ::battle.rollback.internetArchive();
+			local i = ::input_all.b6;
+			if (i){
+				if (i == 1){
+					::sound.PlaySE("sys_ok");
+					::battle.frame_lock = false;
+					// ::debug.test(player);
+					// ::rollback.Undo(4);
+				}
+				if (i % hold == 0){
+					::sound.PlaySE("sys_ok");
+					if (!(this.active = !this.active))::battle.gauge.Hide();
+					else{::battle.gauge.Show(0);}
+				}
 			}
-			if (i % hold == 0){
-				::sound.PlaySE("sys_ok");
-				if (!(this.active = !this.active))::battle.gauge.Hide();
-				else{::battle.gauge.Show(0);}
-			}
-		}
-	}
+		};
+	};
 	this.UI_task = ui;
 	// AddTask(this.UI_task);
 }

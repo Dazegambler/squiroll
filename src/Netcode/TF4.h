@@ -1,5 +1,6 @@
 #pragma once
 #include "util.h"
+#include <cstdint>
 #ifndef TF4_H
 #define TF4_H
 
@@ -27,31 +28,114 @@ struct ManbowActorCollisionData {
     btGhostObject obj; // 0x10
 };
 
-struct Unk1 {
-    void*           __unk0; // 0x0
-    void*           __unk4; // 0x4
-    void*           __unk8; // 0x8
-    int32_t         frame_total; // 0xC divide by 100
-    uint32_t        flag_state; // 0x10
-    uint32_t        flag_attack; // 0x14
+struct Sprite;
+
+typedef void SpriteMethod8(
+    const Sprite* self,
+    uint32_t keyframe,
+    int32_t frame
+);
+
+typedef void SpriteMethod10(
+    const Sprite* self,
+    float color_channel,
+    bool some_bool
+);
+
+typedef void SpriteMethod14(
+    const Sprite* self,
+    void* ptr,
+    int32_t frame
+);
+
+typedef void SpriteMethod18(
+    const Sprite* self,
+    D3DMATRIX matrix
+);
+
+struct SpriteVtable{
+    void *const __method0; // 0x0
+    void *const __method4; // 0x4
+    SpriteMethod8 *const __method8; // 0x8
+    void *const __methodC; // 0xC
+    SpriteMethod10 *const __method10; // 0x10
+    SpriteMethod14 *const __method14; // 0x14
+    SpriteMethod18 *const __method18; // 0x18
+
 };
 
+struct Sprite {
+    SpriteVtable* vtable; // 0x0
+    void* __unk4; // 0x4
+    void* __unkA4;
+    void* __unkA8;
+};
+
+// size: 0x60
+struct Unk2 {
+    char        __unk0[0x38]; // 0x0
+    float       __float38; // 0x38
+    char        __unk3C[0x60 - 0x3C];
+    // 0x60
+};
+
+static_assert(sizeof(Unk2) == 0x60);
+
+struct Unk3;
+
+typedef void Unk3MethodC(
+    const Unk3* self,
+    D3DMATRIX matrix,
+    float color_channel
+);
+
+typedef D3DMATRIX* Unk3Method8(
+    const Unk3* self
+);
+
+struct Unk3Vtable {
+    void *const __method0;
+    void *const __method4;
+    Unk3Method8 *const __method8;
+    Unk3MethodC *const __methodC;
+};
+
+// size: 0x50
 struct Unk3 {
-    void*           __unk0; // 0x0
-    void*           __unk4; // 0x4
+    Unk3Vtable*     vtable; // 0x0
+    Unk2*           __arr4; // 0x4
     void*           __unk8; // 0x8
-    int32_t         __intc; // 0xc
-    uint32_t        __flag10; // 0x10
-    uint32_t        __flag14; // 0x14
+    int32_t         frame_total; // 0xc
+    uint32_t        flag_state; // 0x10
+    uint32_t        flag_attack; // 0x14
+    char            __unk18[0x48 - 0x18]; // 0x18
+    uint8_t         __int48; // 0x48
+    uint8_t         __int49; // 0x49
+    char            __unk4a; // 0x4a
+    uint8_t         __int4b; // 0x4b
+    void*           __unk4c; // 0x4c
+    //0x50
+};
+
+static_assert(sizeof(Unk3) == 0x50);
+
+struct Unk1 {
+    void*   __unk40;
+    void*   __unkb0;
+    void*   __unkb4;
+    void*   __unkb8;
+    void*   __unkbc;
 };
 
 struct TakeData {
     void*           __unk0; // 0x0
     TakeData*       next; // 0x4
     TakeData*       previous; // 0x8
-    Unk3*           __unkc; // 0xc
+    Unk3*           frame_data; // 0xc also an array
     int32_t         frame_total; // 0x10 divide by 100 for true value
-    std::vector<std::shared_ptr<void>> __vec14; // 0x14 prob sprites
+    std::vector<std::shared_ptr<Sprite>> sprites; // 0x14 prob sprites
+    int32_t         __int24; // 0x24
+    bool            __bool25; // 0x25
 };
 
 // struct IAnimationTake;
@@ -119,6 +203,11 @@ typedef int thiscall SetTake(
     int32_t take
 );
 
+typedef bool thiscall PlayTake(
+    const ManbowAnimationControllerBase* self, 
+    int32_t keyframe
+);
+
 struct ManbowAnimationControllerBaseVftable {
     void *const __method0; // 0x0
     void *const __method4; // 0x4
@@ -128,7 +217,7 @@ struct ManbowAnimationControllerBaseVftable {
     void *const __method14; // 0x14
     SetMotion *const SetMotion; // 0x18
     SetTake *const SetTake; // 0x1C
-    void *const __method20; // 0x20
+    PlayTake *const PlayTake; // 0x20
     void *const __method24; // 0x24
     void *const __method28; // 0x28
     void *const __method2C; // 0x2C
@@ -183,7 +272,11 @@ struct ManbowAnimationControllerBase {
     std::vector<std::shared_ptr<ManbowActorCollisionData>> collision_boxes; // 0x78
     std::vector<std::shared_ptr<ManbowActorCollisionData>> hit_boxes; // 0x84
     std::vector<std::shared_ptr<ManbowActorCollisionData>> hurt_boxes; // 0x90
-    char __unk9C[0x84]; // 0x9C
+    char __unk9C[0xC4 - 0x9C]; // 0x9C
+    void*  __unkC4; // 0xc4
+    char __unkC8[0x11C - 0xC8]; // 0xc8
+    bool __bool11C; // 0x11c
+    char __pad[3];
     // 0x120
 
     inline bool SetMotion(int32_t motion, int32_t take){
@@ -202,12 +295,16 @@ struct ManbowAnimationController2D : ManbowAnimationControllerBase {
     AnimationSet2D* anim_set;// 0x124
     void* __unk128; // 0x128
     TakeData* take; // 0x12C
-    Unk1* animation_data; // 0x130
+    Unk3* animation_data; // 0x130
     int32_t frame; // 0x134 divide by 100 to get actual value
     int32_t frame_again; // 0x138
     uint16_t   speed; // 0x13C
-    char __unk13C[0x224 - 0x140]; // 0x140
-    std::vector<std::shared_ptr<void>> __unk224; // 0x224 most likely a vector of sprites
+    char    __byte13D; // 0x13D
+    bool    __bool13E; // 0x13E
+    char    __pad13F[2]; // 0x13F
+    Unk1*   __unk140; // 0x140
+    char    __unk144[0x224 - 0x148]; // 0x144
+    std::vector<std::shared_ptr<Sprite>> sprites; // 0x224 most likely a vector of sprites
     // 0x230
 };
 

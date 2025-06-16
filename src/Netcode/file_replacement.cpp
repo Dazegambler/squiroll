@@ -214,6 +214,10 @@ static constexpr uint8_t rollback_nut[] = {
 #include "new_files/rollback.nut.h"
 };
 
+static constexpr uint8_t setting_nut[] = {
+#include "new_files/setting.nut.h"
+};
+
 static const std::unordered_map<std::string_view, const EmbedData> new_files = {
     {"debug.nut"sv, debug_nut},
     {"UI.nut"sv, UI_nut},
@@ -221,6 +225,7 @@ static const std::unordered_map<std::string_view, const EmbedData> new_files = {
     {"mod_config.nut"sv, mod_config_nut},
     {"input_display.nut"sv, input_display_nut},
     {"rollback.nut"sv, rollback_nut},
+    {"setting.nut"sv, setting_nut}
 };
 
 EmbedData get_new_file_data(const char* name) {

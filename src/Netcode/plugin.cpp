@@ -510,10 +510,6 @@ extern "C" {
                         sq_pushbool(v, hasData((ManbowActor2DGroup*)inst));
                         return 1;
                     });
-                    sq_setfunc(v, _SC("clear"), [](HSQUIRRELVM v) -> SQInteger {
-                        overlay_clear();
-                        return 0;
-                    });
                     set_frame_data_constants(v);
                 });
                 sq_createtable(v, _SC("input_display"), [](HSQUIRRELVM v) {
@@ -647,6 +643,14 @@ extern "C" {
                 sq_setfunc(v, _SC("print_value"), sq_print_value);
                 sq_setfunc(v, _SC("fprint_value"), sq_fprint_value);
                 sq_setfunc(v, _SC("dev"), SQPUSH_BOOL_FUNC(get_dev_mode_enabled()));
+                sq_setfunc(v, _SC("hash"), [](HSQUIRRELVM v) -> SQInteger {
+                    if (sq_gettop(v) != 2)
+                        return sq_throwerror(v, _SC("Invalid arguments, expected: <object>"));
+                
+                    SQHash h = sq_gethash(v, 2);
+                    sq_pushinteger(v, (SQInteger)h);
+                    return 1;
+                });
                 sq_setfunc(v, _SC("test"), [](HSQUIRRELVM v) -> SQInteger {
                     void* player;
                     if (sq_gettop(v) != 2 ||

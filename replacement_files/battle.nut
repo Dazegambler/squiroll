@@ -15,6 +15,7 @@ function TerminateUser()
 {
 }
 
+::manbow.compilebuffer("setting.nut",::setting);
 ::manbow.CompileFile("data/actor/script/battle.nut", this);
 ::manbow.compilebuffer("UI.nut", this);
 ::manbow.compilebuffer("frame_data.nut", this);
@@ -189,11 +190,6 @@ function Create( param )
 	this.InitializeUser();
 	::camera.Reset();
  	this.gauge.Initialize();
-	// local worldupdate = this.world.Update;
-	// this.world.Update = function () {
-	// 	::debug.print("world update\n");
-	// 	worldupdate();
-	// };
 
 	if (::network.IsActive() && !::setting.network.hide_profile_pictures){
 		for( local i = 0; i < 2; i = ++i ){
@@ -255,7 +251,7 @@ function Create( param )
 			  // [329]  OP_JMP            0      0    0    0
 		}
 	}
-	// ::rollback.Reset(this.group_player);
+	::rollback.Reset(this.group_player);
 }
 
 function framedisplaysetup() {
@@ -387,7 +383,9 @@ function HideUISetup(hold) {
 		// frame = 0;
 		// bar_prog = 0;
 		function Update() {
-			// ::battle.rollback.Tick(::battle.team[0].current,::battle.team[1].current);
+			local t0 = ::battle.team[0];
+			local t1 = ::battle.team[1];
+			// if(t0.current && t1.current)::battle.rollback.Tick(::battle.team[0].current,::battle.team[1].current);
 			local player = ::battle.team[0].current;
 			// local count = ::setting.frame_data.GetFrameCount(player);
 			// local motion = player.motion;
@@ -417,7 +415,7 @@ function HideUISetup(hold) {
 				if (i == 1){
 					::sound.PlaySE("sys_ok");
 					::battle.frame_lock = false;
-					// ::debug.test(player);
+					::debug.test(player);
 					// ::rollback.Undo(4);
 				}
 				if (i % hold == 0){
@@ -485,8 +483,7 @@ function Release()
 	::manbow.SetTerminateFunction(null);
 
 	::overlay.clear();
-	// this.rollback.data = [];
-	::rollback.Clear();
+	// ::rollback.Clear();
 }
 
 function Begin()

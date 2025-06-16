@@ -23,7 +23,12 @@ static const char* SQPaths[] = {
     "team.damage_scale",
     "team.combo_stun",
     "team.life",
-    "team.damage_life"
+    "team.damage_life",
+    // "x",
+    // "y",
+    // "vx",
+    // "vy",
+    // "direction"
 };
 
 struct SQDiff {
@@ -41,26 +46,25 @@ struct data_diff {
     float vy;
     float direction;
     TakeData take;
+    int32_t motion;
     int32_t key_take;
 
     data_diff(ManbowActor2D* actor){
-        log_printf("1.1\n");
         this->actor = actor;
-        log_printf("1.2\n");
         this->pos[0] = actor->pos[0];
-        log_printf("1.3\n");
         this->pos[1] = actor->pos[1];
-        log_printf("1.4\n");
         this->pos[2] = actor->pos[2];
-        log_printf("1.5\n");
 
-        this->vx = actor->vx;
-        log_printf("1.6\n");
-        this->vy = actor->vy;
+        // this->vx = actor->vx;
+        // this->vy = actor->vy;
 
-        log_printf("1.7\n");
-        this->take = *actor->anim_controller->take;
-        log_printf("1.8\n");
+        // ManbowActor2D _actor = *actor;
+        // ManbowAnimationController2D &cont = *_actor.anim_controller;
+        // TakeData &data = *cont.take;
+        TakeData data = *actor->anim_controller->take;
+        this->take = data; // crash here
+        this->key_take = actor->anim_controller->key_take;
+        this->motion = actor->anim_controller->motion;
     }
 };
 
@@ -88,16 +92,19 @@ struct frame_diff {
             }
             auto actor2d = change.actor;
 
-            actor2d->pos[0] = change.pos[0];
-            actor2d->pos[1] = change.pos[1];
-            actor2d->pos[2] = change.pos[2];
+            // log_printf("set:[%f,%f,%f]\n", change.pos[0], change.pos[1],change.pos[2]);
+            // actor2d->pos[0] = change.pos[0];
+            // actor2d->pos[1] = change.pos[1];
+            // actor2d->pos[2] = change.pos[2];
 
-            actor2d->vx = change.vx;
-            actor2d->vy = change.vy;
+            // actor2d->vx = change.vx;
+            // actor2d->vy = change.vy;
             actor2d->direction = change.direction;
 
-            actor2d->anim_controller->take = &change.take;
-            actor2d->anim_controller->SetTake(change.key_take);
+            actor2d->anim_controller->SetMotion(change.motion,change.key_take);
+            // log_printf("%d\n",change.take->frame_total);
+            // actor2d->anim_controller->take = &change.take;
+            // actor2d->anim_controller->SetTake(change.key_take);
         }
     }
 
@@ -241,17 +248,11 @@ struct diffMan {
 
     void Store(HSQUIRRELVM v,ManbowActor2D* actor) {
         if(!actor)return;
-        log_printf("1\n");
         this->current->changes.emplace_back(data_diff(actor));//crash here
-        log_printf("2\n");
         auto current = this->current->changes.back();
-        log_printf("3\n");
         SQObject sqobj = actor->sq_obj;
-        log_printf("4\n");
         for (auto path : SQPaths) {
-          log_printf("4.1\n");
           SQObject out;
-          log_printf("4.2\n");
           if (sq_path(v, sqobj, path, out))current.SQChanges.emplace_back(SQDiff(path, out));
         }
     }

@@ -395,7 +395,7 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
 //     return;
 // }
 
-// void ManbowAnimationController2D::Method7C(){
+// void ManbowAnimationController2D::7C(){
 //     if(this->animation_data && this->__unk11C){
 //         // some global bool is set to this->__bool13E
 //         for (std::shared_ptr<Sprite> sprite : this->sprites){
@@ -419,7 +419,7 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
 //     }
 // }
 
-// D3DMATRIX ManbowAnimationController2D::Method90(D3DMATRIX matrix,int32_t take) {
+// D3DMATRIX ManbowAnimationController2D::90(D3DMATRIX matrix,int32_t take) {
 //     if (this->sprites.size() <= take) {
 //         float r0[4]; //these are global variables but
 //         float r1[4]; //for simplicity they're local here
@@ -455,37 +455,26 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
 
 int debug(ManbowActor2D* player) {
     if (!player || !player->anim_controller->anim_set)return 0;
-    std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
-    Unk3* anim_data = cont->animation_data;
-    if(anim_data){
-        log_printf("\nUnk3 0x%p {\n", anim_data);
-        log_printf("vtable = 0x%p\n", anim_data->vtable);
-        log_printf("__unk8 = 0x%p\n", anim_data->__unk8);
-        log_printf("frame_total = 0x%p\n", anim_data->frame_total);
-        log_printf("flag_state = 0x%p\n", anim_data->flag_state);
-        log_printf("flag_attack = 0x%p\n", anim_data->flag_attack);
-        log_printf("__unk18 = 0x");
-        for (size_t i = 0; i <= sizeof(anim_data->__unk18); i++){
-            log_printf("%X ", anim_data->__unk18[i]);
-        }
-        log_printf("\n");
-        log_printf("__int48 = 0x%p\n", anim_data->__int48);
-        log_printf("__int49 = 0x%p\n", anim_data->__int49);
-        log_printf("__int4b = 0x%p\n", anim_data->__int4b);
-        log_printf("__unk4c = 0x%p\n", anim_data->__unk4c);
-        log_printf("}\n");
-    }
-    // log_printf("\nUnk3 {\n");
-    // log_printf("vtable = 0x%p\n", anim_data.vtable);
-    // log_printf("__unk4 = 0x%p\n", anim_data.__unk4);
-    // log_printf("__unk8 = 0x%p\n", anim_data.__unk8);
-    // log_printf("frame_total = 0x%p\n", anim_data.frame_total);
-    // log_printf("flag_state = 0x%p\n", anim_data.flag_state);
-    // log_printf("flag_attack = 0x%p\n", anim_data.flag_attack);
-    // log_printf("__int48 = 0x%p\n", anim_data.__int48);
-    // log_printf("__4b = 0x%p\n", anim_data.__int4b);
-    // log_printf("__unk4c = 0x%p\n", anim_data.__unk4c);
-    // log_printf("}\n");
+    // std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
+    // Unk3* anim_data = cont->animation_data;
+    // if(anim_data){
+    //     log_printf("\nUnk3 0x%p {\n", anim_data);
+    //     log_printf("vtable = 0x%p\n", anim_data->vtable);
+    //     log_printf("__unk8 = 0x%p\n", anim_data->__unk8);
+    //     log_printf("frame_total = 0x%p\n", anim_data->frame_total);
+    //     log_printf("flag_state = 0x%p\n", anim_data->flag_state);
+    //     log_printf("flag_attack = 0x%p\n", anim_data->flag_attack);
+    //     log_printf("__unk18 = 0x");
+    //     for (size_t i = 0; i <= sizeof(anim_data->__unk18); i++){
+    //         log_printf("%X ", anim_data->__unk18[i]);
+    //     }
+    //     log_printf("\n");
+    //     log_printf("__int48 = 0x%p\n", anim_data->__int48);
+    //     log_printf("__int49 = 0x%p\n", anim_data->__int49);
+    //     log_printf("__int4b = 0x%p\n", anim_data->__int4b);
+    //     log_printf("__unk4c = 0x%p\n", anim_data->__unk4c);
+    //     log_printf("}\n");
+    // }
     // void** data1 = (void**)cont->animation_data;
     // log_printf("\nUnk3");
     // if (data1){

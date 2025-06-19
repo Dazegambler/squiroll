@@ -81,6 +81,13 @@ struct Unk2 {
 
 static_assert(sizeof(Unk2) == 0x60);
 
+// size: 0x4
+struct Unk4 {
+    char    __pad0[2]; // 0x0
+    int32_t*    __arr2; // 0x2     
+    // 0x4
+};
+
 struct Unk3;
 
 typedef void Unk3MethodC(
@@ -104,22 +111,24 @@ struct Unk3Vtable {
 struct Unk3 {
     Unk3Vtable*     vtable; // 0x0
     Unk2*           __arr4; // 0x4
-    void*           __unk8; // 0x8
+    Unk4*           __arr8; // 0x8
     int32_t         frame_total; // 0xc
-    uint32_t        flag_state; // 0x10
-    uint32_t        flag_attack; // 0x14
-    char            __unk18[0x48 - 0x18]; // 0x18
+    uint32_t        flags[2]; // 0x10 0 state 1 attack
+    uint16_t        __arr18[0x17]; // 0x18
     uint8_t         __int48; // 0x48
     uint8_t         __int49; // 0x49
-    char            __unk4a; // 0x4a
     uint8_t         __int4b; // 0x4b
-    void*           __unk4c; // 0x4c
+    uint8_t         __int4c; // 0x4c
+    char            __unk4d[3]; // 0x4e
     //0x50
 };
 
 static_assert(sizeof(Unk3) == 0x50);
 
-struct Unk1 {
+struct Unk140 {
+    float   __float4;
+    float   __float8;
+    float   __floatc;
     void*   __unk40;
     void*   __unkb0;
     void*   __unkb4;
@@ -131,10 +140,11 @@ struct TakeData {
     void*           __unk0; // 0x0
     TakeData*       next; // 0x4
     TakeData*       previous; // 0x8
-    Unk3*           frame_data; // 0xc also an array
+    Unk3*           frame_data; // 0xc
     int32_t         frame_total; // 0x10 divide by 100 for true value
     std::vector<std::shared_ptr<Sprite>> sprites; // 0x14 prob sprites
-    int32_t         __int24; // 0x24
+    uint16_t        __arr20[2]; // 0x20
+    int8_t          __int24; // 0x24
     bool            __bool25; // 0x25
 };
 
@@ -302,7 +312,7 @@ struct ManbowAnimationController2D : ManbowAnimationControllerBase {
     char    __byte13D; // 0x13D
     bool    __bool13E; // 0x13E
     char    __pad13F[2]; // 0x13F
-    Unk1*   __unk140; // 0x140
+    Unk140*   __unk140; // 0x140
     char    __unk144[0x224 - 0x148]; // 0x144
     std::vector<std::shared_ptr<Sprite>> sprites; // 0x224 most likely a vector of sprites
     // 0x230

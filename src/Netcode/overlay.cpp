@@ -458,19 +458,39 @@ int debug(ManbowActor2D* player) {
     std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
     AnimationData* anim_data = cont->animation_data;
     if(anim_data){
-        log_printf("\nAnimationData 0x%p {\n", anim_data);
+        log_printf("\nAnimationData motion:%d {\n", cont->motion);
         log_printf("    frame_total = %df(true value:%d)\n", anim_data->frame_total / 100, anim_data->frame_total);
         log_printf("    flags = {0x%p,0x%p}\n", anim_data->flags[0], anim_data->flags[1]);
-        log_printf("    __arr18 {\n");
-        for (size_t i = 0; i < 0x17; i++){
-            log_printf("        %d : %d\n", i, anim_data->__arr18[i]);
-        }
+        log_printf("    data {\n");
+        log_printf("        damage = %d\n", anim_data->data[0]);
+        log_printf("        hitStopE = %d\n", anim_data->data[1]);
+        log_printf("        hitStopP = %d\n", anim_data->data[2]);
+        log_printf("        guardStopE = %d\n", anim_data->data[3]);
+        log_printf("        guardStopP = %d\n", anim_data->data[4]);
+        log_printf("        firstRate = %d\n", anim_data->data[5]);
+        log_printf("        comboRate = %d\n", anim_data->data[6]);
+        log_printf("        AddKnock_Unk = %d\n", anim_data->data[7]);
+        log_printf("        stun = %d\n", anim_data->data[8]);
+        log_printf("        bariaBreak_Unk = %d\n", anim_data->data[9]);
+        log_printf("        guardRealDamage = %d\n", anim_data->data[10]);
+        log_printf("        slaveBlockOccult = %d\n", anim_data->data[11]);
+        log_printf("        SCGauge_onhit = %d\n", anim_data->data[12]);
+        log_printf("        comboRecoverTime = %d\n", anim_data->data[13]);
+        log_printf("        minRate_unused = %d\n", anim_data->data[14]);
+        log_printf("        stopVecX = %d\n", anim_data->data[15]);
+        log_printf("        stopVecY = %d\n", anim_data->data[16]);
+        log_printf("        hitSoundEffect = %d\n", anim_data->data[17]);
+        log_printf("        hitVecX = %d\n", anim_data->data[18]);
+        log_printf("        hitVecY = %d\n", anim_data->data[19]);
+        log_printf("        grazeKnock_Unk = %d\n", anim_data->data[20]);
+        log_printf("        atkType = %d\n", anim_data->data[21]);
+        log_printf("        atkRank = %d\n", anim_data->data[22]);
         log_printf("    }\n");
         log_printf("    __int48 = %d\n", anim_data->__int48);
         log_printf("    __int49 = %d\n", anim_data->__int49);
         log_printf("    __int4b = %d\n", anim_data->__int4b);
-        log_printf("    __int4c = %d\n", anim_data->__int4c);
-        log_printf("    __int4d = %d\n", anim_data->__int4d);
+        log_printf("    frame = %d\n", anim_data->frame);
+        log_printf("    boxcount = %d\n", anim_data->boxcount);
         log_printf("    __int4e = %d\n", anim_data->__int4e);
         log_printf("    __int4f = %d\n", anim_data->__int4f);
         log_printf("}\n");

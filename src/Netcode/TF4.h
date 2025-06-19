@@ -111,12 +111,38 @@ struct AnimationData {
     Unk4*           __arr8; // 0x8
     int32_t         frame_total; // 0xc
     uint32_t        flags[2]; // 0x10 0 state 1 attack
-    uint16_t        __arr18[0x17]; // 0x18
+    /*
+    0 : damage
+    1 : hitStopE
+    2 : hitstopP
+    3 : guardStopE
+    4 : guardStopP
+    5 : firstRate
+    6 : comboRate
+    7 : AddKnock_Unk
+    8 : stun
+    9 : bariaBreak_Unk
+    10 : guardRealDamage
+    11 : slaveBlockOccult
+    12 : gauge_onhit
+    13 : comboRecoverTime
+    14 : minRate_unused
+    15 : stopVecX
+    16 : stopVecY
+    17 : hitSoundEffect
+    18 : hitVecX
+    19 : hitVecY
+    20 : grazeKnock_Unk
+    21 : atkType
+    22 : atkRank
+    23 : hitEffectVFX
+    */
+    uint16_t        data[0x17]; // 0x18
     uint8_t         __int48; // 0x48
     uint8_t         __int49; // 0x49
     uint8_t         __int4b; // 0x4b
-    uint8_t         __int4c; // 0x4c
-    uint8_t         __int4d; // 0x4d
+    uint8_t         frame; // 0x4c
+    uint8_t         boxcount; // 0x4d
     uint8_t         __int4e; // 0x4e
     uint8_t         __int4f; // 0x4f something related to bullets being created
     //0x50

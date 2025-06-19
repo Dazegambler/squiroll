@@ -455,26 +455,26 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
 
 int debug(ManbowActor2D* player) {
     if (!player || !player->anim_controller->anim_set)return 0;
-    // std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
-    // Unk3* anim_data = cont->animation_data;
-    // if(anim_data){
-    //     log_printf("\nUnk3 0x%p {\n", anim_data);
-    //     log_printf("vtable = 0x%p\n", anim_data->vtable);
-    //     log_printf("__unk8 = 0x%p\n", anim_data->__unk8);
-    //     log_printf("frame_total = 0x%p\n", anim_data->frame_total);
-    //     log_printf("flag_state = 0x%p\n", anim_data->flag_state);
-    //     log_printf("flag_attack = 0x%p\n", anim_data->flag_attack);
-    //     log_printf("__unk18 = 0x");
-    //     for (size_t i = 0; i <= sizeof(anim_data->__unk18); i++){
-    //         log_printf("%X ", anim_data->__unk18[i]);
-    //     }
-    //     log_printf("\n");
-    //     log_printf("__int48 = 0x%p\n", anim_data->__int48);
-    //     log_printf("__int49 = 0x%p\n", anim_data->__int49);
-    //     log_printf("__int4b = 0x%p\n", anim_data->__int4b);
-    //     log_printf("__unk4c = 0x%p\n", anim_data->__unk4c);
-    //     log_printf("}\n");
-    // }
+    std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
+    AnimationData* anim_data = cont->animation_data;
+    if(anim_data){
+        log_printf("\nAnimationData 0x%p {\n", anim_data);
+        log_printf("    frame_total = %df(true value:%d)\n", anim_data->frame_total / 100, anim_data->frame_total);
+        log_printf("    flags = {0x%p,0x%p}\n", anim_data->flags[0], anim_data->flags[1]);
+        log_printf("    __arr18 {\n");
+        for (size_t i = 0; i < 0x17; i++){
+            log_printf("        %d : %d\n", i, anim_data->__arr18[i]);
+        }
+        log_printf("    }\n");
+        log_printf("    __int48 = %d\n", anim_data->__int48);
+        log_printf("    __int49 = %d\n", anim_data->__int49);
+        log_printf("    __int4b = %d\n", anim_data->__int4b);
+        log_printf("    __int4c = %d\n", anim_data->__int4c);
+        log_printf("    __int4d = %d\n", anim_data->__int4d);
+        log_printf("    __int4e = %d\n", anim_data->__int4e);
+        log_printf("    __int4f = %d\n", anim_data->__int4f);
+        log_printf("}\n");
+    }
     // void** data1 = (void**)cont->animation_data;
     // log_printf("\nUnk3");
     // if (data1){

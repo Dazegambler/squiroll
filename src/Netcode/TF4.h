@@ -81,26 +81,23 @@ struct Unk2 {
 
 static_assert(sizeof(Unk2) == 0x60);
 
-// size: 0x4
 struct Unk4 {
-    char    __pad0[2]; // 0x0
-    int32_t*    __arr2; // 0x2     
-    // 0x4
+    int16_t __arr0[];
 };
 
-struct Unk3;
+struct AnimationData;
 
 typedef void Unk3MethodC(
-    const Unk3* self,
+    const AnimationData* self,
     D3DMATRIX matrix,
     float color_channel
 );
 
 typedef D3DMATRIX* Unk3Method8(
-    const Unk3* self
+    const AnimationData* self
 );
 
-struct Unk3Vtable {
+struct AnimationDataVtabke {
     void *const __method0;
     void *const __method4;
     Unk3Method8 *const __method8;
@@ -108,8 +105,8 @@ struct Unk3Vtable {
 };
 
 // size: 0x50
-struct Unk3 {
-    Unk3Vtable*     vtable; // 0x0
+struct AnimationData {
+    AnimationDataVtabke*     vtable; // 0x0
     Unk2*           __arr4; // 0x4
     Unk4*           __arr8; // 0x8
     int32_t         frame_total; // 0xc
@@ -119,11 +116,13 @@ struct Unk3 {
     uint8_t         __int49; // 0x49
     uint8_t         __int4b; // 0x4b
     uint8_t         __int4c; // 0x4c
-    char            __unk4d[3]; // 0x4e
+    uint8_t         __int4d; // 0x4d
+    uint8_t         __int4e; // 0x4e
+    uint8_t         __int4f; // 0x4f something related to bullets being created
     //0x50
 };
 
-static_assert(sizeof(Unk3) == 0x50);
+static_assert(sizeof(AnimationData) == 0x50);
 
 struct Unk140 {
     float   __float4;
@@ -140,7 +139,7 @@ struct TakeData {
     void*           __unk0; // 0x0
     TakeData*       next; // 0x4
     TakeData*       previous; // 0x8
-    Unk3*           frame_data; // 0xc
+    AnimationData*           frame_data; // 0xc
     int32_t         frame_total; // 0x10 divide by 100 for true value
     std::vector<std::shared_ptr<Sprite>> sprites; // 0x14 prob sprites
     uint16_t        __arr20[2]; // 0x20
@@ -305,7 +304,7 @@ struct ManbowAnimationController2D : ManbowAnimationControllerBase {
     AnimationSet2D* anim_set;// 0x124
     void* __unk128; // 0x128
     TakeData* take; // 0x12C
-    Unk3* animation_data; // 0x130
+    AnimationData* animation_data; // 0x130
     int32_t frame; // 0x134 divide by 100 to get actual value
     int32_t frame_again; // 0x138
     uint16_t   speed; // 0x13C

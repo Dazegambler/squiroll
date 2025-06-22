@@ -39,7 +39,16 @@ function CreateInput_display(idx,player_config){
                 local str = "";
                 if (this.data.len() > 1 && i < this.data.len()){
                     local frames = "";
-                    if(this.config.frame_count)frames += this.data[i][1] < 100 ? format("[%2d]",this.data[i][1]) : "[99+]";
+                    if(this.config.frame_count) {
+                        local _str = "";
+                        if (this.data[i][1] < 100) {
+                            _str = format(this.data[i][1] < 10 ? "[0%d]" : "[%d]", this.data[i][1]);
+                        } else {
+                            _str = "[99+]";
+                        }
+                        frames += _str;
+
+                    }
                     local input_str = "";
                     local direction = this.data[i][0] & 0x660;
                     switch(direction){
@@ -97,7 +106,7 @@ function CreateInput_display(idx,player_config){
             0,"",
             player_config.SX,player_config.SY,
             player_config.red,player_config.green,player_config.blue,player_config.alpha,
-            ::graphics.slot.ui,1
+            ::graphics.slot.status,1
             ,null,
             function (root){
                 root.text.x = player_config.X;

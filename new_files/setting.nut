@@ -1,7 +1,9 @@
 this.task <- {};
 
-function register(src,callback){
-    this.task[src] <- callback;
+function register(src){
+    if ("OnSettingChange" in src){
+        this.task[src] <- src.OnSettingChange;
+    }
 }
 
 function unregister(src){
@@ -9,11 +11,11 @@ function unregister(src){
 }
 
 function OnChange() {
-    foreach(src,t in task) {
+    foreach(src,onchange in task) {
         if(src == null){
             this.unregister(src);
             continue;
         }
-        t.call(src);
+        onchange.call(src);
     }
 }

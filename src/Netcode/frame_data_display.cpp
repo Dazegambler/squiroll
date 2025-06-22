@@ -41,6 +41,20 @@ bool hasData(ManbowActor2DGroup* group) {
     return false;
 }
 
+bool hasData(ManbowActor2D* actor) {
+    for (const auto &data : actor->anim_controller->hit_boxes) {
+        if (data->obj_ptr->m_collisionShape->shape != 0) {
+            return true;
+        }
+    }
+    for (const auto &data : actor->anim_controller->hurt_boxes) {
+        if (data->obj_ptr->m_collisionShape->shape != 0) {
+            return true;
+        }
+    }
+  return false;
+}
+
 // bool IsFrameActive(ManbowActor2DGroup* group) {
 //     if (uint32_t group_size = group->size) {
 //         ManbowActor2D** actor_ptr = group->actor_vec.data();

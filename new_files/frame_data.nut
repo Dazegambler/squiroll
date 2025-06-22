@@ -19,12 +19,12 @@ function CreateFlag_state_Display () {
                 if (data & 0x4) flags += "4,"; // 4
                 if (data & 0x8) flags += "8,"; // 8
                 if (data & 0x10) flags += "block,"; // 16
-                if (data & 0x20) flags += "normal cancel,"; // 32
+                if (data & 0x20) flags += "special cancel,"; // 32
                 if (data & 0x40) flags += "64,"; // 64
                 if (data & 0x80) flags += "128,"; // 128
                 if (data & 0x100) flags += "can be counter hit,"; // 256
                 if (data & 0x200) flags += "can dial,"; // 512
-                if (data & 0x400) flags += "bullet whiff,"; // 1024
+                if (data & 0x400) flags += "bullet cancel,"; // 1024
                 if (data & 0x800) flags += "attack block,"; // 2048
                 if (data & 0x1000) flags += "graze,"; // 4096
                 if (data & 0x2000) flags += "no grab,"; // 8192
@@ -254,11 +254,13 @@ function FrameDataDisplay(_team){
     local display = {
         previous_data = null
         timer = 0
-        team = _team
+        full = false
+        team_id = _team
+        team = null
 
         frame_data = {
             str = ""
-            max_w = 128
+            max_w = 1080
 
             function Render(data) {
                 local frame = "";
@@ -271,7 +273,7 @@ function FrameDataDisplay(_team){
                     frame += t;
                 }
 
-                if(data.armor.top()[2] == data.count){
+                if(data.armor.len() && data.armor.top()[2] == data.count){
                     local _armor = data.armor.top();
                     frame +=  format("[%2dA](%2dF)",_armor[0],(_armor[2]-_armor[1]));
                 }
@@ -280,15 +282,15 @@ function FrameDataDisplay(_team){
                     this.str = frame;
                     this.text.Set(frame);
                     if (this.text.width*this.text.sx > this.max_w)this.text.sx = this.max_w / this.text.width;
-                    this.text.x = ::setting.frame_data.X
-                    this.text.y = ::setting.frame_data.Y;
+                    this.text.x = 5;
+                    this.text.y = 5;
                 }
             }
         }
 
         flag_state = {
             str = ""
-            max_w = 128
+            max_w = 1080
 
             function Render(data) {
                 local flags = "";
@@ -328,17 +330,17 @@ function FrameDataDisplay(_team){
 
                 if (this.str != flags) {
                     this.str = flags;
-                    this.text.Set(flags != "" ? format("flagState:[%s]", flags) : flags);
+                    this.text.Set(format("flagState:[%s]", flags));
                     if (this.text.width*this.text.sx > this.max_w)this.text.sx = this.max_w / this.text.width;
-                    this.text.x = ::setting.frame_data.X;
-                    this.text.y = ::setting.frame_data.Y + (frame.height * frame.text.sy);
+                    this.text.x = 5;
+                    this.text.y = 5 + (this.text.height * this.text.sy);
                 }
             }
         }
 
         flag_attack = {
             str = ""
-            max_w = 128
+            max_w = 1080
 
             function Render(data) {
                 local flags = "";
@@ -378,18 +380,21 @@ function FrameDataDisplay(_team){
 
                 if (this.str != flags){
                     this.str = flags;
-                    this.text.Set(flags != "" ? format("flagAttack:[%s]", flags) : flags);
+                    this.text.Set(format("flagAttack:[%s]", flags));
                     if (this.text.width*this.text.sx > this.max_w)this.text.sx = this.max_w / this.text.width;
-                    this.text.x = ::setting.frame_data.X;
-                    this.text.y = ::setting.frame_data.Y + (frame.height * frame.sy) + (flag_state.height * flag_state.sy);
+                    this.text.x = 5;
+                    this.text.y = 5 + (this.text.height * this.text.sy) * 2;
                 }
             }
         }
 
         framebar = {
+            function Render(data) {
+
+            }
         }
 
-        function UpdateFrameDataDisplay(){
+        function Reset() {
             local color = {
                 red = ::setting.frame_data.red
                 green = ::setting.frame_data.green
@@ -397,7 +402,7 @@ function FrameDataDisplay(_team){
                 alpha =::setting.frame_data.alpha
             };
             local scale = {
-                x = ::seting.frame_data.SX
+                x = ::setting.frame_data.SX
                 y = ::setting.frame_data.SY
             };
 
@@ -409,12 +414,33 @@ function FrameDataDisplay(_team){
                 text.green = color.green;
                 text.blue = color.blue;
                 text.alpha = color.alpha;
-                text.ConnectRenderSlot(::graphics.slot.status,1);
+                text.ConnectRenderSlot(::graphics.slot.front,1);
             }
         }
 
+        function OnSettingChange(){
+            this.Reset();
+        }
+
+        function Tick(data) {
+
+        }
+
         function Update() {
+            if(!this.team){
+                this.team = ::battle.team[this.team_id];
+                return;
+            }
             local data = {
+                count = 0
+                frame_total = 0
+                frames = []
+                cancels = []
+                armor = []
+                flag_state = 0
+                flag_attack = 0
+            };
+            local reset = {
                 count = 0
                 frame_total = 0
                 frames = []
@@ -435,25 +461,40 @@ function FrameDataDisplay(_team){
                     data.armor = this.previous_data.armor;
                     data.frame_total = this.previous_data.frame_total;
                 }
-                if (!current.IsFree()) {
+                if (!current.IsFree() && current.IsAttack()) {
                     this.timer = ::setting.frame_data.timer;
-                    if (!current.hitStopTime){
-                    }
+                    if (::setting.frame_data.hasData(current)){
+                        if (!current.hitStopTime){
+                            ::battle.frame_lock = ::setting.frame_data.frame_stepping ? true : false;
+                            this.Tick(data);
+
+                            if(::setting.frame_data.input_flags){
+                                data.flag_state = current.flagState;
+                                data.flag_attack = current.flagAttack;
+                            }
+                        }
+                    }else {::battle.frame_lock = false}
                 }
-                if(::setting.frame_data.input_flags){
-                    data.flag_state = current.flagState;
-                    data.flag_attack = current.flagAttack;
-                }
+
 
             }
 
-            foreach (elem in this){
-                elem.Render(data);
+            this.framebar.Render(data);
+            if (this.full) {
+                this.frame_data.Render(data);
+                this.flag_state.Render(data);
+                this.flag_attack.Render(data);
+            }else {
+                this.frame_data.text.Set("");
+                this.flag_state.text.Set("");
+                this.flag_attack.text.Set("");
             }
+            this.previous_data = data;
         }
     };
 
-    ::setting.register(display,display.UpdateFrameDataDisplay);
+    display.Reset();
+    ::setting.register(display);
 
     // data = {
     //     count = 0;//frames

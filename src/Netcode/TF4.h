@@ -140,11 +140,12 @@ struct AnimationData {
     uint16_t        data[0x17]; // 0x18
     uint8_t         __int48; // 0x48
     uint8_t         __int49; // 0x49
+    uint8_t         __int4a; // 0x4a
     uint8_t         __int4b; // 0x4b
-    uint8_t         frame; // 0x4c
-    uint8_t         boxcount; // 0x4d
-    uint8_t         __int4e; // 0x4e
-    uint8_t         __int4f; // 0x4f something related to bullets being created
+    uint8_t         boxcount; // 0x4c
+    uint8_t         __int4d; // 0x4d
+    uint16_t         __int4e; // 0x4e
+    // uint8_t         __int4f; // 0x4f something related to bullets being created
     //0x50
 };
 

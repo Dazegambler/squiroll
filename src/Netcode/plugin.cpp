@@ -507,7 +507,7 @@ extern "C" {
                         ) {
                             return sq_throwerror(v, "Invalid arguments, expected: <instance>");
                         }
-                        sq_pushbool(v, hasData((ManbowActor2DGroup*)inst));
+                        sq_pushbool(v, hasData((ManbowActor2D*)inst));
                         return 1;
                     });
                     set_frame_data_constants(v);

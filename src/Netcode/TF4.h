@@ -72,17 +72,18 @@ struct Sprite {
 };
 
 // size: 0x60
-struct Unk2 {
+struct BoxData {
     char        __unk0[0x38]; // 0x0
     float       __float38; // 0x38
     char        __unk3C[0x60 - 0x3C];
     // 0x60
 };
 
-static_assert(sizeof(Unk2) == 0x60);
+static_assert(sizeof(BoxData) == 0x60);
 
-struct Unk4 {
-    int16_t __arr0[];
+struct Point {
+    int16_t x;
+    int16_t y;
 };
 
 struct AnimationData;
@@ -97,7 +98,7 @@ typedef D3DMATRIX* Unk3Method8(
     const AnimationData* self
 );
 
-struct AnimationDataVtabke {
+struct AnimationDataVtable {
     void *const __method0;
     void *const __method4;
     Unk3Method8 *const __method8;
@@ -106,9 +107,9 @@ struct AnimationDataVtabke {
 
 // size: 0x50
 struct AnimationData {
-    AnimationDataVtabke*     vtable; // 0x0
-    Unk2*           __arr4; // 0x4
-    Unk4*           __arr8; // 0x8
+    AnimationDataVtable*     vtable; // 0x0
+    BoxData*        __arr4; // 0x4
+    Point*          points; // 0x8
     int32_t         frame_total; // 0xc
     uint32_t        flags[2]; // 0x10 0 state 1 attack
     /*
@@ -144,8 +145,7 @@ struct AnimationData {
     uint8_t         __int4b; // 0x4b
     uint8_t         boxcount; // 0x4c
     uint8_t         __int4d; // 0x4d
-    uint16_t         __int4e; // 0x4e
-    // uint8_t         __int4f; // 0x4f something related to bullets being created
+    uint16_t        __flag4e; // 0x4e
     //0x50
 };
 
@@ -166,9 +166,13 @@ struct TakeData {
     void*           __unk0; // 0x0
     TakeData*       next; // 0x4
     TakeData*       previous; // 0x8
-    AnimationData*           frame_data; // 0xc
+    AnimationData*  frame_data; // 0xc
     int32_t         frame_total; // 0x10 divide by 100 for true value
     std::vector<std::shared_ptr<Sprite>> sprites; // 0x14 prob sprites
+    /*
+    0 : attackLV
+    1 : CancelLV
+    */
     uint16_t        __arr20[2]; // 0x20
     int8_t          __int24; // 0x24
     bool            __bool25; // 0x25
@@ -331,7 +335,7 @@ struct ManbowAnimationController2D : ManbowAnimationControllerBase {
     AnimationSet2D* anim_set;// 0x124
     void* __unk128; // 0x128
     TakeData* take; // 0x12C
-    AnimationData* animation_data; // 0x130
+    AnimationData* animation_data; // 0x130 size: 20
     int32_t frame; // 0x134 divide by 100 to get actual value
     int32_t frame_again; // 0x138
     uint16_t   speed; // 0x13C

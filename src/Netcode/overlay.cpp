@@ -454,77 +454,134 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
 //     this->vftable->__method8C();
 // }
 
+int32_t framedata[] = {1, 0, 0};
+int32_t frametotal;
+TakeData** data;
+
+inline int getframecount(ManbowActor2D* player){
+    if (!player || !player->anim_controller->anim_set)return 0;
+    std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
+    TakeData* take = cont->take;
+    while(take->previous)take = take->previous;
+    int32_t total = take->frame_total;
+    while(take->next){
+        take = take->next;
+        total += take->frame_total;
+    }
+    return total;
+}
+
+void dumpframedata(const AnimationData *anim_data) {
+        log_printf(
+        "\nAnimationData {\n"
+        "    frame_total = %df(true value:%d)\n"
+        "    flags = {0x%p,0x%p}\n"
+        "    data {\n"
+        "        damage = %d\n"
+        "        hitStopE = %d\n"
+        "        hitStopP = %d\n"
+        "        guardStopE = %d\n"
+        "        guardStopP = %d\n"
+        "        firstRate = %d\n"
+        "        comboRate = %d\n"
+        "        AddKnock_Unk = %d\n"
+        "        stun = %d\n"
+        "        bariaBreak_Unk = %d\n"
+        "        guardRealDamage = %d\n"
+        "        slaveBlockOccult = %d\n"
+        "        SCGauge_onhit = %d\n"
+        "        comboRecoverTime = %d\n"
+        "        minRate_unused = %d\n"
+        "        stopVecX = %d\n"
+        "        stopVecY = %d\n"
+        "        hitSoundEffect = %d\n"
+        "        hitVecX = %d\n"
+        "        hitVecY = %d\n"
+        "        grazeKnock_Unk = %d\n"
+        "        atkType = %d\n"
+        "        atkRank = %d\n"
+        "    }\n"
+        "    __int48 = %d\n"
+        "    __int49 = %d\n"
+        "    __int4a = %d\n"
+        "    __int4b = %d\n"
+        "    boxcount = %d\n"
+        "    __int4d = %d\n"
+        "    __flag4e = 0x%p\n"
+        "}\n",
+        anim_data->frame_total / 100, anim_data->frame_total,
+        anim_data->flags[0],anim_data->flags[1],
+        anim_data->data[0],
+        anim_data->data[1],
+        anim_data->data[2],
+        anim_data->data[3],
+        anim_data->data[4],
+        anim_data->data[5],
+        anim_data->data[6],
+        anim_data->data[7],
+        anim_data->data[8],
+        anim_data->data[9],
+        anim_data->data[10],
+        anim_data->data[11],
+        anim_data->data[12],
+        anim_data->data[13],
+        anim_data->data[14],
+        anim_data->data[15],
+        anim_data->data[16],
+        anim_data->data[17],
+        anim_data->data[18],
+        anim_data->data[19],
+        anim_data->data[20],
+        anim_data->data[21],
+        anim_data->data[22],
+        anim_data->__int48,
+        anim_data->__int49,
+        anim_data->__int4a,
+        anim_data->__int4b,
+        anim_data->boxcount,
+        anim_data->__int4d,
+        anim_data->__flag4e
+    );
+}
+
 int debug(ManbowActor2D* player) {
     if (!player || !player->anim_controller->anim_set)return 0;
     std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
-    AnimationData* anim_data = cont->animation_data;
-    if(anim_data){
-        uint32_t flag_state = anim_data->flags[0];
-        uint32_t flag_attack = anim_data->flags[1];
-        int32_t phase; //= !(flag_state & 0x20) ? 1 : (flag_state & 0x20) || !(flag_state & 0x120) ? 2 : 3;
-        if (!(flag_state & 0x20))phase = 1;
-        else if (((flag_state & 0x20)))phase = 2;
-        else phase = 3;
-        log_printf("\nAnimationData phase:%s motion:%d {\n", phase < 3 ? phase > 1 ? "active" : "startup" : "recovery", cont->motion);
-        log_printf("    frame_total = %df(true value:%d)\n", anim_data->frame_total / 100, anim_data->frame_total);
-        log_printf("    flags = {0x%p,0x%p}\n", anim_data->flags[0], anim_data->flags[1]);
-        // log_printf("    data {\n");
-        // log_printf("        damage = %d\n", anim_data->data[0]);
-        // log_printf("        hitStopE = %d\n", anim_data->data[1]);
-        // log_printf("        hitStopP = %d\n", anim_data->data[2]);
-        // log_printf("        guardStopE = %d\n", anim_data->data[3]);
-        // log_printf("        guardStopP = %d\n", anim_data->data[4]);
-        // log_printf("        firstRate = %d\n", anim_data->data[5]);
-        // log_printf("        comboRate = %d\n", anim_data->data[6]);
-        // log_printf("        AddKnock_Unk = %d\n", anim_data->data[7]);
-        // log_printf("        stun = %d\n", anim_data->data[8]);
-        // log_printf("        bariaBreak_Unk = %d\n", anim_data->data[9]);
-        // log_printf("        guardRealDamage = %d\n", anim_data->data[10]);
-        // log_printf("        slaveBlockOccult = %d\n", anim_data->data[11]);
-        // log_printf("        SCGauge_onhit = %d\n", anim_data->data[12]);
-        // log_printf("        comboRecoverTime = %d\n", anim_data->data[13]);
-        // log_printf("        minRate_unused = %d\n", anim_data->data[14]);
-        // log_printf("        stopVecX = %d\n", anim_data->data[15]);
-        // log_printf("        stopVecY = %d\n", anim_data->data[16]);
-        // log_printf("        hitSoundEffect = %d\n", anim_data->data[17]);
-        // log_printf("        hitVecX = %d\n", anim_data->data[18]);
-        // log_printf("        hitVecY = %d\n", anim_data->data[19]);
-        // log_printf("        grazeKnock_Unk = %d\n", anim_data->data[20]);
-        // log_printf("        atkType = %d\n", anim_data->data[21]);
-        // log_printf("        atkRank = %d\n", anim_data->data[22]);
-        // log_printf("    }\n");
-        log_printf("    __int48 = %d\n", anim_data->__int48);
-        log_printf("    __int49 = %d\n", anim_data->__int49);
-        log_printf("    __int4a = %d\n", anim_data->__int4a);
-        log_printf("    __int4b = %d\n", anim_data->__int4b);
-        log_printf("    boxcount = %d\n", anim_data->boxcount);
-        log_printf("    __int4d = %d\n", anim_data->__int4d);
-        log_printf("    __int4e = 0x%p\n", anim_data->__int4e);
-        // log_printf("    __int4e {\n");
-        // log_printf("        0x1 : %d\n", anim_data->__int4e & 0x1 ? 1 : 0);
-        // log_printf("        0x2 : %d\n", anim_data->__int4e & 0x2 ? 1 : 0);
-        // log_printf("        0x4 : %d\n", anim_data->__int4e & 0x4 ? 1 : 0);
-        // log_printf("        0x8 : %d\n", anim_data->__int4e & 0x8 ? 1 : 0);
-        // log_printf("        0x10 : %d\n", anim_data->__int4e & 0x10 ? 1 : 0);
-        // log_printf("        0x20 : %d\n", anim_data->__int4e & 0x20 ? 1 : 0);
-        // log_printf("        0x40 : %d\n", anim_data->__int4e & 0x40 ? 1 : 0);
-        // log_printf("        0x80 : %d\n", anim_data->__int4e & 0x80 ? 1 : 0);
-        // log_printf("        0x100 : %d\n", anim_data->__int4e & 0x100 ? 1 : 0);
-        // log_printf("        0x200 : %d\n", anim_data->__int4e & 0x200 ? 1 : 0);
-        // log_printf("        0x400 : %d\n", anim_data->__int4e & 0x400 ? 1 : 0);
-        // log_printf("        0x800 : %d\n", anim_data->__int4e & 0x800 ? 1 : 0);
-        // log_printf("        0x1000 : %d\n", anim_data->__int4e & 0x1000 ? 1 : 0);
-        // log_printf("        0x2000 : %d\n", anim_data->__int4e & 0x2000 ? 1 : 0);
-        // log_printf("        0x4000 : %d\n", anim_data->__int4e & 0x4000 ? 1 : 0);
-        // log_printf("        0x8000 : %d\n", anim_data->__int4e & 0x8000 ? 1 : 0);
-        // log_printf("    }\n");
-        log_printf("}\n");
 
-        // FILE *out;
-        // out = fopen("flag_dump.txt","a");
-        // log_fprintf(out,"%d,",anim_data->flags[0]);
-        // fclose(out);
+    // if (cont->take) {
+    //     TakeData* take = cont->take;
+    //     log_printf("__arr20[0]:%d\n",take->__arr20[0]);
+    //     log_printf("__arr20[1]:%d\n", take->__arr20[1]);
+    //     log_printf("__int24:%d\n", take->__int24);
+    //     log_printf("__bool25:%d\n", take->__bool25);    
+    // }
+
+    int32_t total = getframecount(player);
+    if (total != frametotal) {
+        framedata[0] = 1;
+        framedata[1] = 0;
+        framedata[2] = 0;
+        frametotal = total;
     }
+    AnimationData *anim_data = cont->animation_data;
+
+    uint32_t state = anim_data->flags[0];
+    uint32_t attack = anim_data->flags[1];
+    int32_t i;
+    if (state & 0x20)i = attack ? 1 : 2;
+    framedata[i]++;
+    i = 0;
+    AnimationData *data;
+    while(cont->animation_data[i].frame_total > 0 && cont->animation_data[i].frame_total % 100 == 0){
+        data = &cont->animation_data[i++];
+        dumpframedata(data);
+    }
+    log_printf("startup: %df active: %df recovery: %df\n", framedata[0], framedata[1], framedata[2]);
+    // FILE *out;
+    // out = fopen("flag_dump.txt","a");
+    // log_fprintf(out,"%d,",cont->take->frame_data->flags[0]);
+    // fclose(out);
+
     // void** data1 = (void**)cont->animation_data;
     // log_printf("\nUnk3");
     // if (data1){

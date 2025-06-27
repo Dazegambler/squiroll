@@ -439,6 +439,10 @@ function FrameDataDisplay(_team){
                 armor = []
                 flag_state = 0
                 flag_attack = 0
+                metadata = {
+                    damage = 0
+                    hitStop = 0
+                }
             };
             local reset = {
                 count = 0
@@ -465,7 +469,7 @@ function FrameDataDisplay(_team){
                     this.timer = ::setting.frame_data.timer;
                     if (::setting.frame_data.hasData(current)){
                         if (!current.hitStopTime){
-                            ::battle.frame_lock = ::setting.frame_data.frame_stepping ? true : false;
+                            ::battle.frame_lock = ::setting.frame_data.frame_stepping;
                             this.Tick(data);
 
                             if(::setting.frame_data.input_flags){

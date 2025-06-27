@@ -335,26 +335,26 @@ function framedisplaysetup() {
 	// 	// local onMove = (!p1.IsFree() || this.onWhitelist(motion));
 	// 	// local hitboxes = this.getboxes(::battle.team[0]);
 	// 	// local log = "";
-	// 	// if (onMove) {
-	// 	// 	this.timer = ::setting.frame_data.timer;
-	// 	// 	if (!this.onBlacklist(motion)){
-	// 	// 		// ::debug.test(::battle.team[0].current);
-	// 	// 		if (::setting.frame_data.hasData(::battle.group_player)){
-	// 	// 			::battle.frame_lock = ::setting.frame_data.frame_stepping ? true : false;
-	// 	// 			if (!p1.hitStopTime){
-	// 	// 				if (abs(motion - this.data_display.motion) > 10)this.data_display.clear(motion);
-	// 	// 				this.data_display.tick(::setting.frame_data.IsFrameActive(::battle.group_player,p1,p2));
-	// 	// 			}
-	// 	// 		}else{::battle.frame_lock = false}
-	// 	// 		this.data_display.render();
-	// 	// 		this.flag_state_display.render(::setting.frame_data.input_flags ? p1.flagState : 0);
-	// 	// 		this.flag_attack_display.render(::setting.frame_data.input_flags ? p1.flagAttack : 0);
-	// 	// 	}
-	// 	// }else{
-	// 	// 	this.data_display.clear();
-	// 	// 	::battle.frame_lock = false;
-	// 	// 	if (this.timer) --this.timer;
-    //     // }
+	// if (onMove) {
+	// 	this.timer = ::setting.frame_data.timer;
+	// 	if (!this.onBlacklist(motion)){
+	// 		// ::debug.test(::battle.team[0].current);
+	// 		if (::setting.frame_data.hasData(::battle.group_player)){
+	// 			::battle.frame_lock = ::setting.frame_data.frame_stepping ? true : false;
+	// 			if (!p1.hitStopTime){
+	// 				if (abs(motion - this.data_display.motion) > 10)this.data_display.clear(motion);
+	// 				this.data_display.tick(::setting.frame_data.IsFrameActive(::battle.group_player,p1,p2));
+	// 			}
+	// 		}else{::battle.frame_lock = false}
+	// 		this.data_display.render();
+	// 		this.flag_state_display.render(::setting.frame_data.input_flags ? p1.flagState : 0);
+	// 		this.flag_attack_display.render(::setting.frame_data.input_flags ? p1.flagAttack : 0);
+	// 	}
+	// }else{
+	// 	this.data_display.clear();
+	// 	::battle.frame_lock = false;
+	// 	if (this.timer) --this.timer;
+	// }
 	// 	// if (!this.timer) {
 	// 	// 	this.clear();
 	// 	// }

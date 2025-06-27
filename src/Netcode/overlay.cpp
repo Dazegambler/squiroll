@@ -548,13 +548,19 @@ int debug(ManbowActor2D* player) {
     if (!player || !player->anim_controller->anim_set)return 0;
     std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
 
-    // if (cont->take) {
-    //     TakeData* take = cont->take;
-    //     log_printf("__arr20[0]:%d\n",take->__arr20[0]);
-    //     log_printf("__arr20[1]:%d\n", take->__arr20[1]);
-    //     log_printf("__int24:%d\n", take->__int24);
-    //     log_printf("__bool25:%d\n", take->__bool25);    
-    // }
+    if (cont->take) {
+        TakeData* take = cont->take;
+        log_printf(
+        "__arr20[0]:%d\n"
+        "__arr20[1]:%d\n"
+        "__int24:%d\n"
+        "__bool25:%d\n",
+        take->__arr20[0],
+        take->__arr20[1],
+        take->__int24, 
+        take->__bool25
+        );    
+    }
 
     int32_t total = getframecount(player);
     if (total != frametotal) {
@@ -570,12 +576,13 @@ int debug(ManbowActor2D* player) {
     int32_t i;
     if (state & 0x20)i = attack ? 1 : 2;
     framedata[i]++;
-    i = 0;
-    AnimationData *data;
-    while(cont->animation_data[i].frame_total > 0 && cont->animation_data[i].frame_total % 100 == 0){
-        data = &cont->animation_data[i++];
-        dumpframedata(data);
-    }
+    dumpframedata(cont->animation_data);
+    // i = 0;
+    // AnimationData *data;
+    // while(cont->animation_data[i].frame_total > 0 && cont->animation_data[i].frame_total % 100 == 0){
+    //     data = &cont->animation_data[i++];
+    //     dumpframedata(data);
+    // }
     log_printf("startup: %df active: %df recovery: %df\n", framedata[0], framedata[1], framedata[2]);
     // FILE *out;
     // out = fopen("flag_dump.txt","a");

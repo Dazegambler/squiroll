@@ -429,7 +429,7 @@ function HideUISetup(hold) {
 		};
 	};
 	this.UI_task = ui;
-	// AddTask(this.UI_task);
+	AddTask(this.UI_task);
 }
 
 function Release()
@@ -528,7 +528,7 @@ function SetSlow( n )
 
 this.UpdateMainOrig <- this.UpdateMain;
 this.UpdateMain = function() {
-	this.UI_task.Update();
+	// this.UI_task.Update();
 	if (!::network.IsActive() &&
 		::setting.frame_data.frame_stepping &&
 		this.frame_lock){
@@ -540,4 +540,4 @@ this.UpdateMain = function() {
 		::menu.pause_hack = false;
 	else if (::loop.pause_count == 0 && !this.is_time_stop && !::network.IsPlaying())
 		::overlay.set_hitboxes(this.group_player, this.team[0].current.hit_state, this.team[1].current.hit_state);
-	}
+}

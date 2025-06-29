@@ -71,10 +71,16 @@ struct Sprite {
     void* __unkA8;
 };
 
+struct Unk18 {
+    void* whatever;
+};
+
 // size: 0x60
 struct BoxData {
-    char        __unk0[0x38]; // 0x0
-    float       __float38; // 0x38
+    char        __unk0[0x18]; // 0x0
+    Unk18*      __ptr18; // 0x18
+    char        __unk[0x38 - 0x1C];
+    BoxData*    __ptr38; // 0x38
     char        __unk3C[0x60 - 0x3C];
     // 0x60
 };
@@ -138,14 +144,14 @@ struct AnimationData {
     22 : atkRank
     23 : hitEffectVFX
     */
-    uint16_t        data[0x17]; // 0x18
-    uint8_t         __int48; // 0x48
-    uint8_t         __int49; // 0x49
-    uint8_t         __int4a; // 0x4a
+    uint16_t        data[24]; // 0x18
+    uint8_t         col_count; // 0x48
+    uint8_t         hurt_count; // 0x49
+    uint8_t         hit_count; // 0x4a
     uint8_t         __int4b; // 0x4b
-    uint8_t         boxcount; // 0x4c
+    uint8_t         __int4c; // 0x4c
     uint8_t         __int4d; // 0x4d
-    uint16_t        __flag4e; // 0x4e
+    int16_t         __int4e; // 0x4e
     //0x50
 };
 
@@ -303,7 +309,7 @@ struct ManbowAnimationControllerBase {
     char __unk4[0x18]; // 0x4
     uint32_t motion; // 0x1c
     int32_t key_take; // 0x20
-    uint32_t keyframe; // 0x24
+    uint32_t key_frame; // 0x24
     float red; // 0x28
     float green; // 0x2C
     float blue; // 0x30

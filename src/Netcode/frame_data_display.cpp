@@ -1,3 +1,4 @@
+#include <cstdint>
 #if __INTELLISENSE__
 #undef __HAS_CXX20
 #define _HAS_CXX20 0
@@ -16,6 +17,11 @@ int GetFrameCount(ManbowActor2D* player){
         total += take->frame_total;
     }
     return total / 100;
+}
+
+uint16_t* GetMetadata(ManbowActor2D* player) {
+    uint16_t* metadata = &player->anim_controller->animation_data->data[0];
+    return metadata;
 }
 
 bool hasData(ManbowActor2DGroup* group) {

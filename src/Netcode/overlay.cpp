@@ -456,7 +456,6 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
 
 int32_t framedata[] = {1, 0, 0};
 int32_t frametotal;
-TakeData** data;
 
 inline int getframecount(ManbowActor2D* player){
     if (!player || !player->anim_controller->anim_set)return 0;
@@ -471,76 +470,81 @@ inline int getframecount(ManbowActor2D* player){
     return total;
 }
 
-void dumpframedata(const AnimationData *anim_data) {
-        log_printf(
-        "\nAnimationData {\n"
-        "    frame_total = %df(true value:%d)\n"
-        "    flags = {0x%p,0x%p}\n"
-        "    data {\n"
-        "        damage = %d\n"
-        "        hitStopE = %d\n"
-        "        hitStopP = %d\n"
-        "        guardStopE = %d\n"
-        "        guardStopP = %d\n"
-        "        firstRate = %d\n"
-        "        comboRate = %d\n"
-        "        AddKnock_Unk = %d\n"
-        "        stun = %d\n"
-        "        bariaBreak_Unk = %d\n"
-        "        guardRealDamage = %d\n"
-        "        slaveBlockOccult = %d\n"
-        "        SCGauge_onhit = %d\n"
-        "        comboRecoverTime = %d\n"
-        "        minRate_unused = %d\n"
-        "        stopVecX = %d\n"
-        "        stopVecY = %d\n"
-        "        hitSoundEffect = %d\n"
-        "        hitVecX = %d\n"
-        "        hitVecY = %d\n"
-        "        grazeKnock_Unk = %d\n"
-        "        atkType = %d\n"
-        "        atkRank = %d\n"
-        "    }\n"
-        "    __int48 = %d\n"
-        "    __int49 = %d\n"
-        "    __int4a = %d\n"
-        "    __int4b = %d\n"
-        "    boxcount = %d\n"
-        "    __int4d = %d\n"
-        "    __flag4e = 0x%p\n"
-        "}\n",
-        anim_data->frame_total / 100, anim_data->frame_total,
-        anim_data->flags[0],anim_data->flags[1],
-        anim_data->data[0],
-        anim_data->data[1],
-        anim_data->data[2],
-        anim_data->data[3],
-        anim_data->data[4],
-        anim_data->data[5],
-        anim_data->data[6],
-        anim_data->data[7],
-        anim_data->data[8],
-        anim_data->data[9],
-        anim_data->data[10],
-        anim_data->data[11],
-        anim_data->data[12],
-        anim_data->data[13],
-        anim_data->data[14],
-        anim_data->data[15],
-        anim_data->data[16],
-        anim_data->data[17],
-        anim_data->data[18],
-        anim_data->data[19],
-        anim_data->data[20],
-        anim_data->data[21],
-        anim_data->data[22],
-        anim_data->__int48,
-        anim_data->__int49,
-        anim_data->__int4a,
-        anim_data->__int4b,
-        anim_data->boxcount,
-        anim_data->__int4d,
-        anim_data->__flag4e
+void dumpframedata(const ManbowActor2D *player) {
+    const std::shared_ptr<ManbowAnimationController2D> anim_cont = player->anim_controller;
+    const AnimationData* anim_data = anim_cont->animation_data;
+    log_printf(
+    "\nAnimationData take %d frame %d motion %d {\n"
+    "    frame_total = %df(true value:%d)\n"
+    "    flags = {0x%p,0x%p}\n"
+    "    data {\n"
+    "        damage = %d\n"
+    "        hitStopE = %d\n"
+    "        hitStopP = %d\n"
+    "        guardStopE = %d\n"
+    "        guardStopP = %d\n"
+    "        firstRate = %d\n"
+    "        comboRate = %d\n"
+    "        AddKnock_Unk = %d\n"
+    "        stun = %d\n"
+    "        bariaBreak_Unk = %d\n"
+    "        guardRealDamage = %d\n"
+    "        slaveBlockOccult = %d\n"
+    "        SCGauge_onhit = %d\n"
+    "        comboRecoverTime = %d\n"
+    "        minRate_unused = %d\n"
+    "        stopVecX = %d\n"
+    "        stopVecY = %d\n"
+    "        hitSoundEffect = %d\n"
+    "        hitVecX = %d\n"
+    "        hitVecY = %d\n"
+    "        grazeKnock_Unk = %d\n"
+    "        atkType = %d\n"
+    "        atkRank = %d\n"
+    "        hitEffectVFX = %d\n"
+    "    }\n"
+    "    col_count = %d\n"
+    "    hurt_count = %d\n"
+    "    hit_count = %d\n"
+    "    __int4b = %d\n"
+    "    __int4c = %d\n"
+    "    __int4d = %d\n"
+    "    __int4e = %d\n"
+    "}\n",
+    anim_cont->key_take,anim_cont->key_frame+1,anim_cont->motion,
+    anim_data->frame_total / 100, anim_data->frame_total,
+    anim_data->flags[0],anim_data->flags[1],
+    anim_data->data[0],
+    anim_data->data[1],
+    anim_data->data[2],
+    anim_data->data[3],
+    anim_data->data[4],
+    anim_data->data[5],
+    anim_data->data[6],
+    anim_data->data[7],
+    anim_data->data[8],
+    anim_data->data[9],
+    anim_data->data[10],
+    anim_data->data[11],
+    anim_data->data[12],
+    anim_data->data[13],
+    anim_data->data[14],
+    anim_data->data[15],
+    anim_data->data[16],
+    anim_data->data[17],
+    anim_data->data[18],
+    anim_data->data[19],
+    anim_data->data[20],
+    anim_data->data[21],
+    anim_data->data[22],
+    anim_data->data[23],
+    anim_data->col_count,
+    anim_data->hurt_count,
+    anim_data->hit_count,
+    anim_data->__int4b,
+    anim_data->__int4c,
+    anim_data->__int4d,
+    anim_data->__int4e
     );
 }
 
@@ -548,19 +552,19 @@ int debug(ManbowActor2D* player) {
     if (!player || !player->anim_controller->anim_set)return 0;
     std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
 
-    if (cont->take) {
-        TakeData* take = cont->take;
-        log_printf(
-        "__arr20[0]:%d\n"
-        "__arr20[1]:%d\n"
-        "__int24:%d\n"
-        "__bool25:%d\n",
-        take->__arr20[0],
-        take->__arr20[1],
-        take->__int24, 
-        take->__bool25
-        );    
-    }
+    // if (cont->take) {
+    //     TakeData* take = cont->take;
+    //     log_printf(
+    //     "__arr20[0]:%d\n"
+    //     "__arr20[1]:%d\n"
+    //     "__int24:%d\n"
+    //     "__bool25:%d\n",
+    //     take->__arr20[0],
+    //     take->__arr20[1],
+    //     take->__int24, 
+    //     take->__bool25
+    //     );    
+    // }
 
     int32_t total = getframecount(player);
     if (total != frametotal) {
@@ -576,7 +580,7 @@ int debug(ManbowActor2D* player) {
     int32_t i;
     if (state & 0x20)i = attack ? 1 : 2;
     framedata[i]++;
-    dumpframedata(cont->animation_data);
+    dumpframedata(player);
     // i = 0;
     // AnimationData *data;
     // while(cont->animation_data[i].frame_total > 0 && cont->animation_data[i].frame_total % 100 == 0){
@@ -586,7 +590,7 @@ int debug(ManbowActor2D* player) {
     log_printf("startup: %df active: %df recovery: %df\n", framedata[0], framedata[1], framedata[2]);
     // FILE *out;
     // out = fopen("flag_dump.txt","a");
-    // log_fprintf(out,"%d,",cont->take->frame_data->flags[0]);
+    // log_fprintf(out,"%d,",cont->animation_data->__flag4e);
     // fclose(out);
 
     // void** data1 = (void**)cont->animation_data;

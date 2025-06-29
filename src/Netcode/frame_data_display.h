@@ -9,5 +9,6 @@ int IsFrameActive(ManbowActor2DGroup* group,ManbowActor2D* actor1,ManbowActor2D*
 bool IsFrameActive(ManbowActor2DGroup *group);
 bool hasData(ManbowActor2D *actor);
 int GetFrameCount(ManbowActor2D *player);
+uint16_t* GetMetadata(ManbowActor2D* player);
 
 #endif

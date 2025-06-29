@@ -485,6 +485,21 @@ extern "C" {
                         sq_pushinteger(v, GetFrameCount((ManbowActor2D*)inst));
                         return 1;
                     });
+                    sq_setfunc(v, _SC("GetMetadata"), [](HSQUIRRELVM v)-> SQInteger {
+                        void* player;
+                        if (sq_gettop(v) != 2 ||
+                            SQ_FAILED((sq_getinstanceup(v, 2, &player, nullptr)))
+                        ) {
+                            return sq_throwerror(v, "Invalid arguments, expected: <player>");
+                        }
+                        uint16_t* metadata = GetMetadata((ManbowActor2D*)player);
+                        sq_newarray(v, 0);
+                        for(int i = 0; i <= 23; ++i){
+                            sq_pushinteger(v, metadata[i]);
+                            sq_arrayappend(v, -2);
+                        }
+                        return 1;
+                    });
                     sq_setfunc(v, _SC("GetHitboxes"), [](HSQUIRRELVM v)-> SQInteger {
                         void* group;
                         if (sq_gettop(v) != 2 ||

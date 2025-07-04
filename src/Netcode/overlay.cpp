@@ -426,10 +426,10 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
 //         float r1[4]; //for simplicity they're local here
 //         float r2[4];
 //         float r3[4];
-//         matrix[0] = r0;
-//         matrix[1] = r1;
-//         matrix[2] = r2;
-//         matrix[3] = r3;
+//         anim_data->__arr4->matrix[0] = r0;
+//         anim_data->__arr4->matrix[1] = r1;
+//         anim_data->__arr4->matrix[2] = r2;
+//         anim_data->__arr4->matrix[3] = r3;
 //     }
 //     this->sprites[take]->vtable->__method18(matrix);
 // }
@@ -452,6 +452,35 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
 //         this->animation_data = &new_data;
 //     }
 //     this->vftable->__method8C();
+// }
+
+// void ManbowAnimationController2D::SetBoxes(){
+//     if(!this->animation_data)return;
+//     void* btsetboxidk(
+//         BoxData,
+//         int32_t,
+//         std::vector<std::shared_ptr<ManbowActorCollisionData>>,
+//         Unk140*
+//     );
+//     btsetboxidk(
+//         this->animation_data->__arr4[0],
+//         this->animation_data->col_count,
+//         this->collision_boxes,
+//         this->__unk140
+//     );
+//     btsetboxidk(
+//         this->animation_data->__arr4[this->animation_data->hurt_count],
+//         this->animation_data->hit_count - this->animation_data->hurt_count,
+//         this->hit_boxes,
+//         this->__unk140->__ptr40
+//     );
+//     btsetboxidk(
+//         this->animation_data->__arr4[this->animation_data->col_count],
+//         this->animation_data->hurt_count - this->animation_data->col_count,
+//         this->hurt_boxes,
+//         this->__unk140->__ptr40
+//     );
+//     if(this->__unkC4)this->__unkC4->__method8();
 // }
 
 int32_t framedata[] = {1, 0, 0};
@@ -566,6 +595,7 @@ int debug(ManbowActor2D* player) {
     //     );    
     // }
 
+
     int32_t total = getframecount(player);
     if (total != frametotal) {
         framedata[0] = 1;
@@ -574,31 +604,53 @@ int debug(ManbowActor2D* player) {
         frametotal = total;
     }
     AnimationData *anim_data = cont->animation_data;
-
-    uint32_t state = anim_data->flags[0];
-    uint32_t attack = anim_data->flags[1];
-    int32_t i;
-    if (state & 0x20)i = attack ? 1 : 2;
-    framedata[i]++;
-    dumpframedata(player);
+    log_printf(
+        "BoxData {\n"
+        "   matrix : \n"
+        "   [%3f,%3f,%3f,%3f]\n"
+        "   [%3f,%3f,%3f,%3f]\n"
+        "   [%3f,%3f,%3f,%3f]\n"
+        "   [%3f,%3f,%3f,%3f]\n"
+        "   width : %f\n"
+        "   height : %f\n"
+        "   __float48 : %f\n"
+        "   __float4c : %f\n"
+        "   type : %d\n"
+        "}\n",
+        anim_data->__arr4->matrix[0][0],anim_data->__arr4->matrix[0][1],anim_data->__arr4->matrix[0][2],anim_data->__arr4->matrix[0][3],
+        anim_data->__arr4->matrix[1][0],anim_data->__arr4->matrix[1][1],anim_data->__arr4->matrix[1][2],anim_data->__arr4->matrix[1][3],
+        anim_data->__arr4->matrix[2][0],anim_data->__arr4->matrix[2][1],anim_data->__arr4->matrix[2][2],anim_data->__arr4->matrix[2][3],
+        anim_data->__arr4->matrix[3][0],anim_data->__arr4->matrix[3][1],anim_data->__arr4->matrix[3][2],anim_data->__arr4->matrix[3][3],
+        anim_data->__arr4->width,
+        anim_data->__arr4->height,
+        anim_data->__arr4->__unk48,
+        anim_data->__arr4->__float4c,
+        anim_data->__arr4->type
+    );
+    // uint32_t state = anim_data->flags[0];
+    // uint32_t attack = anim_data->flags[1];
+    // int32_t i;
+    // if (state & 0x20)i = attack ? 1 : 2;
+    // framedata[i]++;
+    // dumpframedata(player);
     // i = 0;
     // AnimationData *data;
     // while(cont->animation_data[i].frame_total > 0 && cont->animation_data[i].frame_total % 100 == 0){
     //     data = &cont->animation_data[i++];
     //     dumpframedata(data);
     // }
-    log_printf("startup: %df active: %df recovery: %df\n", framedata[0], framedata[1], framedata[2]);
+    // log_printf("startup: %df active: %df recovery: %df\n", framedata[0], framedata[1], framedata[2]);
     // FILE *out;
     // out = fopen("flag_dump.txt","a");
     // log_fprintf(out,"%d,",cont->animation_data->__flag4e);
     // fclose(out);
 
-    // void** data1 = (void**)cont->animation_data;
-    // log_printf("\nUnk3");
+    // void** data1 = (void**)anim_data->__arr4;
+    // log_printf("\ndump");
     // if (data1){
     //     void** ptr = data1;
     //     log_printf("{\n");
-    //     for (size_t i = 0; i < 14; ++i){
+    //     for (size_t i = 0; i <= 23; ++i){
     //         void** d = (ptr + i);
     //         log_printf("+0x%x = 0x%p\n",i*4,*d);
     //     }

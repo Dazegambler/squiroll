@@ -77,11 +77,13 @@ struct Unk18 {
 
 // size: 0x60
 struct BoxData {
-    char        __unk0[0x18]; // 0x0
-    Unk18*      __ptr18; // 0x18
-    char        __unk[0x38 - 0x1C];
-    BoxData*    __ptr38; // 0x38
-    char        __unk3C[0x60 - 0x3C];
+    vec<float,4>    matrix[4]; // 0x0
+    float           width; // 0x40   
+    float           height; // 0x44
+    int32_t         __unk48; // 0x48
+    float           __float4c; // 0x4c
+    int32_t         type; // 0x50
+    char            __unk54[0xc]; // 0x54
     // 0x60
 };
 
@@ -92,28 +94,13 @@ struct Point {
     int16_t y;
 };
 
-struct AnimationData;
-
-typedef void Unk3MethodC(
-    const AnimationData* self,
-    D3DMATRIX matrix,
-    float color_channel
-);
-
-typedef D3DMATRIX* Unk3Method8(
-    const AnimationData* self
-);
-
-struct AnimationDataVtable {
-    void *const __method0;
-    void *const __method4;
-    Unk3Method8 *const __method8;
-    Unk3MethodC *const __methodC;
+struct Unk0 {
+    void*  vtable; // 0x0    
 };
 
 // size: 0x50
 struct AnimationData {
-    AnimationDataVtable*     vtable; // 0x0
+    Unk0*           __arr0; // 0x0
     BoxData*        __arr4; // 0x4
     Point*          points; // 0x8
     int32_t         frame_total; // 0xc
@@ -144,10 +131,10 @@ struct AnimationData {
     22 : atkRank
     23 : hitEffectVFX
     */
-    uint16_t        data[24]; // 0x18
-    uint8_t         col_count; // 0x48
-    uint8_t         hurt_count; // 0x49
-    uint8_t         hit_count; // 0x4a
+    int16_t        data[24]; // 0x18
+    int8_t         col_count; // 0x48
+    int8_t         hurt_count; // 0x49
+    int8_t         hit_count; // 0x4a
     uint8_t         __int4b; // 0x4b
     uint8_t         __int4c; // 0x4c
     uint8_t         __int4d; // 0x4d
@@ -161,10 +148,10 @@ struct Unk140 {
     float   __float4;
     float   __float8;
     float   __floatc;
-    void*   __unk40;
-    void*   __unkb0;
-    void*   __unkb4;
-    void*   __unkb8;
+    Unk140* __ptr40;
+    float   __unkb0;
+    float   __unkb4;
+    float   __unkb8;
     void*   __unkbc;
 };
 
@@ -341,7 +328,7 @@ struct ManbowAnimationController2D : ManbowAnimationControllerBase {
     AnimationSet2D* anim_set;// 0x124
     void* __unk128; // 0x128
     TakeData* take; // 0x12C
-    AnimationData* animation_data; // 0x130 size: 20
+    AnimationData* animation_data; // 0x130
     int32_t frame; // 0x134 divide by 100 to get actual value
     int32_t frame_again; // 0x138
     uint16_t   speed; // 0x13C

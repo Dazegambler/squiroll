@@ -19,8 +19,8 @@ int GetFrameCount(ManbowActor2D* player){
     return total / 100;
 }
 
-uint16_t* GetMetadata(ManbowActor2D* player) {
-    uint16_t* metadata = &player->anim_controller->animation_data->data[0];
+int16_t* GetMetadata(ManbowActor2D* player) {
+    int16_t* metadata = &player->anim_controller->animation_data->data[0];
     return metadata;
 }
 

@@ -492,7 +492,7 @@ extern "C" {
                         ) {
                             return sq_throwerror(v, "Invalid arguments, expected: <player>");
                         }
-                        uint16_t* metadata = GetMetadata((ManbowActor2D*)player);
+                        int16_t* metadata = GetMetadata((ManbowActor2D*)player);
                         sq_newarray(v, 0);
                         for(int i = 0; i <= 23; ++i){
                             sq_pushinteger(v, metadata[i]);

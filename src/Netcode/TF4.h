@@ -80,7 +80,7 @@ struct BoxData {
     vec<float,4>    matrix[4]; // 0x0
     float           width; // 0x40   
     float           height; // 0x44
-    int32_t         __unk48; // 0x48
+    float           length; // 0x48
     float           __float4c; // 0x4c
     int32_t         type; // 0x50
     char            __unk54[0xc]; // 0x54
@@ -100,8 +100,8 @@ struct Unk0 {
 
 // size: 0x50
 struct AnimationData {
-    Unk0*           __arr0; // 0x0
-    BoxData*        __arr4; // 0x4
+    Unk0*           __arr0; // 0x0 unused?
+    BoxData*        box_data; // 0x4
     Point*          points; // 0x8
     int32_t         frame_total; // 0xc
     uint32_t        flags[2]; // 0x10 0 state 1 attack
@@ -135,7 +135,7 @@ struct AnimationData {
     int8_t         col_count; // 0x48
     int8_t         hurt_count; // 0x49
     int8_t         hit_count; // 0x4a
-    uint8_t         __int4b; // 0x4b
+    uint8_t         __int4b; // 0x4b unused?
     uint8_t         __int4c; // 0x4c
     uint8_t         __int4d; // 0x4d
     int16_t         __int4e; // 0x4e

@@ -426,10 +426,10 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
 //         float r1[4]; //for simplicity they're local here
 //         float r2[4];
 //         float r3[4];
-//         anim_data->__arr4->matrix[0] = r0;
-//         anim_data->__arr4->matrix[1] = r1;
-//         anim_data->__arr4->matrix[2] = r2;
-//         anim_data->__arr4->matrix[3] = r3;
+//         box_data->matrix[0] = r0;
+//         box_data->matrix[1] = r1;
+//         box_data->matrix[2] = r2;
+//         box_data->matrix[3] = r3;
 //     }
 //     this->sprites[take]->vtable->__method18(matrix);
 // }
@@ -463,19 +463,19 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
 //         Unk140*
 //     );
 //     btsetboxidk(
-//         this->animation_data->__arr4[0],
+//         this->animation_data->box_data[0],
 //         this->animation_data->col_count,
 //         this->collision_boxes,
 //         this->__unk140
 //     );
 //     btsetboxidk(
-//         this->animation_data->__arr4[this->animation_data->hurt_count],
+//         this->animation_data->box_data[this->animation_data->hurt_count],
 //         this->animation_data->hit_count - this->animation_data->hurt_count,
 //         this->hit_boxes,
 //         this->__unk140->__ptr40
 //     );
 //     btsetboxidk(
-//         this->animation_data->__arr4[this->animation_data->col_count],
+//         this->animation_data->box_data[this->animation_data->col_count],
 //         this->animation_data->hurt_count - this->animation_data->col_count,
 //         this->hurt_boxes,
 //         this->__unk140->__ptr40
@@ -499,11 +499,22 @@ inline int getframecount(ManbowActor2D* player){
     return total;
 }
 
-void dumpframedata(const ManbowActor2D *player) {
-    const std::shared_ptr<ManbowAnimationController2D> anim_cont = player->anim_controller;
-    const AnimationData* anim_data = anim_cont->animation_data;
+inline bool IsNewMove(ManbowActor2D* player) {
+    bool result = false;
+    int32_t total = getframecount(player);
+    if (total != frametotal) {
+        framedata[0] = 1;
+        framedata[1] = 0;
+        framedata[2] = 0;
+        frametotal = total;
+        result = true;
+    }
+    return result;
+}
+
+void dump_framedata(AnimationData* anim_data) {
     log_printf(
-    "\nAnimationData take %d frame %d motion %d {\n"
+    "\nAnimationData {\n"
     "    frame_total = %df(true value:%d)\n"
     "    flags = {0x%p,0x%p}\n"
     "    data {\n"
@@ -540,7 +551,6 @@ void dumpframedata(const ManbowActor2D *player) {
     "    __int4d = %d\n"
     "    __int4e = %d\n"
     "}\n",
-    anim_cont->key_take,anim_cont->key_frame+1,anim_cont->motion,
     anim_data->frame_total / 100, anim_data->frame_total,
     anim_data->flags[0],anim_data->flags[1],
     anim_data->data[0],
@@ -577,33 +587,7 @@ void dumpframedata(const ManbowActor2D *player) {
     );
 }
 
-int debug(ManbowActor2D* player) {
-    if (!player || !player->anim_controller->anim_set)return 0;
-    std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
-
-    // if (cont->take) {
-    //     TakeData* take = cont->take;
-    //     log_printf(
-    //     "__arr20[0]:%d\n"
-    //     "__arr20[1]:%d\n"
-    //     "__int24:%d\n"
-    //     "__bool25:%d\n",
-    //     take->__arr20[0],
-    //     take->__arr20[1],
-    //     take->__int24, 
-    //     take->__bool25
-    //     );    
-    // }
-
-
-    int32_t total = getframecount(player);
-    if (total != frametotal) {
-        framedata[0] = 1;
-        framedata[1] = 0;
-        framedata[2] = 0;
-        frametotal = total;
-    }
-    AnimationData *anim_data = cont->animation_data;
+void dump_boxdata(BoxData* box_data) {
     log_printf(
         "BoxData {\n"
         "   matrix : \n"
@@ -613,49 +597,69 @@ int debug(ManbowActor2D* player) {
         "   [%3f,%3f,%3f,%3f]\n"
         "   width : %f\n"
         "   height : %f\n"
-        "   __float48 : %f\n"
+        "   length : %f\n"
         "   __float4c : %f\n"
         "   type : %d\n"
         "}\n",
-        anim_data->__arr4->matrix[0][0],anim_data->__arr4->matrix[0][1],anim_data->__arr4->matrix[0][2],anim_data->__arr4->matrix[0][3],
-        anim_data->__arr4->matrix[1][0],anim_data->__arr4->matrix[1][1],anim_data->__arr4->matrix[1][2],anim_data->__arr4->matrix[1][3],
-        anim_data->__arr4->matrix[2][0],anim_data->__arr4->matrix[2][1],anim_data->__arr4->matrix[2][2],anim_data->__arr4->matrix[2][3],
-        anim_data->__arr4->matrix[3][0],anim_data->__arr4->matrix[3][1],anim_data->__arr4->matrix[3][2],anim_data->__arr4->matrix[3][3],
-        anim_data->__arr4->width,
-        anim_data->__arr4->height,
-        anim_data->__arr4->__unk48,
-        anim_data->__arr4->__float4c,
-        anim_data->__arr4->type
-    );
-    // uint32_t state = anim_data->flags[0];
-    // uint32_t attack = anim_data->flags[1];
-    // int32_t i;
-    // if (state & 0x20)i = attack ? 1 : 2;
-    // framedata[i]++;
-    // dumpframedata(player);
-    // i = 0;
-    // AnimationData *data;
-    // while(cont->animation_data[i].frame_total > 0 && cont->animation_data[i].frame_total % 100 == 0){
-    //     data = &cont->animation_data[i++];
-    //     dumpframedata(data);
+        box_data->matrix[0][0],box_data->matrix[0][1],box_data->matrix[0][2],box_data->matrix[0][3],
+        box_data->matrix[1][0],box_data->matrix[1][1],box_data->matrix[1][2],box_data->matrix[1][3],
+        box_data->matrix[2][0],box_data->matrix[2][1],box_data->matrix[2][2],box_data->matrix[2][3],
+        box_data->matrix[3][0],box_data->matrix[3][1],box_data->matrix[3][2],box_data->matrix[3][3],
+        box_data->width,
+        box_data->height,
+        box_data->length,
+        box_data->__float4c,
+        box_data->type
+    );    
+}
+
+void dump_takedata(TakeData* take) {
+    log_printf(
+    "__arr20[0]:%d\n"
+    "__arr20[1]:%d\n"
+    "__int24:%d\n"
+    "__bool25:%d\n",
+    take->__arr20[0],
+    take->__arr20[1],
+    take->__int24, 
+    take->__bool25
+    );    
+}
+
+int debug(ManbowActor2D* player) {
+    if (!player || !player->anim_controller->anim_set)return 0;
+    std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
+    AnimationData *anim_data = cont->animation_data;
+
+    // if (cont->take)dump_takedata(cont->take);
+    // IsNewMove(player);
+    // if(anim_data->hit_count)dump_boxdata(&anim_data->box_data[anim_data->hit_count -1]);
+    dump_framedata(anim_data);
+
+    // int32_t i = 0;
+    // while(cont->animation_data[i].frame_total > 0 && cont->animation_data[i].frame_total % 100 == 0) {
+    //     dump_framedata(&cont->animation_data[i++]);
     // }
-    // log_printf("startup: %df active: %df recovery: %df\n", framedata[0], framedata[1], framedata[2]);
     // FILE *out;
     // out = fopen("flag_dump.txt","a");
     // log_fprintf(out,"%d,",cont->animation_data->__flag4e);
     // fclose(out);
+    // if(anim_data->__int4b != 0)log_printf("__int4b : %d\n", anim_data->__int4b);
+    void** data1 = (void**)anim_data->__arr0;
+    if (data1){
+        log_printf("dump {\n");
+        void** ptr = data1;
+        for (size_t i = 0; i <= 12; ++i){
+            void** d = (ptr + i);
+            log_printf("+0x%x = 0x%p\n",i*4,*d);
+        }
+        log_printf("}\n");
+    }
 
-    // void** data1 = (void**)anim_data->__arr4;
-    // log_printf("\ndump");
-    // if (data1){
-    //     void** ptr = data1;
-    //     log_printf("{\n");
-    //     for (size_t i = 0; i <= 23; ++i){
-    //         void** d = (ptr + i);
-    //         log_printf("+0x%x = 0x%p\n",i*4,*d);
-    //     }
-    //     log_printf("}");
-    // }
+    // framedata[
+    //     anim_data->hit_count != anim_data->hurt_count ? 1 : framedata[1] ? 2 : 0
+    // ]++;
+    // log_printf("startup: %df active: %df recovery: %df\n", framedata[0], framedata[1], framedata[2]);
     return 0;
 }
 

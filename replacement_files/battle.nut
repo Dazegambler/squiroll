@@ -317,7 +317,7 @@ function HideUISetup(hold) {
 		}
 	};
 	this.UI_task = a;
-	AddTask(this.UI_task);
+	// AddTask(this.UI_task);
 }
 
 function Release()
@@ -342,7 +342,7 @@ function Release()
 		this.frame_task = null;
 	}
 	if (this.UI_task != null) {
-		DeleteTask(this.UI_task);
+		// DeleteTask(this.UI_task);
 		this.UI_task = null;
 	}
 	this.task = {};

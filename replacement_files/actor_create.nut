@@ -39,6 +39,9 @@ function SetShot( x_, y_, dir_, init_, t_, pare_ = null )
 	t_.init <- init_;
 	t_.pare <- pare_;
 	local a =  this.CreateActor2D(this.shot_class, x_, y_, dir_, this.shot_class.ShotCommonInit, t_);
+	if(::battle.frame_task && this == ::battle.frame_task.team.current){
+		::battle.frame_task.spawn = true;
+	}
 	// ::battle.rollback.actors.append(a);
 	return a;
 }

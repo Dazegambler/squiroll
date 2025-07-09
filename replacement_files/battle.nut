@@ -339,6 +339,7 @@ function Release()
 	}
 	if (this.frame_task != null) {
 		DeleteTask(this.frame_task);
+		this.frame_task.Release();
 		this.frame_task = null;
 	}
 	if (this.UI_task != null) {

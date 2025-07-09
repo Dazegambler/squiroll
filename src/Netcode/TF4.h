@@ -145,14 +145,9 @@ struct AnimationData {
 static_assert(sizeof(AnimationData) == 0x50);
 
 struct Unk140 {
-    float   __float4;
-    float   __float8;
-    float   __floatc;
-    Unk140* __ptr40;
-    float   __unkb0;
-    float   __unkb4;
-    float   __unkb8;
-    void*   __unkbc;
+    vec<float,4>    __mat0[4]; // 0x0
+    vec<float,4>    __mat40[4]; // 0x40
+    vec<float,4>    __mat80[4]; // 0x80
 };
 
 struct TakeData {
@@ -166,7 +161,7 @@ struct TakeData {
     0 : attackLV
     1 : CancelLV
     */
-    uint16_t        __arr20[2]; // 0x20
+    uint16_t        LVs[2]; // 0x20
     int8_t          __int24; // 0x24
     bool            __bool25; // 0x25
 };

@@ -464,25 +464,12 @@ extern "C" {
                     sq_setfunc(v, _SC("update_consts"), update_frame_data_constants);
                     sq_setfunc(v, _SC("IsFrameActive"), [](HSQUIRRELVM v) -> SQInteger {
                         void* inst;
-                        void* p1;
-                        void* p2;
-                        if (sq_gettop(v) != 4 ||
-                            SQ_FAILED(sq_getinstanceup(v, 2, &inst, nullptr)) ||
-                            SQ_FAILED(sq_getinstanceup(v, 3, &p1, nullptr)) ||
-                            SQ_FAILED(sq_getinstanceup(v, 4, &p2, nullptr))
-                        ) {
-                            return sq_throwerror(v, "Invalid arguments, expected: <group> <p1> <p2>");
-                        }
-                        sq_pushinteger(v, IsFrameActive((ManbowActor2DGroup*)inst,(ManbowActor2D*)p1,(ManbowActor2D*)p2));
-                        return 1;
-                    });
-                    sq_setfunc(v, _SC("GetFrameCount"), [](HSQUIRRELVM v)-> SQInteger {
-                        void* inst;
                         if (sq_gettop(v) != 2 ||
-                            SQ_FAILED(sq_getinstanceup(v, 2, &inst, nullptr))){
-                                return sq_throwerror(v, "Invalid arguments, expected: <player>");
+                            SQ_FAILED(sq_getinstanceup(v, 2, &inst, nullptr))
+                        ) {
+                            return sq_throwerror(v, "Invalid arguments, expected: <player>");
                         }
-                        sq_pushinteger(v, GetFrameCount((ManbowActor2D*)inst));
+                        sq_pushbool(v, IsFrameActive((ManbowActor2D*)inst));
                         return 1;
                     });
                     sq_setfunc(v, _SC("GetMetadata"), [](HSQUIRRELVM v)-> SQInteger {
@@ -496,21 +483,6 @@ extern "C" {
                         sq_newarray(v, 0);
                         for(int i = 0; i <= 23; ++i){
                             sq_pushinteger(v, metadata[i]);
-                            sq_arrayappend(v, -2);
-                        }
-                        return 1;
-                    });
-                    sq_setfunc(v, _SC("GetHitboxes"), [](HSQUIRRELVM v)-> SQInteger {
-                        void* group;
-                        if (sq_gettop(v) != 2 ||
-                            SQ_FAILED(sq_getinstanceup(v, 2, &group, nullptr))
-                        ) {
-                            return sq_throwerror(v, "Invalid arguments, expected: <group>");
-                        }
-                        auto arr = GetHitboxes((ManbowActor2DGroup*)group);
-                        sq_newarray(v, 0);
-                        for(int i = 0;i<arr.size();i++){
-                            sq_pushobject(v, (HSQOBJECT)arr[i]);
                             sq_arrayappend(v, -2);
                         }
                         return 1;

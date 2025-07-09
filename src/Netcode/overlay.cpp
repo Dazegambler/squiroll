@@ -483,35 +483,6 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
 //     if(this->__unkC4)this->__unkC4->__method8();
 // }
 
-int32_t framedata[] = {1, 0, 0};
-int32_t frametotal;
-
-inline int getframecount(ManbowActor2D* player){
-    if (!player || !player->anim_controller->anim_set)return 0;
-    std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
-    TakeData* take = cont->take;
-    while(take->previous)take = take->previous;
-    int32_t total = take->frame_total;
-    while(take->next){
-        take = take->next;
-        total += take->frame_total;
-    }
-    return total;
-}
-
-inline bool IsNewMove(ManbowActor2D* player) {
-    bool result = false;
-    int32_t total = getframecount(player);
-    if (total != frametotal) {
-        framedata[0] = 1;
-        framedata[1] = 0;
-        framedata[2] = 0;
-        frametotal = total;
-        result = true;
-    }
-    return result;
-}
-
 void dump_framedata(AnimationData* anim_data) {
     log_printf(
     "\nAnimationData {\n"
@@ -615,72 +586,51 @@ void dump_boxdata(BoxData* box_data) {
 
 void dump_takedata(TakeData* take) {
     log_printf(
-    "__arr20[0]:%d\n"
-    "__arr20[1]:%d\n"
+    "attackLV:%d\n"
+    "cancelLV:%d\n"
     "__int24:%d\n"
     "__bool25:%d\n",
-    take->__arr20[0],
-    take->__arr20[1],
+    take->LVs[0],
+    take->LVs[1],
     take->__int24, 
     take->__bool25
     );    
 }
 
 int debug(ManbowActor2D* player) {
-    if (!player || !player->anim_controller->anim_set)return 0;
+    if (!player)return 0;
     std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
-    AnimationData *anim_data = cont->animation_data;
+    TakeData* take_data = cont->take;
+    AnimationData* anim_data = cont->animation_data;
+    // log_printf("motion: %d take: %d frame: %d\n", cont->motion, cont->key_take, cont->key_frame + 1);
 
     // if (cont->take)dump_takedata(cont->take);
-    // IsNewMove(player);
     // if(anim_data->hit_count)dump_boxdata(&anim_data->box_data[anim_data->hit_count -1]);
-    dump_framedata(anim_data);
+    // dump_framedata(anim_data);
 
     // int32_t i = 0;
     // while(cont->animation_data[i].frame_total > 0 && cont->animation_data[i].frame_total % 100 == 0) {
     //     dump_framedata(&cont->animation_data[i++]);
     // }
+
     // FILE *out;
     // out = fopen("flag_dump.txt","a");
     // log_fprintf(out,"%d,",cont->animation_data->__flag4e);
     // fclose(out);
+
     // if(anim_data->__int4b != 0)log_printf("__int4b : %d\n", anim_data->__int4b);
-    void** data1 = (void**)anim_data->__arr0;
-    if (data1){
-        log_printf("dump {\n");
-        void** ptr = data1;
-        for (size_t i = 0; i <= 12; ++i){
-            void** d = (ptr + i);
-            log_printf("+0x%x = 0x%p\n",i*4,*d);
-        }
-        log_printf("}\n");
-    }
-
-    // framedata[
-    //     anim_data->hit_count != anim_data->hurt_count ? 1 : framedata[1] ? 2 : 0
-    // ]++;
-    // log_printf("startup: %df active: %df recovery: %df\n", framedata[0], framedata[1], framedata[2]);
+    // log_printf("0x%p\n", cont->__unk140);
+    // void** data = (void**)cont->__unk140;
+    // if (data){
+    //     log_printf("dump {\n");
+    //     void** ptr = data;
+    //     for (size_t i = 0; i <= 48; ++i){
+    //         void** d = (ptr + i);
+    //         log_printf("+0x%x = 0x%p\n",i*4,*d);
+    //     }
+    //     log_printf("}\n");
+    // }
     return 0;
-}
-
-
-std::vector<SQObject> GetHitboxes(ManbowActor2DGroup* group) {
-    std::vector<SQObject> boxes = {};
-    if (uint32_t group_size = group->size) {
-        ManbowActor2D** actor_ptr = group->actor_vec.data();
-        do {
-            ManbowActor2D* actor = *actor_ptr++;
-            if (!actor->anim_controller || (actor->active_flags & 1) == 0 || (actor->group_flags & group->update_mask) == 0 || !actor->callback_group)
-                continue;
-            for (const auto &data : actor->anim_controller->hurt_boxes) {
-                boxes.push_back(actor->sq_obj);
-            }
-            for (const auto& data : actor->anim_controller->hit_boxes) {
-                boxes.push_back(actor->sq_obj);
-            }
-        } while (--group_size);
-    }
-    return boxes;
 }
 
 static forceinline void clip_to_screen(float* dst, const float* src) {

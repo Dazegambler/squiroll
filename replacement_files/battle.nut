@@ -305,6 +305,12 @@ function HideUISetup(hold) {
 				::sound.PlaySE("sys_ok");
 				::battle.frame_lock = false;
 				::debug.test(player);
+				//" []" 40
+				//" [" 26
+				//" " 12
+				// "   " 26
+				// local test = ::font.CreateSystemString("     ");
+				// ::debug.print(test.width + "\n");
 				// ::rollback.Undo(4);
 			}
 			if (i % hold == 0){

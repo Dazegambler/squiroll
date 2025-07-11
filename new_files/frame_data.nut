@@ -288,7 +288,7 @@ function FrameDataDisplay(_team){
                 }
 
                 this.text.Set(frame);
-                this.text.sx = ::math.min(1,this.max_w / this.text.width);
+                this.text.sx = ::math.min(0.75,this.max_w / this.text.width);
                 this.text.x = 5;
                 this.text.y = 5;
             }
@@ -325,10 +325,14 @@ function FrameDataDisplay(_team){
                 this.texts[11].Set(format("atk(type/rank): %d/%d",data.metadata[21],data.metadata[22]));
 
                 foreach(i,text in this.texts){
-                    text.sx = ::math.min(1,this.max_w / text.width);
+                    text.sx = ::math.min(0.75,this.max_w / text.width);
                     text.x = 1011;
                     text.y = 5 + ((text.height * text.sy) * i);
                 }
+            }
+
+            function Clear() {
+                foreach (text in this.texts)text.Set("");
             }
         }
 
@@ -372,7 +376,7 @@ function FrameDataDisplay(_team){
                 if (flags != "") flags = flags.slice(0, -1); // Slice removes the trailing comma
 
                 this.text.Set(format("flagState:[%s]", flags));
-                this.text.sx = ::math.min(1,this.max_w / this.text.width);
+                this.text.sx = ::math.min(0.75,this.max_w / this.text.width);
                 this.text.x = 5;
                 this.text.y = 5 + (this.text.height * this.text.sy);
             }
@@ -416,17 +420,54 @@ function FrameDataDisplay(_team){
                 if (data.flag_attack & 0x40000000) flags += "1073741824,"; // 1073741824
                 if (data.flag_attack & 0x80000000) flags += "2147483648,"; // 2147483648
                 if (flags != "")flags = flags.slice(0, -1); // Slice removes the trailing comma
-                
+
                 this.text.Set(format("flagAttack:[%s]", flags));
-                this.text.sx = ::math.min(1,this.max_w / this.text.width);
+                this.text.sx = ::math.min(0.75,this.max_w / this.text.width);
                 this.text.x = 5;
                 this.text.y = 5 + (this.text.height * this.text.sy) * 2;
             }
         }
 
         framebar = {
+            max_w = 720
+            bar = [] //0:startup,1:active,2:recovery,3:misc
             function Render(data) {
+                local bar = [" ", " ", " ", " "];
 
+                foreach(i, arr in data.frames) {
+                    foreach(w,data in arr) {
+                        local add = ["    ", "    ", "    ", "    "];
+                        for(local t = 0; t < data;++t) {
+                            if ((w&1)) add[3] = "[]";
+                            else add[i] = "[]";
+                            foreach(z,val in add)bar[z] += val;
+                        }
+                    }
+                }
+
+                // for (local a = 0; a < data.frames[0][0]; a++){
+                //     bar += "-";
+                // }
+
+                // foreach(i,t in data.frames[1]) {
+                //     for (local c = 0; c < t;c++)bar += !(i&1) ? "|" : ":";
+                // }
+
+                // for (local b = 0; b < data.frames[2][0]; b++) {
+                //     bar += "-";
+                // }
+
+                foreach(y,text in this.bar) {
+                    text.Set(bar[y]);
+                    text.sx = ::math.min(0.75, this.max_w / text.width);
+                    text.x = 270;
+                    text.y = 400;
+                }
+
+                // this.bar.Set(bar);
+                // this.bar.sx = ::math.min(0.75,this.max_w / this.bar.width);
+                // this.bar.x = 270;
+                // this.bar.y = 400;
             }
         }
 
@@ -451,9 +492,8 @@ function FrameDataDisplay(_team){
             };
 
             foreach(k in ["frame_data","flag_state","flag_attack"]){
-                local text = "text" in this[k] ? this[k].text : this[k].text <- ::font.CreateSystemString("");
-                // text.sx = 0.75;
-                // text.sy = 0.75;
+                local text = this[k].text <- ::font.CreateSystemString("");
+                text.sy = 0.75;
                 text.red = color.red;
                 text.green = color.green;
                 text.blue = color.blue;
@@ -461,11 +501,35 @@ function FrameDataDisplay(_team){
                 text.ConnectRenderSlot(::graphics.slot.info,1);
             }
 
+            //metadata display
             for (local i = 0; i < 12;++i) {
-                // if (this.metadata.texts[i])this.metadata.texts[i] = ::font.CreateSystemString("");
-                local text = this.metadata.texts[i] != null ? this.metadata.texts[i] : this.metadata.texts[i] = ::font.CreateSystemString("");
-                // text.sx = scale.x;
-                // text.sy = scale.y;
+                local text = this.metadata.texts[i] = ::font.CreateSystemString("");
+                text.sy = 0.75;
+                text.red = color.red;
+                text.green = color.green;
+                text.blue = color.blue;
+                text.alpha = color.alpha;
+                text.ConnectRenderSlot(::graphics.slot.info,1);
+            }
+
+            //framebar
+            for (local i = 0; i < 4; ++i) {
+                local color = [0.0,0.0,0.0];
+                if (i < color.len())color[i] = 1.0;
+                else color = [0.5,0.5,0.5];
+                local text = ::font.CreateSystemString("");
+                text.sy = 0.75;
+                text.red = color[1];
+                text.green = color[0];
+                text.blue = color[2];
+                text.alpha = 1.0;
+                text.ConnectRenderSlot(::graphics.slot.info,1);
+                this.framebar.bar.append(text);
+            }
+
+            foreach(k in ["cursor","legend"]) {
+                local text = this.framebar[k] <- ::font.CreateSystemString("");
+                text.sy = 0.75;
                 text.red = color.red;
                 text.green = color.green;
                 text.blue = color.blue;
@@ -475,7 +539,6 @@ function FrameDataDisplay(_team){
         }
 
         function OnSettingChange(){
-            this.Reset();
         }
 
         function Tick(data) {
@@ -495,10 +558,10 @@ function FrameDataDisplay(_team){
             else if (data.frames[1][0])i = 2;
             local top = data.frames[i].len() - 1;
             data.frames[i][top]++;
-        
+
             //armor handling
             if (current.armor) {
-                if (!data.armor.len() || 
+                if (!data.armor.len() ||
                     data.armor.top()[0] != current.armor ||
                     data.armor.top()[2] != data.count - 1){
                         data.armor.append([current.armor,data.count,data.count]);
@@ -544,6 +607,13 @@ function FrameDataDisplay(_team){
             };
         }
 
+        function ClearAll() {
+            this.frame_data.text.Set("");
+            this.flag_state.text.Set("");
+            this.flag_attack.text.Set("");
+            this.metadata.Clear();
+        }
+
         function Update() {
             if(!this.team){
                 this.team = ::battle.team[this.team_id];
@@ -551,17 +621,6 @@ function FrameDataDisplay(_team){
             }
 
             local current = this.team.current;
-
-            // if (this.timer < 0 || !this.current_data || IsNewMove()){
-            //     this.current_data = {
-            //         count = 0
-            //         frames = [[0],[0],[0]]
-            //         cancels = []
-            //         armor = []
-            //         flag_state = 0
-            //         flag_attack = 0
-            //     };
-            // }
 
             if (this.timer < 0 || !this.current_data ){
                 this.current_data = NewData();
@@ -574,8 +633,8 @@ function FrameDataDisplay(_team){
                         if (!current.hitStopTime){
                             ::battle.frame_lock = ::setting.frame_data.frame_stepping;
 
-                            if (!this.current_data || IsNewMove()){
-                                this.current_data = NewData();
+                            if (!this.current_data || this.IsNewMove()){
+                                this.current_data = this.NewData();
                             }
 
                             this.current_data.count++;
@@ -599,14 +658,10 @@ function FrameDataDisplay(_team){
                     this.flag_attack.Render(this.current_data);
                     this.metadata.Render(this.current_data);
                 }else {
-                    this.frame_data.text.Set("");
-                    this.flag_state.text.Set("");
-                    this.flag_attack.text.Set("");
+                    this.ClearAll();
                 }
             }else {
-                this.frame_data.text.Set("");
-                this.flag_state.text.Set("");
-                this.flag_attack.text.Set("");
+                this.ClearAll();
             }
             this.spawn = false;
         }

@@ -602,7 +602,7 @@ int debug(ManbowActor2D* player) {
     std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
     TakeData* take_data = cont->take;
     AnimationData* anim_data = cont->animation_data;
-    // log_printf("motion: %d take: %d frame: %d\n", cont->motion, cont->key_take, cont->key_frame + 1);
+    log_printf("motion: %d take: %d frame: %d\n", cont->motion, cont->key_take, cont->key_frame + 1);
 
     // if (cont->take)dump_takedata(cont->take);
     // if(anim_data->hit_count)dump_boxdata(&anim_data->box_data[anim_data->hit_count -1]);
@@ -615,7 +615,7 @@ int debug(ManbowActor2D* player) {
 
     // FILE *out;
     // out = fopen("flag_dump.txt","a");
-    // log_fprintf(out,"%d,",cont->animation_data->__flag4e);
+    // log_fprintf(out,"%d,",cont->animation_data->flags[0]);
     // fclose(out);
 
     // if(anim_data->__int4b != 0)log_printf("__int4b : %d\n", anim_data->__int4b);

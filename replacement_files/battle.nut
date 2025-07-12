@@ -305,6 +305,9 @@ function HideUISetup(hold) {
 				::sound.PlaySE("sys_ok");
 				::battle.frame_lock = false;
 				::debug.test(player);
+				// local test = ::manbow.FontTexture();
+				// test.Load("font_texture_test.bmp");
+				// ::debug.print_value(test);
 				//" []" 40
 				//" [" 26
 				//" " 12

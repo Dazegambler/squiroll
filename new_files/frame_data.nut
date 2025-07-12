@@ -255,6 +255,7 @@ function FrameDataDisplay(_team){
         spawn = false
         current_data = null
         timer = 0
+        motion = 0
         full = false
         team_id = _team
         team = null
@@ -288,7 +289,7 @@ function FrameDataDisplay(_team){
                 }
 
                 this.text.Set(frame);
-                this.text.sx = ::math.min(0.75,this.max_w / this.text.width);
+                this.text.sx = ::math.clamp(::math.min(0.75, this.max_w / this.text.width),0,0.75);
                 this.text.x = 5;
                 this.text.y = 5;
             }
@@ -325,7 +326,7 @@ function FrameDataDisplay(_team){
                 this.texts[11].Set(format("atk(type/rank): %d/%d",data.metadata[21],data.metadata[22]));
 
                 foreach(i,text in this.texts){
-                    text.sx = ::math.min(0.75,this.max_w / text.width);
+                    text.sx = ::math.clamp(::math.min(0.75, this.max_w / text.width),0,0.75);
                     text.x = 1011;
                     text.y = 5 + ((text.height * text.sy) * i);
                 }
@@ -376,7 +377,7 @@ function FrameDataDisplay(_team){
                 if (flags != "") flags = flags.slice(0, -1); // Slice removes the trailing comma
 
                 this.text.Set(format("flagState:[%s]", flags));
-                this.text.sx = ::math.min(0.75,this.max_w / this.text.width);
+                this.text.sx = ::math.clamp(::math.min(0.75, this.max_w / this.text.width),0,0.75);
                 this.text.x = 5;
                 this.text.y = 5 + (this.text.height * this.text.sy);
             }
@@ -422,7 +423,7 @@ function FrameDataDisplay(_team){
                 if (flags != "")flags = flags.slice(0, -1); // Slice removes the trailing comma
 
                 this.text.Set(format("flagAttack:[%s]", flags));
-                this.text.sx = ::math.min(0.75,this.max_w / this.text.width);
+                this.text.sx = ::math.clamp(::math.min(0.75, this.max_w / this.text.width),0,0.75);
                 this.text.x = 5;
                 this.text.y = 5 + (this.text.height * this.text.sy) * 2;
             }
@@ -438,36 +439,18 @@ function FrameDataDisplay(_team){
                     foreach(w,data in arr) {
                         local add = ["    ", "    ", "    ", "    "];
                         for(local t = 0; t < data;++t) {
-                            if ((w&1)) add[3] = "[]";
-                            else add[i] = "[]";
+                            add[(w&1) ? 3 : i] = "[]";
                             foreach(z,val in add)bar[z] += val;
                         }
                     }
                 }
 
-                // for (local a = 0; a < data.frames[0][0]; a++){
-                //     bar += "-";
-                // }
-
-                // foreach(i,t in data.frames[1]) {
-                //     for (local c = 0; c < t;c++)bar += !(i&1) ? "|" : ":";
-                // }
-
-                // for (local b = 0; b < data.frames[2][0]; b++) {
-                //     bar += "-";
-                // }
-
                 foreach(y,text in this.bar) {
                     text.Set(bar[y]);
-                    text.sx = ::math.min(0.75, this.max_w / text.width);
+                    text.sx = ::math.clamp(::math.min(0.75, this.max_w / text.width),0,0.75);
                     text.x = 270;
                     text.y = 400;
                 }
-
-                // this.bar.Set(bar);
-                // this.bar.sx = ::math.min(0.75,this.max_w / this.bar.width);
-                // this.bar.x = 270;
-                // this.bar.y = 400;
             }
         }
 
@@ -589,7 +572,7 @@ function FrameDataDisplay(_team){
         function IsNewMove() {
             local current = this.team.current;
             local result =  false;
-            if (!current.keyTake && !current.keyFrame){
+            if (!current.keyTake && !current.keyFrame && current.frame == 1){
                 result = true;
             }
             return result;

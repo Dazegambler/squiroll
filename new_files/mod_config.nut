@@ -1,4 +1,3 @@
-::manbow.compilebuffer("UI.nut",this);
 local text_table = {
 	enabled = "enabled"
 	X = "pos X"
@@ -93,10 +92,24 @@ local order_input = ["enabled","X","Y","SX","SY","red","green","blue","alpha","o
 local order_frame = ["enabled","X","Y","SX","SY","red","green","blue","alpha","timer","input_flags","framebar","frame_stepping"];
 local order_ping = ["enabled","X","Y","SX","SY","red","green","blue","alpha","input_delay"];
 local pages = [];
-pages.extend(ToConfigMenuPage(["ping display","ping"],::setting.ping,config_table,text_table,order_ping));
-pages.extend(ToConfigMenuPage(["network","network"],::setting.network,config_table,text_table));
-pages.extend(ToConfigMenuPage(["live frame data","frame_data_display"],::setting.frame_data,config_table,text_table,order_frame));
-pages.extend(ToConfigMenuPage(["input display(p1)","input_display_p1"],::setting.input_display.p1,config_table,text_table,order_input));
-pages.extend(ToConfigMenuPage(["input display(p2)","input_display_p2"],::setting.input_display.p2,config_table,text_table,order_input));
+pages.extend(::UI.ToConfigMenuPage(["ping display","ping"],::setting.ping,config_table,text_table,order_ping));
+pages.extend(::UI.ToConfigMenuPage(["network","network"],::setting.network,config_table,text_table));
+pages.extend(::UI.ToConfigMenuPage(["live frame data","frame_data_display"],::setting.frame_data,config_table,text_table,order_frame));
+pages.extend(::UI.ToConfigMenuPage(["input display(p1)","input_display_p1"],::setting.input_display.p1,config_table,text_table,order_input));
+pages.extend(::UI.ToConfigMenuPage(["input display(p2)","input_display_p2"],::setting.input_display.p2,config_table,text_table,order_input));
 
-InitializeConfigMenu(pages);
+// ::UI.InitializeConfigMenu(pages);
+::UI.Menu.call(this,
+	::UI.Page(
+		::UI.Text("whatever"),
+		::UI.Text("whatever"),
+		::UI.Text("whatever"),
+		::UI.Text("whatever"),
+		::UI.Text("whatever"),
+		// ::UI.Bool("anything"),
+		// ::UI.Button("cool button",function(){
+		// 	::print("*dabs");
+		// }),
+		::UI.Title("title")
+	)
+);

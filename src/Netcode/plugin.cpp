@@ -1,4 +1,6 @@
 #include "TF4.h"
+#include <cstdarg>
+#include <cstdint>
 #if __INTELLISENSE__
 #undef _HAS_CXX20
 #define _HAS_CXX20 0
@@ -115,6 +117,20 @@ public:
 // }
 
 static HSQUIRRELVM v;
+
+bool sq_eval(HSQUIRRELVM v, const SQChar *code, bool get_result = false) {
+    if (SQ_FAILED(sq_compilebuffer(v, code, -1, _SC("eval"), SQFalse)))return false;
+    sq_pushroottable(v);
+    if (SQ_FAILED(sq_call(v, 1, get_result, SQTrue)))return false;
+    return true;
+}
+
+bool sq_eval(HSQUIRRELVM v, HSQOBJECT root, const SQChar *code, bool get_result = false) {
+    if (SQ_FAILED(sq_compilebuffer(v, code, -1, _SC("eval"), SQFalse)))return false;
+    sq_pushobject(v,root);
+    if (SQ_FAILED(sq_call(v, 1, get_result, SQTrue)))return false;
+    return true;
+}
 
 static inline void set_ping_constants(HSQUIRRELVM v) {
     sq_setbool(v, _SC("enabled"), get_ping_enabled());
@@ -430,6 +446,27 @@ extern "C" {
             }, 0);
             sq_seterrorhandler(v);
 
+            sq_setfunc(v, _SC("print"), sq_print);
+            sq_setfunc(v, _SC("fprint"), sq_fprint);
+
+// #if !DISABLE_ALL_LOGGING_FOR_BUILD
+//             sq_setprintfunc(v, 
+//                 [](HSQUIRRELVM v, const SQChar* str,...) -> void {
+//                     va_list args;
+//                     va_start(args,str);
+//                     vprintf(str,args);
+//                     va_end(args);
+//                 },
+//                 [](HSQUIRRELVM v, const SQChar* err,...) -> void {
+//                     va_list args;
+//                     va_start(args, err);
+//                     log_fprintf(stderr, "Squirrel runtime exception: ");
+//                     vfprintf(stderr, err, args);
+//                     va_end(args);
+
+//                 });
+// #endif
+
             // setting table setup
             sq_createtable(v, _SC("setting"), [](HSQUIRRELVM v) {
                 sq_setinteger(v, _SC("version"), PLUGIN_VERSION);
@@ -497,12 +534,89 @@ extern "C" {
                         sq_pushbool(v, hasData((ManbowActor2D*)inst));
                         return 1;
                     });
+                    sq_setfunc(v, _SC("NewMove"), [](HSQUIRRELVM v) -> SQInteger {
+                        void* inst;
+                        if (sq_gettop(v) != 2 ||
+                            SQ_FAILED(sq_getinstanceup(v, 2, &inst, nullptr))
+                        ) {
+                            return sq_throwerror(v, "Invalid arguments, expected: <instance>");
+                        }
+                        sq_pushbool(v, NewTake((ManbowActor2D*)inst));
+                        return 1;
+                    });
                     set_frame_data_constants(v);
                 });
                 sq_createtable(v, _SC("input_display"), [](HSQUIRRELVM v) {
                     sq_setfunc(v, _SC("update_consts"), update_input_constants);
                     sq_createtable(v, _SC("p1"), set_inputp1_constants);
                     sq_createtable(v, _SC("p2"), set_inputp2_constants);
+                });
+            });
+
+            sq_createtable(v, _SC("patch"), [](HSQUIRRELVM v) {
+                sq_setfunc(v, _SC("prefix"), [](HSQUIRRELVM v) -> SQInteger {
+                    HSQOBJECT obj, prefix, orig;
+                    const SQChar* func;
+
+                    if (sq_gettop(v) != 4 ||
+                        SQ_FAILED(sq_getstackobj(v, 2, &obj)) ||
+                        SQ_FAILED(sq_getstring(v, 3, &func)) ||
+                        SQ_FAILED(sq_getstackobj(v, 4, &prefix))) {
+                        return sq_throwerror(v, _SC("Invalid arguments, expected: <instance> <funcname> <prefix_func>"));
+                    }
+
+                    // push instance and retrieve original function
+                    sq_pushobject(v, obj);
+                    sq_pushstring(v, func, -1);
+                    if (SQ_SUCCEEDED(sq_rawget(v, -2))) {
+                        sq_getstackobj(v, -1, &orig);
+                        sq_addref(v, &orig);
+                        sq_pop(v, 1);
+                    } else {
+                        sq_pop(v, 1);
+                        return sq_throwerror(v, _SC("Could not find function on instance"));
+                    }
+
+                    // sq_addref(v, &prefix);
+
+                    // push instance again to set the new closure
+                    sq_pushobject(v, obj);
+                    sq_pushstring(v, func, -1);
+
+                    // push both functions as free variables
+                    // sq_pushobject(v, prefix);
+                    // sq_pushobject(v, orig);
+
+                    sq_newclosure(v, [](HSQUIRRELVM v) -> SQInteger {
+                        // HSQOBJECT prefix_func, orig_func;
+                        // sq_getstackobj(v, -2, &prefix_func);
+                        // sq_getstackobj(v, -1, &orig_func);
+                        // sq_pop(v, 2);
+
+                        // SQInteger nargs = sq_gettop(v);
+
+                        // sq_pushobject(v, prefix_func);
+                        // for (SQInteger i = 1; i <= nargs; ++i) sq_push(v, i);
+                        // if (SQ_FAILED(sq_call(v, nargs, false, true))) {
+                        //     sq_pop(v, 1);
+                        //     log_printf("wtf\n");
+                        //     return sq_throwerror(v, _SC("Prefix function call failed"));
+                        // }
+
+                        // sq_pushobject(v, orig_func);
+                        // for (SQInteger i = 1; i <= nargs; ++i) sq_push(v, i);
+                        // if (SQ_FAILED(sq_call(v, nargs, true, true))) {
+                        //     sq_pop(v, 1);
+                        //     log_printf("bruh\n");
+                        //     return sq_throwerror(v, _SC("Original function call failed"));
+                        // }
+
+                        return 1;
+                    }, 0);
+
+                    sq_rawset(v, -3);
+                    sq_pop(v, 1); // pop instance
+                    return 0;
                 });
             });
 
@@ -625,8 +739,6 @@ extern "C" {
 
             // debug table setup
             sq_createtable(v, _SC("debug"), [](HSQUIRRELVM v) {
-                sq_setfunc(v, _SC("print"), sq_print);
-                sq_setfunc(v, _SC("fprint"), sq_fprint);
                 sq_setfunc(v, _SC("print_value"), sq_print_value);
                 sq_setfunc(v, _SC("fprint_value"), sq_fprint_value);
                 sq_setfunc(v, _SC("dev"), SQPUSH_BOOL_FUNC(get_dev_mode_enabled()));

@@ -251,6 +251,8 @@ function Create( param )
 			  // [329]  OP_JMP            0      0    0    0
 		}
 	}
+
+	if (frame_task)::loop.AddTask(frame_task);
 	// ::rollback.Reset(this.group_player);
 }
 
@@ -278,7 +280,7 @@ function framedisplaysetup() {
 	*/
 	::setting.frame_data.update_consts();
 	local frame = FrameDataDisplay(0);
-	AddTask(frame);
+	// AddTask(frame);
 	this.frame_task = frame;
 }
 
@@ -289,6 +291,24 @@ function inputdisplaysetup(player) {
 	this.input_task = input;
 	AddTask(input);
 }
+
+
+
+// function patch_prefix(obj, name, prefix_func) {
+//     local delegate = obj.getdelegate();
+//     if (!delegate || typeof delegate != "table") throw "No valid delegate";
+
+//     local orig = delegate[name];
+//     if (typeof orig != "function") throw "Target is not a function";
+
+//     delegate[name] = function(...) {
+//         prefix_func(vargv);
+//         return orig.acall(obj, vargv);
+//     };
+//     setdelegate(obj, delegate);
+// }
+
+::manbow.compilebuffer("debug.nut",::debug);
 
 function HideUISetup(hold) {
 	local a = {};
@@ -304,16 +324,13 @@ function HideUISetup(hold) {
 			if (i == 1){
 				::sound.PlaySE("sys_ok");
 				::battle.frame_lock = false;
-				::debug.test(player);
-				// local test = ::manbow.FontTexture();
-				// test.Load("font_texture_test.bmp");
-				// ::debug.print_value(test);
+				// ::debug.test(player);
 				//" []" 40
 				//" [" 26
 				//" " 12
 				// "   " 26
 				// local test = ::font.CreateSystemString("     ");
-				// ::debug.print(test.width + "\n");
+				// ::print(test.width + "\n");
 				// ::rollback.Undo(4);
 			}
 			if (i % hold == 0){
@@ -347,7 +364,7 @@ function Release()
 		this.input_task = null;
 	}
 	if (this.frame_task != null) {
-		DeleteTask(this.frame_task);
+		::loop.DeleteTask(this.frame_task);
 		this.frame_task.Release();
 		this.frame_task = null;
 	}

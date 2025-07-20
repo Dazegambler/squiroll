@@ -261,7 +261,7 @@ function Round_KO()
 	this.SetTimeStop(60);
 	this.SetWinner();
 
-	if (this.win[0] >= this.match_num || this.win[1] >= this.match_num)
+	if (!::network.IsPlaying() && (this.win[0] >= this.match_num || this.win[1] >= this.match_num))
 	{
 		this.CreateWinData();
 	}

@@ -1,5 +1,7 @@
 this.common <- {};
 ::manbow.CompileFile("data/system/component/menu_common.nut", this.common);
+::UI <- {};
+::manbow.compilebuffer("UI.nut", ::UI);
 local scene = [];
 this.cursor <- {};
 ::manbow.CompileFile("data/system/cursor/cursor.nut", this.cursor);

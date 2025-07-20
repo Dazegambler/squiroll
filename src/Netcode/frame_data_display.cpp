@@ -5,6 +5,19 @@
 #endif
 
 #include "TF4.h"
+#include "log.h"
+
+TakeData* data;
+
+bool NewTake(ManbowActor2D* player) {
+    TakeData* _data = player->anim_controller->take;
+    while(_data->previous)_data = _data->previous;
+    if (!data || data != _data){
+        data = _data;
+        return true;
+    }
+    return false;
+}
 
 int16_t* GetMetadata(ManbowActor2D* player) {
     int16_t* metadata = &player->anim_controller->animation_data->data[0];

@@ -1,30 +1,3 @@
-class ptr {
-	Get = null;
-	Set = null;
-	constructor(get,set = null){
-		Get = get;
-		Set = set;
-	}
-}
-
-class tableptr{
-    __ref = null;
-    __keys = null;
-    constructor(table){
-        __ref = table;
-    }
-    function _get(key)return __ref.rawget(key);
-    function _set(key,value)return __ref.rawset(key,value);
-    // function _nexti(prev){
-    //     if(!__keys)__keys = __ref.keys();
-    //     local i = 0;
-    //     if(prev)i = __keys.find(prev) + 1;
-    //     if(i < __keys.len())return __keys[i];
-    //     __keys = null;
-    //     return null;
-    // }
-}
-
 function CreateText(type,str,SY,SX,red,green,blue,alpha,slot,priority,Update = null,init = null){
     local obj = {};
     switch (type){
@@ -78,24 +51,6 @@ function CreateTextA(type,str,SY,SX,red,green,blue,alpha,slot,priority){
 	obj.ConnectRenderSlot(slot, priority);
     return obj;
 }
-
-// function FilterTable(table,expr){
-//     local tb = {};
-//     foreach(k,v in table.Get()){
-//         if(expr(k,v))continue;
-//         tb[k] <- tableptr(table.Get(),k);
-//     }
-//     return tb;
-// }
-
-// {
-//     text;
-//     value;
-//     cursor;
-//     section;
-//     config_section;
-//     key;
-// }
 
 function ToConfigMenuPage(section,table,config_table,text_table = null,order = null){
     local function iterate(section,table,config_table,text_table,order){
@@ -208,17 +163,17 @@ function InitializeConfigMenu(pages){
 
         function AddPage(elems){
             local p = {};
-            p.x <- 0;
-            p.y <- 0;
+            // p.x <- 0;
+            // p.y <- 0;
             p.visible <- true;
             this.page.append(p);
             local ui = this.UIBase();
             ui.target = p.weakref();
-            ui.ox = 0;
+            // ui.ox = 0;
             this.pager.Append(ui);
             p.item <- [];
-            local w = 0;
-            local _w = 0;
+            // local w = 0;
+            // local _w = 0;
             foreach(i,v in elems){
                 local obj = [];
 
@@ -325,4 +280,164 @@ function InitializeConfigMenu(pages){
             ::loop.End();
         }
     }
+}
+
+function Title(str) {
+    return [function (index,page) {
+            local page_name = [::font.CreateSystemString(str)];
+            page_name[0].ConnectRenderSlot(::graphics.slot.front,0);
+            page_name[0].sx = page_name[0].sy = 1.5;
+            page_name[0].red = page_name[0].blue = 0;
+            page_name[0].x = this.title_x - ((page_name[0].width * page_name[0].sx) / 2);
+            page_name[0].y = this.title_y - (page_name[0].height * page_name[0].sy);
+
+            page.item.append(page_name);
+        },
+        function () {}
+    ];
+}
+
+function Text(str) {
+    return [function (index,page) {
+        local obj = [];
+
+        local text = ::font.CreateSystemString(str);
+        text.ConnectRenderSlot(::graphics.slot.front,0);
+        text.y = this.item_y + index * this.item_margin - 34;
+        text.sx = ::math.min(1, this.item_max_length / text.width);
+        text.x = this.item_x;
+
+        obj.push(text);
+
+        page.item.push(obj);
+        },
+        function(){}
+    ];
+}
+
+function Page(...) {
+    return function () {
+        this.anime.data.push([]);
+        this.proc.push([]);
+        foreach (elem in vargv) {
+            this.anime.data.top().push(elem[0]);
+            this.proc.top().push(elem[1]);
+        }
+    };
+}
+
+function Menu(...) {
+    this.help <- null;
+    this.Update <- null;
+    this.proc <- [];
+    this.anime <- {
+        data = []
+        title_x = 640
+        title_y = 96
+        item_x = 320
+        item_y = 200
+        item_space = 20
+        item_margin = 42
+        item_max_length = 288
+
+        function Initialize() {
+            this.pager <- this.UIPager();
+            this.page <- [];
+            foreach (i,pag in this.data) {
+                local p = {};
+                p.x <- 0;
+                p.y <- 0;
+                p.visible <- true;
+                this.page.append(p);
+                local ui = this.UIBase();
+                ui.target = p.weakref();
+                this.pager.Append(ui);
+                p.item <- [];
+
+                foreach(i,elem in pag)elem(i,p);
+            }
+            this.pager.Activate(0);
+            this.cur_page <- this.action.cursor_page.val;
+            ::loop.AddTask(this);
+        }
+
+        function Update(){
+            this.pager.Set(this.action.cursor_page.val);
+            local mat = ::manbow.Matrix();
+
+            foreach( p, _page in this.page )
+            {
+                mat.SetTranslation(0, 0, 0);
+
+                foreach( i, _item in _page.item )
+                {
+                    foreach( obj in _item )
+                    {
+                        obj.visible = _page.visible;
+
+                        if (obj.visible)
+                        {
+                            obj.SetWorldTransform(mat);
+                        }
+                    }
+                }
+            }
+            local t = this.page[this.action.cursor_page.val].item[this.action.cursor_index.val][0];
+            ::menu.cursor.SetTarget(t.x - 20, t.y + 23, 0.69999999);
+        }
+
+
+        function Terminate() {
+            ::loop.DeleteTask(this);
+            this.pager = null;
+            this.page = null;
+        }
+    };
+    this.anime.action <- this.weakref();
+
+    function Initialize() {
+        ::loop.Begin(this);
+        this.cursor_index <- this.Cursor(0, this.anime.data[0].len(),::input_all);
+        this.cursor_index.se_ok = 0;
+
+        this.cursor_page <- this.Cursor(1, this.anime.data.len(), ::input_all);
+        this.cursor_page.enable_ok = false;
+        this.cursor_page.enable_cancel = false;
+
+        this.cur_index <- -1;
+        this.cur_page <- -1;
+
+        ::menu.cursor.Activate();
+        ::menu.back.Activate();
+        ::menu.help.Set(this.help);
+        this.Update = this.UpdateMain;
+        this.BeginAnime();
+    }
+
+    function Terminate() {
+        this.EndAnime();
+        ::menu.back.Deactivate(true);
+        ::menu.cursor.Deactivate();
+        ::menu.help.Reset();
+    }
+
+    function UpdateMain() {
+        this.cursor_page.Update();
+
+        if (this.cursor_page.diff){
+            local prev = this.cursor_index.val;
+            this.cursor_index <- this.Cursor(0, this.anime.data[this.cursor_page.val].len(), ::input_all);
+            this.cursor_index.se_ok = 0;
+            this.cursor_index.val = this.cursor_index.item_num <= prev ? this.cursor_index.item_num - 1 : prev;
+        }
+
+        this.cursor_index.Update();
+
+        if (this.cursor_index.ok){
+            this.proc[this.cursor_page.val][this.cursor_index.val]();
+        }else if (this.cursor_index.cancel){
+            ::loop.End();
+        }
+    }
+    foreach (elem in vargv)elem.call(this);
 }

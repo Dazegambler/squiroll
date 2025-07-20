@@ -617,17 +617,14 @@ function UpdateMatch()
 	}
 
 	if (::setting.network.auto_lobby_state_switch){
-		// ::debug.print(::LOBBY.GetLobbyUserState()+"\n");
 		if (::LOBBY.GetLobbyUserState() == 102){
 			//100 hosting
 			//102 matched
 			//200 searching
 			//202 matched ?
 			if (this.timeout++ > 360){
-				//::debug.print(this.retry_count+"\n");
 				if (this.retry_count++ > 5)
 				{
-					// ::debug.print("SEARCHING NOW!!!\n");
 					this.lobby_user_state = ::LOBBY.MATCHING;
 				}
 				::LOBBY.SetLobbyUserState(this.lobby_user_state);
@@ -636,7 +633,6 @@ function UpdateMatch()
 			}
 		}else if (::LOBBY.GetLobbyUserState() == 200){
 			if (this.timeout++ > 31250){//roughly 5 mins 60 fps
-				// ::debug.print("HOSTING NOW!!!\n");
 				::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING);
 				this.timeout = 0;
 			}

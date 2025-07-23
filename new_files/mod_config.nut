@@ -6,7 +6,6 @@ local test = 420;
 		::UI.Button("Button", function(page, index){
 			::Dialog(0,"i got clicked :o\n",null,null);
 		}),
-		// ::UI.Empty(),
 		::UI.ValueField("value field", ::graphics),
 		::UI.ValueField("input field", test, function (page, index) {
 			local items = this.anime.page[page].item;

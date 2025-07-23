@@ -25,265 +25,47 @@ function CreateText(type,str,SY,SX,red,green,blue,alpha,slot,priority,Update = n
     obj.Update <- Update;
     return obj;
 }
+function EnumSelector (values) {
+    return {
+        active = false
+        value_table = values
+        text = ::font.CreateSystemString("")
+        cursor = null
+        highlight = this.UIItemHighlight()
+        visible = true
+        x = 0
+        y = 0
+        left = 0
+        top = 0
+        right = 0
+        bottom = 0
 
-function CreateTextA(type,str,SY,SX,red,green,blue,alpha,slot,priority){
-    local obj = null;
-    switch (type){
-        case 3:
-            obj = ::font.CreateSpellString(str,red,green,blue);
-            break;
-        case 2:
-            obj = ::font.CreateSubtitleString(str);
-                break;
-        case 1:
-            obj = ::font.CreateSystemStringSmall(str);
-            break;
-        default:
-            obj = ::font.CreateSystemString(str);
-            break;
-    }
-	obj.sx = SX;
-	obj.sy = SY;
-	obj.red = red;
-	obj.green = green;
-	obj.blue = blue;
-	obj.alpha = alpha;
-	obj.ConnectRenderSlot(slot, priority);
-    return obj;
-}
-
-function ToConfigMenuPage(section,table,config_table,text_table = null,order = null){
-    local function iterate(section,table,config_table,text_table,order){
-        local arr = [];
-        for(local i = 0; i <= table.len(); ++i)arr.append(null);
-        foreach(k,v in table){
-            if (typeof(v) != "bool" &&
-                typeof(v) != "integer" &&
-                typeof(v) != "string" &&
-                typeof(v) != "float"){
-                continue;
-	        }
-            local obj = {};
-            obj.config <- {
-                section = section[1]
-                key = config_table[k]
-            };
-            obj.section <- section[0];
-            obj.text <- text_table && k in text_table ? text_table[k] : k;
-            obj.table <- table;
-            obj.key <- k;
-
-            if (order){
-                arr[order.find(k)] = obj;
-            }else{
-                arr.append(obj);
-            }
+        function Show() {
+            this.text.visible = true;
         }
 
-        return arr.filter(@(i,v)v != null);
-    }
-    local arrs = [];
-
-    local elems = iterate(section,table,config_table,text_table,order);
-
-    local pages = [[]];
-    local c = 0;
-
-    for(local i = 0; i < elems.len(); ++i){
-        pages.top().append(elems[i]);
-        c++;
-        if(c == 12){
-            pages.append([]);
-            c = 0;
-        }
-    }
-    return pages;
-}
-
-function InitializeConfigMenu(pages){
-	//helpers
-	this.help <- ["B1","ok",null,"B2","return",null,"UD","select",null,"LR","page"];
-
-    //main objects
-    this.Update <- null;
-	this.data <- pages;
-    this.common_cursor <- null;
-    this.common_cursor_ok <- null;
-    this.common_cursor_cancel <- null;
-    this.anime <- {
-        title_x = 640
-        title_y = 96
-        item_x = 320
-        item_y = 200
-        item_space = 20
-        item_margin = 42
-        item_max_length = 288
-
-        function Initialize(){
-            this.pager <- this.UIPager();
-            this.page <- [];
-            foreach(pg in this.action.data){
-                AddPage(pg);
-            }
-            this.pager.Activate(0);
-            this.cur_page <- this.action.cursor_page.val;
-            ::loop.AddTask(this);
+        function Hide() {
+            this.text.visible = false;
         }
 
-        function Terminate(){
-            ::loop.DeleteTask(this);
-            this.pager = null;
-            this.page = null;
+        function Update() {
+            this.text.Set(value_table[this.cursor.val]);
+            this.text.visible = this.visible;
+            this.text.x = this.x;
+            this.text.y = this.y;
+            if (this.active = this.cursor.active) {
+                this.highlight.Set(this.left,this.top,this.right,this.bottom);
+            } else this.highlight.Reset();
         }
 
-        function Update(){
-            this.pager.Set(this.action.cursor_page.val);
-            local mat = ::manbow.Matrix();
-
-            foreach( p, _page in this.page )
-            {
-                mat.SetTranslation(_page.x, 0, 0);
-
-                foreach( i, _item in _page.item )
-                {
-                    foreach( obj in _item )
-                    {
-                        obj.visible = _page.visible;
-
-                        if (obj.visible)
-                        {
-                            obj.SetWorldTransform(mat);
-                        }
-                    }
-                }
-            }
-            local t = this.page[this.action.cursor_page.val].item[this.action.cursor_index.val][0];
-            ::menu.cursor.SetTarget(t.x - 20, t.y + 23, 0.69999999);
-        }
-
-        function AddPage(elems){
-            local p = {};
-            // p.x <- 0;
-            // p.y <- 0;
-            p.visible <- true;
-            this.page.append(p);
-            local ui = this.UIBase();
-            ui.target = p.weakref();
-            // ui.ox = 0;
-            this.pager.Append(ui);
-            p.item <- [];
-            // local w = 0;
-            // local _w = 0;
-            foreach(i,v in elems){
-                local obj = [];
-
-                local text = ::font.CreateSystemString(v.text);
-                text.ConnectRenderSlot(::graphics.slot.front,0);
-                text.y = this.item_y + i * this.item_margin - 34;
-                if(text.width*text.sx > this.item_max_length)text.sx = this.item_max_length / text.width;
-                text.x = this.item_x;
-                obj.push(text);
-
-                local value = ::font.CreateSystemString(v.table[v.key]);
-                value.ConnectRenderSlot(::graphics.slot.front,0);
-                value.y = text.y;
-                if(value.width*value.sx > this.item_max_length)value.sx = this.item_max_length / value.width;
-                value.x = ::graphics.width - this.item_x - (value.width * value.sx);
-                obj.push(value);
-
-                p.item.push(obj);
-            }
-            local title = [];
-            local section = ::font.CreateSystemString(elems[0].section);
-            section.ConnectRenderSlot(::graphics.slot.front,0);
-            section.sx = section.sy = 1.5;
-            section.red = section.blue = 0;
-            section.x = this.title_x - (section.width * section.sx)/2;
-            section.y = this.title_y - (section.height * section.sy);
-            title.append(section);
-            p.item.push(title);
+        function SetWorldTransform(mat_world) {
+            this.text.SetWorldTransform(mat_world);
         }
     };
-    this.anime.action <- this.weakref();
-
-
-    //functions
-    function Initialize(){
-        ::loop.Begin(this);
-        this.cursor_index <- this.Cursor(0,this.data[0].len(),::input_all);
-        this.cursor_index.se_ok = 0;
-
-        this.cursor_page <- this.Cursor(1, this.data.len(),::input_all);
-        this.cursor_page.enable_ok = false;
-        this.cursor_page.enable_cancel = false;
-
-        this.cur_index <- -1;
-        this.cur_page <- -1;
-
-        ::menu.cursor.Activate();
-        ::menu.back.Activate();
-        ::menu.help.Set(this.help);
-        this.Update = this.UpdateMain;
-        this.BeginAnime();
-    }
-
-    function Terminate(){
-        this.EndAnime();
-        ::menu.back.Deactivate(true);
-        ::menu.cursor.Deactivate();
-        ::menu.help.Reset();
-    }
-
-    function UpdateMain()
-    {
-        this.cursor_page.Update();
-
-        if (this.cursor_page.diff){
-            local prev = this.cursor_index.val;
-            this.cursor_index <- this.Cursor(0, this.data[this.cursor_page.val].len(), ::input_all);
-            this.cursor_index.se_ok = 0;
-            this.cursor_index.val = this.cursor_index.item_num <= prev ? this.cursor_index.item_num - 1 : prev;
-        }
-
-        this.cursor_index.Update();
-
-        if (this.cursor_index.ok){
-            local item = this.data[this.cursor_page.val][this.cursor_index.val];
-            local anim = this.anime;
-            local value_txt = anim.page[this.cursor_page.val].item[this.cursor_index.val][1];
-            ::Dialog(2,item.text,function (ret){
-                if (ret){
-                    local r = item.table[item.key];
-                    switch(typeof(r)){
-                        case "bool":
-                            r = ret == "true" ? true : false;
-                            break;
-                        case "integer":
-                            r = ret.tointeger();
-                            break;
-                        case "float":
-                            r = ret.tofloat();
-                            break;
-                    }
-                    item.table[item.key] = r;
-                    ::setting.save(item.config.section,item.config.key,ret);
-
-                    value_txt.Set(ret);
-                    if(value_txt.width*value_txt.sx > anim.item_max_length)value_txt.sx = anim.item_max_length / value_txt.width;
-                    value_txt.x = ::graphics.width - anim.item_x - (value_txt.width * value_txt.sx);
-
-                }
-            },item.table[item.key].tostring());
-            return;
-        }
-        else if (this.cursor_index.cancel){
-            ::loop.End();
-        }
-    }
 }
 
 function Title(str) {
-    return [function (index,page) {
+    return [function (page, index) {
             local page_name = [::font.CreateSystemString(str)];
             page_name[0].ConnectRenderSlot(::graphics.slot.front,0);
             page_name[0].sx = page_name[0].sy = 1.5;
@@ -293,25 +75,93 @@ function Title(str) {
 
             page.item.append(page_name);
         },
-        function () {}
+        function (...){}
     ];
 }
 
 function Text(str) {
-    return [function (index,page) {
-        local obj = [];
-
-        local text = ::font.CreateSystemString(str);
-        text.ConnectRenderSlot(::graphics.slot.front,0);
-        text.y = this.item_y + index * this.item_margin - 34;
-        text.sx = ::math.min(1, this.item_max_length / text.width);
-        text.x = this.item_x;
-
-        obj.push(text);
+    return [function (page, index) {
+        local obj = [::font.CreateSystemString(str)];
+        obj[0].ConnectRenderSlot(::graphics.slot.front,0);
+        obj[0].y = this.item_y + index * this.item_margin - 34;
+        obj[0].sx = ::math.min(1, (this.item_max_length*2) / obj[0].width);
+        obj[0].x = this.item_x;
 
         page.item.push(obj);
         },
-        function(){}
+        function(...){}
+    ];
+}
+
+function Button(str,onclick) {
+    return [function (page, index) {
+        local obj = [::font.CreateSystemString(str)];
+        obj[0].ConnectRenderSlot(::graphics.slot.front,0);
+        obj[0].y = this.item_y + index * this.item_margin - 34;
+        obj[0].sx = ::math.min(1, this.item_max_length / obj[0].width);
+        obj[0].x = this.item_x;
+
+        page.item.push(obj);
+        },
+        onclick
+    ];
+}
+
+function Enum(str,value,onedit,options = ["disabled","enabled"]) {
+    return [function (page, index) {
+        local obj = [::font.CreateSystemString(str),::UI.EnumSelector(options)];
+        obj[0].ConnectRenderSlot(::graphics.slot.front,0);
+        obj[0].y = this.item_y + index * this.item_margin - 34;
+        obj[0].sx = ::math.min(1, this.item_max_length / obj[0].width);
+        obj[0].x = this.item_x;
+
+        obj[1].text.blue = 0;
+        obj[1].text.ConnectRenderSlot(::graphics.slot.front,0);
+        local w = 0;
+        local h = 0;
+        foreach (val in options) {
+            obj[1].text.Set(val);
+            if (obj[1].text.width > w)w = obj[1].text.width;
+            if (obj[1].text.height > h)h = obj[1].text.height;
+        }
+
+        obj[1].x = ::graphics.width - this.item_x - (w * obj[1].text.sx);
+        obj[1].y = this.item_y + index * this.item_margin - 34;
+
+        obj[1].left = obj[1].x - 8;
+        obj[1].right = obj[1].x + w + 8;
+        obj[1].top = obj[1].y + 10;
+        obj[1].bottom = obj[1].top + h + 3;
+        obj[1].cursor = this.Cursor(1, options.len(),::input_all);
+        if (typeof value == "bool") {
+            obj[1].cursor.val = value ? 1 : 0;
+        }else if (typeof value == "integer") {
+            obj[1].cursor.val = value % options.len();
+        }
+
+        page.item.push(obj);
+        },
+        onedit
+    ];
+}
+
+function ValueField(str,value,onedit = function(...){}) {
+    return[function (page, index) {
+        local obj = [::font.CreateSystemString(str), ::font.CreateSystemString(value.tostring())];
+        obj[0].ConnectRenderSlot(::graphics.slot.front,0);
+        obj[0].y = this.item_y + index * this.item_margin - 34;
+        obj[0].sx = ::math.min(1, this.item_max_length / obj[0].width);
+        obj[0].x = this.item_x;
+
+        obj[1].blue = 0;
+        obj[1].ConnectRenderSlot(::graphics.slot.front,0);
+        obj[1].y = this.item_y + index * this.item_margin - 34;
+        obj[1].sx = ::math.min(1, this.item_max_length / obj[1].width);
+        obj[1].x = ::graphics.width - this.item_x - (obj[1].width * obj[1].sx);
+
+        page.item.push(obj);
+    },
+    onedit
     ];
 }
 
@@ -327,8 +177,14 @@ function Page(...) {
 }
 
 function Menu(...) {
-    this.help <- null;
+    this.help <- ["B1","ok",null,"B2","return",null,"UD","select"];
+    this.help_item <- ["B1","ok",null,"B2","cancel",null,"LR","change"];
     this.Update <- null;
+
+    this.common_cursor <- null;
+    this.common_callback_ok <- null;
+    this.common_callback_cancel <- null;
+
     this.proc <- [];
     this.anime <- {
         data = []
@@ -341,6 +197,7 @@ function Menu(...) {
         item_max_length = 288
 
         function Initialize() {
+            this.select_obj <- {};
             this.pager <- this.UIPager();
             this.page <- [];
             foreach (i,pag in this.data) {
@@ -354,10 +211,9 @@ function Menu(...) {
                 this.pager.Append(ui);
                 p.item <- [];
 
-                foreach(i,elem in pag)elem(i,p);
+                foreach(i,elem in pag)elem(p,i);
             }
             this.pager.Activate(0);
-            this.cur_page <- this.action.cursor_page.val;
             ::loop.AddTask(this);
         }
 
@@ -367,18 +223,16 @@ function Menu(...) {
 
             foreach( p, _page in this.page )
             {
-                mat.SetTranslation(0, 0, 0);
+                mat.SetTranslation(_page.x, 0, 0);
 
-                foreach( i, _item in _page.item )
+                foreach( i, item in _page.item )
                 {
-                    foreach( obj in _item )
+                    foreach( obj in item )
                     {
                         obj.visible = _page.visible;
 
-                        if (obj.visible)
-                        {
-                            obj.SetWorldTransform(mat);
-                        }
+                        if (obj.visible)obj.SetWorldTransform(mat);
+                        if ("Update" in obj)obj.Update();
                     }
                 }
             }
@@ -391,21 +245,19 @@ function Menu(...) {
             ::loop.DeleteTask(this);
             this.pager = null;
             this.page = null;
+            this.select_obj = null;
         }
     };
     this.anime.action <- this.weakref();
 
     function Initialize() {
         ::loop.Begin(this);
-        this.cursor_index <- this.Cursor(0, this.anime.data[0].len(),::input_all);
+        this.cursor_index <- this.Cursor(0, this.anime.data[0].len() - 1,::input_all);
         this.cursor_index.se_ok = 0;
 
         this.cursor_page <- this.Cursor(1, this.anime.data.len(), ::input_all);
         this.cursor_page.enable_ok = false;
         this.cursor_page.enable_cancel = false;
-
-        this.cur_index <- -1;
-        this.cur_page <- -1;
 
         ::menu.cursor.Activate();
         ::menu.back.Activate();
@@ -421,20 +273,35 @@ function Menu(...) {
         ::menu.help.Reset();
     }
 
+    function UpdateCommonItem() {
+        this.common_cursor.Update();
+        if (this.common_cursor.ok) {
+            this.common_callback_ok();
+            this.Update = this.UpdateMain;
+        } else if (this.common_cursor.cancel) {
+            this.common_callback_cancel();
+            this.Update = this.UpdateMain;
+        }
+    }
+
     function UpdateMain() {
+        ::menu.help.Set(this.help);
         this.cursor_page.Update();
 
-        if (this.cursor_page.diff){
+        if (this.cursor_page.diff) {
             local prev = this.cursor_index.val;
-            this.cursor_index <- this.Cursor(0, this.anime.data[this.cursor_page.val].len(), ::input_all);
+            this.cursor_index <- this.Cursor(0, this.anime.data[this.cursor_page.val].len() - 1, ::input_all);
             this.cursor_index.se_ok = 0;
             this.cursor_index.val = this.cursor_index.item_num <= prev ? this.cursor_index.item_num - 1 : prev;
         }
 
         this.cursor_index.Update();
 
+        if (this.cursor_index.diff && !this.anime.page[this.cursor_page.val].item[this.cursor_index.val][0].width) {
+            this.cursor_index.val = ::math.min(this.cursor_index.item_num - 1, this.cursor_index.val + this.cursor_index.diff);
+        }
         if (this.cursor_index.ok){
-            this.proc[this.cursor_page.val][this.cursor_index.val]();
+            this.proc[this.cursor_page.val][this.cursor_index.val].call(this,this.cursor_page.val,this.cursor_index.val);
         }else if (this.cursor_index.cancel){
             ::loop.End();
         }

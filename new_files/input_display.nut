@@ -1,5 +1,3 @@
-::manbow.compilebuffer("UI.nut", this);
-
 function CreateInput_display(idx,player_config){
     //flag distribution:
     //0x1-A
@@ -102,7 +100,7 @@ function CreateInput_display(idx,player_config){
         }
     }
     for (local i = 0; i < input.config.list_max; ++i) {
-        input.text.append(this.CreateText(
+        input.text.append(::UI.CreateText(
             0,"",
             player_config.SX,player_config.SY,
             player_config.red,player_config.green,player_config.blue,player_config.alpha,

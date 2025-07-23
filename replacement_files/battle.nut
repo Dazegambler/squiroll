@@ -208,7 +208,7 @@ function Create( param )
 	if (::network.IsPlaying()) {
 		::setting.ping.update_consts();
 		if (::setting.ping.enabled) {
-			this.ping_obj = this.CreateText(
+			this.ping_obj = ::UI.CreateText(
 				0,"",
 				::setting.ping.SX,
 				::setting.ping.SY,

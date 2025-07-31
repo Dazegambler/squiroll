@@ -848,7 +848,7 @@ function Shot_Change( t )
 
 		if (this.cancelCount <= 0)
 		{
-			this.func[0].call(this);
+			this.func[0].call(this); //modified line, original: this.func() // Crashed because func is an array...
 			return true;
 		}
 	};

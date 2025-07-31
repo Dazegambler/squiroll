@@ -167,6 +167,12 @@ static constexpr uint8_t moukou_nut[] = {
 #endif
 };
 
+static constexpr uint8_t tenshi_shot_nut[] = {
+#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+#include "replacement_files/tenshi_shot.nut.h"
+#endif
+};
+
 // static constexpr uint8_t vs_nut[] = {
 // #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
 // #include "replacement_files/vs.nut.h"
@@ -194,6 +200,7 @@ static const std::unordered_map<std::string_view, const EmbedData> replacements 
     {"data/actor/script/actor_create.nut"sv, actor_create_nut},
     {"data/actor/script/shot_function.nut"sv, shot_function_nut},
     {"data/actor/moukou.nut"sv, moukou_nut},
+    {"data/actor/tenshi_shot.nut"sv, tenshi_shot_nut},
     // {"data/script/scene/vs.nut"sv, vs_nut},
 };
 

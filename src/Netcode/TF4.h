@@ -7,11 +7,36 @@
 #include <vector>
 #include <list>
 #include <memory>
+#include <windows.h>
 
 #include "squirrel.h"
 #include "bt.h"
 #include "D3D.h"
 #include "sqrat.h"
+
+// size: 0x10014
+struct FileReader {
+    void* vtable; // 0x0
+    HANDLE file; // 0x4
+    uint8_t buffer[0x10000]; // 0x8
+    size_t buffer_filled; // 0x10008
+    size_t buffer_offset; // 0x1000C
+    size_t last_read_size; // 0x10010
+    // 0x10014
+};
+
+// size: 0x10044
+struct PackageReader : FileReader {
+    uint32_t __int_10014; // 0x10014
+    size_t file_size; // 0x10018
+    uint32_t file_name_hash; // 0x1001C
+    uint32_t __file_hash; // 0x10020
+    size_t offset; // 0x10024
+    uint32_t key[5]; // 0x10028
+    uint32_t aux; // 0x1003C
+    uint32_t aux_mask; // 0x10040
+    // 0x10044
+};
 
 struct ManbowWorld2D {
     char __unk0[0x20]; // 0x0

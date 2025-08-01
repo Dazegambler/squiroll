@@ -713,8 +713,57 @@ extern "C" {
 
             // modifications to the manbow table
             sq_edit(v, _SC("manbow"), [](HSQUIRRELVM v) {
-                sq_setfunc(v, _SC("compilebuffer"), sq_compile_buffer);
-                sq_setfunc(v, _SC("LoadCSVBuffer"), loadCSVBuffer);
+                HSQOBJECT CompileFile;
+
+                sq_pushstring(v, _SC("CompileFile"), -1);
+                sq_get(v, -2);
+                sq_getstackobj(v, -1, &CompileFile);
+                sq_pop(v, 1);
+
+                sq_pushstring(v, _SC("orig_compilefile"), -1);
+                sq_pushobject(v, CompileFile);
+                sq_rawset(v, -3);
+
+                sq_pushstring(v, _SC("CompileFile"), -1);
+                sq_newclosure(v, [](HSQUIRRELVM v) -> SQInteger {
+                    const SQChar* file;
+                    HSQOBJECT root;
+
+                    if (SQ_FAILED(sq_getstring(v, 2, &file))) return sq_throwerror(v, _SC("Invalid file path"));
+                    if (SQ_FAILED(sq_getstackobj(v, 3, &root))) return sq_throwerror(v, _SC("Invalid root object"));
+
+                    if (EmbedData embed = get_embed_data(file)) {
+                        // log_printf("found %s in buffer,compiling...\n",file);
+                        if (SQ_SUCCEEDED(sq_compilebuffer(v, (const SQChar *)embed.data,embed.length, file, SQTrue))) {
+                            sq_pushobject(v, root);
+                            sq_call(v, 1, SQFalse, SQTrue);
+                            sq_pop(v, -1);
+                            return 0;
+                        }  
+                    }
+
+                    HSQOBJECT manbow;
+                    sq_pushroottable(v);
+                    sq_pushstring(v, _SC("manbow"), -1);
+                    sq_get(v, -2);
+                    sq_getstackobj(v, -1, &manbow);
+                    sq_pop(v, 2);
+
+                    sq_pushobject(v, manbow);
+                    sq_pushstring(v, _SC("orig_compilefile"), -1);
+                    if (SQ_FAILED(sq_get(v, -2))) return sq_throwerror(v, _SC("orig_func not found"));
+                    sq_pushobject(v, manbow);
+                    sq_pushstring(v, file, -1);
+                    sq_pushobject(v, root);
+
+                    if (SQ_FAILED(sq_call(v, 3, SQFalse, SQTrue))) return sq_throwerror(v, _SC("call failed"));
+                    return 0;
+
+                }, 0);
+                sq_rawset(v, -3);
+
+                // sq_setfunc(v, _SC("compilebuffer"), sq_compile_buffer);
+                // sq_setfunc(v, _SC("LoadCSVBuffer"), loadCSVBuffer);
                 sq_setfunc(v, _SC("SetClipboardString"), copy_to_clipboard);
             });
 

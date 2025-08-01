@@ -1,7 +1,7 @@
 this.common <- {};
 ::manbow.CompileFile("data/system/component/menu_common.nut", this.common);
 ::UI <- {};
-::manbow.compilebuffer("UI.nut", ::UI);
+::manbow.CompileFile("UI.nut", ::UI);
 local scene = [];
 this.cursor <- {};
 ::manbow.CompileFile("data/system/cursor/cursor.nut", this.cursor);
@@ -45,7 +45,7 @@ this.help <- {};
 ::manbow.CompileFile("data/system/help/help.nut", this.help);
 scene.append(this.help);
 this.mod_config <- {};
-::manbow.compilebuffer("mod_config.nut", this.mod_config);
+::manbow.CompileFile("mod_config.nut", this.mod_config);
 scene.append(this.mod_config);
 
 

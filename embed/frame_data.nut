@@ -186,11 +186,11 @@ function FrameDataDisplay(_team){
                 local y = 550;
 
                 //cancel bar
-                local cancels = [" "," "," "," "," "," "];
+                local cancels = [" "," "," "," "," "," "," "];
                 foreach (i,cancel in data.cancels) {
-                    local mid = ["    ","    ","    ","    ","    ","    "];
-                    local leftdiv = ["    ","    ","    ","    ","    ","    "];
-                    local rightdiv = ["    ","    ","    ","    ","    ","    "];
+                    local mid = ["    ","    ","    ","    ","    ","    ","    "];
+                    local leftdiv = ["    ","    ","    ","    ","    ","    ","    "];
+                    local rightdiv = ["    ","    ","    ","    ","    ","    ","    "];
                     local flag = cancel[0];
                     if (flag) {
                         local text = 0;
@@ -205,7 +205,7 @@ function FrameDataDisplay(_team){
                     }
 
                     local duration = cancel[2] - cancel[1] - 2;
-                    for (local id = 0; id < 6; ++id) {
+                    for (local id = 0; id < 7; ++id) {
                         cancels[id] += leftdiv[id];
                         local dur = duration;
                         while(dur-- > 0)cancels[id] += mid[id];
@@ -307,9 +307,12 @@ function FrameDataDisplay(_team){
                     [1.0,1.0,0.0],
                     [1.0,0.0,1.0],
                     [0.0,1.0,1.0]
+                ],
+                [
+                    [1.0,1.0,1.0]
                 ]
             ];
-            for (local a = 0; a < 6; ++a) {
+            for (local a = 0; a < 7; ++a) {
                 local color = colors[a / 3][a % 3];
                 local text = ::font.CreateSystemString("");
                 text.sy = 0.75;

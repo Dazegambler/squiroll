@@ -27,15 +27,15 @@ for %%F in (%REPLACEMENT_COMPRESSED_DIR%\*) do (
     %MAKE_EMBED_PATH% %%F %REPLACEMENT_DESTINATION_DIR%\%%~nxF.h
 )
 
-for %%F in (%NEW_FILES_DIR%\*) do (
-    if /I "%%~XF" == ".nut" (
-        %CONDENSE_NUT_PATH% %%F %NEW_COMPRESSED_DIR%\%%~nxF
-    ) else (
-        %MAKE_EMBED_PATH% %%F %NEW_DESTINATION_DIR%\%%~nxF.h
-    )
-)
+@REM for %%F in (%NEW_FILES_DIR%\*) do (
+@REM     if /I "%%~XF" == ".nut" (
+@REM         %CONDENSE_NUT_PATH% %%F %NEW_COMPRESSED_DIR%\%%~nxF
+@REM     ) else (
+@REM         %MAKE_EMBED_PATH% %%F %NEW_DESTINATION_DIR%\%%~nxF.h
+@REM     )
+@REM )
 
-for %%F in (%NEW_COMPRESSED_DIR%\*) do (
+for %%F in (%NEW_FILES_DIR%\*) do (
     %MAKE_EMBED_PATH% %%F %NEW_DESTINATION_DIR%\%%~nxF.h
 )
 

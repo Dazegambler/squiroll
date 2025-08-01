@@ -16,6 +16,7 @@ function TerminateUser()
 }
 
 ::manbow.compilebuffer("setting.nut",::setting);
+::manbow.compilebuffer("debug.nut",::debug);
 ::manbow.CompileFile("data/actor/script/battle.nut", this);
 ::manbow.compilebuffer("UI.nut", this);
 ::manbow.compilebuffer("frame_data.nut", this);
@@ -308,8 +309,6 @@ function inputdisplaysetup(player) {
 //     setdelegate(obj, delegate);
 // }
 
-::manbow.compilebuffer("debug.nut",::debug);
-
 function HideUISetup(hold) {
 	local a = {};
 	a.active <- true;
@@ -324,13 +323,27 @@ function HideUISetup(hold) {
 			if (i == 1){
 				::sound.PlaySE("sys_ok");
 				::battle.frame_lock = false;
-				// ::debug.test(player);
+				::debug.test(player);
+				// local test = ::font.CreateSystemString(" \f");
+				// ::print(format("width:%d\n",test.width - 12));
+				//'b' 19
+				//'B' 20
+				//'d' 19
+				//'D' 23
+				//'s' 16
+				//'S' 19
+				//'c' 17
+				//'C' 21
+				//' ' 7
+				//'~' 14
+				//'|-' 21
+				//'-' 13
+				//'|' 8
+				//'[]' 28
 				//" []" 40
 				//" [" 26
 				//" " 12
 				// "   " 26
-				// local test = ::font.CreateSystemString("     ");
-				// ::print(test.width + "\n");
 				// ::rollback.Undo(4);
 			}
 			if (i % hold == 0){

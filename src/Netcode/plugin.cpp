@@ -553,73 +553,6 @@ extern "C" {
                 });
             });
 
-            sq_createtable(v, _SC("patch"), [](HSQUIRRELVM v) {
-                sq_setfunc(v, _SC("prefix"), [](HSQUIRRELVM v) -> SQInteger {
-                    HSQOBJECT obj, prefix, orig;
-                    const SQChar* func;
-
-                    if (sq_gettop(v) != 4 ||
-                        SQ_FAILED(sq_getstackobj(v, 2, &obj)) ||
-                        SQ_FAILED(sq_getstring(v, 3, &func)) ||
-                        SQ_FAILED(sq_getstackobj(v, 4, &prefix))) {
-                        return sq_throwerror(v, _SC("Invalid arguments, expected: <instance> <funcname> <prefix_func>"));
-                    }
-
-                    // push instance and retrieve original function
-                    sq_pushobject(v, obj);
-                    sq_pushstring(v, func, -1);
-                    if (SQ_SUCCEEDED(sq_rawget(v, -2))) {
-                        sq_getstackobj(v, -1, &orig);
-                        sq_addref(v, &orig);
-                        sq_pop(v, 1);
-                    } else {
-                        sq_pop(v, 1);
-                        return sq_throwerror(v, _SC("Could not find function on instance"));
-                    }
-
-                    // sq_addref(v, &prefix);
-
-                    // push instance again to set the new closure
-                    sq_pushobject(v, obj);
-                    sq_pushstring(v, func, -1);
-
-                    // push both functions as free variables
-                    // sq_pushobject(v, prefix);
-                    // sq_pushobject(v, orig);
-
-                    sq_newclosure(v, [](HSQUIRRELVM v) -> SQInteger {
-                        // HSQOBJECT prefix_func, orig_func;
-                        // sq_getstackobj(v, -2, &prefix_func);
-                        // sq_getstackobj(v, -1, &orig_func);
-                        // sq_pop(v, 2);
-
-                        // SQInteger nargs = sq_gettop(v);
-
-                        // sq_pushobject(v, prefix_func);
-                        // for (SQInteger i = 1; i <= nargs; ++i) sq_push(v, i);
-                        // if (SQ_FAILED(sq_call(v, nargs, false, true))) {
-                        //     sq_pop(v, 1);
-                        //     log_printf("wtf\n");
-                        //     return sq_throwerror(v, _SC("Prefix function call failed"));
-                        // }
-
-                        // sq_pushobject(v, orig_func);
-                        // for (SQInteger i = 1; i <= nargs; ++i) sq_push(v, i);
-                        // if (SQ_FAILED(sq_call(v, nargs, true, true))) {
-                        //     sq_pop(v, 1);
-                        //     log_printf("bruh\n");
-                        //     return sq_throwerror(v, _SC("Original function call failed"));
-                        // }
-
-                        return 1;
-                    }, 0);
-
-                    sq_rawset(v, -3);
-                    sq_pop(v, 1); // pop instance
-                    return 0;
-                });
-            });
-
             sq_createtable(v, _SC("math"),[](HSQUIRRELVM v) {
                 sq_setfunc(v,_SC("clamp"),[](HSQUIRRELVM v) -> SQInteger {
                     SQFloat Val,minVal,maxVal;
@@ -660,6 +593,22 @@ extern "C" {
                     sq_getfloat(v, 3, &b);
 
                     sq_pushfloat(v, a > b ? a : b);
+                    return 1;
+                });
+                sq_setfunc(v, _SC("rgbaToHex"), [](HSQUIRRELVM v) -> SQInteger {
+                    SQFloat r, g, b, a;
+                    if (sq_gettop(v) != 5 || 
+                        SQ_FAILED(sq_getfloat(v, 2, &r)) || 
+                        SQ_FAILED(sq_getfloat(v, 3, &g)) ||
+                        SQ_FAILED(sq_getfloat(v, 4, &b)) || 
+                        SQ_FAILED(sq_getfloat(v, 5, &a))
+                    ) { 
+                        return sq_throwerror(v, _SC("Expected: <r> <g> <b> <a>"));
+                    }
+                    char hex[10];
+                    snprintf(hex, sizeof(hex), _SC("%02X%02X%02X%02X"),
+                        (int)(r * 255), (int)(g * 255), (int)(b * 255), (int)(a * 255));
+                    sq_pushstring(v, hex, -1);
                     return 1;
                 });
             });

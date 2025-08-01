@@ -30,6 +30,11 @@ bool hasData(ManbowActor2D* actor) {
 }
 
 bool IsFrameActive(ManbowActor2D* actor) {
+    if (!actor->anim_controller ||
+        !actor->anim_controller->animation_data
+    ) {
+        return false;        
+    }
     AnimationData* anim_data = actor->anim_controller->animation_data;
     return anim_data->hit_count != anim_data->hurt_count;
 }

@@ -1,3 +1,151 @@
+// function TextObj(str) {
+//     return {
+//         text = null
+//         str = str
+//         // x = 0
+//         // y = 0
+//         // sx = 0
+//         // sy = 0
+//         // ox = 0
+//         // oy = 0
+//         // width = 0
+//         // height = 0
+//         // visible = true
+//         // red = 1.0
+//         // green = 1.0
+//         // blue = 1.0
+//         // alpha = 1.0
+//         // red2 = 1.0
+//         // green2 = 1.0
+//         // blue2 = 1.0
+//         // alpha2 = 1.0
+//         // filter = null
+//         // blend = null
+//         // outline_scale = 0
+//         // outline_threshold = 0
+
+//         function Initialize(font = ::font.system) {
+//             this.text = ::manbow.String();
+//             this.text.Initialize(font);
+//             this.text.SetSpace(-5, 0);
+//             this.text.SetOutline(true);
+//             this.text.Set(this.str());
+//             this.text.outline_threshold = 0.16;
+//             this.text.outline_scale = 6.0;
+
+//             foreach (k,v in this.text.getclass()){
+//                 if (typeof v == "function")continue;
+//                 this[k] = this.text[k];
+//             }
+//             return this;
+//         }
+
+//         function Update() {
+//             this.text.Set(this.str());
+//             foreach (k,v in this) {
+//                 if (typeof v == "function" || !k in this.text)continue;
+//                 this.text[k] = v;
+//             }
+//         }
+
+//         function SetWorldTransform(mat_world) {
+//             this.text.SetWorldTransform(mat_world);
+//         }
+
+//         function ConnectRenderSlot(slot, priority) {
+//             this.text.ConnectRenderSlot(slot, priority);
+//         }
+
+//         function Add() {
+
+//         }
+
+//         function Set(str) {
+//             this.str = str;
+//             this.text.Set(str);
+//         }
+
+//         function SetOutline(enabled) {
+//             this.text.SetOutline(enabled);
+//         }
+
+//         function SetGradation(enabled) {
+//             this.text.SetGradation(enabled);
+//         }
+
+//         function SetVertical() {
+
+//         }
+
+//         function SetSpace(x, y) {
+//             this.text.SetSpace(x, y);
+//         }
+//     }.Initialize();
+// }
+
+function TextObj(str) {
+    return {
+        text = null
+        str = str
+
+        function Initialize(font = ::font.system) {
+            this.text = ::manbow.String();
+            this.text.Initialize(font);
+            this.text.SetSpace(-5, 0);
+            this.text.SetOutline(true);
+            this.text.Set("");
+            this.text.outline_threshold = 0.16;
+            this.text.outline_scale = 6.0;
+            return this;
+        }
+
+        function Update() {
+            this.text.Set(this.str());
+        }
+
+        function SetWorldTransform(mat_world) {
+            this.text.SetWorldTransform(mat_world);
+        }
+
+        function ConnectRenderSlot(slot, priority) {
+            this.text.ConnectRenderSlot(slot, priority);
+        }
+
+        function Add() {
+        }
+
+        function Set(str) {
+            this.str = str;
+            this.text.Set(this.str());
+        }
+
+        function SetOutline(enabled) {
+            this.text.SetOutline(enabled);
+        }
+
+        function SetGradation(enabled) {
+            this.text.SetGradation(enabled);
+        }
+
+        function SetVertical() {
+        }
+
+        function SetSpace(x, y) {
+            this.text.SetSpace(x, y);
+        }
+
+        }.setdelegate({
+        _get = function(idx) {
+            return this.text[idx];
+        }
+
+        _set = function(idx,val) {
+            this.text[idx] = val;
+            return val;
+        }
+    }).Initialize();
+}
+
 function CreateText(type,str,SY,SX,red,green,blue,alpha,slot,priority,Update = null,init = null){
     local obj = {};
     switch (type){
@@ -147,7 +295,7 @@ function Enum(str,value,onedit,options = ["disabled","enabled"]) {
 
 function ValueField(str,value,onedit = function(...){}) {
     return[function (page, index) {
-        local obj = [::font.CreateSystemString(str), ::font.CreateSystemString(value.tostring())];
+        local obj = [::font.CreateSystemString(str), ::UI.TextObj(value)];
         obj[0].ConnectRenderSlot(::graphics.slot.front,0);
         obj[0].y = this.item_y + index * this.item_margin - 34;
         obj[0].sx = ::math.min(1, this.item_max_length / obj[0].width);
@@ -251,7 +399,6 @@ function Menu(...) {
     this.anime.action <- this.weakref();
 
     function Initialize() {
-        ::loop.Begin(this);
         this.cursor_index <- this.Cursor(0, this.anime.data[0].len() - 1,::input_all);
         this.cursor_index.se_ok = 0;
 
@@ -264,6 +411,7 @@ function Menu(...) {
         ::menu.help.Set(this.help);
         this.Update = this.UpdateMain;
         this.BeginAnime();
+        ::loop.Begin(this);
     }
 
     function Terminate() {

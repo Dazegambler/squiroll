@@ -3,7 +3,11 @@ function patch_instance(inst) {
 
     local subclass = class extends base_type {
         constructor(inst) {
-            foreach(k,v in inst)this[k] = v;
+            foreach(k,v in inst.getclass()){
+                if (typeof v != "function"){
+                    this[k] = v;
+                }
+            }
         }
 
         function SetMotion(motion,take) {

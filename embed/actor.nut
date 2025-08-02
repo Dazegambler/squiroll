@@ -71,11 +71,10 @@ function DefinePlayerClass( t )
 {
 	local name = t.name;
 	local player_class = ::manbow.Actor2D.DerivedClass();
-	local orig_func = player_class.SetMotion;
 	class patched extends player_class {
 		function SetMotion(motion,take) {
 			::print(format("move %d started at take %d\n",motion,take));
-			orig_func(motion,take);
+			base.SetMotion(motion,take);
 		}
 	};
 	player_class = patched;

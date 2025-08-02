@@ -173,6 +173,10 @@ static constexpr uint8_t tenshi_shot_nut[] = {
 #endif
 };
 
+static constexpr uint8_t actor_nut[] = {
+    #include "embed/actor.nut.h"
+};
+
 // static constexpr uint8_t vs_nut[] = {
 // #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
 // #include "embed/vs.nut.h"
@@ -254,6 +258,7 @@ static const std::unordered_map<std::string_view, const EmbedData> embeds = {
     {"data/actor/script/shot_function.nut"sv, shot_function_nut},
     {"data/actor/mokou.nut"sv, mokou_nut},
     {"data/actor/tenshi_shot.nut"sv, tenshi_shot_nut},
+    {"data/script/actor.nut"sv, actor_nut},
     // {"data/script/scene/vs.nut"sv, vs_nut},
 
     {"debug.nut"sv, debug_nut},

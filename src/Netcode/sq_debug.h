@@ -1,5 +1,6 @@
 #pragma once
 
+#include <squirrel.h>
 #ifndef SQ_DEBUG_H
 #define SQ_DEBUG_H 1
 
@@ -14,6 +15,7 @@ static SQInteger sq_dummy(HSQUIRRELVM v) {
 }
 
 //SQUIRREL FUNCTIONS
+SQInteger sq_CompileFile(HSQUIRRELVM v);
 SQInteger sq_compile_buffer(HSQUIRRELVM v); 
 void CompileAndRun(HSQUIRRELVM v, const char *Src);
 

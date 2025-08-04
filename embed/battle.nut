@@ -15,14 +15,14 @@ function TerminateUser()
 {
 }
 
-::manbow.compilebuffer("setting.nut",::setting);
-::manbow.compilebuffer("debug.nut",::debug);
+::manbow.CompileFile("setting.nut",::setting);
+::manbow.CompileFile("debug.nut",::debug);
 ::manbow.CompileFile("data/actor/script/battle.nut", this);
-::manbow.compilebuffer("UI.nut", this);
-::manbow.compilebuffer("frame_data.nut", this);
-::manbow.compilebuffer("input_display.nut",this);
+::manbow.CompileFile("UI.nut", this);
+::manbow.CompileFile("frame_data.nut", this);
+::manbow.CompileFile("input_display.nut",this);
 this.rollback <- {};
-::manbow.compilebuffer("rollback.nut",this.rollback);
+::manbow.CompileFile("rollback.nut",this.rollback);
 this.gauge <- {};
 ::manbow.CompileFile("data/actor/status/gauge_common.nut", this.gauge);
 ::manbow.CompileFile("data/actor/status/spellcard.nut", this);

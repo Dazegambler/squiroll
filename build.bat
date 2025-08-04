@@ -2,41 +2,15 @@
 
 set MAKE_EMBED_PATH=tools\make_embed_windows.exe
 set CONDENSE_NUT_PATH=tools\condense_nut_windows.exe
-set REPLACEMENT_FILES_DIR=replacement_files
-set REPLACEMENT_COMPRESSED_DIR=compressed_nuts\replacement_files
-set REPLACEMENT_DESTINATION_DIR=src\Netcode\replacement_files
 
-set NEW_FILES_DIR=new_files
-set NEW_COMPRESSED_DIR=compressed_nuts\new_files
-set NEW_DESTINATION_DIR=src\Netcode\new_files
+set EMBEDS_DIR=embed
+set EMBEDS_DEST_DIR=src/Netcode/embed
 
-mkdir "%REPLACEMENT_COMPRESSED_DIR%"
-mkdir "%REPLACEMENT_DESTINATION_DIR%"
-mkdir "%NEW_COMPRESSED_DIR%"
-mkdir "%NEW_DESTINATION_DIR%"
+mkdir "%EMBEDS_DIR%"
+mkdir "%EMBEDS_DEST_DIR%"
 
-for %%F in (%REPLACEMENT_FILES_DIR%\*) do (
-    if /I "%%~XF" == ".nut" (
-        %CONDENSE_NUT_PATH% %%F %REPLACEMENT_COMPRESSED_DIR%\%%~nxF
-    ) else (
-        %MAKE_EMBED_PATH% %%F %REPLACEMENT_DESTINATION_DIR%\%%~nxF.h
-    )
-)
-
-for %%F in (%REPLACEMENT_COMPRESSED_DIR%\*) do (
-    %MAKE_EMBED_PATH% %%F %REPLACEMENT_DESTINATION_DIR%\%%~nxF.h
-)
-
-for %%F in (%NEW_FILES_DIR%\*) do (
-    if /I "%%~XF" == ".nut" (
-        %CONDENSE_NUT_PATH% %%F %NEW_COMPRESSED_DIR%\%%~nxF
-    ) else (
-        %MAKE_EMBED_PATH% %%F %NEW_DESTINATION_DIR%\%%~nxF.h
-    )
-)
-
-for %%F in (%NEW_COMPRESSED_DIR%\*) do (
-    %MAKE_EMBED_PATH% %%F %NEW_DESTINATION_DIR%\%%~nxF.h
+for %%F in (%EMBEDS_DIR%\*) do (
+    %MAKE_EMBED_PATH% %%F %EMBEDS_DEST_DIR%\%%~nxF.h
 )
 
 rc src/th155r/th155r.rc

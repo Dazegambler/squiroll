@@ -149,17 +149,17 @@ static constexpr uint8_t input_nut[] = {
 #endif
 };
 
-static constexpr uint8_t actor_create_nut[] = {
-#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "embed/actor_create.nut.h"
-#endif
-};
+// static constexpr uint8_t actor_create_nut[] = {
+// #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+// #include "embed/actor_create.nut.h"
+// #endif
+// };
 
-static constexpr uint8_t shot_function_nut[] = {
-#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-#include "embed/shot_function.nut.h"
-#endif
-};
+// static constexpr uint8_t shot_function_nut[] = {
+// #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+// #include "embed/shot_function.nut.h"
+// #endif
+// };
 
 static constexpr uint8_t mokou_nut[] = {
 #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
@@ -180,7 +180,11 @@ static constexpr uint8_t kokoro_nut[] = {
 };
 
 static constexpr uint8_t actor_nut[] = {
-    #include "embed/actor.nut.h"
+#include "embed/actor.nut.h"
+};
+
+static constexpr uint8_t battle_team_nut[] = {
+#include "embed/battle_team.nut.h"
 };
 
 // static constexpr uint8_t vs_nut[] = {
@@ -260,12 +264,13 @@ static const std::unordered_map<std::string_view, const EmbedData> embeds = {
     {"data/system/watch/watch.nut"sv, watch_nut},
     {"data/system/replay_select/replay_select_view.nut"sv, replay_select_view_nut},
     {"data/script/input.nut"sv, input_nut},
-    {"data/actor/script/actor_create.nut"sv, actor_create_nut},
-    {"data/actor/script/shot_function.nut"sv, shot_function_nut},
+    // {"data/actor/script/actor_create.nut"sv, actor_create_nut},
+    // {"data/actor/script/shot_function.nut"sv, shot_function_nut},
     {"data/actor/mokou.nut"sv, mokou_nut},
     {"data/actor/tenshi_shot.nut"sv, tenshi_shot_nut},
     {"data/actor/kokoro.nut"sv, kokoro_nut},
     {"data/script/actor.nut"sv, actor_nut},
+    {"data/script/battle/battle_team.nut"sv, battle_team_nut},
     // {"data/script/scene/vs.nut"sv, vs_nut},
 
     {"debug.nut"sv, debug_nut},

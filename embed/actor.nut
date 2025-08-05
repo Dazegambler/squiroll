@@ -32,6 +32,66 @@ function CreatePlayer( actor_name, src_name, color, mode, difficulty )
 	t.mode <- mode;
 	t.difficulty <- difficulty;
 	this.DefinePlayerClass(t);
+	//player patches
+	local setmotion = t.player_class.SetMotion;
+	t.player_class.SetMotion <- function (motion,take) {
+		setmotion(motion,take);
+		local frame_data = ::battle.frame_task;
+		if (frame_data &&
+			frame_data.team == this.team &&
+			frame_data.current_data
+		) {
+			if (frame_data.current_data.motion != this.motion){
+				if (this.motion >= 1000){
+					frame_data.IsNewMove();
+				}else {
+					frame_data.current_data.motion = this.motion;
+				}
+			}
+			// if (this.motion >= 1000 &&
+			// 	frame_data.current_data.motion != this.motion
+			// ) {
+			// 	frame_data.IsNewMove();
+			// }else if (frame_data.current_data.motion != this.motion
+			// ) {
+			// 	frame_data.current_data.motion = this.motion;
+			// }
+		}
+	};
+	local setshot = t.player_class.SetShot;
+	t.player_class.SetShot <- function (x_, y_, dir_, init_, t_, pare_ = null) {
+		local a = setshot(x_,y_, dir_,init_,t_,pare_);
+		local frame_data = ::battle.frame_task;
+		if(frame_data &&
+			"current" in frame_data.team &&
+			frame_data.team.current &&
+			this == frame_data.team.current
+		) {
+			::battle.frame_task.bullets.append(a);
+		}
+		return a;
+	};
+	// local endtofreemove = t.player_class.EndtoFreeMove;
+	// t.player_class.EndtoFreeMove <- function () {
+	// 	endtofreemove();
+	// 	local frame_data = ::battle.frame_task;
+	// 	if(frame_data &&
+	// 		"current" in frame_data.team &&
+	// 		frame_data.team.current &&
+	// 		this == frame_data.team.current
+	// 	){
+	// 		frame_data.current_data.motion = 1337;
+	// 		// ::battle.frame_task.bullets.append(a);
+	// 	}
+	// };
+	//bullet patches;
+	local releaseactor = t.shot_class.ReleaseActor;
+	t.shot_class.ReleaseActor <- function () {
+		local frame_data = ::battle.frame_task;
+		local idx = frame_data.bullets.find(this);
+		if (idx)frame_data.bullets.remove(idx);
+		releaseactor();
+	};
 	return t;
 }
 
@@ -71,13 +131,6 @@ function DefinePlayerClass( t )
 {
 	local name = t.name;
 	local player_class = ::manbow.Actor2D.DerivedClass();
-	class patched extends player_class {
-		function SetMotion(motion,take) {
-			::print(format("move %d started at take %d\n",motion,take));
-			base.SetMotion(motion,take);
-		}
-	};
-	player_class = patched;
 	this.PlayerClassDef(player_class);
 	local shot_class = ::manbow.Actor2D.DerivedClass();
 	this.ShotClassDef(shot_class);

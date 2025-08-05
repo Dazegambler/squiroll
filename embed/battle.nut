@@ -121,6 +121,12 @@ function Create( param )
 	case 40:
 		::manbow.CompileFile("data/actor/status/gauge_vs.nut", this.gauge);
 		::manbow.CompileFile("data/script/battle/battle_practice.nut", this);
+		local practicerestart = this.PracticeRestart;
+		this.PracticeRestart = function () {
+			this.UI_task.active = true;
+			this.frame_task.full = !this.UI_task.active;
+			practicerestart();
+		};
 		HideUISetup(60);
 		framedisplaysetup();
 		inputdisplaysetup(0);
@@ -253,7 +259,6 @@ function Create( param )
 		}
 	}
 
-	if (frame_task)::loop.AddTask(frame_task);
 	// ::rollback.Reset(this.group_player);
 }
 
@@ -281,7 +286,7 @@ function framedisplaysetup() {
 	*/
 	::setting.frame_data.update_consts();
 	local frame = FrameDataDisplay(0);
-	// AddTask(frame);
+	AddTask(frame);
 	this.frame_task = frame;
 }
 
@@ -323,7 +328,8 @@ function HideUISetup(hold) {
 			if (i == 1){
 				::sound.PlaySE("sys_ok");
 				::battle.frame_lock = false;
-				::debug.test(player);
+				// ::print(player.count+"\n");
+				// ::debug.test(player);
 				// local test = ::font.CreateSystemString(" \f");
 				// ::print(format("width:%d\n",test.width - 12));
 				//'b' 19

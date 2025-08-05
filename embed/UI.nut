@@ -1,87 +1,15 @@
-// function TextObj(str) {
-//     return {
-//         text = null
-//         str = str
-//         // x = 0
-//         // y = 0
-//         // sx = 0
-//         // sy = 0
-//         // ox = 0
-//         // oy = 0
-//         // width = 0
-//         // height = 0
-//         // visible = true
-//         // red = 1.0
-//         // green = 1.0
-//         // blue = 1.0
-//         // alpha = 1.0
-//         // red2 = 1.0
-//         // green2 = 1.0
-//         // blue2 = 1.0
-//         // alpha2 = 1.0
-//         // filter = null
-//         // blend = null
-//         // outline_scale = 0
-//         // outline_threshold = 0
-
-//         function Initialize(font = ::font.system) {
-//             this.text = ::manbow.String();
-//             this.text.Initialize(font);
-//             this.text.SetSpace(-5, 0);
-//             this.text.SetOutline(true);
-//             this.text.Set(this.str());
-//             this.text.outline_threshold = 0.16;
-//             this.text.outline_scale = 6.0;
-
-//             foreach (k,v in this.text.getclass()){
-//                 if (typeof v == "function")continue;
-//                 this[k] = this.text[k];
-//             }
-//             return this;
-//         }
-
-//         function Update() {
-//             this.text.Set(this.str());
-//             foreach (k,v in this) {
-//                 if (typeof v == "function" || !k in this.text)continue;
-//                 this.text[k] = v;
-//             }
-//         }
-
-//         function SetWorldTransform(mat_world) {
-//             this.text.SetWorldTransform(mat_world);
-//         }
-
-//         function ConnectRenderSlot(slot, priority) {
-//             this.text.ConnectRenderSlot(slot, priority);
-//         }
-
-//         function Add() {
-
-//         }
-
-//         function Set(str) {
-//             this.str = str;
-//             this.text.Set(str);
-//         }
-
-//         function SetOutline(enabled) {
-//             this.text.SetOutline(enabled);
-//         }
-
-//         function SetGradation(enabled) {
-//             this.text.SetGradation(enabled);
-//         }
-
-//         function SetVertical() {
-
-//         }
-
-//         function SetSpace(x, y) {
-//             this.text.SetSpace(x, y);
-//         }
-//     }.Initialize();
-// }
+function PtrRef(_src, _key) {
+    return {
+        src = _src
+        key = _key
+        function GetVal() {
+            return this.src[this.key];
+        }
+        function SetVal(value) {
+            return this.src[this.key] <- value;
+        }
+    };
+}
 
 function TextObj(str) {
     return {

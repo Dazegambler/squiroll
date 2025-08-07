@@ -105,10 +105,10 @@ function CreateInput_display(idx,player_config){
             player_config.SX,player_config.SY,
             player_config.red,player_config.green,player_config.blue,player_config.alpha,
             ::graphics.slot.status,1
-            ,null,
+            ,function(){},
             function (root){
-                root.text.x = player_config.X;
-                root.text.y = (player_config.Y - (i * player_config.offset));
+                root.x = player_config.X;
+                root.y = (player_config.Y - (i * player_config.offset));
                 root.Set <- function (text) {this.text.Set(text);}
             }
         ));

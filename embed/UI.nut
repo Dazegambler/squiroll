@@ -74,7 +74,7 @@ function TextObj(str) {
     }).Initialize();
 }
 
-function CreateText(type,str,SY,SX,red,green,blue,alpha,slot,priority,Update = null,init = null){
+function CreateText(type,str,SY,SX,red,green,blue,alpha,slot,priority,Update = function(){},init = function(root){}){
     local obj = {};
     switch (type){
         case 3:
@@ -97,10 +97,21 @@ function CreateText(type,str,SY,SX,red,green,blue,alpha,slot,priority,Update = n
 	obj.text.blue = blue;
 	obj.text.alpha = alpha;
 	obj.text.ConnectRenderSlot(slot, priority);
-    if(init != null)init(obj);
     obj.Update <- Update;
+    obj.setdelegate({
+        _get = function(idx) {
+            return this.text[idx];
+        }
+
+        _set = function(idx,val) {
+            this.text[idx] = val;
+            return val;
+        }
+    });
+    init(obj);
     return obj;
 }
+
 function EnumSelector (values) {
     return {
         active = false

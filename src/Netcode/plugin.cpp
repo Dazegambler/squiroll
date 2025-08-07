@@ -595,6 +595,19 @@ extern "C" {
                     sq_pushfloat(v, a > b ? a : b);
                     return 1;
                 });
+                // sq_setfunc(v, _SC("loop"),[](HSQUIRRELVM v) -> SQInteger {
+                //     SQFloat val,min,max;
+                //     if (sq_gettop(v) != 4 ||
+                //         SQ_FAILED(sq_getfloat(v, 2, &val)) ||
+                //         SQ_FAILED(sq_getfloat(v, 3, &min)) ||
+                //         SQ_FAILED(sq_getfloat(v, 4, &max)) 
+                //     ) {
+                //         return sq_throwerror(v, "Invalid arguments, expected: <Val> <minVal> <maxVal>");
+                //     }
+                //     SQFloat result = val > max ? (val % max) - 1 : (val < min ? max - val : val);
+                //     sq_pushfloat(v, result);
+                //     return 1;
+                // });
                 sq_setfunc(v, _SC("rgbaToHex"), [](HSQUIRRELVM v) -> SQInteger {
                     SQFloat r, g, b, a;
                     if (sq_gettop(v) != 5 || 

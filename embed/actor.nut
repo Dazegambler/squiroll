@@ -41,21 +41,15 @@ function CreatePlayer( actor_name, src_name, color, mode, difficulty )
 			frame_data.team == this.team &&
 			frame_data.current_data
 		) {
-			if (frame_data.current_data.motion != this.motion){
-				if (this.motion >= 1000){
+			if (frame_data.current_data.motion != this.motion &&
+				frame_data.current_data.take >= this.keyTake
+			){
+				if (this.motion >= 1000) {
 					frame_data.IsNewMove();
 				}else {
 					frame_data.current_data.motion = this.motion;
 				}
 			}
-			// if (this.motion >= 1000 &&
-			// 	frame_data.current_data.motion != this.motion
-			// ) {
-			// 	frame_data.IsNewMove();
-			// }else if (frame_data.current_data.motion != this.motion
-			// ) {
-			// 	frame_data.current_data.motion = this.motion;
-			// }
 		}
 	};
 	local setshot = t.player_class.SetShot;
@@ -91,6 +85,19 @@ function CreatePlayer( actor_name, src_name, color, mode, difficulty )
 		local idx = frame_data.bullets.find(this);
 		if (idx)frame_data.bullets.remove(idx);
 		releaseactor();
+	};
+	local setshot = t.shot_class.SetShot;
+	t.shot_class.SetShot <- function (x_, y_, dir_, init_, t_, pare_ = null) {
+		local a = setshot(x_,y_, dir_,init_,t_,pare_);
+		local frame_data = ::battle.frame_task;
+		if(frame_data &&
+			"current" in frame_data.team &&
+			frame_data.team.current &&
+			this.owner == frame_data.team.current
+		) {
+			::battle.frame_task.bullets.append(a);
+		}
+		return a;
 	};
 	return t;
 }

@@ -315,50 +315,50 @@ function inputdisplaysetup(player) {
 // }
 
 function HideUISetup(hold) {
+	// local test = ::font.CreateSystemString(" \f");
+	// ::print(format("width:%d\n",test.width - 12));
+	//'b' 19
+	//'B' 20
+	//'d' 19
+	//'D' 23
+	//'s' 16
+	//'S' 19
+	//'c' 17
+	//'C' 21
+	//' ' 7
+	//'~' 14
+	//'|-' 21
+	//'-' 13
+	//'|' 8
+	//'[]' 28
+	//" []" 40
+	//" [" 26
+	//" " 12
+	// "   " 26
 	local a = {};
+	a.lastinput <- 0;
 	a.active <- true;
 	a.Update <- function () {
 		local t0 = ::battle.team[0];
 		local t1 = ::battle.team[1];
-		// if(t0.current && t1.current)::battle.rollback.Tick(::battle.team[0].current,::battle.team[1].current);
 		local player = ::battle.team[0].current;
-		// ::battle.rollback.internetArchive();
 		local i = ::input_all.b6;
-		if (i){
-			if (i == 1){
-				::sound.PlaySE("sys_ok");
-				::battle.frame_lock = false;
-				// ::print(player.count+"\n");
-				// ::debug.test(player);
-				// local test = ::font.CreateSystemString(" \f");
-				// ::print(format("width:%d\n",test.width - 12));
-				//'b' 19
-				//'B' 20
-				//'d' 19
-				//'D' 23
-				//'s' 16
-				//'S' 19
-				//'c' 17
-				//'C' 21
-				//' ' 7
-				//'~' 14
-				//'|-' 21
-				//'-' 13
-				//'|' 8
-				//'[]' 28
-				//" []" 40
-				//" [" 26
-				//" " 12
-				// "   " 26
-				// ::rollback.Undo(4);
-			}
-			if (i % hold == 0){
-				::sound.PlaySE("sys_ok");
-				if (!(this.active = !this.active)) {
-					::battle.gauge.Hide();
-				}else{::battle.gauge.Show(0);}
+		local z = ::input_all.b7;
+		// ::print(::manbow.GetKeyboardState()+"\n");//2 = 1
+		if (i == 1){
+			local now = ::date().sec;
+			if (!(now - this.lastinput)){
+				if (!(this.active = !this.active))::battle.gauge.Hide();
+				else ::battle.gauge.Show(0);
 				::battle.frame_task.full = !this.active;
-			}
+				this.lastinput = 0;
+				::sound.PlaySE("sys_ok");
+
+			}else this.lastinput = now;
+		}
+		if (z && (!(z % 10) || z == 1)){
+			::battle.frame_lock = false;
+			// ::debug.test(player);
 		}
 	};
 	this.UI_task = a;

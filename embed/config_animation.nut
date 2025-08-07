@@ -176,6 +176,7 @@ function Update()
 function UpdateLang()
 {
 	local item_table = ::menu.common.LoadItemTextArray("data/system/config/item.csv");
+	item_table.misc <- ["squiroll"];
 	::menu.common.UpdateItemString.call(this, item_table);
 
 	foreach( i, v in this.action.item )

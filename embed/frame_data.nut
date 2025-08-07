@@ -377,7 +377,6 @@ function FrameDataDisplay(_team){
             //cancel handling
             if (data.flag_state) {
                 local cancels = data.flag_state & 0x4420;
-                if (data.flag_state & 0x1)cancels = 0;
                 if (!data.cancels.len() ||
                     data.cancels.top()[0] != cancels ||
                     data.cancels.top()[2] != data.frame_count - 1
@@ -393,6 +392,7 @@ function FrameDataDisplay(_team){
             this.current_data = this.NewData();
             this.bullets = [];
             this.Tick(this.current_data);
+            ::battle.frame_lock = ::setting.frame_data.frame_stepping;
         }
 
         function IsPaused(data) {
@@ -410,7 +410,7 @@ function FrameDataDisplay(_team){
         function NewData() {
             return {
                 motion = this.team.current.motion
-                // take = this.team.current.keyTake
+                take = this.team.current.keyTake
                 frame_count = 0
                 frames = [[0],[0],[0]]
                 cancels = []

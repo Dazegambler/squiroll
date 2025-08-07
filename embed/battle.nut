@@ -344,6 +344,7 @@ function HideUISetup(hold) {
 		local player = ::battle.team[0].current;
 		local i = ::input_all.b6;
 		local z = ::input_all.b7;
+		local w = ::input_all.b8;
 		// ::print(::manbow.GetKeyboardState()+"\n");//2 = 1
 		if (i == 1){
 			local now = ::date().sec;
@@ -359,6 +360,10 @@ function HideUISetup(hold) {
 		if (z && (!(z % 10) || z == 1)){
 			::battle.frame_lock = false;
 			// ::debug.test(player);
+		}
+		if (w == 1) {
+			::setting.frame_data.frame_stepping = !::setting.frame_data.frame_stepping;
+			::setting.save("frame_data_display","frame_stepping",::setting.frame_data.frame_stepping.tostring());
 		}
 	};
 	this.UI_task = a;

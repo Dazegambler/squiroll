@@ -37,7 +37,7 @@ function FrameDataDisplay(_team){
                 }
 
                 this.text.Set(frame);
-                this.text.sx = ::math.clamp(::math.min(0.75, this.max_w / this.text.width),0,0.75);
+                this.text.sx = ::math.clamp(this.max_w / this.text.width,0,0.75);
                 this.text.x = 5;
                 this.text.y = 5;
             }
@@ -74,7 +74,7 @@ function FrameDataDisplay(_team){
                 this.texts[11].Set(format("atk(type/rank): %d/%d",data.metadata[21],data.metadata[22]));
 
                 foreach(i,text in this.texts){
-                    text.sx = ::math.clamp(::math.min(0.75, this.max_w / text.width),0,0.75);
+                    text.sx = ::math.clamp(this.max_w / text.width,0,0.75);
                     text.x = 1011;
                     text.y = 5 + ((text.height * text.sy) * i);
                 }
@@ -125,7 +125,7 @@ function FrameDataDisplay(_team){
                 if (flags != "") flags = flags.slice(0, -1); // Slice removes the trailing comma
 
                 this.text.Set(format("flagState:[%s]", flags));
-                this.text.sx = ::math.clamp(::math.min(0.75, this.max_w / this.text.width),0,0.75);
+                this.text.sx = ::math.clamp(this.max_w / this.text.width,0,0.75);
                 this.text.x = 5;
                 this.text.y = 5 + (this.text.height * this.text.sy);
             }
@@ -171,18 +171,20 @@ function FrameDataDisplay(_team){
                 if (flags != "")flags = flags.slice(0, -1); // Slice removes the trailing comma
 
                 this.text.Set(format("flagAttack:[%s]", flags));
-                this.text.sx = ::math.clamp(::math.min(0.75, this.max_w / this.text.width),0,0.75);
+                this.text.sx = ::math.clamp(this.max_w / this.text.width,0,0.75);
                 this.text.x = 5;
                 this.text.y = 5 + (this.text.height * this.text.sy) * 2;
             }
         }
 
         framebar = {
-            max_w = 720
+            max_w = 858
             cancel = []
             bar = [] //0:startup,1:active,2:recovery,3:misc
             function Render(data) {
-                local y = 550;
+                local y = 525;
+                local max_sx = 0.75;
+                local x = 125;
 
                 //cancel bar
                 local cancels = [" "," "," "," "," "," "," "];
@@ -215,8 +217,8 @@ function FrameDataDisplay(_team){
 
                 foreach (i,text in this.cancel) {
                     text.Set(cancels[i]);
-                    text.sx = ::math.clamp(::math.min(0.75, this.max_w / text.width),0,0.75);
-                    text.x = 270;
+                    text.sx = ::math.clamp(this.max_w / text.width,0,max_sx);
+                    text.x = x;
                     text.y = y;
                 }
 
@@ -237,8 +239,8 @@ function FrameDataDisplay(_team){
 
                 foreach(i,text in this.bar) {
                     text.Set(bar[i]);
-                    text.sx = ::math.clamp(::math.min(0.75, this.max_w / text.width),0,0.75);
-                    text.x = 270;
+                    text.sx = ::math.clamp(this.max_w / text.width,0,max_sx);
+                    text.x = x;
                     text.y = y;
                 }
             }
@@ -254,24 +256,10 @@ function FrameDataDisplay(_team){
         }
 
         function Reset() {
-            local color = {
-                red = ::setting.frame_data.red
-                green = ::setting.frame_data.green
-                blue = ::setting.frame_data.blue
-                alpha =::setting.frame_data.alpha
-            };
-            local scale = {
-                x = ::setting.frame_data.SX
-                y = ::setting.frame_data.SY
-            };
-
             foreach(k in ["frame_data","flag_state","flag_attack"]){
                 local text = this[k].text <- ::font.CreateSystemString("");
                 text.sy = 0.75;
-                text.red = color.red;
-                text.green = color.green;
-                text.blue = color.blue;
-                text.alpha = color.alpha;
+                text.red = text.green = text.blue = text.alpha = 1;
                 text.ConnectRenderSlot(::graphics.slot.info,1);
             }
 
@@ -279,10 +267,7 @@ function FrameDataDisplay(_team){
             for (local i = 0; i < 12;++i) {
                 local text = this.metadata.texts[i] = ::font.CreateSystemString("");
                 text.sy = 0.75;
-                text.red = color.red;
-                text.green = color.green;
-                text.blue = color.blue;
-                text.alpha = color.alpha;
+                text.red = text.green = text.blue = text.alpha = 1;
                 text.ConnectRenderSlot(::graphics.slot.info,1);
             }
 

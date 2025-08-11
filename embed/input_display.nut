@@ -13,8 +13,8 @@ function CreateInput_display(idx,player_config){
         text = []
         config = player_config
         notation = split(player_config.notation,",")
-        pos = [player_config.X,player_config.Y]
-        scale = [player_config.SX,player_config.SY]
+        pos = [player_config.x,player_config.y]
+        scale = [player_config.SX,player_config.sy]
 
         function getinputs(idx){
             local inputs = 0;
@@ -102,13 +102,13 @@ function CreateInput_display(idx,player_config){
     for (local i = 0; i < input.config.list_max; ++i) {
         input.text.append(::UI.CreateText(
             0,"",
-            player_config.SX,player_config.SY,
+            player_config.SX,player_config.sy,
             player_config.red,player_config.green,player_config.blue,player_config.alpha,
             ::graphics.slot.status,1
             ,function(){},
             function (root){
-                root.x = player_config.X;
-                root.y = (player_config.Y - (i * player_config.offset));
+                root.x = player_config.x;
+                root.y = (player_config.y - (i * player_config.offset));
                 root.Set <- function (text) {this.text.Set(text);}
             }
         ));

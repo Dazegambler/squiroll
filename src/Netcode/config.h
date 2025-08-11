@@ -85,15 +85,15 @@ uint32_t get_hitbox_player_unhit_ungrab_color();
 uint32_t get_hitbox_misc_hurt_color();
 
 bool get_frame_data_enabled();
-int32_t get_frame_data_x();
-int32_t get_frame_data_y();
-float get_frame_data_scale_x();
-float get_frame_data_scale_y();
-uint32_t get_frame_data_color();
+// int32_t get_frame_data_x();
+// int32_t get_frame_data_y();
+// float get_frame_data_scale_x();
+// float get_frame_data_scale_y();
+// uint32_t get_frame_data_color();
 int32_t get_frame_data_timer();
-bool get_frame_data_flags();
+// bool get_frame_data_flags();
 bool get_frame_data_frame_stepping();
-bool get_frame_data_framebar();
+// bool get_frame_data_framebar();
 
 int8_t get_ipv6_state();
 bool get_netplay_state();

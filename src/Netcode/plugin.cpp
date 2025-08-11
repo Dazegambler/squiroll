@@ -133,11 +133,12 @@ bool sq_eval(HSQUIRRELVM v, HSQOBJECT root, const SQChar *code, bool get_result 
 }
 
 static inline void set_ping_constants(HSQUIRRELVM v) {
+    sq_setstring(v, _SC("config_section"),"ping");
     sq_setbool(v, _SC("enabled"), get_ping_enabled());
-    sq_setinteger(v, _SC("X"), get_ping_x());
-    sq_setinteger(v, _SC("Y"), get_ping_y());
-    sq_setfloat(v, _SC("SX"), get_ping_scale_x());
-    sq_setfloat(v, _SC("SY"), get_ping_scale_y());
+    sq_setinteger(v, _SC("x"), get_ping_x());
+    sq_setinteger(v, _SC("y"), get_ping_y());
+    sq_setfloat(v, _SC("sx"), get_ping_scale_x());
+    sq_setfloat(v, _SC("sy"), get_ping_scale_y());
     uint32_t color = get_ping_color();
     sq_setfloat(v, _SC("blue"), (float)(uint8_t)color / 255.0f);
     sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);
@@ -147,11 +148,12 @@ static inline void set_ping_constants(HSQUIRRELVM v) {
 }
 
 static inline void set_inputp1_constants(HSQUIRRELVM v) {
+    sq_setstring(v, _SC("config_section"),"input_display_p1");
     sq_setbool(v, _SC("enabled"), get_inputp1_enabled());
-    sq_setinteger(v, _SC("X"), get_inputp1_x());
-    sq_setinteger(v, _SC("Y"), get_inputp1_y());
-    sq_setfloat(v, _SC("SX"), get_inputp1_scale_x());
-    sq_setfloat(v, _SC("SY"), get_inputp1_scale_y());
+    sq_setinteger(v, _SC("x"), get_inputp1_x());
+    sq_setinteger(v, _SC("y"), get_inputp1_y());
+    sq_setfloat(v, _SC("sx"), get_inputp1_scale_x());
+    sq_setfloat(v, _SC("sy"), get_inputp1_scale_y());
     sq_setinteger(v, _SC("offset"), get_inputp1_offset());
     sq_setinteger(v, _SC("list_max"), get_inputp1_count());
     uint32_t color = get_inputp1_color();
@@ -166,11 +168,12 @@ static inline void set_inputp1_constants(HSQUIRRELVM v) {
 }
 
 static inline void set_inputp2_constants(HSQUIRRELVM v) {
+    sq_setstring(v, _SC("config_section"),"input_display_p2");
     sq_setbool(v, _SC("enabled"), get_inputp2_enabled());
-    sq_setinteger(v, _SC("X"), get_inputp2_x());
-    sq_setinteger(v, _SC("Y"), get_inputp2_y());
-    sq_setfloat(v, _SC("SX"), get_inputp2_scale_x());
-    sq_setfloat(v, _SC("SY"), get_inputp2_scale_y());
+    sq_setinteger(v, _SC("x"), get_inputp2_x());
+    sq_setinteger(v, _SC("y"), get_inputp2_y());
+    sq_setfloat(v, _SC("sx"), get_inputp2_scale_x());
+    sq_setfloat(v, _SC("sy"), get_inputp2_scale_y());
     sq_setinteger(v, _SC("offset"), get_inputp2_offset());
     sq_setinteger(v, _SC("list_max"), get_inputp2_count());
     uint32_t color = get_inputp2_color();
@@ -185,24 +188,26 @@ static inline void set_inputp2_constants(HSQUIRRELVM v) {
 }
 
 static inline void set_frame_data_constants(HSQUIRRELVM v) {
+    sq_setstring(v, _SC("config_section"),"frame_data_display");
     sq_setbool(v, _SC("enabled"), get_frame_data_enabled());
-    sq_setbool(v, _SC("input_flags"), get_frame_data_flags());
+    // sq_setbool(v, _SC("input_flags"), get_frame_data_flags());
     sq_setbool(v, _SC("frame_stepping"), get_frame_data_frame_stepping());
-    sq_setbool(v, _SC("framebar"), get_frame_data_framebar());
-    sq_setinteger(v, _SC("X"), get_frame_data_x());
-    sq_setinteger(v, _SC("Y"), get_frame_data_y());
-    sq_setfloat(v, _SC("SX"), get_frame_data_scale_x());
-    sq_setfloat(v, _SC("SY"), get_frame_data_scale_y());
-    uint32_t color = get_frame_data_color();
-    sq_setfloat(v, _SC("blue"), (float)(uint8_t)color / 255.0f);
-    sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);
-    sq_setfloat(v, _SC("red"), (float)(uint8_t)(color >> 16) / 255.0f);
-    sq_setfloat(v, _SC("alpha"), (float)(uint8_t)(color >> 24) / 255.0f);
+    // sq_setbool(v, _SC("framebar"), get_frame_data_framebar());
+    // sq_setinteger(v, _SC("X"), get_frame_data_x());
+    // sq_setinteger(v, _SC("Y"), get_frame_data_y());
+    // sq_setfloat(v, _SC("SX"), get_frame_data_scale_x());
+    // sq_setfloat(v, _SC("SY"), get_frame_data_scale_y());
+    // uint32_t color = get_frame_data_color();
+    // sq_setfloat(v, _SC("blue"), (float)(uint8_t)color / 255.0f);
+    // sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);
+    // sq_setfloat(v, _SC("red"), (float)(uint8_t)(color >> 16) / 255.0f);
+    // sq_setfloat(v, _SC("alpha"), (float)(uint8_t)(color >> 24) / 255.0f);
     int32_t timer = get_frame_data_timer();
     sq_setinteger(v, _SC("timer"), timer > 0 ? timer : 0);
 }
 
 static inline void set_network_constants(HSQUIRRELVM v) {
+    sq_setstring(v, _SC("config_section"),"network");
     sq_setbool(v, _SC("hide_opponent_name"), get_hide_name_enabled());
     sq_setbool(v,_SC("hide_ip"), get_hide_ip_enabled());
     sq_setbool(v, _SC("share_watch_ip"), get_share_watch_ip_enabled());
@@ -595,19 +600,6 @@ extern "C" {
                     sq_pushfloat(v, a > b ? a : b);
                     return 1;
                 });
-                // sq_setfunc(v, _SC("loop"),[](HSQUIRRELVM v) -> SQInteger {
-                //     SQFloat val,min,max;
-                //     if (sq_gettop(v) != 4 ||
-                //         SQ_FAILED(sq_getfloat(v, 2, &val)) ||
-                //         SQ_FAILED(sq_getfloat(v, 3, &min)) ||
-                //         SQ_FAILED(sq_getfloat(v, 4, &max)) 
-                //     ) {
-                //         return sq_throwerror(v, "Invalid arguments, expected: <Val> <minVal> <maxVal>");
-                //     }
-                //     SQFloat result = val > max ? (val % max) - 1 : (val < min ? max - val : val);
-                //     sq_pushfloat(v, result);
-                //     return 1;
-                // });
                 sq_setfunc(v, _SC("rgbaToHex"), [](HSQUIRRELVM v) -> SQInteger {
                     SQFloat r, g, b, a;
                     if (sq_gettop(v) != 5 || 

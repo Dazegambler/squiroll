@@ -1,11 +1,11 @@
-function PtrRef(_src, _key) {
+function strongref(_src, _key) {
     return {
         src = _src
         key = _key
-        function GetVal() {
+        function get() {
             return this.src[this.key];
         }
-        function SetVal(value) {
+        function set(value) {
             return this.src[this.key] <- value;
         }
     };
@@ -14,6 +14,9 @@ function PtrRef(_src, _key) {
 function TextObj(str) {
     return {
         text = null
+        calc_x = null
+        text_max_length = 0
+        x = 0
         str = str
 
         function Initialize(font = ::font.system) {
@@ -28,7 +31,10 @@ function TextObj(str) {
         }
 
         function Update() {
-            this.text.Set(this.str());
+            this.text.Set(this.str.get());
+            this.calc_x();
+            // this.text.sx = ::math.min(1, this.text_max_length / this.text.width);
+            // this.text.x = this.x - ((this.text.width * this.text.sx) / 2);
         }
 
         function SetWorldTransform(mat_world) {
@@ -43,8 +49,8 @@ function TextObj(str) {
         }
 
         function Set(str) {
-            this.str = str;
-            this.text.Set(this.str());
+            this.str.set(str);
+            // this.text.Set(this.str.get());
         }
 
         function SetOutline(enabled) {
@@ -112,13 +118,12 @@ function CreateText(type,str,SY,SX,red,green,blue,alpha,slot,priority,Update = f
     return obj;
 }
 
-function EnumSelector (values) {
+function EnumSelector (val,values) {
     return {
-        active = false
+        value = val
         value_table = values
         text = ::font.CreateSystemString("")
         cursor = null
-        highlight = this.UIItemHighlight()
         visible = true
         x = 0
         y = 0
@@ -136,13 +141,11 @@ function EnumSelector (values) {
         }
 
         function Update() {
+            if (!this.cursor.active)this.cursor.val = this.value.get().tointeger();
             this.text.Set(value_table[this.cursor.val]);
             this.text.visible = this.visible;
             this.text.x = this.x;
             this.text.y = this.y;
-            if (this.active = this.cursor.active) {
-                this.highlight.Set(this.left,this.top,this.right,this.bottom);
-            } else this.highlight.Reset();
         }
 
         function SetWorldTransform(mat_world) {
@@ -194,9 +197,10 @@ function Button(str,onclick) {
     ];
 }
 
-function Enum(str,value,onedit,options = ["disabled","enabled"]) {
+function Enum(str,_value,onedit,options = ["disabled","enabled"]) {
+    local value = this.strongref(_value[0],_value[1]);
     return [function (page, index) {
-        local obj = [::font.CreateSystemString(str),::UI.EnumSelector(options)];
+        local obj = [::font.CreateSystemString(str),::UI.EnumSelector(value,options)];
         obj[0].ConnectRenderSlot(::graphics.slot.front,0);
         obj[0].y = this.item_y + index * this.item_margin - 34;
         obj[0].sx = ::math.min(1, this.item_max_length / obj[0].width);
@@ -220,11 +224,12 @@ function Enum(str,value,onedit,options = ["disabled","enabled"]) {
         obj[1].top = obj[1].y + 10;
         obj[1].bottom = obj[1].top + h + 3;
         obj[1].cursor = this.Cursor(1, options.len(),::input_all);
-        if (typeof value == "bool") {
-            obj[1].cursor.val = value ? 1 : 0;
-        }else if (typeof value == "integer") {
-            obj[1].cursor.val = value % options.len();
-        }
+        // local val = value.get();
+        // if (typeof val == "bool") {
+        //     obj[1].cursor.val = val ? 1 : 0;
+        // }else if (typeof val == "integer") {
+        //     obj[1].cursor.val = val % options.len();
+        // }
 
         page.item.push(obj);
         },
@@ -232,7 +237,8 @@ function Enum(str,value,onedit,options = ["disabled","enabled"]) {
     ];
 }
 
-function ValueField(str,value,onedit = function(...){}) {
+function ValueField(str,_value,onedit = function(...){}) {
+    local value = this.strongref(_value[0],_value[1]);
     return[function (page, index) {
         local obj = [::font.CreateSystemString(str), ::UI.TextObj(value)];
         obj[0].ConnectRenderSlot(::graphics.slot.front,0);
@@ -243,8 +249,14 @@ function ValueField(str,value,onedit = function(...){}) {
         obj[1].blue = 0;
         obj[1].ConnectRenderSlot(::graphics.slot.front,0);
         obj[1].y = this.item_y + index * this.item_margin - 34;
-        obj[1].sx = ::math.min(1, this.item_max_length / obj[1].width);
-        obj[1].x = ::graphics.width - this.item_x - (obj[1].width * obj[1].sx);
+        local max_length = this.item_max_length;
+        local x = this.item_x;
+        obj[1].calc_x = function () {
+            this.text.sx = ::math.min(1, max_length / this.text.width);
+            this.text.x = ::graphics.width - x - (this.text.width * this.text.sx);
+        };
+        // obj[1].sx = ::math.min(1, this.item_max_length / obj[1].width);
+        // obj[1].x = ::graphics.width - this.item_x - (obj[1].width * obj[1].sx);
 
         page.item.push(obj);
     },
@@ -282,9 +294,10 @@ function Menu(...) {
         item_space = 20
         item_margin = 42
         item_max_length = 288
+        highlight = this.UIItemHighlight()
 
         function Initialize() {
-            this.select_obj <- {};
+            // this.select_obj <- {};
             this.pager <- this.UIPager();
             this.page <- [];
             foreach (i,pag in this.data) {
@@ -332,7 +345,7 @@ function Menu(...) {
             ::loop.DeleteTask(this);
             this.pager = null;
             this.page = null;
-            this.select_obj = null;
+            // this.select_obj = null;
         }
     };
     this.anime.action <- this.weakref();
@@ -388,7 +401,8 @@ function Menu(...) {
             this.cursor_index.val = ::math.min(this.cursor_index.item_num - 1, this.cursor_index.val + this.cursor_index.diff);
         }
         if (this.cursor_index.ok){
-            this.proc[this.cursor_page.val][this.cursor_index.val].call(this,this.cursor_page.val,this.cursor_index.val);
+            local item = this.anime.page[this.cursor_page.val].item[this.cursor_index.val];
+            this.proc[this.cursor_page.val][this.cursor_index.val].call(this,item);
         }else if (this.cursor_index.cancel){
             ::loop.End();
         }

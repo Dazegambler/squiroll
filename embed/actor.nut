@@ -114,8 +114,10 @@ function CreatePlayer( actor_name, src_name, color, mode, difficulty )
 	local releaseactor = t.shot_class.ReleaseActor;
 	t.shot_class.ReleaseActor <- function () {
 		local frame_data = ::battle.frame_task;
-		local idx = frame_data.bullets.find(this);
-		if (idx)frame_data.bullets.remove(idx);
+		if (frame_data) {
+			local idx = frame_data.bullets.find(this);
+			if (idx)frame_data.bullets.remove(idx);
+		}
 		releaseactor();
 	};
 	local setshot = t.shot_class.SetShot;

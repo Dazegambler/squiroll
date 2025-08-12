@@ -276,27 +276,6 @@ function Create( param )
 }
 
 function framedisplaysetup() {
-	/*
-	subState
-	team.combo_count is for how much you're being comboed
-	current issues:
-	projectiles and delayed child actors fucking up frame data
-	installs
-	IsAttack() continously attacking still increases the count
-	value types:
-	0 nothing
-	1 melee,grab A
-	2 bullet,occult B A+B
-	3 special C
-	4 SC A+C
-	5 LW C+E
-	6 tag E
-	check p1.motion to have frame data of one attack only
-	2500 SCs
-	1800-1802 grab
-	melee 2048,128,2
-	projectile 4096,128,4
-	*/
 	::setting.frame_data.update_consts();
 	local frame = FrameDataDisplay(0);
 	AddTask(frame);
@@ -310,22 +289,6 @@ function inputdisplaysetup(player) {
 	this.input_task = input;
 	AddTask(input);
 }
-
-
-
-// function patch_prefix(obj, name, prefix_func) {
-//     local delegate = obj.getdelegate();
-//     if (!delegate || typeof delegate != "table") throw "No valid delegate";
-
-//     local orig = delegate[name];
-//     if (typeof orig != "function") throw "Target is not a function";
-
-//     delegate[name] = function(...) {
-//         prefix_func(vargv);
-//         return orig.acall(obj, vargv);
-//     };
-//     setdelegate(obj, delegate);
-// }
 
 function HideUISetup() {
 	// local test = ::font.CreateSystemString(" \f");
@@ -367,7 +330,7 @@ function HideUISetup() {
 			if (!(now - this.lastinput)){
 				if (!(this.active = !this.active))::battle.gauge.Hide();
 				else ::battle.gauge.Show(0);
-				::battle.frame_task.full = !this.active;
+				if (::battle.frame_task)::battle.frame_task.full = !this.active;
 				this.lastinput = 0;
 				::sound.PlaySE("sys_ok");
 
@@ -375,8 +338,6 @@ function HideUISetup() {
 		}
 		if (z && (!(z % 10) || z == 1)){
 			::battle.frame_lock = false;
-			local test = ::font.CreateSystemString(" /");
-			::print(format("width:%d\n",test.width - 12));
 			// ::debug.test(player);
 		}
 		if (w == 1) {

@@ -247,26 +247,6 @@ function Create( param )
 				this.text.x = ::setting.ping.x - ((this.text.width * this.text.sx) / 2);
 				this.text.y = (::setting.ping.y - this.text.height);
 			};
-			// ::UI.CreateText(
-			// 	0,"",
-			// 	::setting.ping.sx,
-			// 	::setting.ping.sy,
-			// 	::setting.ping.red,
-			// 	::setting.ping.green,
-			// 	::setting.ping.blue,
-			// 	::setting.ping.alpha,
-			// 	::graphics.slot.status,1,
-			// 	function () {
-			// 		local delay = ::network.GetDelay();
-			// 		::rollback.update_delay(delay);
-			// 		local str = "ping:" + delay;
-			// 		if (::setting.ping.input_delay) str += " [" + ::rollback.get_buffered_frames() + "f]";
-			// 		if (::rollback.resyncing()) str += " (resyncing)";
-			// 		this.text.Set(str);
-			// 		this.text.x = ::setting.ping.x - ((this.text.width * this.text.sx) / 2);
-			// 		this.text.y = (::setting.ping.y - this.text.height);
-			// 	}
-			// );
 			this.ping_obj.ConnectRenderSlot(::graphics.slot.status,1);
 			this.ping_task = this.ping_obj;
 			::loop.AddTask(this.ping_obj);

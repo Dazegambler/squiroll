@@ -230,13 +230,6 @@ function Enum(str,_value,onedit,options = ["disabled","enabled"]) {
         obj[1].top = obj[1].y + 10;
         obj[1].bottom = obj[1].top + h + 3;
         obj[1].cursor = this.Cursor(1, options.len(),::input_all);
-        // local val = value.get();
-        // if (typeof val == "bool") {
-        //     obj[1].cursor.val = val ? 1 : 0;
-        // }else if (typeof val == "integer") {
-        //     obj[1].cursor.val = val % options.len();
-        // }
-
         page.item.push(obj);
         },
         onedit
@@ -261,9 +254,6 @@ function ValueField(str,_value,onedit = function(...){}) {
             this.text.sx = ::math.min(1, max_length / this.text.width);
             this.text.x = ::graphics.width - x - (this.text.width * this.text.sx);
         };
-        // obj[1].sx = ::math.min(1, this.item_max_length / obj[1].width);
-        // obj[1].x = ::graphics.width - this.item_x - (obj[1].width * obj[1].sx);
-
         page.item.push(obj);
     },
     onedit
@@ -303,14 +293,13 @@ function Menu(...) {
         highlight = this.UIItemHighlight()
 
         function Initialize() {
-            // this.select_obj <- {};
             this.pager <- this.UIPager();
             this.page <- [];
             foreach (i,pag in this.data) {
                 local p = {};
                 p.x <- 0;
                 p.y <- 0;
-                p.visible <- true;
+                p.visible <- false;
                 this.page.append(p);
                 local ui = this.UIBase();
                 ui.target = p.weakref();
@@ -319,7 +308,7 @@ function Menu(...) {
 
                 foreach(i,elem in pag)elem(p,i);
             }
-            this.pager.Activate(0);
+            this.pager.Activate(0,-2000);
             ::loop.AddTask(this);
         }
 
@@ -351,7 +340,6 @@ function Menu(...) {
             ::loop.DeleteTask(this);
             this.pager = null;
             this.page = null;
-            // this.select_obj = null;
         }
     };
     this.anime.action <- this.weakref();

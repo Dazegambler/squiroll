@@ -178,13 +178,13 @@ function FrameDataDisplay(_team){
         }
 
         framebar = {
-            max_w = 858
+            max_w = ::setting.frame_data.width
             cancel = []
             bar = [] //0:startup,1:active,2:recovery,3:misc
             function Render(data) {
-                local y = 525;
-                local max_sx = 0.75;
-                local x = 125;
+                local y = ::setting.frame_data.y;
+                local max_sx = ::setting.frame_data.sx;
+                local x = ::setting.frame_data.x;
 
                 //cancel bar
                 local cancels = [" "," "," "," "," "," "," "];
@@ -290,7 +290,7 @@ function FrameDataDisplay(_team){
             for (local a = 0; a < 7; ++a) {
                 local color = colors[a / 3][a % 3];
                 local text = ::font.CreateSystemString("");
-                text.sy = 0.75;
+                text.sy = ::setting.frame_data.sy;
                 text.red = color[0];
                 text.green = color[1];
                 text.blue = color[2];
@@ -304,7 +304,7 @@ function FrameDataDisplay(_team){
                 if (i < color.len())color[i] = 1.0;
                 else color = [0.5,0.5,0.5];
                 local text = ::font.CreateSystemString("");
-                text.sy = 0.75;
+                text.sy = ::setting.frame_data.sy;
                 text.red = color[1];
                 text.green = color[0];
                 text.blue = color[2];
@@ -451,6 +451,7 @@ function FrameDataDisplay(_team){
                 }
             }else {
                 this.ClearAll();
+                this.current_data = this.NewData();
             }
         }
     };

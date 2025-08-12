@@ -55,13 +55,45 @@ function CreatePlayer( actor_name, src_name, color, mode, difficulty )
 	local setshot = t.player_class.SetShot;
 	t.player_class.SetShot <- function (x_, y_, dir_, init_, t_, pare_ = null) {
 		local a = setshot(x_,y_, dir_,init_,t_,pare_);
-		local frame_data = ::battle.frame_task;
-		if(frame_data &&
-			"current" in frame_data.team &&
-			frame_data.team.current &&
-			this == frame_data.team.current
-		) {
-			::battle.frame_task.bullets.append(a);
+		if (::setting.frame_data.enabled) {
+			local frame_data = ::battle.frame_task;
+			if(frame_data &&
+				"current" in frame_data.team &&
+				frame_data.team.current &&
+				this == frame_data.team.current
+			) {
+				::battle.frame_task.bullets.append(a);
+			}
+		}
+		return a;
+	};
+	local setshotstencil = t.player_class.SetShotStencil;
+	t.player_class.SetShotStencil <- function (x_, y_, dir_, init_, t_, pare_ = null) {
+		local a = setshotstencil(x_,y_, dir_,init_,t_,pare_);
+		if (::setting.frame_data.enabled) {
+			local frame_data = ::battle.frame_task;
+			if(frame_data &&
+				"current" in frame_data.team &&
+				frame_data.team.current &&
+				this == frame_data.team.current
+			) {
+				::battle.frame_task.bullets.append(a);
+			}
+		}
+		return a;
+	};
+	local setobject = t.player_class.SetObject;
+	t.player_class.SetObject <- function (x_, y_, dir_, init_, t_, pare_ = null) {
+		local a = setobject(x_,y_, dir_,init_,t_,pare_);
+		if (::setting.frame_data.enabled) {
+			local frame_data = ::battle.frame_task;
+			if(frame_data &&
+				"current" in frame_data.team &&
+				frame_data.team.current &&
+				this == frame_data.team.current
+			) {
+				::battle.frame_task.bullets.append(a);
+			}
 		}
 		return a;
 	};

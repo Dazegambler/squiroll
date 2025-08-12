@@ -69,7 +69,11 @@ CONFIG_INT(PING, X, "x", 640);
 CONFIG_INT(PING, Y, "y", 705);
 CONFIG_FLT(PING, SCALE_X, "scale_x", 1.0);
 CONFIG_FLT(PING, SCALE_Y, "scale_y", 1.0);
-CONFIG_HEX(PING, COLOR, "color", FFFFFFFF);
+CONFIG_BOL(PING, SIMPLE, "simple", true);
+CONFIG_INT(PING, GREAT_THRESHOLD, "great_threshold", 60);
+CONFIG_INT(PING, GOOD_THRESHOLD, "good_threshold", 130);
+CONFIG_INT(PING, BAD_THRESHOLD, "bad_threshold", 200);
+// CONFIG_HEX(PING, COLOR, "color", FFFFFFFF);
 CONFIG_BOL(PING, FRAMES, "frames", true);
 
 #define INPUT1_SECTION_NAME "input_display_p1"
@@ -100,10 +104,11 @@ CONFIG_BOL(INPUT2, FRAME_COUNT, "frame_count", false);
 
 #define FRAME_DATA_SECTION_NAME "frame_data_display"
 CONFIG_BOL(FRAME_DATA, ENABLED, "enabled", false);
-// CONFIG_INT(FRAME_DATA, X, "x", 270);
-// CONFIG_INT(FRAME_DATA, Y, "y", 550);
-// CONFIG_FLT(FRAME_DATA, SCALE_X, "scale_x", 0.75);
-// CONFIG_FLT(FRAME_DATA, SCALE_Y, "scale_y", 1.0);
+CONFIG_INT(FRAME_DATA, X, "x", 270);
+CONFIG_INT(FRAME_DATA, Y, "y", 530);
+CONFIG_FLT(FRAME_DATA, SCALE_X, "scale_x", 0.75);
+CONFIG_FLT(FRAME_DATA, SCALE_Y, "scale_y", 0.75);
+CONFIG_INT(FRAME_DATA, WIDTH, "width", 720);
 // CONFIG_HEX(FRAME_DATA, COLOR, "color", FFFFFFFF);
 CONFIG_INT(FRAME_DATA, TIMER, "timer", 240);
 // CONFIG_BOL(FRAME_DATA, FLAGS, "input_flags", false);
@@ -162,7 +167,11 @@ static inline constexpr const char
         CONFIG_DEFAULT(PING, Y),
         CONFIG_DEFAULT(PING, SCALE_X),
         CONFIG_DEFAULT(PING, SCALE_Y),
-        CONFIG_DEFAULT(PING, COLOR),
+        CONFIG_DEFAULT(PING, SIMPLE),
+        CONFIG_DEFAULT(PING, GREAT_THRESHOLD),
+        CONFIG_DEFAULT(PING, GOOD_THRESHOLD),
+        CONFIG_DEFAULT(PING, BAD_THRESHOLD),
+        // CONFIG_DEFAULT(PING, COLOR),
         CONFIG_DEFAULT(PING, FRAMES),
 
         CONFIG_DEFAULT(INPUT1, ENABLED),
@@ -202,10 +211,11 @@ static inline constexpr const char
         CONFIG_DEFAULT(HITBOX_VIS, MISC_HURT_COLOR),
 
         CONFIG_DEFAULT(FRAME_DATA, ENABLED),
-        // CONFIG_DEFAULT(FRAME_DATA, X),
-        // CONFIG_DEFAULT(FRAME_DATA, Y),
-        // CONFIG_DEFAULT(FRAME_DATA, SCALE_X),
-        // CONFIG_DEFAULT(FRAME_DATA, SCALE_Y),
+        CONFIG_DEFAULT(FRAME_DATA, X),
+        CONFIG_DEFAULT(FRAME_DATA, Y),
+        CONFIG_DEFAULT(FRAME_DATA, SCALE_X),
+        CONFIG_DEFAULT(FRAME_DATA, SCALE_Y),
+        CONFIG_DEFAULT(FRAME_DATA, WIDTH),
         // CONFIG_DEFAULT(FRAME_DATA, COLOR),
         CONFIG_DEFAULT(FRAME_DATA, TIMER),
         // CONFIG_DEFAULT(FRAME_DATA, FLAGS),
@@ -428,6 +438,11 @@ bool get_ping_enabled() {
     return GET_BOOL_CONFIG(PING, ENABLED);
 }
 
+static char PING_SIMPLE_BUFFER[8]{ '\0' };
+bool get_ping_simple() {
+    return GET_BOOL_CONFIG(PING, SIMPLE);
+}
+
 static char PING_X_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
 int32_t get_ping_x() {
     return GET_INT_CONFIG(PING, X);
@@ -448,10 +463,25 @@ float get_ping_scale_y() {
     return GET_FLOAT_CONFIG(PING, SCALE_Y);
 }
 
-static char PING_COLOR_BUFFER[INTEGER_BUFFER_SIZE<uint32_t>]{ '\0' };
-uint32_t get_ping_color() {
-    return GET_HEX_CONFIG(PING, COLOR);
+static char PING_GREAT_THRESHOLD_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
+int32_t get_ping_great_thresh() {
+    return GET_INT_CONFIG(PING, GREAT_THRESHOLD);
 }
+
+static char PING_GOOD_THRESHOLD_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
+int32_t get_ping_good_thresh() {
+    return GET_INT_CONFIG(PING, GOOD_THRESHOLD);
+}
+
+static char PING_BAD_THRESHOLD_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
+int32_t get_ping_bad_thresh() {
+    return GET_INT_CONFIG(PING, BAD_THRESHOLD);
+}
+
+// static char PING_COLOR_BUFFER[INTEGER_BUFFER_SIZE<uint32_t>]{ '\0' };
+// uint32_t get_ping_color() {
+//     return GET_HEX_CONFIG(PING, COLOR);
+// }
 
 static char PING_FRAMES_BUFFER[8]{ '\0' };
 bool get_ping_frames() {
@@ -751,25 +781,30 @@ bool get_frame_data_frame_stepping() {
     return GET_BOOL_CONFIG(FRAME_DATA, FRAME_STEP);
 }
 
-// static char FRAME_DATA_X_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
-// int32_t get_frame_data_x() {
-//     return GET_INT_CONFIG(FRAME_DATA, X);
-// }
+static char FRAME_DATA_WIDTH_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{'\0'};
+int32_t get_frame_data_width() {
+    return GET_INT_CONFIG(FRAME_DATA,WIDTH);
+}
 
-// static char FRAME_DATA_Y_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{'\0'};
-// int32_t get_frame_data_y() {
-//     return GET_INT_CONFIG(FRAME_DATA, Y);
-// }
+static char FRAME_DATA_X_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
+int32_t get_frame_data_x() {
+    return GET_INT_CONFIG(FRAME_DATA, X);
+}
 
-// static char FRAME_DATA_SCALE_X_BUFFER[FLOAT_BUFFER_SIZE<float>]{'\0'};
-// float get_frame_data_scale_x() {
-//     return GET_FLOAT_CONFIG(FRAME_DATA, SCALE_X);
-// }
+static char FRAME_DATA_Y_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{'\0'};
+int32_t get_frame_data_y() {
+    return GET_INT_CONFIG(FRAME_DATA, Y);
+}
 
-// static char FRAME_DATA_SCALE_Y_BUFFER[FLOAT_BUFFER_SIZE<float>]{'\0'};
-// float get_frame_data_scale_y() {
-//     return GET_FLOAT_CONFIG(FRAME_DATA, SCALE_Y);
-// }
+static char FRAME_DATA_SCALE_X_BUFFER[FLOAT_BUFFER_SIZE<float>]{'\0'};
+float get_frame_data_scale_x() {
+    return GET_FLOAT_CONFIG(FRAME_DATA, SCALE_X);
+}
+
+static char FRAME_DATA_SCALE_Y_BUFFER[FLOAT_BUFFER_SIZE<float>]{'\0'};
+float get_frame_data_scale_y() {
+    return GET_FLOAT_CONFIG(FRAME_DATA, SCALE_Y);
+}
 
 // static char FRAME_DATA_COLOR_BUFFER[INTEGER_BUFFER_SIZE<uint32_t>]{'\0'};
 // uint32_t get_frame_data_color() {

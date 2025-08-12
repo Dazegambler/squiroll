@@ -156,14 +156,20 @@ function EnumSelector (val,values) {
 
 function Title(str) {
     return [function (page, index) {
-            local page_name = [::font.CreateSystemString(str)];
-            page_name[0].ConnectRenderSlot(::graphics.slot.front,0);
-            page_name[0].sx = page_name[0].sy = 1.5;
-            page_name[0].red = page_name[0].blue = 0;
-            page_name[0].x = this.title_x - ((page_name[0].width * page_name[0].sx) / 2);
-            page_name[0].y = this.title_y - (page_name[0].height * page_name[0].sy);
+            local obj = [::font.CreateSystemString(str)];
 
-            page.item.append(page_name);
+            obj[0].ConnectRenderSlot(::graphics.slot.front,0);
+            obj[0].sx = obj[0].sy = 1.75;
+            obj[0].SetGradation(true);
+            obj[0].red2 = 1.0;
+            obj[0].green2 = 0.75
+            obj[0].blue2 = 0.83;
+            obj[0].red = obj[0].green = obj[0].blue = 2.0;
+            obj[0].x = this.title_x - ((obj[0].width * obj[0].sx) / 2);
+            obj[0].y = this.title_y - (obj[0].height * obj[0].sy);
+            obj[0].Set(str);
+
+            page.item.append(obj);
         },
         function (...){}
     ];

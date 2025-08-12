@@ -41,11 +41,15 @@ const char* get_lobby_port(const char* port);
 const char* get_lobby_pass(const char* pass);
 
 bool get_ping_enabled();
+bool get_ping_simple();
 int32_t get_ping_x();
 int32_t get_ping_y();
 float get_ping_scale_x();
 float get_ping_scale_y();
-uint32_t get_ping_color();
+int32_t get_ping_great_thresh();
+int32_t get_ping_good_thresh();
+int32_t get_ping_bad_thresh();
+// uint32_t get_ping_color();
 bool get_ping_frames();
 
 bool get_inputp1_enabled();
@@ -85,10 +89,11 @@ uint32_t get_hitbox_player_unhit_ungrab_color();
 uint32_t get_hitbox_misc_hurt_color();
 
 bool get_frame_data_enabled();
-// int32_t get_frame_data_x();
-// int32_t get_frame_data_y();
-// float get_frame_data_scale_x();
-// float get_frame_data_scale_y();
+int32_t get_frame_data_x();
+int32_t get_frame_data_y();
+float get_frame_data_scale_x();
+float get_frame_data_scale_y();
+int32_t get_frame_data_width();
 // uint32_t get_frame_data_color();
 int32_t get_frame_data_timer();
 // bool get_frame_data_flags();

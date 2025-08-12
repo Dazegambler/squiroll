@@ -14,7 +14,7 @@ function CreateInput_display(idx,player_config){
         config = player_config
         notation = split(player_config.notation,",")
         pos = [player_config.x,player_config.y]
-        scale = [player_config.SX,player_config.sy]
+        scale = [player_config.sx,player_config.sy]
 
         function getinputs(idx){
             local inputs = 0;
@@ -102,7 +102,7 @@ function CreateInput_display(idx,player_config){
     for (local i = 0; i < input.config.list_max; ++i) {
         input.text.append(::UI.CreateText(
             0,"",
-            player_config.SX,player_config.sy,
+            player_config.sx,player_config.sy,
             player_config.red,player_config.green,player_config.blue,player_config.alpha,
             ::graphics.slot.status,1
             ,function(){},

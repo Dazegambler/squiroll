@@ -135,15 +135,19 @@ bool sq_eval(HSQUIRRELVM v, HSQOBJECT root, const SQChar *code, bool get_result 
 static inline void set_ping_constants(HSQUIRRELVM v) {
     sq_setstring(v, _SC("config_section"),"ping");
     sq_setbool(v, _SC("enabled"), get_ping_enabled());
+    sq_setbool(v, _SC("simple"), get_ping_simple());
     sq_setinteger(v, _SC("x"), get_ping_x());
     sq_setinteger(v, _SC("y"), get_ping_y());
     sq_setfloat(v, _SC("sx"), get_ping_scale_x());
     sq_setfloat(v, _SC("sy"), get_ping_scale_y());
-    uint32_t color = get_ping_color();
-    sq_setfloat(v, _SC("blue"), (float)(uint8_t)color / 255.0f);
-    sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);
-    sq_setfloat(v, _SC("red"), (float)(uint8_t)(color >> 16) / 255.0f);
-    sq_setfloat(v, _SC("alpha"), (float)(uint8_t)(color >> 24) / 255.0f);
+    sq_setinteger(v, _SC("great_threshold"), get_ping_great_thresh());
+    sq_setinteger(v, _SC("good_threshold"), get_ping_good_thresh());
+    sq_setinteger(v, _SC("bad_threshold"), get_ping_bad_thresh());
+    // uint32_t color = get_ping_color();
+    // sq_setfloat(v, _SC("blue"), (float)(uint8_t)color / 255.0f);
+    // sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);
+    // sq_setfloat(v, _SC("red"), (float)(uint8_t)(color >> 16) / 255.0f);
+    // sq_setfloat(v, _SC("alpha"), (float)(uint8_t)(color >> 24) / 255.0f);
     sq_setbool(v, _SC("input_delay"), get_ping_frames());
 }
 
@@ -193,10 +197,11 @@ static inline void set_frame_data_constants(HSQUIRRELVM v) {
     // sq_setbool(v, _SC("input_flags"), get_frame_data_flags());
     sq_setbool(v, _SC("frame_stepping"), get_frame_data_frame_stepping());
     // sq_setbool(v, _SC("framebar"), get_frame_data_framebar());
-    // sq_setinteger(v, _SC("X"), get_frame_data_x());
-    // sq_setinteger(v, _SC("Y"), get_frame_data_y());
-    // sq_setfloat(v, _SC("SX"), get_frame_data_scale_x());
-    // sq_setfloat(v, _SC("SY"), get_frame_data_scale_y());
+    sq_setinteger(v, _SC("x"), get_frame_data_x());
+    sq_setinteger(v, _SC("y"), get_frame_data_y());
+    sq_setinteger(v, _SC("width"),get_frame_data_width());
+    sq_setfloat(v, _SC("sx"), get_frame_data_scale_x());
+    sq_setfloat(v, _SC("sy"), get_frame_data_scale_y());
     // uint32_t color = get_frame_data_color();
     // sq_setfloat(v, _SC("blue"), (float)(uint8_t)color / 255.0f);
     // sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);

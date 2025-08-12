@@ -125,9 +125,11 @@ function Create( param )
 		this.PracticeRestart = function () {
 			this.UI_task.active = true;
 			this.frame_task.full = !this.UI_task.active;
+			this.frame_task.ClearAll();
+			this.frame_task.current_data = this.frame_task.NewData();
 			practicerestart();
 		};
-		HideUISetup(60);
+		HideUISetup();
 		framedisplaysetup();
 		inputdisplaysetup(0);
 		inputdisplaysetup(1);
@@ -151,7 +153,7 @@ function Create( param )
 		if (::network.IsActive())
 		{
 			::manbow.CompileFile("data/script/battle/battle_watch.nut", this);
-			HideUISetup(15);
+			HideUISetup();
 			inputdisplaysetup(1);
 			inputdisplaysetup(0);
 		}
@@ -162,7 +164,7 @@ function Create( param )
 		else
 		{
 			::manbow.CompileFile("data/script/battle/battle_replay.nut", this);
-			HideUISetup(15);
+			HideUISetup();
 			inputdisplaysetup(0);
 			inputdisplaysetup(1);
 		}
@@ -215,26 +217,57 @@ function Create( param )
 	if (::network.IsPlaying()) {
 		::setting.ping.update_consts();
 		if (::setting.ping.enabled) {
-			this.ping_obj = ::UI.CreateText(
-				0,"",
-				::setting.ping.sx,
-				::setting.ping.sy,
-				::setting.ping.red,
-				::setting.ping.green,
-				::setting.ping.blue,
-				::setting.ping.alpha,
-				::graphics.slot.status,1,
-				function () {
-					local delay = ::network.GetDelay();
-					::rollback.update_delay(delay);
-					local str = "ping:" + delay;
-					if (::setting.ping.input_delay) str += " [" + ::rollback.get_buffered_frames() + "f]";
-					if (::rollback.resyncing()) str += " (resyncing)";
-					this.text.Set(str);
-					this.text.x = ::setting.ping.x - ((this.text.width * this.text.sx) / 2);
-					this.text.y = (::setting.ping.y - this.text.height);
+			this.ping_obj = ::UI.TextObj(null);
+			delete this.ping_obj.str;
+			this.ping_obj.colors <- [[1,0,0],[1,1,0],[0,1,0],[0,0,1]];
+			this.ping_obj.Update = function () {
+				local delay = ::network.GetDelay();
+				::rollback.update_delay(delay);
+
+				local str = "";
+				local n = 3;
+				if (delay > ::setting.ping.great_threshold)n--;
+				if (delay > ::setting.ping.good_threshold)n--;
+				if (delay > ::setting.ping.bad_threshold)n--;
+				if (::setting.ping.simple) {
+					str += "[";
+					local dash = 3 - n;
+					for(local z = 0; z < n;++z)str += "/";
+					for(local i = 0; i < dash;++i)str += "_";
+					str += "]";
+				}else {
+					str += "ping:" + delay;
 				}
-			);
+				if (::setting.ping.input_delay) str += " [" + ::rollback.get_buffered_frames() + "f]";
+				if (::rollback.resyncing()) str += " (resyncing)";
+				this.text.red = this.colors[n][0];
+				this.text.green = this.colors[n][1];
+				this.text.blue = this.colors[n][2];
+				this.text.Set(str);
+				this.text.x = ::setting.ping.x - ((this.text.width * this.text.sx) / 2);
+				this.text.y = (::setting.ping.y - this.text.height);
+			};
+			// ::UI.CreateText(
+			// 	0,"",
+			// 	::setting.ping.sx,
+			// 	::setting.ping.sy,
+			// 	::setting.ping.red,
+			// 	::setting.ping.green,
+			// 	::setting.ping.blue,
+			// 	::setting.ping.alpha,
+			// 	::graphics.slot.status,1,
+			// 	function () {
+			// 		local delay = ::network.GetDelay();
+			// 		::rollback.update_delay(delay);
+			// 		local str = "ping:" + delay;
+			// 		if (::setting.ping.input_delay) str += " [" + ::rollback.get_buffered_frames() + "f]";
+			// 		if (::rollback.resyncing()) str += " (resyncing)";
+			// 		this.text.Set(str);
+			// 		this.text.x = ::setting.ping.x - ((this.text.width * this.text.sx) / 2);
+			// 		this.text.y = (::setting.ping.y - this.text.height);
+			// 	}
+			// );
+			this.ping_obj.ConnectRenderSlot(::graphics.slot.status,1);
 			this.ping_task = this.ping_obj;
 			::loop.AddTask(this.ping_obj);
 		}
@@ -314,7 +347,7 @@ function inputdisplaysetup(player) {
 //     setdelegate(obj, delegate);
 // }
 
-function HideUISetup(hold) {
+function HideUISetup() {
 	// local test = ::font.CreateSystemString(" \f");
 	// ::print(format("width:%d\n",test.width - 12));
 	//'b' 19
@@ -325,10 +358,13 @@ function HideUISetup(hold) {
 	//'S' 19
 	//'c' 17
 	//'C' 21
+	//'#' 23
 	//' ' 7
 	//'~' 14
+	//'/' 14
 	//'|-' 21
 	//'-' 13
+	//'_' 14
 	//'|' 8
 	//'[]' 28
 	//" []" 40
@@ -359,6 +395,8 @@ function HideUISetup(hold) {
 		}
 		if (z && (!(z % 10) || z == 1)){
 			::battle.frame_lock = false;
+			local test = ::font.CreateSystemString(" /");
+			::print(format("width:%d\n",test.width - 12));
 			// ::debug.test(player);
 		}
 		if (w == 1) {

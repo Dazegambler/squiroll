@@ -95,6 +95,7 @@ local function ConfigColorField(label,sqkey = null) {
 		}, "");
 	});
 }
+
 local function ConfigPage(section,_table,...) {
 	return function () {
 		this.anime.data.push([]);
@@ -108,27 +109,32 @@ local function ConfigPage(section,_table,...) {
 		this.proc.top().push(title[1]);
 	};
 }
+
 ::UI.Menu.call(this,
-	ConfigPage("network",table = ::setting.network,
+	ConfigPage("Network",table = ::setting.network,
 		ConfigBoolSelect("hide ip","hide_ip"),
 		ConfigBoolSelect("share spectate ip","share_watch_ip"),
 		ConfigBoolSelect("hide names","hide_opponent_name","hide_name"),
 		ConfigBoolSelect("hide profile images","hide_opponent_name","hide_name"),
 		ConfigBoolSelect("lobby auto switch","auto_lobby_state_switch","auto_seach_host")
 	),
-	ConfigPage("ping",table = ::setting.ping,
+	ConfigPage("Ping",table = ::setting.ping,
 		ConfigBoolSelect("enabled"),
 		ConfigBoolSelect("show input delay","input_delay","frames"),
+		ConfigBoolSelect("simple"),
+		ConfigField("great threshold","great_threshold"),
+		ConfigField("good threshold","good_threshold"),
+		ConfigField("bad threshold","bad_threshold"),
 		ConfigField("x"),
 		ConfigField("y"),
 		ConfigField("scale x","sx","scale_x"),
-		ConfigField("scale y","sy","scale_y"),
-		ConfigColorField("red"),
-		ConfigColorField("green"),
-		ConfigColorField("blue"),
-		ConfigColorField("alpha")
+		ConfigField("scale y","sy","scale_y")
+		// ConfigColorField("red"),
+		// ConfigColorField("green"),
+		// ConfigColorField("blue"),
+		// ConfigColorField("alpha")
 	),
-	ConfigPage("input display(p1)1/2",table = ::setting.input_display.p1,
+	ConfigPage("Input Display(p1) 1/2",table = ::setting.input_display.p1,
 		ConfigBoolSelect("enabled"),
 		ConfigField("x"),
 		ConfigField("y"),
@@ -139,14 +145,14 @@ local function ConfigPage(section,_table,...) {
 		ConfigColorField("blue"),
 		ConfigColorField("alpha")
 	),
-	ConfigPage("input display(p1)2/2",null,
+	ConfigPage("Input Display(p1) 2/2",null,
 		ConfigField("notation"),
 		ConfigBoolSelect("input duration","frame_count"),
 		ConfigField("offset"),
 		ConfigField("input count","list_max","count"),
 		ConfigField("timer")
 	)
-	ConfigPage("input display(p2)1/2",table = ::setting.input_display.p2,
+	ConfigPage("Input Display(p2) 1/2",table = ::setting.input_display.p2,
 		ConfigBoolSelect("enabled"),
 		ConfigField("x"),
 		ConfigField("y"),
@@ -157,11 +163,21 @@ local function ConfigPage(section,_table,...) {
 		ConfigColorField("blue"),
 		ConfigColorField("alpha")
 	),
-	ConfigPage("input display(p2)2/2",null,
+	ConfigPage("Input Display(p2) 2/2",null,
 		ConfigField("notation"),
 		ConfigBoolSelect("input duration","frame_count"),
 		ConfigField("offset"),
 		ConfigField("input count","list_max","count"),
+		ConfigField("timer")
+	),
+	ConfigPage("Frame Data Display",table = ::setting.frame_data,
+		ConfigBoolSelect("enabled"),
+		ConfigField("x"),
+		ConfigField("y"),
+		ConfigField("scale x","sx","scale_x"),
+		ConfigField("scale y","sy","scale_y"),
+		ConfigField("frame step", "frame_stepping"),
+		ConfigField("width"),
 		ConfigField("timer")
 	)
 );

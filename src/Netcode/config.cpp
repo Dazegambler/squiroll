@@ -63,6 +63,11 @@ CONFIG_STR(LOBBY, PORT, "lobby_port", "1550");
 #endif
 CONFIG_STR(LOBBY, PASS, "lobby_password", "kzxmckfqbpqieh8rw<rczuturKfnsjxhauhybttboiuuzmWdmnt5mnlczpythaxf");
 
+#define BINDS_SECTION_NAME "keybinds"
+CONFIG_INT(BINDS,HIDE_UI,"hide_ui",41);
+CONFIG_INT(BINDS,STEP_FRAME,"step_frame",1);
+CONFIG_INT(BINDS,STEP_TOGGLE,"step_toggle",2);
+
 #define PING_SECTION_NAME "ping"
 CONFIG_BOL(PING, ENABLED, "enabled", true);
 CONFIG_INT(PING, X, "x", 640);
@@ -157,6 +162,10 @@ static inline constexpr const char
         CONFIG_DEFAULT(LOBBY, HOST),
         CONFIG_DEFAULT(LOBBY, PORT),
         CONFIG_DEFAULT(LOBBY, PASS),
+
+        CONFIG_DEFAULT(BINDS,HIDE_UI),
+        CONFIG_DEFAULT(BINDS,STEP_FRAME),
+        CONFIG_DEFAULT(BINDS,STEP_TOGGLE),
 
         CONFIG_DEFAULT(PING, ENABLED),
         CONFIG_DEFAULT(PING, X),
@@ -420,6 +429,25 @@ const char* get_lobby_pass(const char* pass) {
     }
     return pass;
 }
+// ====================
+// BINDS
+// ====================
+
+static char BINDS_HIDE_UI_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{'\0'};
+int32_t get_binds_hide_ui() {
+    return GET_INT_CONFIG(BINDS,HIDE_UI);
+}
+
+static char BINDS_STEP_FRAME_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{'\0'};
+int32_t get_binds_step_frame() {
+    return GET_INT_CONFIG(BINDS,STEP_FRAME);
+}
+
+static char BINDS_STEP_TOGGLE_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{'\0'};
+int32_t get_binds_step_toggle() {
+    return GET_INT_CONFIG(BINDS,STEP_TOGGLE);
+}
+
 
 // ====================
 // PING

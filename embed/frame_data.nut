@@ -37,7 +37,7 @@ function FrameDataDisplay(_team){
                 }
 
                 this.text.Set(frame);
-                this.text.sx = ::math.clamp(this.max_w / this.text.width,0,0.75);
+                this.text.sx = ::math.clamp(this.max_w / this.text.width,0.1,0.75);
                 this.text.x = 5;
                 this.text.y = 5;
             }
@@ -74,7 +74,7 @@ function FrameDataDisplay(_team){
                 this.texts[11].Set(format("atk(type/rank): %d/%d",data.metadata[21],data.metadata[22]));
 
                 foreach(i,text in this.texts){
-                    text.sx = ::math.clamp(this.max_w / text.width,0,0.75);
+                    text.sx = ::math.clamp(this.max_w / text.width,0.1,0.75);
                     text.x = 1011;
                     text.y = 5 + ((text.height * text.sy) * i);
                 }
@@ -125,7 +125,7 @@ function FrameDataDisplay(_team){
                 if (flags != "") flags = flags.slice(0, -1); // Slice removes the trailing comma
 
                 this.text.Set(format("flagState:[%s]", flags));
-                this.text.sx = ::math.clamp(this.max_w / this.text.width,0,0.75);
+                this.text.sx = ::math.clamp(this.max_w / this.text.width,0.1,0.75);
                 this.text.x = 5;
                 this.text.y = 5 + (this.text.height * this.text.sy);
             }
@@ -171,7 +171,7 @@ function FrameDataDisplay(_team){
                 if (flags != "")flags = flags.slice(0, -1); // Slice removes the trailing comma
 
                 this.text.Set(format("flagAttack:[%s]", flags));
-                this.text.sx = ::math.clamp(this.max_w / this.text.width,0,0.75);
+                this.text.sx = ::math.clamp(this.max_w / this.text.width,0.1,0.75);
                 this.text.x = 5;
                 this.text.y = 5 + (this.text.height * this.text.sy) * 2;
             }
@@ -217,7 +217,7 @@ function FrameDataDisplay(_team){
 
                 foreach (i,text in this.cancel) {
                     text.Set(cancels[i]);
-                    text.sx = ::math.clamp(this.max_w / text.width,0,max_sx);
+                    text.sx = ::math.clamp(this.max_w / text.width,0.1,max_sx);
                     text.x = x;
                     text.y = y;
                 }
@@ -239,7 +239,7 @@ function FrameDataDisplay(_team){
 
                 foreach(i,text in this.bar) {
                     text.Set(bar[i]);
-                    text.sx = ::math.clamp(this.max_w / text.width,0,max_sx);
+                    text.sx = ::math.clamp(this.max_w / text.width,0.1,max_sx);
                     text.x = x;
                     text.y = y;
                 }

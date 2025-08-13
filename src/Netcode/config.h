@@ -40,6 +40,10 @@ const char* get_lobby_host(const char* host);
 const char* get_lobby_port(const char* port);
 const char* get_lobby_pass(const char* pass);
 
+int32_t get_binds_hide_ui();
+int32_t get_binds_step_frame();
+int32_t get_binds_step_toggle();
+
 bool get_ping_enabled();
 bool get_ping_simple();
 int32_t get_ping_x();

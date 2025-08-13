@@ -96,6 +96,29 @@ local function ConfigColorField(label,sqkey = null) {
 	});
 }
 
+local function ConfigKeyField(label,sqkey = null,key = null) {
+	if (!sqkey)sqkey = label;
+	if (!key)key = sqkey;
+	local _table = table;
+	return ::UI.ValueField(label, [_table,sqkey], function (item) {
+		this.Update = function () {
+			if (::manbow.GetKeyboardState() >= 0)return;
+			if (::manbow.GetPadButtonState() >= 0)return;
+			this.Update = function () {
+				local id = ::manbow.GetKeyboardState();
+				if (id >= 0){
+					::sound.PlaySE("sys_ok");
+					item[1].Set(id);
+					::setting.save(_table.config_section,key,id.tostring());
+					item[1].x = ::graphics.width - this.anime.item_x - (item[1].width * item[1].sx);
+					this.Update = this.UpdateMain;
+					return;
+				}
+			};
+		}
+	});
+}
+
 local function ConfigPage(section,_table,...) {
 	return function () {
 		this.anime.data.push([]);
@@ -129,10 +152,6 @@ local function ConfigPage(section,_table,...) {
 		ConfigField("y"),
 		ConfigField("scale x","sx","scale_x"),
 		ConfigField("scale y","sy","scale_y")
-		// ConfigColorField("red"),
-		// ConfigColorField("green"),
-		// ConfigColorField("blue"),
-		// ConfigColorField("alpha")
 	),
 	ConfigPage("Input Display(p1) 1/2",table = ::setting.input_display.p1,
 		ConfigBoolSelect("enabled"),
@@ -179,6 +198,11 @@ local function ConfigPage(section,_table,...) {
 		ConfigField("frame step", "frame_stepping"),
 		ConfigField("width"),
 		ConfigField("timer")
+	),
+	ConfigPage("Keybinds",table = ::setting.binds,
+		ConfigKeyField("hide ui","hide_ui"),
+		ConfigKeyField("step frame","step_frame"),
+		ConfigKeyField("toggle frame stepping","step_toggle")
 	)
 );
 table = null;

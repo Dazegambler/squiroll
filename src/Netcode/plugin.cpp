@@ -222,6 +222,13 @@ static inline void set_network_constants(HSQUIRRELVM v) {
     //sq_setbool(v, _SC("hide_lobby"), false);//more useful once we get custom lobbies
 }
 
+static inline void set_binds_constants(HSQUIRRELVM v) {
+    sq_setstring(v, _SC("config_section"),"binds");
+    sq_setinteger(v, _SC("hide_ui"), get_binds_hide_ui());
+    sq_setinteger(v, _SC("step_frame"), get_binds_step_frame());
+    sq_setinteger(v, _SC("step_toggle"), get_binds_step_toggle());
+}
+
 SQInteger update_ping_constants(HSQUIRRELVM v) {
     sq_pushroottable(v);
 
@@ -265,6 +272,17 @@ SQInteger update_network_constants(HSQUIRRELVM v) {
         sq_edit(v, _SC("network"),set_network_constants);
     });
     
+    sq_pop(v, 1);
+    return 0;
+}
+
+SQInteger update_binds_constants(HSQUIRRELVM v) {
+    sq_pushroottable(v);
+
+    sq_edit(v, _SC("setting"),[](HSQUIRRELVM v) {
+        sq_edit(v, _SC("binds"), set_binds_constants);
+    });
+
     sq_pop(v, 1);
     return 0;
 }
@@ -506,6 +524,10 @@ extern "C" {
                 sq_createtable(v, _SC("ping"), [](HSQUIRRELVM v) {
                     sq_setfunc(v, _SC("update_consts"), update_ping_constants);
                     set_ping_constants(v);
+                });
+                sq_createtable(v, _SC("binds"), [](HSQUIRRELVM v) {
+                    sq_setfunc(v, _SC("update_consts"), update_binds_constants);
+                    set_binds_constants(v);
                 });
                 sq_createtable(v, _SC("frame_data"), [](HSQUIRRELVM v) {
                     sq_setfunc(v, _SC("update_consts"), update_frame_data_constants);

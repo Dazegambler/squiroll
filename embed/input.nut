@@ -17,9 +17,9 @@ function CreateSystemInputDevice( device_id )
 		devmap.b3 = 30;//A
 		devmap.b4 = 31;//S
 		devmap.b5 = 32;//D
-		devmap.b6 = 41;//'
-		devmap.b7 = 2;//1
-		devmap.b8 = 3;//2
+		devmap.b6 = ::setting.binds.hide_ui;//'
+		devmap.b7 = ::setting.binds.step_frame;//1
+		devmap.b8 = ::setting.binds.step_toggle;//2
 		local device_tmp_local0 = ::manbow.InputSingle();
 		device_tmp_local0.SetDeviceAssign(devmap);
 		devmap.b0 = 28;

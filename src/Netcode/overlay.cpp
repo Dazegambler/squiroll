@@ -1,3 +1,7 @@
+
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
 #if __INTELLISENSE__
 #undef _HAS_CXX20
 #define _HAS_CXX20 0
@@ -14,6 +18,11 @@
 #include "util.h"
 #include "overlay.h"
 
+#include "D3D.h"
+#include "TF4.h"
+#include "bt.h"
+#include "sqrat.h"
+
 static constexpr uint8_t hitbox_vert_cso[] = {
 #include "shaders/hitbox_vert.cso.h"
 };
@@ -23,220 +32,10 @@ static constexpr uint8_t hitbox_frag_cso[] = {
 
 #define MAX_HITBOXES 1024
 
-struct btVector3;
-
 #define d3d11_dev ((ID3D11Device**)0x4DAE9C_R)
 #define d3d11_imm ((ID3D11DeviceContext**)0x4DAE98_R)
 #define btBox2dShape_getHalfExtentsWithMargin ((btVector3* (*thiscall)(btCollisionShape*, btVector3*))0x1C0EB0_R)
 //#define draw_rect ((void (vectorcall*)(const float*, float, float, float, float))0x39600_R)
-
-typedef struct _D3DMATRIX {
-    /*
-    union {
-        struct {
-            float _11, _12, _13, _14;
-            float _21, _22, _23, _24;
-            float _31, _32, _33, _34;
-            float _41, _42, _43, _44;
-        };
-        float m[4][4];
-    };
-    */
-    vec<float, 4> m[4];
-} D3DMATRIX;
-
-// TODO: Move this stuff to its own header. It might be useful for rollback too
-struct SqratObject {
-    char dont_care0[0x14]; // 0x0
-    // 0x14
-};
-
-static_assert(sizeof(SqratObject) == 0x14);
-
-struct SqratFunction {
-    char dont_care0[0x14]; // 0x0
-    // 0x14
-};
-
-static_assert(sizeof(SqratFunction) == 0x14);
-
-// Bullet's Vector3 actually has 4 elements because of SIMD
-struct alignas(16) btVector3 {
-    //float v[4];
-    vec<float, 4, true> v;
-};
-
-static_assert(sizeof(btVector3) == 0x10);
-
-struct btMatrix3x3 {
-    btVector3 m[3];
-};
-
-static_assert(sizeof(btMatrix3x3) == 0x30);
-
-struct btTransform {
-    btMatrix3x3 basis;
-    btVector3 origin;
-};
-
-static_assert(sizeof(btTransform) == 0x40);
-
-struct btCollisionShape {
-    // TODO: Make vtable explicit instead of trusting compiler with function order
-    virtual void unk0();
-    virtual void getAabb(btTransform* t, btVector3* aabbMin, btVector3* aabbMax);
-
-    // void* vtbl // 0x0
-    uint32_t shape; // 0x4
-    // 0x8, unknown total size
-};
-
-struct btBroadphaseProxy {
-    void* m_clientObject;
-    uint16_t m_collisionFilterGroup;
-    uint16_t m_collisionFilterMask;
-};
-
-struct btGhostObject {
-    char __unk0[0x10]; // 0x0
-    btTransform m_worldTransform; // 0x10
-    char __unk50[0xC8 - 0x50]; // 0x50
-    btBroadphaseProxy* m_broadphaseProxy; // 0xC8
-    btCollisionShape* m_collisionShape; // 0xCC
-    char __unkD0[8]; // 0xD0
-    uint32_t m_collisionFlags; // 0xD8
-    char __unkDC[0x280 - 0xDC]; // 0xDC
-    // 0x280
-};
-
-static_assert(sizeof(btGhostObject) == 0x280);
-
-template<typename T>
-struct btAlignedObjectArray {
-    size_t m_size; // 0x0
-    size_t m_capacity; // 0x4
-    T* m_data; // 0x8
-    bool m_ownsMemory; // 0xC
-    // 0x10
-};
-
-static_assert(sizeof(btAlignedObjectArray<void>) == 0x10);
-
-struct btCollisionWorld {
-    void* vtbl; // 0x0
-    char __unk4[4]; // 0x4
-    btAlignedObjectArray<btGhostObject*> m_collisionObjects; // 0x8
-    char __unk18[0x150 - 0x18]; // 0x18 
-};
-
-static_assert(sizeof(btCollisionWorld) == 0x150);
-
-struct ManbowWorld2D {
-    char __unk0[0x20]; // 0x0
-    btCollisionWorld* bullet_world; // 0x20
-    char __unk24[8]; // 0x24
-    // 0x2C
-};
-
-static_assert(sizeof(ManbowWorld2D) == 0x2C);
-
-struct ManbowActorCollisionData {
-    char __unk0[0xC]; // 0x0
-    btGhostObject* obj_ptr; // 0xC
-    btGhostObject obj; // 0x10
-};
-
-struct ManbowAnimationController2D {
-    char __unk0[0x78]; // 0x0
-    std::vector<std::shared_ptr<ManbowActorCollisionData>> collision_boxes; // 0x78
-    std::vector<std::shared_ptr<ManbowActorCollisionData>> hit_boxes; // 0x84
-    std::vector<std::shared_ptr<ManbowActorCollisionData>> hurt_boxes; // 0x90
-    char __unk9C[0x300 - 0x9C]; // 0x9C
-};
-
-static_assert(sizeof(ManbowAnimationController2D) == 0x300);
-
-struct ManbowCamera2D {
-    char dont_care0[0x1C]; // 0x0
-    D3DMATRIX view_proj_matrix; // 0x1C
-    D3DMATRIX view_matrix; // 0x5C
-    D3DMATRIX proj_matrix; // 0x9C
-    char dont_care9C[0x134 - 0xDC]; // 0xDC
-    // 0x134
-};
-
-static_assert(sizeof(ManbowCamera2D) == 0x134);
-
-struct ManbowActor2DGroup;
-
-struct ManbowActor2D {
-    void* vtbl; // 0x0
-    char __unk4[8]; // 0x4
-    float pos[3]; // 0xC
-    int32_t id; // 0x18
-    float left; // 0x1C
-    float top; // 0x20
-    float right; // 0x24
-    float bottom; // 0x28
-    float vx; // 0x2C
-    float vy; // 0x30
-    char __unk34[4]; // 0x34
-    float direction; // 0x38
-    std::shared_ptr<ManbowAnimationController2D> anim_controller; // 0x3C
-    char __unk44[4]; // 0x44
-    float ox; // 0x48
-    float oy; // 0x4C
-    float s[3]; // 0x50, skew???
-    float r[3]; // 0x5C, rotation???
-    void* /* Manbow::Actor2DManager* */ actor2d_mgr; // 0x68
-    ManbowActor2DGroup* actor2d_group; // 0x6C
-    uint8_t active_flags; // 0x70
-    char probably_padding[3]; // 0x71
-    SQObject sq_obj; // 0x74
-    uint32_t collision_group; // 0x7C
-    uint32_t collision_mask; // 0x80
-    uint32_t callback_group; // 0x84
-    uint32_t callback_mask; // 0x88
-    float hitLeft; // 0x8C
-    float hitTop; // 0x90
-    float hitRight; // 0x94
-    float hitBottom; // 0x98
-    char __unk9C[0xC]; // 0x9C
-    SqratFunction update_func; // 0xA8
-    SqratFunction __sqrat_funcBC; // 0xBC
-    char __unkD0[8]; // 0xD0
-    void* __ptrD8; // 0xD8
-    uint32_t group_flags; // 0xDC
-    uint32_t list_idx; // 0xE0
-    uint32_t __uintE4; // 0xE4
-    uint32_t __id2; // 0xE8
-    // 0xEC
-};
-
-static_assert(sizeof(ManbowActor2D) == 0xEC);
-
-struct ManbowActor2DGroup {
-    void* vtbl; // 0x0
-    std::shared_ptr<ManbowActor2DGroup> __shared_ptr4; // 0x4
-    std::list<std::shared_ptr<ManbowActor2D>> actor_list; // 0xC
-    std::vector<ManbowActor2D*> actor_vec; // 0x14
-    uint32_t size; // 0x20
-    uint32_t update_mask; // 0x24
-    bool pending_release; // 0x28
-    char probably_padding[3]; // 0x29
-    char __unk2C[0xC]; // 0x2C
-    std::shared_ptr<ManbowWorld2D> world; // 0x38
-    SqratFunction on_hit_collision; // 0x40
-    SqratFunction on_hit_actor; // 0x54
-    SqratFunction on_move; // 0x68
-    char __unk7C[4]; // 0x7C
-    SqratObject camera_obj; // 0x80
-    ManbowCamera2D* camera; // 0x94
-    void (thiscall *update_func)(ManbowActor2DGroup*); // 0x98
-    // 0x9C
-};
-
-static_assert(sizeof(ManbowActor2DGroup) == 0x9C);
 
 enum DrawType : uint8_t {
     DRAW_RECT,
@@ -276,6 +75,8 @@ struct HitboxGPUData {
     float thresholds[2];
 };
 
+static bool overlay_supported = true;
+
 static ID3D11VertexShader* hitbox_vs = nullptr;
 static ID3D11PixelShader* hitbox_ps = nullptr;
 static ID3D11InputLayout* hitbox_il = nullptr;
@@ -295,6 +96,12 @@ static ID3D11Buffer* hitbox_cb = nullptr;
 void overlay_init() {
     HRESULT res;
     ID3D11Device* dev = *d3d11_dev;
+
+    if (dev->GetFeatureLevel() < D3D_FEATURE_LEVEL_11_0) {
+        log_printf("D3D11 feature level is too low to support the overlay!\n");
+        overlay_supported = false;
+        return;
+    }
 
     CHECK_RES(dev->CreateVertexShader(hitbox_vert_cso, sizeof(hitbox_vert_cso), nullptr, &hitbox_vs));
     CHECK_RES(dev->CreatePixelShader(hitbox_frag_cso, sizeof(hitbox_frag_cso), nullptr, &hitbox_ps));
@@ -538,33 +345,293 @@ void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags)
     }
 }
 
-// bool IsFrameActive(ManbowActor2D* actor) {
-//     for (const auto& data : actor->anim_controller->hit_boxes) {
-//     return data->obj_ptr->m_collisionShape->shape != 0;
+// int _SetTake(ManbowAnimationController2D* self,int32_t take){
+//     while (self->take->previous){
+//         self->take = self->take->previous;
 //     }
-//     return false;//make compiler shut up
+//     self->key_take = 0;
+//     for(int32_t i = 0; i < take; ++i){
+//         self->take = self->take->next;
+//         self->key_take = i;
+//     }
+//     self->__vec224.clear();
+//     self->__vec224.resize(self->take->__vec14.size());
+//     take = 0;
+//     while(take < self->__vec224.size()){
+//         self->__vec224[take] = self->take->__vec14[take];
+//         //then deletes that element on the take vector
+//     }
+//     self->vftable->__method20(0);
+//     return 1;
 // }
 
-bool IsFrameActive(ManbowActor2D* actor) {
-    if (uint32_t group_size = actor->actor2d_group->size){
-        ManbowActor2D** actor_ptr = actor->actor2d_group->actor_vec.data();
-        do{
-            ManbowActor2D* _actor = *actor_ptr++;
-            if (!_actor->anim_controller || 
-                (_actor->active_flags & 1) == 0 || 
-                (_actor->group_flags & actor->actor2d_group->update_mask) == 0 || 
-                !_actor->callback_group)
-                continue;
-            for (const auto& data : _actor->anim_controller->hit_boxes) {
-                if(data->obj_ptr->m_collisionShape->shape != 0){
-                    return true;
-                }
-            }
-        }while (--group_size);
-    }
-    return false;//make compiler shut up
+// bool PlayTake(ManbowAnimationController2D* self, int32_t keyframe) {
+//     TakeData* take = self->take;
+//     if (!take){
+//         return false;
+//     }
+//     self->keyframe = keyframe;
+//     self->animation_data = &take->frame_data[keyframe];
+//     int32_t frame = 0;
+//     if(keyframe){
+//         frame  = take->frame_data[keyframe - 1].frame_total;
+//     }
+//     self->frame = frame;
+//     self->frame_again = frame;
+//     self->vftable->__method8C();
+//     return true;
+// }
+
+// void ManbowAnimationController2D::Loop(){
+//     if(this->animation_data){
+//         this->frame += this->speed;
+//         this->frame_again += this->speed;
+//         if(this->animation_data->frame_total <= this->frame_again){
+//             this->vftable->__methodA0();
+//         }
+//         for (int32_t i = 0; i < this->sprites.size()){
+//             this->sprites[i]->vtable->__Method8(this->keyframe,this->frame);
+//         }
+//     }
+//     return;
+// }
+
+// void ManbowAnimationController2D::7C(){
+//     if(this->animation_data && this->__unk11C){
+//         // some global bool is set to this->__bool13E
+//         for (std::shared_ptr<Sprite> sprite : this->sprites){
+//             sprite->vtable->vtable->__Method10(this->red,this->__bool13E);
+//         }
+        
+//         if (this->__bool13E){
+//             for (int32_t i = 0; i < this->animation_data->__int4b){
+//                 this->animation_data[i].vtable->__MethodC(this->__matrix_38,this->red);
+//             }
+//         }else {
+//             for (int32_t i = 0; i < this->animation_data->__int4b){
+//                 D3DMATRIX* matrix = this->animation_data[i]->vtable->Method8();
+//                 float a = this->red * matrix->m[0][];
+//                 float b = this->green * matrix->m[1][];
+//                 float c = this->blue * matrix->m[2][];
+//                 float d = this->alpha * matrix->m[3][];
+//                 this->animation_data[i].vtable->__MethodC(this->__matrix_38,a);
+//             }
+//         }
+//     }
+// }
+
+// D3DMATRIX ManbowAnimationController2D::90(D3DMATRIX matrix,int32_t take) {
+//     if (this->sprites.size() <= take) {
+//         float r0[4]; //these are global variables but
+//         float r1[4]; //for simplicity they're local here
+//         float r2[4];
+//         float r3[4];
+//         box_data->matrix[0] = r0;
+//         box_data->matrix[1] = r1;
+//         box_data->matrix[2] = r2;
+//         box_data->matrix[3] = r3;
+//     }
+//     this->sprites[take]->vtable->__method18(matrix);
+// }
+
+// void ManbowAnimationController2D::A0() {
+//     TakeData* take = this->take;
+//     while(take->frame_total <= this->frame_again){
+//         Unk3 new_data;
+//         if(++this->keyframe < take->__int24){
+//             new_data = take->frame_data[this->keyframe];
+//         }else{
+//             if (!take->__bool25){
+//                 this->vftable->__method9C();
+//                 return;
+//             }
+//             this->keyframe = 0;
+//             this->frame_again = this->frame_again % take->frame_total;
+//             new_data = &take->frame_data;
+//         }
+//         this->animation_data = &new_data;
+//     }
+//     this->vftable->__method8C();
+// }
+
+// void ManbowAnimationController2D::SetBoxes(){
+//     if(!this->animation_data)return;
+//     void* btsetboxidk(
+//         BoxData,
+//         int32_t,
+//         std::vector<std::shared_ptr<ManbowActorCollisionData>>,
+//         Unk140*
+//     );
+//     btsetboxidk(
+//         this->animation_data->box_data[0],
+//         this->animation_data->col_count,
+//         this->collision_boxes,
+//         this->__unk140
+//     );
+//     btsetboxidk(
+//         this->animation_data->box_data[this->animation_data->hurt_count],
+//         this->animation_data->hit_count - this->animation_data->hurt_count,
+//         this->hit_boxes,
+//         this->__unk140->__ptr40
+//     );
+//     btsetboxidk(
+//         this->animation_data->box_data[this->animation_data->col_count],
+//         this->animation_data->hurt_count - this->animation_data->col_count,
+//         this->hurt_boxes,
+//         this->__unk140->__ptr40
+//     );
+//     if(this->__unkC4)this->__unkC4->__method8();
+// }
+
+void dump_framedata(AnimationData* anim_data) {
+    log_printf(
+    "\nAnimationData {\n"
+    "    frame_total = %df(true value:%d)\n"
+    "    flags = {0x%p,0x%p}\n"
+    "    data {\n"
+    "        damage = %d\n"
+    "        hitStopE = %d\n"
+    "        hitStopP = %d\n"
+    "        guardStopE = %d\n"
+    "        guardStopP = %d\n"
+    "        firstRate = %d\n"
+    "        comboRate = %d\n"
+    "        AddKnock_Unk = %d\n"
+    "        stun = %d\n"
+    "        bariaBreak_Unk = %d\n"
+    "        guardRealDamage = %d\n"
+    "        slaveBlockOccult = %d\n"
+    "        SCGauge_onhit = %d\n"
+    "        comboRecoverTime = %d\n"
+    "        minRate_unused = %d\n"
+    "        stopVecX = %d\n"
+    "        stopVecY = %d\n"
+    "        hitSoundEffect = %d\n"
+    "        hitVecX = %d\n"
+    "        hitVecY = %d\n"
+    "        grazeKnock_Unk = %d\n"
+    "        atkType = %d\n"
+    "        atkRank = %d\n"
+    "        hitEffectVFX = %d\n"
+    "    }\n"
+    "    col_count = %d\n"
+    "    hurt_count = %d\n"
+    "    hit_count = %d\n"
+    "    __int4b = %d\n"
+    "    __int4c = %d\n"
+    "    __int4d = %d\n"
+    "    __int4e = %d\n"
+    "}\n",
+    anim_data->frame_total / 100, anim_data->frame_total,
+    anim_data->flags[0],anim_data->flags[1],
+    anim_data->data[0],
+    anim_data->data[1],
+    anim_data->data[2],
+    anim_data->data[3],
+    anim_data->data[4],
+    anim_data->data[5],
+    anim_data->data[6],
+    anim_data->data[7],
+    anim_data->data[8],
+    anim_data->data[9],
+    anim_data->data[10],
+    anim_data->data[11],
+    anim_data->data[12],
+    anim_data->data[13],
+    anim_data->data[14],
+    anim_data->data[15],
+    anim_data->data[16],
+    anim_data->data[17],
+    anim_data->data[18],
+    anim_data->data[19],
+    anim_data->data[20],
+    anim_data->data[21],
+    anim_data->data[22],
+    anim_data->data[23],
+    anim_data->col_count,
+    anim_data->hurt_count,
+    anim_data->hit_count,
+    anim_data->__int4b,
+    anim_data->__int4c,
+    anim_data->__int4d,
+    anim_data->__int4e
+    );
 }
 
+void dump_boxdata(BoxData* box_data) {
+    log_printf(
+        "BoxData {\n"
+        "   matrix : \n"
+        "   [%3f,%3f,%3f,%3f]\n"
+        "   [%3f,%3f,%3f,%3f]\n"
+        "   [%3f,%3f,%3f,%3f]\n"
+        "   [%3f,%3f,%3f,%3f]\n"
+        "   width : %f\n"
+        "   height : %f\n"
+        "   length : %f\n"
+        "   __float4c : %f\n"
+        "   type : %d\n"
+        "}\n",
+        box_data->matrix[0][0],box_data->matrix[0][1],box_data->matrix[0][2],box_data->matrix[0][3],
+        box_data->matrix[1][0],box_data->matrix[1][1],box_data->matrix[1][2],box_data->matrix[1][3],
+        box_data->matrix[2][0],box_data->matrix[2][1],box_data->matrix[2][2],box_data->matrix[2][3],
+        box_data->matrix[3][0],box_data->matrix[3][1],box_data->matrix[3][2],box_data->matrix[3][3],
+        box_data->width,
+        box_data->height,
+        box_data->length,
+        box_data->__float4c,
+        box_data->type
+    );    
+}
+
+void dump_takedata(TakeData* take) {
+    log_printf(
+    "attackLV:%d\n"
+    "cancelLV:%d\n"
+    "__int24:%d\n"
+    "__bool25:%d\n",
+    take->LVs[0],
+    take->LVs[1],
+    take->__int24, 
+    take->__bool25
+    );    
+}
+
+int debug(ManbowActor2D* player) {
+    if (!player)return 0;
+    std::shared_ptr<ManbowAnimationController2D> cont = player->anim_controller;
+    TakeData* take_data = cont->take;
+    AnimationData* anim_data = cont->animation_data;
+    log_printf("motion: %d take: %d frame: %d\n", cont->motion, cont->key_take, cont->key_frame);
+
+    // if (cont->take)dump_takedata(cont->take);
+    // if(anim_data->hit_count)dump_boxdata(&anim_data->box_data[anim_data->hit_count -1]);
+    // dump_framedata(anim_data);
+
+    // int32_t i = 0;
+    // while(cont->animation_data[i].frame_total > 0 && cont->animation_data[i].frame_total % 100 == 0) {
+    //     dump_framedata(&cont->animation_data[i++]);
+    // }
+
+    // FILE *out;
+    // out = fopen("flag_dump.txt","a");
+    // log_fprintf(out,"%d,",cont->animation_data->flags[0]);
+    // fclose(out);
+
+    // if(anim_data->__int4b != 0)log_printf("__int4b : %d\n", anim_data->__int4b);
+    // log_printf("0x%p\n", cont->__unk140);
+    // void** data = (void**)cont->__unk140;
+    // if (data){
+    //     log_printf("dump {\n");
+    //     void** ptr = data;
+    //     for (size_t i = 0; i <= 48; ++i){
+    //         void** d = (ptr + i);
+    //         log_printf("+0x%x = 0x%p\n",i*4,*d);
+    //     }
+    //     log_printf("}\n");
+    // }
+    return 0;
+}
 
 static forceinline void clip_to_screen(float* dst, const float* src) {
     dst[0] = (1.0f + src[0]) * (1280.0f / 2.0f);
@@ -659,6 +726,9 @@ void overlay_clear() {
 
 static HitboxConstantBuffer hitbox_last_cb = {};
 void overlay_draw() {
+    if (!overlay_supported)
+        return;
+
     bool has_collision = !overlay_collision.empty();
     bool has_hurt = !overlay_hurt.empty();
     bool has_hit = !overlay_hit.empty();

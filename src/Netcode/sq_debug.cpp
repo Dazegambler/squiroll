@@ -1,3 +1,4 @@
+#include <squirrel.h>
 #if __INTELLISENSE__
 #undef _HAS_CXX20
 #define _HAS_CXX20 0
@@ -10,8 +11,8 @@
 
 #include "file_replacement.h"
 #include "log.h"
-#include "util.h"
 #include "patch_utils.h"
+#include "util.h"
 
 //NATIVE FUNCTIONS
 
@@ -154,15 +155,15 @@ static void print_stack_top_value(FILE* dest, std::vector<SQObjectValue>& recusi
 }
 #endif
 
-static void CompileScriptBuffer(HSQUIRRELVM v, const char *Src, HSQOBJECT root) {
-    if (EmbedData embed = get_new_file_data(Src)) {
-        if (SQ_SUCCEEDED(sq_compilebuffer(v, (const SQChar*)embed.data, embed.length, Src, SQTrue))) {
-            sq_pushobject(v, root);
-            sq_call(v, 1, SQFalse, SQTrue);
-            sq_pop(v, -1);
-        }
-    }
-}
+// static void CompileScriptBuffer(HSQUIRRELVM v, const char *Src, HSQOBJECT root) {
+//     if (EmbedData embed = get_new_file_data(Src)) {
+//         if (SQ_SUCCEEDED(sq_compilebuffer(v, (const SQChar*)embed.data, embed.length, Src, SQTrue))) {
+//             sq_pushobject(v, root);
+//             sq_call(v, 1, SQFalse, SQTrue);
+//             sq_pop(v, -1);
+//         }
+//     }
+// }
 
 //keeping the original version that compiled the string instead just in case
 /*void CompileScriptBuffer(HSQUIRRELVM v, const char *Src, SQObject root) {
@@ -180,6 +181,19 @@ static void CompileScriptBuffer(HSQUIRRELVM v, const char *Src, HSQOBJECT root) 
   }
 }*/
 
+void CompileAndRun(HSQUIRRELVM v, const char *Src) {
+  bool is_compiled = false;
+  if (Src) {
+    is_compiled = SQ_SUCCEEDED(sq_compilebuffer(v, Src, strlen(Src), _SC("repl"), SQTrue));
+    if (is_compiled) {
+        sq_call(v, 1, SQFalse, SQTrue);
+        sq_pop(v, -1);
+    } else{
+        sq_throwerror(v, _SC("failed to compile script...\n"));
+    }
+  }
+}
+
 /*
 HSQOBJECT SQGetObjectByName(HSQUIRRELVM v, const SQChar *name) {
     sq_pushstring(v, name, -1);
@@ -191,20 +205,46 @@ HSQOBJECT SQGetObjectByName(HSQUIRRELVM v, const SQChar *name) {
 }
 */
 
-//SQUIRREL FUNCTIONS
-SQInteger sq_compile_buffer(HSQUIRRELVM v){
-    const SQChar* src;
-    HSQOBJECT root;
-    if (sq_gettop(v) != 3                       ||
-        SQ_FAILED(sq_getstring(v, 2, &src))     ||
-        SQ_FAILED(sq_getstackobj(v, 3, &root))
-    ) {
-        return sq_throwerror(v, _SC("Invalid arguments...\n"
-                             "usage: compilebuffer <src> <root>\n"));
-    }
-    CompileScriptBuffer(v, src, root);
-    return 0;
-}
+// SQInteger sq_compile_buffer(HSQUIRRELVM v) {
+//     const SQChar* src;
+//     HSQOBJECT root;
+//     if (sq_gettop(v) != 3                       ||
+//         SQ_FAILED(sq_getstring(v, 2, &src))     ||
+//         SQ_FAILED(sq_getstackobj(v, 3, &root))
+//     ) {
+//         return sq_throwerror(v, _SC("Invalid arguments...usage: compilebuffer <src> <root>\n"));
+//     }
+//     CompileScriptBuffer(v, src, root);
+//     return 0;
+// }
+
+//wip,crashes
+// SQInteger loadCSVBuffer(HSQUIRRELVM v) {
+//     const char *Csv;
+
+//     if (sq_gettop(v) != 2 ||
+//         SQ_FAILED(sq_getstring(v, 2, &Csv))) {
+//         return sq_throwerror(v, _SC("Invalid arguments...usage LoadCSVBuffer <filename>\n"));
+//     }
+//     if (EmbedData embed = get_new_file_data(Csv)){
+//         sq_newarray(v, 0);
+//         char *line = strtok((char*)embed.data,"\n");
+//         while (line != NULL){
+//             sq_newarray(v,0);
+//             char *token = strtok(line,",");
+//             while(token != NULL){
+//                 sq_pushstring(v, token, -1);
+//                 sq_arrayappend(v, -2);
+//                 token = strtok(NULL,",");
+//             }
+//             sq_arrayappend(v, -2);
+//             line = strtok(NULL,"\n");
+//         }
+//     }else {
+//         sq_pushnull(v);
+//     }
+//     return 1;
+// }
 
 #if !DISABLE_ALL_LOGGING_FOR_BUILD
 SQInteger sq_print(HSQUIRRELVM v) {

@@ -15,11 +15,16 @@ static inline constexpr size_t PLUGIN_VERSION = 1;
 // Increase the revision number for bugfixing builds and
 // other sorts of changes that don't make the netcode
 // incompatible. Reset to 0 whenever increasing the main version.
-static inline constexpr size_t PLUGIN_REVISION = 4;
+static inline constexpr size_t PLUGIN_REVISION = 5;
 
 extern int32_t GAME_VERSION;
 
 void init_config_file();
+
+void config_watcher_check();
+void config_watcher_stop();
+
+void set_config_string(const char* section, const char* key, const char* value);
 
 enum ConfigTestState : int8_t {
     ConfigNeedsTest = -1,
@@ -35,12 +40,20 @@ const char* get_lobby_host(const char* host);
 const char* get_lobby_port(const char* port);
 const char* get_lobby_pass(const char* pass);
 
+int32_t get_binds_hide_ui();
+int32_t get_binds_step_frame();
+int32_t get_binds_step_toggle();
+
 bool get_ping_enabled();
+bool get_ping_simple();
 int32_t get_ping_x();
 int32_t get_ping_y();
 float get_ping_scale_x();
 float get_ping_scale_y();
-uint32_t get_ping_color();
+int32_t get_ping_great_thresh();
+int32_t get_ping_good_thresh();
+int32_t get_ping_bad_thresh();
+// uint32_t get_ping_color();
 bool get_ping_frames();
 
 bool get_inputp1_enabled();
@@ -51,9 +64,9 @@ float get_inputp1_scale_y();
 int32_t get_inputp1_offset();
 int32_t get_inputp1_count();
 uint32_t get_inputp1_color();
-bool get_inputp1_spacing();
 int32_t get_inputp1_timer();
-bool get_inputp1_raw_input();
+const char* get_inputp1_notation();
+bool get_inputp1_frame_count();
 
 bool get_inputp2_enabled();
 int32_t get_inputp2_x();
@@ -63,9 +76,9 @@ float get_inputp2_scale_y();
 int32_t get_inputp2_offset();
 int32_t get_inputp2_count();
 uint32_t get_inputp2_color();
-bool get_inputp2_spacing();
 int32_t get_inputp2_timer();
-bool get_inputp2_raw_input();
+const char* get_inputp2_notation();
+bool get_inputp2_frame_count();
 
 bool get_hitbox_vis_enabled();
 int32_t get_hitbox_border_width();
@@ -84,9 +97,12 @@ int32_t get_frame_data_x();
 int32_t get_frame_data_y();
 float get_frame_data_scale_x();
 float get_frame_data_scale_y();
-uint32_t get_frame_data_color();
+int32_t get_frame_data_width();
+// uint32_t get_frame_data_color();
 int32_t get_frame_data_timer();
-bool get_frame_data_flags();
+// bool get_frame_data_flags();
+bool get_frame_data_frame_stepping();
+// bool get_frame_data_framebar();
 
 int8_t get_ipv6_state();
 bool get_netplay_state();

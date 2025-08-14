@@ -39,16 +39,17 @@ struct EmbedData {
 
 //extern patchhook_register_t* patchhook_register;
 
-naked void file_replacement_hook();
+// naked void file_replacement_hook();
 
-#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
-BOOL WINAPI file_replacement_read(HANDLE handle, LPVOID buffer, DWORD buffer_size, LPDWORD bytes_read, LPOVERLAPPED overlapped);
-BOOL WINAPI close_handle_hook(HANDLE handle);
-#endif
+// #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
+// BOOL WINAPI file_replacement_read(HANDLE handle, LPVOID buffer, DWORD buffer_size, LPDWORD bytes_read, LPOVERLAPPED overlapped);
+// BOOL WINAPI close_handle_hook(HANDLE handle);
+// #endif
 
 //void file_replacement_thcrap();
 
-EmbedData get_new_file_data(const char* name);
+// EmbedData get_new_file_data(const char* name);
+EmbedData get_embed_data(const char *name);
 
 #if DUMP_TFCS_FILES
 void fastcall dump_tfcs(const uint8_t* data, const char* path);

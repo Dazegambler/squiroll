@@ -283,49 +283,49 @@ static void patch_allocman() {
 #if FILE_REPLACEMENT_TYPE != FILE_REPLACEMENT_NONE
 static void patch_file_loading() {
 
-#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
-    hotpatch_call(file_replacement_hook_addrA, file_replacement_hook);
+// #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
+//     hotpatch_call(file_replacement_hook_addrA, file_replacement_hook);
 
-    static constexpr uint8_t patch[] = { 0xE9, 0x8C, 0x00, 0x00, 0x00, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC };
-    mem_write(file_replacement_hook_addrA + 5, patch);
+//     static constexpr uint8_t patch[] = { 0xE9, 0x8C, 0x00, 0x00, 0x00, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC };
+//     mem_write(file_replacement_hook_addrA + 5, patch);
 
-    hotpatch_icall(file_replacement_read_addrA, file_replacement_read);
-    hotpatch_icall(file_replacement_read_addrB, file_replacement_read);
+//     hotpatch_icall(file_replacement_read_addrA, file_replacement_read);
+//     hotpatch_icall(file_replacement_read_addrB, file_replacement_read);
 
-    hotpatch_import(CloseHandle_import_addr, close_handle_hook);
+//     hotpatch_import(CloseHandle_import_addr, close_handle_hook);
 
-#elif FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+// #elif FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
 
-    hotpatch_call(file_replacement_hook_addrB, file_replacement_hook);
+//     hotpatch_call(file_replacement_hook_addrB, file_replacement_hook);
 
-    static constexpr uint8_t patchA[] = {
-        0x85, 0xD2,                         // TEST EDX, EDX
-        0x0F, 0x85, 0xBF, 0x00, 0x00, 0x00, // JNZ Rx24064
-        0x0F, 0x1F, 0x44, 0x00, 0x00        // NOP
-    };
-    mem_write(file_replacement_hook_addrB + 5, patchA);
+//     static constexpr uint8_t patchA[] = {
+//         0x85, 0xD2,                         // TEST EDX, EDX
+//         0x0F, 0x85, 0xBF, 0x00, 0x00, 0x00, // JNZ Rx24064
+//         0x0F, 0x1F, 0x44, 0x00, 0x00        // NOP
+//     };
+//     mem_write(file_replacement_hook_addrB + 5, patchA);
 
 
-    // Attempt at fixing CSV loading
-    // Might confuse thcrap by omitting seek?
-    static constexpr uint8_t patchB[] = {
-        0x89, 0x95, 0x80, 0xFF, 0xFE, 0xFF, // MOV DWORD PTR [EBP-10080], EDX
-        0x81, 0xFA, 0x54, 0x46, 0x43, 0x53, // CMP EDX, 0x53434654
-        0x0F, 0x85, 0x89, 0x03, 0x00, 0x00, // JNE Rx15296A
-        0x89, 0x4D, 0xC8,                   // MOV DWORD PTR [EBP-38], ECX
-        0x89, 0x75, 0xE0,                   // MOV DWORD PTR [EBP-20], ESI
-        0x8D, 0x8D, 0xA4, 0xFF, 0xFE, 0xFF  // LEA ECX, [EBP-1005C]
-    };
+//     // Attempt at fixing CSV loading
+//     // Might confuse thcrap by omitting seek?
+//     static constexpr uint8_t patchB[] = {
+//         0x89, 0x95, 0x80, 0xFF, 0xFE, 0xFF, // MOV DWORD PTR [EBP-10080], EDX
+//         0x81, 0xFA, 0x54, 0x46, 0x43, 0x53, // CMP EDX, 0x53434654
+//         0x0F, 0x85, 0x89, 0x03, 0x00, 0x00, // JNE Rx15296A
+//         0x89, 0x4D, 0xC8,                   // MOV DWORD PTR [EBP-38], ECX
+//         0x89, 0x75, 0xE0,                   // MOV DWORD PTR [EBP-20], ESI
+//         0x8D, 0x8D, 0xA4, 0xFF, 0xFE, 0xFF  // LEA ECX, [EBP-1005C]
+//     };
 
-    static constexpr uint8_t patchC[] = {
-        0xCC, 0xCC,
-        0xC7, 0x45, 0xB0, 0x00, 0x00, 0x00, 0x00, // MOV DWORD [EBP-50], 0
-    };
+//     static constexpr uint8_t patchC[] = {
+//         0xCC, 0xCC,
+//         0xC7, 0x45, 0xB0, 0x00, 0x00, 0x00, 0x00, // MOV DWORD [EBP-50], 0
+//     };
 
-    mem_write(0x1525CF_R, patchB);
-    mem_write(0x152968_R, patchC);
+//     mem_write(0x1525CF_R, patchB);
+//     mem_write(0x152968_R, patchC);
 
-#endif
+// #endif
 
 #if DUMP_TFCS_FILES
     static constexpr uint8_t patchD[] = {
@@ -469,6 +469,7 @@ bool common_init(
     init_config_file();
 
     if (expect(GAME_VERSION != 1211, false)) {
+        MessageBoxA(NULL, "Your game appears to be too old. Please update it to v1.21b.\nIf you already updated it, delete config.ini in the game directory.", "squiroll", MB_ICONERROR);
         return false;
     }
 
@@ -497,7 +498,7 @@ bool common_init(
     // Turn off scroll lock to simplify static management for the toggle func
     SetScrollLockState(false);
 
-    patch_allocman();
+    // patch_allocman();
 
     // Allow launching multiple instances of the game
     mem_write(createmutex_patch_addr, PATCH_BYTES<0x68, 0x00, 0x00, 0x00, 0x00>); //mutex patch
@@ -518,9 +519,9 @@ bool common_init(
 
     //mem_write(0x1DEAD_R, INFINITE_LOOP_BYTES); // Replaces a TEST ECX, ECX
 
-#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
+// #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
     patch_file_loading();
-#endif
+// #endif
 
     if (get_cache_rsa_enabled()) {
         patch_archive_parsing();

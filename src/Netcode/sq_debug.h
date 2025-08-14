@@ -1,5 +1,6 @@
 #pragma once
 
+#include <squirrel.h>
 #ifndef SQ_DEBUG_H
 #define SQ_DEBUG_H 1
 
@@ -14,13 +15,16 @@ static SQInteger sq_dummy(HSQUIRRELVM v) {
 }
 
 //SQUIRREL FUNCTIONS
+SQInteger sq_CompileFile(HSQUIRRELVM v);
 SQInteger sq_compile_buffer(HSQUIRRELVM v); 
+void CompileAndRun(HSQUIRRELVM v, const char *Src);
 
 #if !DISABLE_ALL_LOGGING_FOR_BUILD
 SQInteger sq_print(HSQUIRRELVM v);
 SQInteger sq_fprint(HSQUIRRELVM v);
 SQInteger sq_print_value(HSQUIRRELVM v);
 SQInteger sq_fprint_value(HSQUIRRELVM v);
+SQInteger loadCSVBuffer(HSQUIRRELVM v);
 #else
 #define sq_print sq_dummy
 #define sq_fprint sq_dummy

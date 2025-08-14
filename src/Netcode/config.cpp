@@ -9,6 +9,8 @@
 #include <limits>
 #include <charconv>
 #include <system_error>
+#include <atomic>
+#include <unordered_map>
 
 #include <windows.h>
 
@@ -61,50 +63,58 @@ CONFIG_STR(LOBBY, PORT, "lobby_port", "1550");
 #endif
 CONFIG_STR(LOBBY, PASS, "lobby_password", "kzxmckfqbpqieh8rw<rczuturKfnsjxhauhybttboiuuzmWdmnt5mnlczpythaxf");
 
+#define BINDS_SECTION_NAME "binds"
+CONFIG_INT(BINDS,HIDE_UI,"hide_ui",41);
+CONFIG_INT(BINDS,STEP_FRAME,"step_frame",2);
+CONFIG_INT(BINDS,STEP_TOGGLE,"step_toggle",3);
+
 #define PING_SECTION_NAME "ping"
 CONFIG_BOL(PING, ENABLED, "enabled", true);
 CONFIG_INT(PING, X, "x", 640);
 CONFIG_INT(PING, Y, "y", 705);
 CONFIG_FLT(PING, SCALE_X, "scale_x", 1.0);
 CONFIG_FLT(PING, SCALE_Y, "scale_y", 1.0);
-CONFIG_HEX(PING, COLOR, "color", FFFFFFFF);
+CONFIG_BOL(PING, SIMPLE, "simple", true);
+CONFIG_INT(PING, GREAT_THRESHOLD, "great_threshold", 60);
+CONFIG_INT(PING, GOOD_THRESHOLD, "good_threshold", 130);
+CONFIG_INT(PING, BAD_THRESHOLD, "bad_threshold", 200);
 CONFIG_BOL(PING, FRAMES, "frames", true);
 
 #define INPUT1_SECTION_NAME "input_display_p1"
 CONFIG_BOL(INPUT1, ENABLED, "enabled", false);
-CONFIG_INT(INPUT1, X, "x", 10);
-CONFIG_INT(INPUT1, Y, "y", 515);
-CONFIG_FLT(INPUT1, SCALE_X, "scale_x", 1.0);
-CONFIG_FLT(INPUT1, SCALE_Y, "scale_y", 1.0);
+CONFIG_INT(INPUT1, X, "x", 0);
+CONFIG_INT(INPUT1, Y, "y", 520);
+CONFIG_FLT(INPUT1, SCALE_X, "scale_x", 0.6);
+CONFIG_FLT(INPUT1, SCALE_Y, "scale_y", 0.6);
 CONFIG_INT(INPUT1, OFFSET, "offset", 30);
-CONFIG_INT(INPUT1, COUNT, "count", 12);
+CONFIG_INT(INPUT1, COUNT, "count", 13);
 CONFIG_HEX(INPUT1, COLOR, "color", FF00FF00);
-CONFIG_BOL(INPUT1, SPACING, "spacing", false);
 CONFIG_INT(INPUT1, TIMER, "timer", 200);
-CONFIG_BOL(INPUT1, RAW_INPUT, "raw_input", false);
+CONFIG_STR(INPUT1, NOTATION, "notation","1,2,3,4, ,6,7,8,9,A,B,C,E,D,[B]");
+CONFIG_BOL(INPUT1, FRAME_COUNT, "frame_count", false);
 
 #define INPUT2_SECTION_NAME "input_display_p2"
 CONFIG_BOL(INPUT2, ENABLED, "enabled", false);
-CONFIG_INT(INPUT2, X, "x", 1210);
-CONFIG_INT(INPUT2, Y, "y", 515);
-CONFIG_FLT(INPUT2, SCALE_X, "scale_x", 1.0);
-CONFIG_FLT(INPUT2, SCALE_Y, "scale_y", 1.0);
+CONFIG_INT(INPUT2, X, "x", 1280);
+CONFIG_INT(INPUT2, Y, "y", 520);
+CONFIG_FLT(INPUT2, SCALE_X, "scale_x", 0.6);
+CONFIG_FLT(INPUT2, SCALE_Y, "scale_y", 0.6);
 CONFIG_INT(INPUT2, OFFSET, "offset", 30);
-CONFIG_INT(INPUT2, COUNT, "count", 12);
+CONFIG_INT(INPUT2, COUNT, "count", 13);
 CONFIG_HEX(INPUT2, COLOR, "color", FF00FF00);
-CONFIG_BOL(INPUT2, SPACING, "spacing", false);
 CONFIG_INT(INPUT2, TIMER, "timer", 200);
-CONFIG_BOL(INPUT2, RAW_INPUT, "raw_input", false);
+CONFIG_STR(INPUT2, NOTATION, "notation", "1,2,3,4, ,6,7,8,9,A,B,C,E,D,[B]");
+CONFIG_BOL(INPUT2, FRAME_COUNT, "frame_count", false);
 
 #define FRAME_DATA_SECTION_NAME "frame_data_display"
 CONFIG_BOL(FRAME_DATA, ENABLED, "enabled", false);
-CONFIG_INT(FRAME_DATA, X, "x", 640);
-CONFIG_INT(FRAME_DATA, Y, "y", 135);
-CONFIG_FLT(FRAME_DATA, SCALE_X, "scale_x", 0.9);
-CONFIG_FLT(FRAME_DATA, SCALE_Y, "scale_y", 0.9);
-CONFIG_HEX(FRAME_DATA, COLOR, "color", FFFFFFFF);
-CONFIG_INT(FRAME_DATA,TIMER,"timer",180);
-CONFIG_BOL(FRAME_DATA,FLAGS, "input_flags", false);
+CONFIG_INT(FRAME_DATA, X, "x", 270);
+CONFIG_INT(FRAME_DATA, Y, "y", 530);
+CONFIG_FLT(FRAME_DATA, SCALE_X, "scale_x", 0.75);
+CONFIG_FLT(FRAME_DATA, SCALE_Y, "scale_y", 0.75);
+CONFIG_INT(FRAME_DATA, WIDTH, "width", 720);
+CONFIG_INT(FRAME_DATA, TIMER, "timer", 240);
+CONFIG_BOL(FRAME_DATA, FRAME_STEP, "frame_stepping", false);
 
 #define HITBOX_VIS_SECTION_NAME "hitbox_vis"
 CONFIG_BOL(HITBOX_VIS, ENABLED, "enabled", false);
@@ -153,12 +163,19 @@ static inline constexpr const char
         CONFIG_DEFAULT(LOBBY, PORT),
         CONFIG_DEFAULT(LOBBY, PASS),
 
+        CONFIG_DEFAULT(BINDS,HIDE_UI),
+        CONFIG_DEFAULT(BINDS,STEP_FRAME),
+        CONFIG_DEFAULT(BINDS,STEP_TOGGLE),
+
         CONFIG_DEFAULT(PING, ENABLED),
         CONFIG_DEFAULT(PING, X),
         CONFIG_DEFAULT(PING, Y),
         CONFIG_DEFAULT(PING, SCALE_X),
         CONFIG_DEFAULT(PING, SCALE_Y),
-        CONFIG_DEFAULT(PING, COLOR),
+        CONFIG_DEFAULT(PING, SIMPLE),
+        CONFIG_DEFAULT(PING, GREAT_THRESHOLD),
+        CONFIG_DEFAULT(PING, GOOD_THRESHOLD),
+        CONFIG_DEFAULT(PING, BAD_THRESHOLD),
         CONFIG_DEFAULT(PING, FRAMES),
 
         CONFIG_DEFAULT(INPUT1, ENABLED),
@@ -169,9 +186,9 @@ static inline constexpr const char
         CONFIG_DEFAULT(INPUT1, OFFSET),
         CONFIG_DEFAULT(INPUT1, COUNT),
         CONFIG_DEFAULT(INPUT1, COLOR),
-        CONFIG_DEFAULT(INPUT1, SPACING),
         CONFIG_DEFAULT(INPUT1, TIMER),
-        CONFIG_DEFAULT(INPUT1, RAW_INPUT),
+        CONFIG_DEFAULT(INPUT1, NOTATION),
+        CONFIG_DEFAULT(INPUT1, FRAME_COUNT),
 
         CONFIG_DEFAULT(INPUT2, ENABLED),
         CONFIG_DEFAULT(INPUT2, X),
@@ -181,9 +198,9 @@ static inline constexpr const char
         CONFIG_DEFAULT(INPUT2, OFFSET),
         CONFIG_DEFAULT(INPUT2, COUNT),
         CONFIG_DEFAULT(INPUT2, COLOR),
-        CONFIG_DEFAULT(INPUT2, SPACING),
         CONFIG_DEFAULT(INPUT2, TIMER),
-        CONFIG_DEFAULT(INPUT2, RAW_INPUT),
+        CONFIG_DEFAULT(INPUT2, NOTATION),
+        CONFIG_DEFAULT(INPUT2, FRAME_COUNT),
 
         CONFIG_DEFAULT(HITBOX_VIS, ENABLED),
         CONFIG_DEFAULT(HITBOX_VIS, BORDER_WIDTH),
@@ -202,9 +219,9 @@ static inline constexpr const char
         CONFIG_DEFAULT(FRAME_DATA, Y),
         CONFIG_DEFAULT(FRAME_DATA, SCALE_X),
         CONFIG_DEFAULT(FRAME_DATA, SCALE_Y),
-        CONFIG_DEFAULT(FRAME_DATA, COLOR),
+        CONFIG_DEFAULT(FRAME_DATA, WIDTH),
         CONFIG_DEFAULT(FRAME_DATA, TIMER),
-        CONFIG_DEFAULT(FRAME_DATA, FLAGS),
+        CONFIG_DEFAULT(FRAME_DATA, FRAME_STEP),
 
         CONFIG_DEFAULT(NETWORK, IPV6),
         CONFIG_DEFAULT(NETWORK, NETPLAY),
@@ -234,6 +251,15 @@ static inline constexpr size_t VALIDATE_DEFAULT_CONFIGS() {
 
 static_assert(VALIDATE_DEFAULT_CONFIGS() == 0, "Missing default config entries!");
 
+// The string pointers are intentionally used as the key because the config functions are always called with const strings
+template<typename T, typename U>
+struct ptr_pair_hash {
+    size_t operator()(const std::pair<T, U>& x) const {
+        return (size_t)x.first ^ std::rotl((size_t)x.second, 16);
+    }
+};
+static std::unordered_map<std::pair<const char*, const char*>, std::vector<char>, ptr_pair_hash<const char*, const char*>> config_cache;
+
 static inline bool create_dummy_file(const char* path) {
     HANDLE handle = CreateFileA(
         path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
@@ -246,8 +272,9 @@ static inline bool create_dummy_file(const char* path) {
     return false;
 }
 
-static inline void set_config_string(const char* section, const char* key, const char* value) {
+void set_config_string(const char* section, const char* key, const char* value) {
     WritePrivateProfileStringA(section, key, value, CONFIG_FILE_PATH);
+    config_cache.erase({section, key});
 }
 
 enum ConfigTruncType {
@@ -257,13 +284,23 @@ enum ConfigTruncType {
 
 template <ConfigTruncType trunc = TruncationIsFail, size_t N = 0>
 static inline size_t get_config_string(const char* section, const char* key, char(&value_buffer)[N]) {
-    size_t written = GetPrivateProfileStringA(section, key, NULL, value_buffer, N, CONFIG_FILE_PATH);
-    if constexpr (trunc != AllowTruncation) {
-        if (expect(written == N - 1, false)) {
-            written = 0;
+    auto it = config_cache.find({section, key});
+
+    if (it != config_cache.end()) {
+        auto& entry = it->second;
+        memcpy(value_buffer, entry.data(), entry.size());
+        value_buffer[entry.size()] = '\0';
+        return entry.size();
+    } else {
+        size_t written = GetPrivateProfileStringA(section, key, NULL, value_buffer, N, CONFIG_FILE_PATH);
+        if constexpr (trunc != AllowTruncation) {
+            if (expect(written == N - 1, false)) {
+                written = 0;
+            }
         }
+        config_cache.emplace(std::make_pair(section, key), std::vector(value_buffer, &value_buffer[written]));
+        return written;
     }
-    return written;
 }
 
 static inline void fill_default_config_string(const char* section, const char* key, const char* default_value) {
@@ -392,6 +429,25 @@ const char* get_lobby_pass(const char* pass) {
     }
     return pass;
 }
+// ====================
+// BINDS
+// ====================
+
+static char BINDS_HIDE_UI_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{'\0'};
+int32_t get_binds_hide_ui() {
+    return GET_INT_CONFIG(BINDS,HIDE_UI);
+}
+
+static char BINDS_STEP_FRAME_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{'\0'};
+int32_t get_binds_step_frame() {
+    return GET_INT_CONFIG(BINDS,STEP_FRAME);
+}
+
+static char BINDS_STEP_TOGGLE_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{'\0'};
+int32_t get_binds_step_toggle() {
+    return GET_INT_CONFIG(BINDS,STEP_TOGGLE);
+}
+
 
 // ====================
 // PING
@@ -400,6 +456,11 @@ const char* get_lobby_pass(const char* pass) {
 static char PING_ENABLED_BUFFER[8]{ '\0' };
 bool get_ping_enabled() {
     return GET_BOOL_CONFIG(PING, ENABLED);
+}
+
+static char PING_SIMPLE_BUFFER[8]{ '\0' };
+bool get_ping_simple() {
+    return GET_BOOL_CONFIG(PING, SIMPLE);
 }
 
 static char PING_X_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
@@ -422,10 +483,25 @@ float get_ping_scale_y() {
     return GET_FLOAT_CONFIG(PING, SCALE_Y);
 }
 
-static char PING_COLOR_BUFFER[INTEGER_BUFFER_SIZE<uint32_t>]{ '\0' };
-uint32_t get_ping_color() {
-    return GET_HEX_CONFIG(PING, COLOR);
+static char PING_GREAT_THRESHOLD_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
+int32_t get_ping_great_thresh() {
+    return GET_INT_CONFIG(PING, GREAT_THRESHOLD);
 }
+
+static char PING_GOOD_THRESHOLD_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
+int32_t get_ping_good_thresh() {
+    return GET_INT_CONFIG(PING, GOOD_THRESHOLD);
+}
+
+static char PING_BAD_THRESHOLD_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
+int32_t get_ping_bad_thresh() {
+    return GET_INT_CONFIG(PING, BAD_THRESHOLD);
+}
+
+// static char PING_COLOR_BUFFER[INTEGER_BUFFER_SIZE<uint32_t>]{ '\0' };
+// uint32_t get_ping_color() {
+//     return GET_HEX_CONFIG(PING, COLOR);
+// }
 
 static char PING_FRAMES_BUFFER[8]{ '\0' };
 bool get_ping_frames() {
@@ -476,19 +552,26 @@ uint32_t get_inputp1_color() {
     return GET_HEX_CONFIG(INPUT1, COLOR);
 }
 
-static char INPUT1_SPACING_BUFFER[8]{ '\0' };
-bool get_inputp1_spacing() {
-    return GET_BOOL_CONFIG(INPUT1, SPACING);
-}
-
 static char INPUT1_TIMER_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
 int32_t get_inputp1_timer() {
     return GET_INT_CONFIG(INPUT1, TIMER);
 }
 
-static char INPUT1_RAW_INPUT_BUFFER[8]{'\0'};
-bool get_inputp1_raw_input() {
-    return GET_BOOL_CONFIG(INPUT1, RAW_INPUT);
+static char INPUT1_NOTATION_BUFFER[1024]{ '\0' };
+const char* get_inputp1_notation() {
+    const char* notation;
+    if (
+        use_config &&
+        get_config_string(INPUT1_SECTION_NAME, INPUT1_NOTATION_KEY, INPUT1_NOTATION_BUFFER)
+    ) {
+        notation = INPUT1_NOTATION_BUFFER;
+    }
+    return notation;
+}
+
+static char INPUT1_FRAME_COUNT_BUFFER[8]{ '\0' };
+bool get_inputp1_frame_count() {
+    return GET_BOOL_CONFIG(INPUT1, FRAME_COUNT);
 }
 
 // ====================
@@ -536,20 +619,28 @@ uint32_t get_inputp2_color() {
     return GET_HEX_CONFIG(INPUT2, COLOR);
 }
 
-static char INPUT2_SPACING_BUFFER[8]{ '\0' };
-bool get_inputp2_spacing() {
-    return GET_BOOL_CONFIG(INPUT2, SPACING);
-}
-
 static char INPUT2_TIMER_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
 int32_t get_inputp2_timer() {
     return GET_INT_CONFIG(INPUT2, TIMER);
 }
 
-static char INPUT2_RAW_INPUT_BUFFER[8]{ '\0' };
-bool get_inputp2_raw_input() {
-    return GET_BOOL_CONFIG(INPUT2, RAW_INPUT);
+static char INPUT2_NOTATION_BUFFER[1024]{ '\0' };
+const char* get_inputp2_notation() {
+    const char* notation;
+    if (
+        use_config &&
+        get_config_string(INPUT2_SECTION_NAME, INPUT2_NOTATION_KEY, INPUT2_NOTATION_BUFFER)
+    ) {
+        notation = INPUT2_NOTATION_BUFFER;
+    }
+    return notation;
 }
+
+static char INPUT2_FRAME_COUNT_BUFFER[8]{ '\0' };
+bool get_inputp2_frame_count() {
+    return GET_BOOL_CONFIG(INPUT2, FRAME_COUNT);
+}
+
 
 // ====================
 // HITBOX VISUALIZER
@@ -695,9 +786,24 @@ bool get_frame_data_enabled() {
     return GET_BOOL_CONFIG(FRAME_DATA, ENABLED);
 }
 
-static char FRAME_DATA_FLAGS_BUFFER[8]{ '\0' };
-bool get_frame_data_flags() {
-    return GET_BOOL_CONFIG(FRAME_DATA, FLAGS);
+// static char FRAME_DATA_FLAGS_BUFFER[8]{ '\0' };
+// bool get_frame_data_flags() {
+//     return GET_BOOL_CONFIG(FRAME_DATA, FLAGS);
+// }
+
+// static char FRAME_DATA_FRAMEBAR_BUFFER[8]{'\0'};
+// bool get_frame_data_framebar() {
+//     return GET_BOOL_CONFIG(FRAME_DATA,FRAMEBAR);
+// }
+
+static char FRAME_DATA_FRAME_STEP_BUFFER[8]{ '\0' };
+bool get_frame_data_frame_stepping() {
+    return GET_BOOL_CONFIG(FRAME_DATA, FRAME_STEP);
+}
+
+static char FRAME_DATA_WIDTH_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{'\0'};
+int32_t get_frame_data_width() {
+    return GET_INT_CONFIG(FRAME_DATA,WIDTH);
 }
 
 static char FRAME_DATA_X_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
@@ -720,10 +826,10 @@ float get_frame_data_scale_y() {
     return GET_FLOAT_CONFIG(FRAME_DATA, SCALE_Y);
 }
 
-static char FRAME_DATA_COLOR_BUFFER[INTEGER_BUFFER_SIZE<uint32_t>]{'\0'};
-uint32_t get_frame_data_color() {
-    return GET_HEX_CONFIG(FRAME_DATA, COLOR);
-}
+// static char FRAME_DATA_COLOR_BUFFER[INTEGER_BUFFER_SIZE<uint32_t>]{'\0'};
+// uint32_t get_frame_data_color() {
+//     return GET_HEX_CONFIG(FRAME_DATA, COLOR);
+// }
 
 static char FRAME_DATA_TIMER_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
 int32_t get_frame_data_timer() {
@@ -749,6 +855,50 @@ float get_timer_leniency() {
 }
 
 
+static HANDLE config_watcher_thread = NULL;
+static std::atomic_bool config_watcher_exit = false;
+static std::atomic_bool config_flush_queued = false;
+static DWORD stdcall config_watcher_proc(void*) {
+    HANDLE file = CreateFileA(
+        CONFIG_FILE_NAME, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+        NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL
+    );
+    if (file == INVALID_HANDLE_VALUE)
+        return 0;
+
+    // Using the proper file change watcher API seems overkill for this
+    FILETIME last_last_write = {};
+    FILETIME last_write = {};
+    while (!config_watcher_exit) {
+        if (
+            GetFileTime(file, NULL, NULL, &last_write) &&
+            memcmp(&last_last_write, &last_write, sizeof(FILETIME)) &&
+            last_last_write.dwLowDateTime != 0 && last_last_write.dwHighDateTime != 0)
+        {
+            config_flush_queued = true;
+        }
+        last_last_write = last_write;
+        Sleep(64);
+    }
+
+    CloseHandle(file);
+    return 0;
+}
+
+void config_watcher_check() {
+    if (config_flush_queued) {
+        config_cache.clear();
+        config_flush_queued = false;
+    }
+}
+
+void config_watcher_stop() {
+    config_watcher_exit = true;
+    if (config_watcher_thread)
+        WaitForSingleObject(config_watcher_thread, 1000);
+}
+
+
 static char TASOFRO_GAME_VERSION_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
 int32_t GAME_VERSION = 1211;
 
@@ -765,7 +915,7 @@ void init_config_file() {
                     memcpy(&CONFIG_FILE_PATH[filename_length + 1], TASOFRO_CONFIG_FILE_NAME, sizeof(TASOFRO_CONFIG_FILE_NAME));
 
                     if (file_exists(CONFIG_FILE_PATH)) {
-                        GAME_VERSION = get_int_setting<false>("updater", "version", TASOFRO_GAME_VERSION_BUFFER, 0);
+                        GAME_VERSION = get_int_setting<false>("updater", "version", TASOFRO_GAME_VERSION_BUFFER, GAME_VERSION);
                     }
                 }
                 if (filename_length < countof(CONFIG_FILE_PATH) - countof(CONFIG_FILE_NAME)) {
@@ -780,6 +930,8 @@ void init_config_file() {
                         nounroll for (size_t i = 0; i < countof(DEFAULT_CONFIGS); ++i) {
                             fill_default_config_string(DEFAULT_CONFIGS[i][0], DEFAULT_CONFIGS[i][1], DEFAULT_CONFIGS[i][2]);
                         }
+
+                        config_watcher_thread = CreateThread(NULL, 0, config_watcher_proc, NULL, 0, NULL);
                     }
                 }
                 return;

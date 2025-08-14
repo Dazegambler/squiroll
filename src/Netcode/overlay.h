@@ -3,8 +3,7 @@
 #ifndef OVERLAY_H
 #define OVERLAY_H 1
 
-struct ManbowActor2DGroup;
-struct ManbowActor2D;
+#include "TF4.h"
 
 void overlay_init();
 void overlay_destroy();
@@ -12,6 +11,6 @@ void overlay_destroy();
 void overlay_set_hitboxes(ManbowActor2DGroup* group, int p1_flags, int p2_flags);
 void overlay_clear();
 void overlay_draw();
-bool IsFrameActive(ManbowActor2D *actor);
+int debug(ManbowActor2D* player);
 
 #endif

@@ -63,10 +63,10 @@ CONFIG_STR(LOBBY, PORT, "lobby_port", "1550");
 #endif
 CONFIG_STR(LOBBY, PASS, "lobby_password", "kzxmckfqbpqieh8rw<rczuturKfnsjxhauhybttboiuuzmWdmnt5mnlczpythaxf");
 
-#define BINDS_SECTION_NAME "keybinds"
+#define BINDS_SECTION_NAME "binds"
 CONFIG_INT(BINDS,HIDE_UI,"hide_ui",41);
-CONFIG_INT(BINDS,STEP_FRAME,"step_frame",1);
-CONFIG_INT(BINDS,STEP_TOGGLE,"step_toggle",2);
+CONFIG_INT(BINDS,STEP_FRAME,"step_frame",2);
+CONFIG_INT(BINDS,STEP_TOGGLE,"step_toggle",3);
 
 #define PING_SECTION_NAME "ping"
 CONFIG_BOL(PING, ENABLED, "enabled", true);

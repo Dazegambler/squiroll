@@ -271,7 +271,6 @@ function Create( param )
 			  // [329]  OP_JMP            0      0    0    0
 		}
 	}
-
 	// ::rollback.Reset(this.group_player);
 }
 

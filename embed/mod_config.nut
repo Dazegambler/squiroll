@@ -70,6 +70,8 @@ local function ConfigField(label,sqkey = null,key = null) {
 		local item_x = this.anime.item_x;
 		::Dialog(2, label, function (ret) {
 			if (ret) {
+				try{ret["to"+typeof _table[sqkey]]();}
+				catch (e){return;}
 				local str = ret+"";
 				item[1].Set(ret["to"+typeof _table[sqkey]]());
 				::setting.save(_table.config_section,key,str);
@@ -86,6 +88,8 @@ local function ConfigColorField(label,sqkey = null) {
 		local item_x = this.anime.item_x;
 		::Dialog(2, diag_txt, function (ret) {
 			if (ret) {
+				try{ret.tofloat();}
+				catch (e){return;}
 				local val = ::math.clamp(ret.tofloat(),0,1);
 				local str = ret+"";
 				item[1].Set(val);
@@ -145,9 +149,9 @@ local function ConfigPage(section,_table,...) {
 		ConfigBoolSelect("enabled"),
 		ConfigBoolSelect("show input delay","input_delay","frames"),
 		ConfigBoolSelect("simple"),
-		ConfigField("great threshold","great_threshold"),
-		ConfigField("good threshold","good_threshold"),
-		ConfigField("bad threshold","bad_threshold"),
+		ConfigField("great threshold([///])","great_threshold"),
+		ConfigField("good threshold([//_])","good_threshold"),
+		ConfigField("bad threshold([/__])","bad_threshold"),
 		ConfigField("x"),
 		ConfigField("y"),
 		ConfigField("scale x","sx","scale_x"),
@@ -195,7 +199,7 @@ local function ConfigPage(section,_table,...) {
 		ConfigField("y"),
 		ConfigField("scale x","sx","scale_x"),
 		ConfigField("scale y","sy","scale_y"),
-		ConfigField("frame step", "frame_stepping"),
+		ConfigBoolSelect("frame step", "frame_stepping"),
 		ConfigField("width"),
 		ConfigField("timer")
 	),

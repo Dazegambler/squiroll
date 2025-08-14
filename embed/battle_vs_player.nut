@@ -261,7 +261,7 @@ function Round_KO()
 	this.SetTimeStop(60);
 	this.SetWinner();
 
-	if (!::network.IsPlaying() && (this.win[0] >= this.match_num || this.win[1] >= this.match_num))
+	if ((this.win[0] >= this.match_num || this.win[1] >= this.match_num))
 	{
 		this.CreateWinData();
 	}
@@ -906,12 +906,10 @@ function SetWinner()
 
 function CreateWinData()
 {
-	if (this.winner == 1)
-	{
+	if (this.winner == 1) {
 		::talk.GenerateResultMessage(this.team[0].master_name, this.team[0].slave_name, this.team[1].master_name, this.team[1].slave_name, false);
 	}
-	else
-	{
+	else {
 		::talk.GenerateResultMessage(this.team[1].master_name, this.team[1].slave_name, this.team[0].master_name, this.team[0].slave_name, true);
 	}
 }

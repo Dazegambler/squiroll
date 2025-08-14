@@ -218,6 +218,7 @@ function FrameDataDisplay(_team){
                 foreach (i,text in this.cancel) {
                     text.Set(cancels[i]);
                     text.sx = ::math.clamp(this.max_w / text.width,0.1,max_sx);
+                    text.sy = ::setting.frame_data.sy;
                     text.x = x;
                     text.y = y;
                 }
@@ -240,6 +241,7 @@ function FrameDataDisplay(_team){
                 foreach(i,text in this.bar) {
                     text.Set(bar[i]);
                     text.sx = ::math.clamp(this.max_w / text.width,0.1,max_sx);
+                    text.sy = ::setting.frame_data.sy;
                     text.x = x;
                     text.y = y;
                 }
@@ -290,7 +292,6 @@ function FrameDataDisplay(_team){
             for (local a = 0; a < 7; ++a) {
                 local color = colors[a / 3][a % 3];
                 local text = ::font.CreateSystemString("");
-                text.sy = ::setting.frame_data.sy;
                 text.red = color[0];
                 text.green = color[1];
                 text.blue = color[2];
@@ -304,7 +305,6 @@ function FrameDataDisplay(_team){
                 if (i < color.len())color[i] = 1.0;
                 else color = [0.5,0.5,0.5];
                 local text = ::font.CreateSystemString("");
-                text.sy = ::setting.frame_data.sy;
                 text.red = color[1];
                 text.green = color[0];
                 text.blue = color[2];

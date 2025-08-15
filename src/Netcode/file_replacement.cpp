@@ -242,8 +242,12 @@ static constexpr uint8_t rollback_nut[] = {
 #include "embed/rollback.nut.h"
 };
 
-static constexpr uint8_t setting_nut[] = {
-#include "embed/setting.nut.h"
+// static constexpr uint8_t setting_nut[] = {
+// #include "embed/setting.nut.h"
+// };
+
+static constexpr uint8_t plugin_nut[] = {
+#include "embed/plugin.nut.h"
 };
 
 static const std::unordered_map<std::string_view, const EmbedData> embeds = {
@@ -279,7 +283,8 @@ static const std::unordered_map<std::string_view, const EmbedData> embeds = {
     {"mod_config.nut"sv, mod_config_nut},
     {"input_display.nut"sv, input_display_nut},
     {"rollback.nut"sv, rollback_nut},
-    {"setting.nut"sv, setting_nut},
+    // {"setting.nut"sv, setting_nut},
+    {"plugin.nut"sv, plugin_nut},
 };
 
 // static const std::unordered_map<std::string_view, const EmbedData> new_files = {

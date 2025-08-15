@@ -10,6 +10,9 @@
 #include <stdint.h>
 #include <string.h>
 #include <squirrel.h>
+#include <windows.h>
+#include <filesystem>
+namespace fs = std::filesystem;
 
 #include <string>
 
@@ -476,6 +479,114 @@ extern "C" {
 
             sq_setfunc(v, _SC("print"), sq_print);
             sq_setfunc(v, _SC("fprint"), sq_fprint);
+
+            sq_setfunc(v, _SC("system"),[](HSQUIRRELVM v) -> SQInteger {
+                return 0;
+            });
+
+            sq_setfunc(v, _SC("mkdir"),[](HSQUIRRELVM v) -> SQInteger {
+                const SQChar* path;
+                if (sq_gettop(v) != 2 ||
+                    SQ_FAILED(sq_getstring(v, 2, &path))
+                ) {
+                    return sq_throwerror(v, _SC("Invalid arguments, expected <path>"));
+                }
+                if(!CreateDirectory(path, NULL)) {
+                    if(GetLastError() != ERROR_ALREADY_EXISTS) {
+                        return sq_throwerror(v, _SC("Failed to create directory"));
+                    }
+                }
+                sq_pushbool(v, SQTrue);
+                return 1;
+            });
+
+            sq_setfunc(v, _SC("readfile"), [](HSQUIRRELVM v) -> SQInteger {
+                const SQChar* path;
+                if (sq_gettop(v) != 2 ||
+                    SQ_FAILED(sq_getstring(v, 2, &path))
+                ) {
+                    return sq_throwerror(v, _SC("Invalid arguments, expected <path>"));
+                }
+                HANDLE hFile = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+                if (hFile == INVALID_HANDLE_VALUE) {
+                    return sq_throwerror(v, _SC("Could not read file"));
+                }
+
+                DWORD fileSize = GetFileSize(hFile, NULL);
+                if (fileSize == INVALID_FILE_SIZE) {
+                    CloseHandle(hFile);
+                    return sq_throwerror(v, _SC("Could not get file size"));
+                }
+
+                char *buffer = (char *)malloc(fileSize + 1);
+                if (!buffer) {
+                    CloseHandle(hFile);
+                    return sq_throwerror(v, _SC("Memory allocation failed"));
+                }
+
+                DWORD bytesRead;
+                if (!ReadFile(hFile, buffer, fileSize, &bytesRead, NULL) || bytesRead != fileSize) {
+                    free(buffer);
+                    CloseHandle(hFile);
+                    return sq_throwerror(v, _SC("Could not read file"));
+                }
+                buffer[fileSize] = '\0';
+                CloseHandle(hFile);
+
+                sq_pushstring(v, buffer, fileSize);
+                free(buffer);
+                return 1;
+            });
+
+            sq_setfunc(v, _SC("writefile"), [](HSQUIRRELVM v) -> SQInteger {
+                const SQChar* path;
+                const SQChar* data;
+                if (sq_gettop(v) != 3 ||
+                    SQ_FAILED(sq_getstring(v, 2, &path)) ||
+                    SQ_FAILED(sq_getstring(v, 3, &data))
+                ) {
+                    return sq_throwerror(v, _SC("Invalid arguments, expected <path> <data>"));
+                }
+                HANDLE hFile = CreateFile(path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+                if (hFile == INVALID_HANDLE_VALUE) {
+                    return sq_throwerror(v, _SC("Could not open file for writing"));
+                }
+
+                DWORD bytesWritten;
+                DWORD dataLen = (DWORD)scstrlen(data);
+                if (!WriteFile(hFile, data, dataLen, &bytesWritten, NULL) || bytesWritten != dataLen) {
+                    CloseHandle(hFile);
+                    return sq_throwerror(v, _SC("Could not write file"));
+                }
+
+                CloseHandle(hFile);
+                sq_pushbool(v, SQTrue);
+                return 1;
+            });
+
+            sq_setfunc(v, _SC("listfiles"), [](HSQUIRRELVM v) -> SQInteger {
+                const SQChar* path;
+                if (sq_gettop(v) != 2 ||
+                    SQ_FAILED(sq_getstring(v, 2, &path))
+                ) {
+                    return sq_throwerror(v, _SC("Invalid arguments, expected <path>"));
+                }
+                try {
+                    sq_newarray(v, 0);
+                    for (const auto &entry : fs::directory_iterator(path)) {
+                        if (fs::is_regular_file(entry.path())) {
+                            std::string file = entry.path().filename().string();
+                            if (file.size() >= 4 && file.substr(file.size() - 4) == ".nut") {
+                                sq_pushstring(v, file.c_str(), -1);
+                                sq_arrayappend(v, -2);
+                            }
+                        }
+                    }
+                    return 1;
+                } catch (const std::exception &e) {
+                    return sq_throwerror(v, e.what());
+                }
+            });
 
 // #if !DISABLE_ALL_LOGGING_FOR_BUILD
 //             sq_setprintfunc(v, 

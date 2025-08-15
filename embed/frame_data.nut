@@ -189,29 +189,18 @@ function FrameDataDisplay(_team){
                 //cancel bar
                 local cancels = [" "," "," "," "," "," "," "];
                 foreach (i,cancel in data.cancels) {
-                    local mid = ["    ","    ","    ","    ","    ","    ","    "];
-                    local leftdiv = ["    ","    ","    ","    ","    ","    ","    "];
-                    local rightdiv = ["    ","    ","    ","    ","    ","    ","    "];
+                    local toadd = ["　 ","　 ","　 ","　 ","　 ","　 ","　 "];
                     local flag = cancel[0];
                     if (flag) {
                         local text = 0;
                         if (flag & 0x20)text += 1;//special
                         if (flag & 0x400)text += 2;//bullet
                         if ((flag & 0x4420) > 0x4000)text += 3;//dash
-
-
-                        mid[text] = "~~";
-                        leftdiv[text] = "  [";
-                        rightdiv[text] = "]  ";
+                        toadd[text] = "□";
                     }
-
-                    local duration = cancel[2] - cancel[1] - 2;
+                    local duration = cancel[2] - cancel[1];
                     for (local id = 0; id < 7; ++id) {
-                        cancels[id] += leftdiv[id];
-                        local dur = duration;
-                        while(dur-- > 0)cancels[id] += mid[id];
-                        cancels[id] += rightdiv[id];
-
+                        for(local t = 0; t <= duration;++t)cancels[id] += toadd[id];
                     }
                 }
 
@@ -230,9 +219,9 @@ function FrameDataDisplay(_team){
 
                 foreach(i, arr in data.frames) {
                     foreach(w,data in arr) {
-                        local add = ["    ", "    ", "    ", "    "];
+                        local add = ["　 ", "　 ", "　 ", "　 "];
                         for(local t = 0; t < data;++t) {
-                            add[(w&1) ? 3 : i] = "[]";
+                            add[(w&1) ? 3 : i] = "■";
                             foreach(z,val in add)bar[z] += val;
                         }
                     }
@@ -456,7 +445,5 @@ function FrameDataDisplay(_team){
         }
     };
     display.Reset();
-
-    ::setting.register(display);
     return display;
 }

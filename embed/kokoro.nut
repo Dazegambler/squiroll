@@ -3433,7 +3433,7 @@ function Spell_Climax_Init( t )
 	this.keyAction = [
 		function ()
 		{
-			this.UseClimaxSpell(60, "ï¿½ï¿½ï¿½\x2592ï¿½ï¿½\x253cï¿½ï¿½ï¿½Aï¿½^ï¿½Vï¿½Aï¿½Lï¿½ï¿½ï¿½Cï¿½ï¿½\x2566ï¿½Hï¿½ï¿½");
+			this.UseClimaxSpell(60, "–‚±‚ê‚Å‚àƒAƒ^ƒVAƒLƒŒƒC‚æ‚ËH–");
 			this.PlaySE(2935);
 			::battle.enableTimeUp = false;
 			this.lavelClearEvent = function ()

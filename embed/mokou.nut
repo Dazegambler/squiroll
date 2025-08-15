@@ -4388,7 +4388,7 @@ function Spell_Climax_Init( t )
 			this.occultCount = 0;
 			this.atkRate = 1.00000000;
 			this.occult_level = 0;
-			this.UseClimaxSpell(60, "ï¿½ï¿½ï¿½\x2592ï¿½ï¿½\x255aï¿½ï¿½ï¿½\x2550ï¿½Rï¿½ï¿½ï¿½sï¿½ï¿½ï¿½\x2500ï¿½\x2561ï¿½\x2584ï¿½ï¿½ï¿½Iï¿½ï¿½");
+			this.UseClimaxSpell(60, "–‚±‚ñ‚È¢‚Í”R‚¦s‚«‚Ä‚µ‚Ü‚¦I–");
 			::battle.enableTimeUp = false;
 			this.lavelClearEvent = function ()
 			{

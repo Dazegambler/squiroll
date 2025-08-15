@@ -137,6 +137,10 @@ local function ConfigPage(section,_table,...) {
 	};
 }
 
+function Add(...) {
+	foreach (elem in vargv)elem.call(this);
+}
+
 ::UI.Menu.call(this,
 	ConfigPage("Network",table = ::setting.network,
 		ConfigBoolSelect("hide ip","hide_ip"),

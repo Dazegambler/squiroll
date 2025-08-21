@@ -1,11 +1,11 @@
-this.actors <- [];
+// this.actors <- [];
 
-function Tick(p1,p2){
-    actors.append(p1);
-    actors.append(p2);
-    ::rollback.TickA(this.actors);
-    this.actors = [];
-}
+// function Tick(p1,p2){
+//     actors.append(p1);
+//     actors.append(p2);
+//     ::rollback.TickA(this.actors);
+//     this.actors = [];
+// }
 
 // //[{table_ref={};table_ref={};},{}...]
 // this.data <- [];
@@ -129,6 +129,7 @@ function Tick(p1,p2){
 //     // }
 // }
 
+
 // function internetArchive(){
 //     if(this.data.len() > ++this.index){
 //         this.data[this.index] = [];
@@ -147,3 +148,27 @@ function Tick(p1,p2){
 
 //     // this.bullets = {};
 // }
+this.timeline <- [];
+
+function InternetArchive() {
+    this.timeline.append({});
+}
+
+function IsStored(actor) {
+    for (local i = 0;i < this.timeline.len();++i) {
+        if (actor in this.timeline[i])return true;
+    }
+    return false;
+}
+
+function ResetTimeline() {
+    delete this.timeline;
+    this.timeline <- [{}];
+}
+
+function NeverHappened(frames) {
+    local top = this.timeline.len() - 1;
+    local new_timeline = ::math.clamp(top - frames,0,top);
+    foreach(k,v in this.timeline[new_timeline])k.RestoreState(v);
+    while ((this.timeline.len() - 1) > new_timeline)this.timeline.pop();
+}

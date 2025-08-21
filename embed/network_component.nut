@@ -192,7 +192,7 @@ function StartupServer( port, mode )
 		this.rand_seed = ::manbow.timeGetTime();
 		this.srand(this.rand_seed);
 		this.player_name[0] = ::config.network.player_name;
-		this.player_name[1] = table_src.name.len() > 16 ? "P2" : table_src.name;
+		this.player_name[1] = ::setting.network.hide_name || table_src.name.len() > 16 ? "P2" : table_src.name;
 		this.color_num[0] = ::savedata.GetColorNum();
 		this.color_num[1] = table_src.color;
 		this.icon[0] = this.local_icon;
@@ -309,7 +309,7 @@ function StartupClient( addr, port, mode )
 		this.is_client = true;
 		this.rand_seed = _reply_table.rand_seed;
 		this.srand(this.rand_seed);
-		this.player_name[0] = _reply_table.name.len() > 16 ? "P1" : _reply_table.name;
+		this.player_name[0] = ::setting.network.hide_name || _reply_table.name.len() > 16 ? "P1" : _reply_table.name;
 		this.player_name[1] = ::config.network.player_name;
 		this.color_num[0] = _reply_table.color;
 		this.color_num[1] = ::savedata.GetColorNum();

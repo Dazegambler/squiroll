@@ -110,21 +110,28 @@ function CreatePlayer( actor_name, src_name, color, mode, difficulty )
 	// 		// ::battle.frame_task.bullets.append(a);
 	// 	}
 	// };
+
+	//rollback patches
+	// ::manbow.CompileFile("actor_rollback.nut",t.player_class);
 	//bullet patches;
+	// ::manbow.CompileFile("actor_rollback.nut",t.shot_class);
 	local releaseactor = t.shot_class.ReleaseActor;
 	t.shot_class.ReleaseActor <- function () {
 		local frame_data = ::battle.frame_task;
-		if (frame_data) {
+		if (::setting.frame_data.enabled &&
+			frame_data) {
 			local idx = frame_data.bullets.find(this);
 			if (idx)frame_data.bullets.remove(idx);
 		}
+		if (::battle.rollback.IsStored(this))return;
 		releaseactor();
 	};
 	local setshot = t.shot_class.SetShot;
 	t.shot_class.SetShot <- function (x_, y_, dir_, init_, t_, pare_ = null) {
 		local a = setshot(x_,y_, dir_,init_,t_,pare_);
 		local frame_data = ::battle.frame_task;
-		if(frame_data &&
+		if(	::setting.frame_data.enabled &&
+			frame_data &&
 			"current" in frame_data.team &&
 			frame_data.team.current &&
 			this.owner == frame_data.team.current

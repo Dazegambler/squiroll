@@ -32,4 +32,6 @@ SQInteger loadCSVBuffer(HSQUIRRELVM v);
 #define sq_fprint_value sq_dummy
 #endif
 
+SQInteger sq_deepcopy(HSQUIRRELVM v);
+
 #endif

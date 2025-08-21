@@ -588,6 +588,8 @@ extern "C" {
                 }
             });
 
+            sq_setfunc(v, _SC("deepcopy"), sq_deepcopy);
+
 // #if !DISABLE_ALL_LOGGING_FOR_BUILD
 //             sq_setprintfunc(v, 
 //                 [](HSQUIRRELVM v, const SQChar* str,...) -> void {
@@ -610,6 +612,12 @@ extern "C" {
             sq_createtable(v, _SC("setting"), [](HSQUIRRELVM v) {
                 sq_setinteger(v, _SC("version"), PLUGIN_VERSION);
                 sq_setinteger(v, _SC("revision"), PLUGIN_REVISION);
+                // sq_setfunc(v, _SC("hitbox"), [](HSQUIRRELVM v) {
+                //     sq_setbool(v, _SC("enabled"), [](HSQUIRRELVM v) -> SQInteger {
+                //         sq_pushbool(v, get_hitbox_vis_enabled());
+                //         return 1;
+                //     });
+                // });
                 sq_setfunc(v,_SC("save"),[](HSQUIRRELVM v) -> SQInteger {
                     const char* section;
                     const char* key;

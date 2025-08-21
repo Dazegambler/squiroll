@@ -104,10 +104,67 @@ class this.PlayerTeamData
 		this.shield = null;
 	}
 
+	function copy(lhs,rhs){
+		foreach(i,v in typeof lhs == "instance" ? lhs.getclass() : lhs){
+			switch (typeof lhs[i]) {
+				case "function":
+					break;
+				case "table":
+				case "class":
+				case "instance":
+					if(lhs[i])this.copy(rhs[i] <- {},lhs[i]);
+					else rhs[i] <- lhs[i];
+					break;
+				case "integer":
+				case "float":
+				case "string":
+				case "bool":
+				case "null":
+					rhs[i] <- lhs[i];
+					break;
+			}
+		}
+	};
+
+	function StoreState() {
+		local data = {};
+		this.copy(this,data);
+		return data;
+	}
+
+	function merge(lhs,rhs,known){
+		foreach(i,v in typeof lhs == "instance" ? lhs.getclass() : lhs){
+			if (known.find(lhs))break;
+			switch (typeof lhs[i]) {
+				case "function":
+					break;
+				case "table":
+				case "class":
+				case "instance":
+					// ::print("on:"+i+"."+lhs[i]+"\n");
+					if(lhs[i]) {
+						known.append(lhs[i]);
+						this.merge(rhs[i],lhs[i],known);
+					}else rhs[i] = lhs[i];
+					break;
+				default:
+					// ::print("restoring:"+i+"\n");
+					rhs[i] = lhs[i];
+					break;
+			}
+		}
+	};
+
+	function RestoreState(state) {
+		local known = [];
+		this.merge(state,this,known);
+	}
+
 	function Update()
 	{
 		this.input.Update();
 		this.combo.Update();
+		::battle.rollback.timeline.top()[this] <- this.StoreState();
 	}
 
 	function SetGroup( _index )

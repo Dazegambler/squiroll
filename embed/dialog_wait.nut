@@ -34,7 +34,20 @@ function Update()
 	if (::punch.ip_available()) {
 		::menu.network.update_help_text = true;
 		if (::menu.network.display_ip_on_wait) {
-			local str = ::menu.network.item_table.wait_incomming[0];
+			local str = "";
+			switch (::LOBBY.GetLobbyUserState()) {
+				case 200:
+				case 100:
+					str = ::menu.network.item_table.wait_incomming[0];
+					break;
+				case 102:
+				case 202:
+					str = "Match Found,Connecting...";
+					break;
+				default:
+					str = ::menu.network.item_table.wait_incomming[0]+"("+::LOBBY.GetLobbyUserState()+")";
+			}
+			// local str = ::menu.network.item_table.wait_incomming[0];
 			if (!::setting.network.hide_ip) {
 				str = str + " " + ::punch.get_ip();
 			}

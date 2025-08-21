@@ -1,7 +1,0 @@
-function Initialize(){
-
-}
-
-function Update() {
-
-}

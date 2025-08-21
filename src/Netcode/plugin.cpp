@@ -119,7 +119,7 @@ public:
 //     return 1; // Number of return values
 // }
 
-static HSQUIRRELVM v;
+HSQUIRRELVM v;
 
 bool sq_eval(HSQUIRRELVM v, const SQChar *code, bool get_result = false) {
     if (SQ_FAILED(sq_compilebuffer(v, code, -1, _SC("eval"), SQFalse)))return false;
@@ -769,60 +769,30 @@ extern "C" {
                 sq_setfunc(v, _SC("update_delay"), update_delay);
                 sq_setfunc(v, _SC("resyncing"), SQPUSH_BOOL_FUNC(resyncing));
                 sq_setfunc(v, _SC("get_buffered_frames"), SQPUSH_INT_FUNC(local_buffered_frames));
-                sq_setfunc(v, _SC("Reset"), [](HSQUIRRELVM v)-> SQInteger {
-                    void* inst;
-                    if (sq_gettop(v) != 2 ||
-                        SQ_FAILED(sq_getinstanceup(v, 2, &inst, nullptr))){
-                            return sq_throwerror(v, "Invalid arguments, expected: <group>");
-                    }
-                    Reset(v, (ManbowActor2DGroup*)inst);
-                    return 0;
+                sq_setfunc(v, _SC("start"), [](HSQUIRRELVM v) -> SQInteger {
+                    rollback_start();
+                    return 1;
                 });
-                sq_setfunc(v, _SC("Tick"), [](HSQUIRRELVM v)-> SQInteger {
-                    if (sq_gettop(v) != 1 ){
-                            return sq_throwerror(v, "Invalid arguments, expected: none");
-                    }
-                    Tick();
-                    return 0;
+                sq_setfunc(v, _SC("stop"), [](HSQUIRRELVM v) -> SQInteger {
+                    rollback_stop();
+                    return 1;
                 });
-                sq_setfunc(v, _SC("Undo"), [](HSQUIRRELVM v)-> SQInteger {
+                sq_setfunc(v, _SC("preframe"), [](HSQUIRRELVM v) -> SQInteger {
+                    rollback_preframe();
+                    return 1;
+                });
+                sq_setfunc(v, _SC("postframe"), [](HSQUIRRELVM v) -> SQInteger {
+                    rollback_postframe();
+                    return 1;
+                });
+                sq_setfunc(v, _SC("rewind"), [](HSQUIRRELVM v) -> SQInteger {
                     SQInteger frames;
                     if (sq_gettop(v) != 2 ||
-                        SQ_FAILED(sq_getinteger(v, 2, &frames))){
-                            return sq_throwerror(v, "Invalid arguments, expected: <frames>");
+                        SQ_FAILED(sq_getinteger(v, 2, &frames))
+                    ) {
+                        return sq_throwerror(v, _SC("Invalid arguments, expected: <frames>"));
                     }
-                    Undo(frames);
-                    return 0;
-                });
-                sq_setfunc(v, _SC("Clear"), [](HSQUIRRELVM v)-> SQInteger {
-                    if (sq_gettop(v) != 1 ){
-                            return sq_throwerror(v, "Invalid arguments, expected: none");
-                    }
-                    Clear();
-                    return 0;
-                });
-                sq_setfunc(v, _SC("TickA"), [](HSQUIRRELVM v)-> SQInteger {
-                    if (sq_gettop(v) != 2 || 
-                    sq_gettype(v, 2) != OT_ARRAY) {
-                    return sq_throwerror(v, _SC("Invalid arguments, expected: <actor[]>"));
-                    }
-                
-                    std::vector<ManbowActor2D*> actors;
-                
-                    sq_push(v, 2);
-                    sq_pushnull(v);
-                    while (SQ_SUCCEEDED(sq_next(v, -2))) {
-                        void* instance;
-                        sq_getinstanceup(v, -1, &instance, 0);
-                        if (!instance) {
-                            sq_pop(v, 4);
-                            return sq_throwerror(v, _SC("Invalid class instance in array"));
-                        }
-                        actors.emplace_back((ManbowActor2D*)instance);
-                        sq_pop(v, 2);
-                    }
-                    sq_pop(v, 1);
-                    TickA(actors);
+                    rollback_rewind(frames);
                     return 0;
                 });
             });

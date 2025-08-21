@@ -21,8 +21,6 @@ function TerminateUser()
 ::manbow.CompileFile("UI.nut", this);
 ::manbow.CompileFile("frame_data.nut", this);
 ::manbow.CompileFile("input_display.nut",this);
-this.rollback <- {};
-::manbow.CompileFile("rollback.nut",this.rollback);
 this.gauge <- {};
 ::manbow.CompileFile("data/actor/status/gauge_common.nut", this.gauge);
 ::manbow.CompileFile("data/actor/status/spellcard.nut", this);
@@ -271,7 +269,8 @@ function Create( param )
 			  // [329]  OP_JMP            0      0    0    0
 		}
 	}
-	this.rollback.ResetTimeline();
+	::rollback.start();
+	this.test <- {};
 }
 
 function framedisplaysetup() {
@@ -338,6 +337,7 @@ function HideUISetup() {
 		if (z && (!(z % 10) || z == 1)){
 			::sound.PlaySE("sys_ok");
 			::battle.frame_lock = false;
+			::rollback.rewind(4);
 			// ::battle.rollback.NeverHappened(4);
 			// local test = ::deepcopy(t0);
 			// ::debug.fprint_value(test,"test_dump.txt");
@@ -357,6 +357,8 @@ function Release() {
 	::discord.rpc_set_large_img_key("mainicon");
 	if (::replay.GetState() == ::replay.PLAY && ::network.inst == null)
 		::discord.rpc_commit_details_and_state("Idle", "");
+
+	::rollback.stop();
 
 	if (this.ping_task != null) {
 		::loop.DeleteTask(this.ping_task);
@@ -404,7 +406,6 @@ function Release() {
 	::manbow.SetTerminateFunction(null);
 
 	::overlay.clear();
-	this.rollback.ResetTimeline();;
 }
 
 function Begin()
@@ -454,7 +455,6 @@ this.UpdateMain = function() {
 		return;
 	}
 	this.UpdateMainOrig();
-	this.rollback.InternetArchive();
 
 
 	if (::menu.pause_hack)

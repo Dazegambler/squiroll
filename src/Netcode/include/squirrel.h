@@ -274,6 +274,10 @@ typedef struct tagSQObject
 {
 	SQObjectType _type;
 	SQObjectValue _unVal;
+
+	bool operator==(const tagSQObject& rhs) const {
+		return _type == rhs._type && _unVal.raw == rhs._unVal.raw;
+	};
 }SQObject;
 
 typedef struct  tagSQMemberHandle{

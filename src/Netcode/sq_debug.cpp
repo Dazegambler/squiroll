@@ -214,66 +214,6 @@ static void squirrel_deep_copy(HSQUIRRELVM v, std::vector<CloneRef>& clone_vec) 
     sq_pop(v, 1 + (_RAW_TYPE(obj._type) == _RT_INSTANCE));
 }
 
-// static void sq_deepcopy(HSQUIRRELVM v, SQInteger idx_lhs, SQInteger idx_rhs, std::vector<SQObjectValue>& known) {
-
-//     sq_pushnull(v);
-//     while (SQ_SUCCEEDED(sq_next(v, idx_lhs  + idx_lhs < 0 ? -1 : 0))) {
-//         union {
-//             SQInteger val_int;
-//             SQFloat val_float;
-//             SQBool val_bool;
-//             HSQOBJECT val_obj;
-//             struct {
-//                 SQUserPointer val_user_ptr;
-//                 SQUserPointer val_type_tag;
-//             };
-//             struct {
-//                 const SQChar* val_string;
-//                 SQUnsignedInteger val_closure_params;
-//                 SQUnsignedInteger val_closure_free_vars;
-//             };
-//             HSQUIRRELVM val_thread;
-//         };
-//         //-2 key -1 val
-//         switch (uint32_t val_type = _RAW_TYPE(sq_gettype(v, -1))) {
-//             case _RT_CLOSURE: case _RT_NATIVECLOSURE:
-//                 break;
-//             case _RT_INSTANCE:
-//                 sq_getclass(v, -1);
-//                 sq_remove(v, -2);
-//             case _RT_CLASS:
-//                 sq_gettypetag(v, -1, &val_type_tag);
-//                 goto get_contents;
-//             case _RT_TABLE: case _RT_ARRAY:
-//                 if (sq_getsize(v, -1)) {
-//                     get_contents:
-//                         for (const auto& obj : known) {
-//                             if (!memcmp(&val_obj._unVal, &obj, sizeof(SQObjectValue)))break;
-//                         }
-//                         known.push_back(val_obj._unVal);
-//                         sq_newtable(v);
-//                         sq_deepcopy(v, -2, -1, known);
-//                         sq_push(v, -3);
-//                         sq_push(v, -2);
-//                         sq_rawset(v, idx_rhs);
-//                         sq_pop(v, 1);
-//                 }else {
-//                     sq_push(v, -2);
-//                     sq_pushnull(v);
-//                     sq_rawset(v,idx_rhs);
-//                 }
-//                 break;
-//             default:
-//                 sq_push(v, -2);
-//                 sq_push(v, -1);
-//                 sq_rawset(v, idx_rhs);
-//                 break;
-//         }
-//         sq_pop(v, 2);
-//     }
-//     sq_pop(v, 1);
-// }
-
 // static void CompileScriptBuffer(HSQUIRRELVM v, const char *Src, HSQOBJECT root) {
 //     if (EmbedData embed = get_new_file_data(Src)) {
 //         if (SQ_SUCCEEDED(sq_compilebuffer(v, (const SQChar*)embed.data, embed.length, Src, SQTrue))) {

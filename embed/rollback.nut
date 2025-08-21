@@ -149,9 +149,27 @@
 //     // this.bullets = {};
 // }
 this.timeline <- [];
+this.rollback_frames <- 4;
 
 function InternetArchive() {
-    this.timeline.append({});
+    local t0 = ::battle.team[0];
+    local t1 = ::battle.team[1];
+    if (::input_all.b7) {
+        if (this.timeline.len()) {
+            local prev = this.timeline.pop();
+
+            // ::battle.team[0] = prev.team0;
+            // t0.current.x = prev.current_x;
+            // t0.current.y = prev.current_y;
+        }
+    }else {
+        this.timeline.append({
+            // current_x = t0.current.x
+            // current_y = t0.current.y
+            team0 = ::deepcopy(t0)
+            // team1 = ::deepcopy(::battle.team[1])
+        });
+    }
 }
 
 function IsStored(actor) {
@@ -169,6 +187,6 @@ function ResetTimeline() {
 function NeverHappened(frames) {
     local top = this.timeline.len() - 1;
     local new_timeline = ::math.clamp(top - frames,0,top);
-    foreach(k,v in this.timeline[new_timeline])k.RestoreState(v);
+    foreach(k,v in this.timeline[new_timeline])k = v;//k.RestoreState(v);
     while ((this.timeline.len() - 1) > new_timeline)this.timeline.pop();
 }

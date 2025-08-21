@@ -175,6 +175,10 @@ static constexpr uint8_t battle_team_nut[] = {
 #include "embed/battle_team.nut.h"
 };
 
+static constexpr uint8_t loop_nut[] = {
+    #include "embed/loop.nut.h"
+};
+
 // static const std::unordered_map<std::string_view, const EmbedData> replacements = {
 //     {"data/system/network/network.nut"sv, network_nut},
 //     {"data/system/component/network.nut"sv, network_component_nut},
@@ -220,9 +224,9 @@ static constexpr uint8_t input_display_nut[] = {
 #include "embed/input_display.nut.h"
 };
 
-static constexpr uint8_t rollback_nut[] = {
-#include "embed/rollback.nut.h"
-};
+// static constexpr uint8_t rollback_nut[] = {
+// #include "embed/rollback.nut.h"
+// };
 
 // static constexpr uint8_t setting_nut[] = {
 // #include "embed/setting.nut.h"
@@ -232,9 +236,9 @@ static constexpr uint8_t plugin_nut[] = {
 #include "embed/plugin.nut.h"
 };
 
-static constexpr uint8_t actor_rollback_nut[] = {
-    #include "embed/actor_rollback.nut.h"
-};
+// static constexpr uint8_t actor_rollback_nut[] = {
+//     #include "embed/actor_rollback.nut.h"
+// };
 
 static const std::unordered_map<std::string_view, const EmbedData> embeds = {
     {"data/system/network/network.nut"sv, network_nut},
@@ -259,16 +263,17 @@ static const std::unordered_map<std::string_view, const EmbedData> embeds = {
     {"data/actor/kokoro.nut"sv, kokoro_nut},
     {"data/script/actor.nut"sv, actor_nut},
     {"data/script/battle/battle_team.nut"sv, battle_team_nut},
+    {"data/script/loop.nut"sv, loop_nut},
 
     {"debug.nut"sv, debug_nut},
     {"UI.nut"sv, UI_nut},
     {"frame_data.nut"sv, frame_data_nut},
     {"mod_config.nut"sv, mod_config_nut},
     {"input_display.nut"sv, input_display_nut},
-    {"rollback.nut"sv, rollback_nut},
+    // {"rollback.nut"sv, rollback_nut},
     // {"setting.nut"sv, setting_nut},
     {"plugin.nut"sv, plugin_nut},
-    {"actor_rollback.nut"sv, actor_rollback_nut},
+    // {"actor_rollback.nut"sv, actor_rollback_nut},
 };
 
 // static const std::unordered_map<std::string_view, const EmbedData> new_files = {

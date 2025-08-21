@@ -65,6 +65,7 @@ function CreatePlayer( actor_name, src_name, color, mode, difficulty )
 				::battle.frame_task.bullets.append(a);
 			}
 		}
+		// ::battle.test[a] <- a;
 		return a;
 	};
 	local setshotstencil = t.player_class.SetShotStencil;
@@ -123,7 +124,6 @@ function CreatePlayer( actor_name, src_name, color, mode, difficulty )
 			local idx = frame_data.bullets.find(this);
 			if (idx)frame_data.bullets.remove(idx);
 		}
-		if (::battle.rollback.IsStored(this))return;
 		releaseactor();
 	};
 	local setshot = t.shot_class.SetShot;

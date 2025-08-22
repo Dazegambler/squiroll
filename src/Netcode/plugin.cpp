@@ -832,6 +832,10 @@ extern "C" {
                 });
             });
 
+            sq_createtable(v, _SC("plugin"), [](HSQUIRRELVM v) {
+                sq_createtable(v, _SC("patches"),[](HSQUIRRELVM v){});
+            });
+
             // modifications to the manbow table
             sq_edit(v, _SC("manbow"), [](HSQUIRRELVM v) {
                 HSQOBJECT CompileFile;
@@ -858,8 +862,7 @@ extern "C" {
                         if (SQ_SUCCEEDED(sq_compilebuffer(v, (const SQChar *)embed.data,embed.length, file, SQTrue))) {
                             sq_pushobject(v, root);
                             sq_call(v, 1, SQFalse, SQTrue);
-                            sq_pop(v, -1);
-                            return 0;
+                            goto apply_patches;
                         }  
                     }
 
@@ -868,16 +871,26 @@ extern "C" {
                     sq_pushstring(v, _SC("manbow"), -1);
                     sq_get(v, -2);
                     sq_getstackobj(v, -1, &manbow);
-                    sq_pop(v, 2);
-
-                    sq_pushobject(v, manbow);
                     sq_pushstring(v, _SC("orig_compilefile"), -1);
                     if (SQ_FAILED(sq_get(v, -2))) return sq_throwerror(v, _SC("orig_func not found"));
+
                     sq_pushobject(v, manbow);
                     sq_pushstring(v, file, -1);
                     sq_pushobject(v, root);
-
                     if (SQ_FAILED(sq_call(v, 3, SQFalse, SQTrue))) return sq_throwerror(v, _SC("call failed"));
+
+                    apply_patches:
+                        sq_pushroottable(v); 
+                        sq_pushstring(v, _SC("plugin"), -1);
+                        sq_get(v, -2);
+                        sq_pushstring(v, _SC("patches"), -1);
+                        sq_get(v, -2);
+                        sq_pushstring(v, file, -1);
+                        if (SQ_SUCCEEDED(sq_get(v, -2))) {
+                            log_printf("found patch for %s,applying...\n",file);
+                            sq_pushobject(v, root);
+                            if (SQ_FAILED(sq_call(v, 1, SQFalse, SQTrue)))return sq_throwerror(v, _SC("failed to apply patch"));
+                        }
                     return 0;
 
                 }, 0);

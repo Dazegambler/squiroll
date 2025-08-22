@@ -52,52 +52,51 @@ function CreatePlayer( actor_name, src_name, color, mode, difficulty )
 			}
 		}
 	};
-	local setshot = t.player_class.SetShot;
-	t.player_class.SetShot <- function (x_, y_, dir_, init_, t_, pare_ = null) {
-		local a = setshot(x_,y_, dir_,init_,t_,pare_);
-		if (::setting.frame_data.enabled) {
-			local frame_data = ::battle.frame_task;
-			if(frame_data &&
-				"current" in frame_data.team &&
-				frame_data.team.current &&
-				this == frame_data.team.current
-			) {
-				::battle.frame_task.bullets.append(a);
-			}
-		}
-		// ::battle.test[a] <- a;
-		return a;
-	};
-	local setshotstencil = t.player_class.SetShotStencil;
-	t.player_class.SetShotStencil <- function (x_, y_, dir_, init_, t_, pare_ = null) {
-		local a = setshotstencil(x_,y_, dir_,init_,t_,pare_);
-		if (::setting.frame_data.enabled) {
-			local frame_data = ::battle.frame_task;
-			if(frame_data &&
-				"current" in frame_data.team &&
-				frame_data.team.current &&
-				this == frame_data.team.current
-			) {
-				::battle.frame_task.bullets.append(a);
-			}
-		}
-		return a;
-	};
-	local setobject = t.player_class.SetObject;
-	t.player_class.SetObject <- function (x_, y_, dir_, init_, t_, pare_ = null) {
-		local a = setobject(x_,y_, dir_,init_,t_,pare_);
-		if (::setting.frame_data.enabled) {
-			local frame_data = ::battle.frame_task;
-			if(frame_data &&
-				"current" in frame_data.team &&
-				frame_data.team.current &&
-				this == frame_data.team.current
-			) {
-				::battle.frame_task.bullets.append(a);
-			}
-		}
-		return a;
-	};
+	// local setshot = t.player_class.SetShot;
+	// t.player_class.SetShot <- function (x_, y_, dir_, init_, t_, pare_ = null) {
+	// 	local a = setshot(x_,y_, dir_,init_,t_,pare_);
+	// 	if (::setting.frame_data.enabled) {
+	// 		local frame_data = ::battle.frame_task;
+	// 		if(frame_data &&
+	// 			"current" in frame_data.team &&
+	// 			frame_data.team.current &&
+	// 			this == frame_data.team.current
+	// 		) {
+	// 			::battle.frame_task.bullets.append(a);
+	// 		}
+	// 	}
+	// 	return a;
+	// };
+	// local setshotstencil = t.player_class.SetShotStencil;
+	// t.player_class.SetShotStencil <- function (x_, y_, dir_, init_, t_, pare_ = null) {
+	// 	local a = setshotstencil(x_,y_, dir_,init_,t_,pare_);
+	// 	if (::setting.frame_data.enabled) {
+	// 		local frame_data = ::battle.frame_task;
+	// 		if(frame_data &&
+	// 			"current" in frame_data.team &&
+	// 			frame_data.team.current &&
+	// 			this == frame_data.team.current
+	// 		) {
+	// 			::battle.frame_task.bullets.append(a);
+	// 		}
+	// 	}
+	// 	return a;
+	// };
+	// local setobject = t.player_class.SetObject;
+	// t.player_class.SetObject <- function (x_, y_, dir_, init_, t_, pare_ = null) {
+	// 	local a = setobject(x_,y_, dir_,init_,t_,pare_);
+	// 	if (::setting.frame_data.enabled) {
+	// 		local frame_data = ::battle.frame_task;
+	// 		if(frame_data &&
+	// 			"current" in frame_data.team &&
+	// 			frame_data.team.current &&
+	// 			this == frame_data.team.current
+	// 		) {
+	// 			::battle.frame_task.bullets.append(a);
+	// 		}
+	// 	}
+	// 	return a;
+	// };
 	// local endtofreemove = t.player_class.EndtoFreeMove;
 	// t.player_class.EndtoFreeMove <- function () {
 	// 	endtofreemove();
@@ -115,31 +114,43 @@ function CreatePlayer( actor_name, src_name, color, mode, difficulty )
 	//rollback patches
 	// ::manbow.CompileFile("actor_rollback.nut",t.player_class);
 	//bullet patches;
-	// ::manbow.CompileFile("actor_rollback.nut",t.shot_class);
-	local releaseactor = t.shot_class.ReleaseActor;
-	t.shot_class.ReleaseActor <- function () {
-		local frame_data = ::battle.frame_task;
+	t.shot_class.active <- false;
+	// local releaseactor = t.shot_class.ReleaseActor;
+	// t.shot_class.ReleaseActor <- function () {
+	// 	releaseactor();
+	// };
+	local shot_commonupdate = t.shot_class.Update;
+	t.shot_class.Shot_CommonUpdate <- function () {
+		if (this.hitStopTime) {
+			this.hitStopTime--;
+			return false;
+		}
+		if (this.stateLabel)this.stateLabel();
 		if (::setting.frame_data.enabled &&
-			frame_data) {
-			local idx = frame_data.bullets.find(this);
-			if (idx)frame_data.bullets.remove(idx);
-		}
-		releaseactor();
-	};
-	local setshot = t.shot_class.SetShot;
-	t.shot_class.SetShot <- function (x_, y_, dir_, init_, t_, pare_ = null) {
-		local a = setshot(x_,y_, dir_,init_,t_,pare_);
-		local frame_data = ::battle.frame_task;
-		if(	::setting.frame_data.enabled &&
-			frame_data &&
-			"current" in frame_data.team &&
-			frame_data.team.current &&
-			this.owner == frame_data.team.current
+			::battle.frame_task &&
+			::setting.frame_data.IsFrameActive(this) &&
+			!this.active
+
 		) {
-			::battle.frame_task.bullets.append(a);
+			::battle.frame_task.active = this.active = true;
+			::battle.frame_task.current_data.metadata = ::setting.frame_data.GetMetadata(this);
 		}
-		return a;
+		return true;
 	};
+	// local setshot = t.shot_class.SetShot;
+	// t.shot_class.SetShot <- function (x_, y_, dir_, init_, t_, pare_ = null) {
+	// 	local a = setshot(x_,y_, dir_,init_,t_,pare_);
+	// 	local frame_data = ::battle.frame_task;
+	// 	if(	::setting.frame_data.enabled &&
+	// 		frame_data &&
+	// 		"current" in frame_data.team &&
+	// 		frame_data.team.current &&
+	// 		this.owner == frame_data.team.current
+	// 	) {
+	// 		::battle.frame_task.bullets.append(a);
+	// 	}
+	// 	return a;
+	// };
 	return t;
 }
 

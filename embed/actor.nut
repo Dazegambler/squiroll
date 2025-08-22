@@ -110,6 +110,9 @@ function CreatePlayer( actor_name, src_name, color, mode, difficulty )
 	// 		// ::battle.frame_task.bullets.append(a);
 	// 	}
 	// };
+
+	//rollback patches
+	// ::manbow.CompileFile("actor_rollback.nut",t.player_class);
 	//bullet patches;
 	t.shot_class.active <- false;
 	// local releaseactor = t.shot_class.ReleaseActor;
@@ -127,6 +130,7 @@ function CreatePlayer( actor_name, src_name, color, mode, difficulty )
 			::battle.frame_task &&
 			::setting.frame_data.IsFrameActive(this) &&
 			!this.active
+
 		) {
 			::battle.frame_task.active = this.active = true;
 			::battle.frame_task.current_data.metadata = ::setting.frame_data.GetMetadata(this);

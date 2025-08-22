@@ -616,30 +616,29 @@ function UpdateMatch()
 		}
 	}
 
-	if (::setting.network.auto_lobby_state_switch){
-		if (::LOBBY.GetLobbyUserState() == 102){
+	if (true){
+		if (::LOBBY.GetLobbyUserState() == 102) {
 			//100 hosting
 			//102 matched
 			//200 searching
 			//202 matched ?
 			if (this.timeout++ > 360){
-				if (this.retry_count++ > 5)
-				{
+				if (this.retry_count++ > 5) {
 					this.lobby_user_state = ::LOBBY.MATCHING;
 				}
 				::LOBBY.SetLobbyUserState(this.lobby_user_state);
 				this.timeout = 0;
 				return;
 			}
-		}else if (::LOBBY.GetLobbyUserState() == 200){
-			if (this.timeout++ > 31250){//roughly 5 mins 60 fps
-				::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING);
-				this.timeout = 0;
-			}
-		}else{
+		// }else if (::LOBBY.GetLobbyUserState() == 200) {
+		// 	if (this.timeout++ > 31250){//roughly 5 mins 60 fps
+		// 		this.lobby_user_state = ::LOBBY.WAIT_INCOMMING;
+		// 		::LOBBY.SetLobbyUserState(this.lobby_user_state);
+		// 		this.timeout = 0;
+		// 	}
+		}else {
 			this.timeout = 0;
 		}
-
 	}
 
 	local st_host = ::LOBBY.GetMatchHost();

@@ -212,5 +212,8 @@ function Add(...) {
 		ConfigKeyField("step frame","step_frame"),
 		ConfigKeyField("toggle frame stepping","step_toggle")
 	)
+	// ConfigPage("hitbox vis",table = ::setting.hitbox,
+	// 	ConfigBoolSelect("enabled")
+	// )
 );
 table = null;

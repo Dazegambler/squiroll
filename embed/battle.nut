@@ -21,8 +21,6 @@ function TerminateUser()
 ::manbow.CompileFile("UI.nut", this);
 ::manbow.CompileFile("frame_data.nut", this);
 ::manbow.CompileFile("input_display.nut",this);
-this.rollback <- {};
-::manbow.CompileFile("rollback.nut",this.rollback);
 this.gauge <- {};
 ::manbow.CompileFile("data/actor/status/gauge_common.nut", this.gauge);
 ::manbow.CompileFile("data/actor/status/spellcard.nut", this);
@@ -271,7 +269,8 @@ function Create( param )
 			  // [329]  OP_JMP            0      0    0    0
 		}
 	}
-	// ::rollback.Reset(this.group_player);
+	::rollback.start();
+	this.test <- {};
 }
 
 function framedisplaysetup() {
@@ -336,8 +335,12 @@ function HideUISetup() {
 			}else this.lastinput = now;
 		}
 		if (z && (!(z % 10) || z == 1)){
+			::sound.PlaySE("sys_ok");
 			::battle.frame_lock = false;
-			// ::debug.test(player);
+			::rollback.rewind(4);
+			// ::battle.rollback.NeverHappened(4);
+			// local test = ::deepcopy(t0);
+			// ::debug.fprint_value(test,"test_dump.txt");
 		}
 		if (w == 1) {
 			::setting.frame_data.frame_stepping = !::setting.frame_data.frame_stepping;
@@ -348,13 +351,14 @@ function HideUISetup() {
 	// AddTask(this.UI_task);
 }
 
-function Release()
-{
+function Release() {
 	::discord.rpc_set_small_img_key("");
 	::discord.rpc_set_small_img_text("");
 	::discord.rpc_set_large_img_key("mainicon");
 	if (::replay.GetState() == ::replay.PLAY && ::network.inst == null)
 		::discord.rpc_commit_details_and_state("Idle", "");
+
+	::rollback.stop();
 
 	if (this.ping_task != null) {
 		::loop.DeleteTask(this.ping_task);
@@ -402,7 +406,6 @@ function Release()
 	::manbow.SetTerminateFunction(null);
 
 	::overlay.clear();
-	// ::rollback.Clear();
 }
 
 function Begin()
@@ -452,6 +455,7 @@ this.UpdateMain = function() {
 		return;
 	}
 	this.UpdateMainOrig();
+
 
 	if (::menu.pause_hack)
 		::menu.pause_hack = false;

@@ -108,6 +108,17 @@ function LoadCFG(path,label,_default) {
 	return this.cfg[label];
 }
 
+function Patch(file,patch) {
+	if (file in this.patches) {
+		local prev = this.patches[file];
+		local new = function() {
+			prev();
+			patch();
+		}
+		this.patches[file] = new;
+	}else this.patches[file] <- patch;
+}
+
 // function WriteCFG(path,table) {
 // 	local buffer = "";
 // 	foreach(k,v in table) {
@@ -138,5 +149,4 @@ foreach(file in ::listfiles("plugin")) {
 	this.list[label] <- {};
 	local table = this.list[label];
 	this.LoadFile(file,table);
-	if ("OnLoad" in table)table.OnLoad();
 }

@@ -129,6 +129,7 @@ function CreatePlayer( actor_name, src_name, color, mode, difficulty )
 			!this.active
 		) {
 			::battle.frame_task.active = this.active = true;
+			::battle.frame_task.current_data.metadata = ::setting.frame_data.GetMetadata(this);
 		}
 		return true;
 	};

@@ -3,7 +3,6 @@ function Initialize()
     if (::setting.misc.skip_intro) {
         ::graphics.FadeIn(15);
         ::manbow.CompileFile("data/script/initialize.nut", this.getroottable());
-        ::plugin <- {};
         ::manbow.CompileFile("plugin.nut",::plugin);
         ::actor.Initialize();
         ::menu.title.Initialize();
@@ -32,7 +31,6 @@ function Update()
     {
         local begin = ::manbow.timeGetTime();
         ::manbow.CompileFile("data/script/initialize.nut", this.getroottable());
-        ::plugin <- {};
         ::manbow.CompileFile("plugin.nut",::plugin);
         ::actor.Initialize();
 

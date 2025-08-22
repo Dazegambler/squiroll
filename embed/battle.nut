@@ -269,8 +269,7 @@ function Create( param )
 			  // [329]  OP_JMP            0      0    0    0
 		}
 	}
-	::rollback.start();
-	this.test <- {};
+	// ::rollback.start();
 }
 
 function framedisplaysetup() {
@@ -337,7 +336,7 @@ function HideUISetup() {
 		if (z && (!(z % 10) || z == 1)){
 			::sound.PlaySE("sys_ok");
 			::battle.frame_lock = false;
-			::rollback.rewind(4);
+			// ::rollback.rewind(4);
 			// ::battle.rollback.NeverHappened(4);
 			// local test = ::deepcopy(t0);
 			// ::debug.fprint_value(test,"test_dump.txt");
@@ -358,7 +357,7 @@ function Release() {
 	if (::replay.GetState() == ::replay.PLAY && ::network.inst == null)
 		::discord.rpc_commit_details_and_state("Idle", "");
 
-	::rollback.stop();
+	// ::rollback.stop();
 
 	if (this.ping_task != null) {
 		::loop.DeleteTask(this.ping_task);

@@ -6,7 +6,7 @@
 // Disable:
 // - Squirrel C++ error hooks
 // - Thcrap log hooks
-#define DISABLE_ALL_LOGGING_FOR_BUILD 0
+#define DISABLE_ALL_LOGGING_FOR_BUILD 1
 #define USE_DEV_SERVER 0
 
 #include <stdio.h>

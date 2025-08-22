@@ -149,7 +149,7 @@ function Update()
 	}
 	else
 	{
-		::rollback.preframe();
+		// ::rollback.preframe();
 
 		if (this.env_stack.len() > 0)
 		{
@@ -161,7 +161,7 @@ function Update()
 			v.Update();
 		}
 
-		::rollback.postframe();
+		// ::rollback.postframe();
 	}
 
 	foreach( v in this.task_async )

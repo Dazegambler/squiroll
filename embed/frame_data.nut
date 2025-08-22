@@ -1,9 +1,9 @@
 function FrameDataDisplay(_team){
     local display = {
-        bullets = []
         current_data = null
         timer = 0
         full = false
+        active = false
         team_id = _team
         team = null
 
@@ -243,7 +243,6 @@ function FrameDataDisplay(_team){
             delete this.flag_attack;
             delete this.framebar;
             delete this.metadata;
-            this.bullets = [];
         }
 
         function Reset() {
@@ -316,15 +315,8 @@ function FrameDataDisplay(_team){
 
             //phase handling
             local i = 0;
-            local isactive = ::setting.frame_data.IsFrameActive(current);
-            foreach(i,bullet in this.bullets){
-                if(!isactive && ::setting.frame_data.IsFrameActive(bullet)){
-                    isactive = true;
-                    data.metadata = ::setting.frame_data.GetMetadata(bullet);
-                    this.bullets.remove(i);
-                }
-            }
-            if (isactive){
+            if (!this.active)this.active = ::setting.frame_data.IsFrameActive(current);
+            if (this.active){
                 i = 1;
                 if (data.frames[2][0]){
                     data.frames[1].append(data.frames[2][0]);
@@ -364,7 +356,6 @@ function FrameDataDisplay(_team){
 
         function IsNewMove() {
             this.current_data = this.NewData();
-            this.bullets = [];
             this.Tick(this.current_data);
             ::battle.frame_lock = ::setting.frame_data.frame_stepping;
         }
@@ -442,6 +433,7 @@ function FrameDataDisplay(_team){
                 this.ClearAll();
                 this.current_data = this.NewData();
             }
+            this.active = false;
         }
     };
     display.Reset();

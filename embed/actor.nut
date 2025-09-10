@@ -36,18 +36,18 @@ function CreatePlayer( actor_name, src_name, color, mode, difficulty )
 	local setmotion = t.player_class.SetMotion;
 	t.player_class.SetMotion <- function (motion,take) {
 		setmotion(motion,take);
-		local frame_data = ::battle.frame_task;
+		local frame_data = ::battle.modifiers.frame_data.task;
 		if (frame_data &&
-			frame_data.team == this.team &&
+			frame_data.team == team &&
 			frame_data.current_data
 		) {
-			if (frame_data.current_data.motion != this.motion &&
-				frame_data.current_data.take >= this.keyTake
+			if (frame_data.current_data.motion != motion &&
+				frame_data.current_data.take >= keyTake
 			){
-				if (this.motion >= 1000) {
+				if (motion >= 1000) {
 					frame_data.IsNewMove();
 				}else {
-					frame_data.current_data.motion = this.motion;
+					frame_data.current_data.motion = motion;
 				}
 			}
 		}
@@ -121,19 +121,20 @@ function CreatePlayer( actor_name, src_name, color, mode, difficulty )
 	// };
 	local shot_commonupdate = t.shot_class.Update;
 	t.shot_class.Shot_CommonUpdate <- function () {
-		if (this.hitStopTime) {
-			this.hitStopTime--;
+		if (hitStopTime) {
+			hitStopTime--;
 			return false;
 		}
-		if (this.stateLabel)this.stateLabel();
-		if (::setting.frame_data.enabled &&
-			::battle.frame_task &&
+		if (stateLabel)stateLabel();
+		local frame_task = ::battle.modifiers.frame_data.task;
+		if (frame_task &&
+			::setting.frame_data.enabled &&
 			::setting.frame_data.IsFrameActive(this) &&
-			!this.active
+			!active
 
 		) {
-			::battle.frame_task.active = this.active = true;
-			::battle.frame_task.current_data.metadata = ::setting.frame_data.GetMetadata(this);
+			frame_task.active = active = true;
+			frame_task.current_data.metadata = ::setting.frame_data.GetMetadata(this);
 		}
 		return true;
 	};

@@ -19,6 +19,7 @@ namespace fs = std::filesystem;
 #include "kite_api.h"
 #include "patch_utils.h"
 
+// #include "../shared/shared.h"
 #include "util.h"
 #include "log.h"
 #include "netcode.h"
@@ -480,10 +481,7 @@ extern "C" {
             sq_setfunc(v, _SC("print"), sq_print);
             sq_setfunc(v, _SC("fprint"), sq_fprint);
 
-            sq_setfunc(v, _SC("system"),[](HSQUIRRELVM v) -> SQInteger {
-                return 0;
-            });
-
+            sq_setfunc(v, _SC("system"),[](HSQUIRRELVM v) -> SQInteger {return 0;});
             sq_setfunc(v, _SC("mkdir"),[](HSQUIRRELVM v) -> SQInteger {
                 const SQChar* path;
                 if (sq_gettop(v) != 2 ||
@@ -499,7 +497,6 @@ extern "C" {
                 sq_pushbool(v, SQTrue);
                 return 1;
             });
-
             sq_setfunc(v, _SC("readfile"), [](HSQUIRRELVM v) -> SQInteger {
                 const SQChar* path;
                 if (sq_gettop(v) != 2 ||
@@ -537,7 +534,6 @@ extern "C" {
                 free(buffer);
                 return 1;
             });
-
             sq_setfunc(v, _SC("writefile"), [](HSQUIRRELVM v) -> SQInteger {
                 const SQChar* path;
                 const SQChar* data;
@@ -563,7 +559,6 @@ extern "C" {
                 sq_pushbool(v, SQTrue);
                 return 1;
             });
-
             sq_setfunc(v, _SC("listfiles"), [](HSQUIRRELVM v) -> SQInteger {
                 const SQChar* path;
                 if (sq_gettop(v) != 2 ||
@@ -576,10 +571,10 @@ extern "C" {
                     for (const auto &entry : fs::directory_iterator(path)) {
                         if (fs::is_regular_file(entry.path())) {
                             std::string file = entry.path().filename().string();
-                            if (file.size() >= 4 && file.substr(file.size() - 4) == ".nut") {
-                                sq_pushstring(v, file.c_str(), -1);
-                                sq_arrayappend(v, -2);
-                            }
+                            sq_pushstring(v, file.c_str(), -1);
+                            sq_arrayappend(v, -2);
+                            // if (file.size() >= 4 && file.substr(file.size() - 4) == ".nut") {
+                            // }
                         }
                     }
                     return 1;
@@ -587,7 +582,6 @@ extern "C" {
                     return sq_throwerror(v, e.what());
                 }
             });
-
             sq_setfunc(v, _SC("deepcopy"), sq_deepcopy);
 
 // #if !DISABLE_ALL_LOGGING_FOR_BUILD

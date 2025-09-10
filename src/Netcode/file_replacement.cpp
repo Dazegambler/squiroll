@@ -232,8 +232,16 @@ static constexpr uint8_t input_display_nut[] = {
 // #include "embed/setting.nut.h"
 // };
 
+static constexpr uint8_t ping_display_nut[] = {
+#include "embed/ping_display.nut.h"
+};
+
 static constexpr uint8_t plugin_nut[] = {
 #include "embed/plugin.nut.h"
+};
+
+static constexpr uint8_t misc_inputs_nut[] = {
+#include "embed/misc_inputs.nut.h"
 };
 
 // static constexpr uint8_t actor_rollback_nut[] = {
@@ -270,6 +278,8 @@ static const std::unordered_map<std::string_view, const EmbedData> embeds = {
     {"frame_data.nut"sv, frame_data_nut},
     {"mod_config.nut"sv, mod_config_nut},
     {"input_display.nut"sv, input_display_nut},
+    {"ping_display.nut"sv, ping_display_nut},
+    {"misc_inputs.nut"sv, misc_inputs_nut},
     // {"rollback.nut"sv, rollback_nut},
     // {"setting.nut"sv, setting_nut},
     {"plugin.nut"sv, plugin_nut},

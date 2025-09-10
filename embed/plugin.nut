@@ -119,32 +119,10 @@ function Patch(file,patch) {
 	}else this.patches[file] <- patch;
 }
 
-// function WriteCFG(path,table) {
-// 	local buffer = "";
-// 	foreach(k,v in table) {
-// 		if (typeof v != "function") {
-// 			if (typeof v != "table")buffer += format("%s=%s\n",k,v.tostring());
-// 			else {
-// 				buffer += format("[%s]\n",k);
-// 				foreach(key,val in v){
-// 					switch (typeof val) {
-// 						case "float":
-// 						case "integer":
-// 						case "bool":
-// 						case "string":
-// 							buffer += format("%s=%s\n",key,val.tostring());
-// 							break;
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// 	local file = ::writefile("plugin/config/"+path,buffer);
-// }
-
 ::mkdir("plugin");
 ::mkdir("plugin/config");
 foreach(file in ::listfiles("plugin")) {
+	if (!file.find(".nut"))continue;
 	local label = ::strip(file.slice(0,file.len()-4));
 	this.list[label] <- {};
 	local table = this.list[label];

@@ -860,7 +860,7 @@ static std::atomic_bool config_watcher_exit = false;
 static std::atomic_bool config_flush_queued = false;
 static DWORD stdcall config_watcher_proc(void*) {
     HANDLE file = CreateFileA(
-        CONFIG_FILE_NAME, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+        CONFIG_FILE_PATH, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
         NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL
     );
     if (file == INVALID_HANDLE_VALUE)
@@ -903,7 +903,7 @@ static char TASOFRO_GAME_VERSION_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{ '\0' };
 int32_t GAME_VERSION = 1211;
 
 void init_config_file() {
-    
+
     for (
         size_t filename_length = GetModuleFileNameA(NULL, CONFIG_FILE_PATH, countof(CONFIG_FILE_PATH));
         filename_length;

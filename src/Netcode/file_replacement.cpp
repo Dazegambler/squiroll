@@ -224,9 +224,9 @@ static constexpr uint8_t input_display_nut[] = {
 #include "embed/input_display.nut.h"
 };
 
-// static constexpr uint8_t rollback_nut[] = {
-// #include "embed/rollback.nut.h"
-// };
+static constexpr uint8_t rollback_nut[] = {
+#include "embed/rollback.nut.h"
+};
 
 // static constexpr uint8_t setting_nut[] = {
 // #include "embed/setting.nut.h"
@@ -245,7 +245,7 @@ static constexpr uint8_t misc_inputs_nut[] = {
 };
 
 // static constexpr uint8_t actor_rollback_nut[] = {
-//     #include "embed/actor_rollback.nut.h"
+// #include "embed/actor_rollback.nut.h"
 // };
 
 static const std::unordered_map<std::string_view, const EmbedData> embeds = {
@@ -280,7 +280,7 @@ static const std::unordered_map<std::string_view, const EmbedData> embeds = {
     {"input_display.nut"sv, input_display_nut},
     {"ping_display.nut"sv, ping_display_nut},
     {"misc_inputs.nut"sv, misc_inputs_nut},
-    // {"rollback.nut"sv, rollback_nut},
+    {"rollback.nut"sv, rollback_nut},
     // {"setting.nut"sv, setting_nut},
     {"plugin.nut"sv, plugin_nut},
     // {"actor_rollback.nut"sv, actor_rollback_nut},
@@ -439,7 +439,7 @@ void fastcall dump_tfcs(const uint8_t* data, const char* path) {
                 fputc('\n', dump);
             }
         }
-            
+
         fclose(dump);
     }
 

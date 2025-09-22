@@ -51,8 +51,8 @@ class main extends ::battle.ModifierClass {
 		if (b7 && (!(b7 % 10) || b7 == 1)) {
 			::sound.PlaySE("sys_ok");
 			frame_lock = false;
-			epoch -= 8;
-			merge(timeline[epoch],::battle.team[0]);
+			// epoch -= 8;
+			// merge(timeline[epoch],::battle.team[0]);
 			// ::debug.test(player);
 			// ::rollback.rewind(8);
 			// ::battle.rollback.NeverHappened(4);
@@ -144,9 +144,9 @@ class main extends ::battle.ModifierClass {
 	}
 
 	function Update() {
-		epoch = ::math.clamp(epoch+1,0,timeline.len());
-		timeline.insert(epoch,{});
-		copy(::battle.team[0],timeline[epoch]);
+		// epoch = ::math.clamp(epoch+1,0,timeline.len());
+		// timeline.insert(epoch,{});
+		// copy(::battle.team[0],timeline[epoch]);
 		local current = ::battle.team[0].current;
 		frame_lock = false;
 		if (!::network.IsActive() && ::setting.frame_data.frame_stepping) {

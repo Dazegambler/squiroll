@@ -53,7 +53,7 @@ class main extends ::battle.ModifierClass {
         }
 
         function parse_directional(direction) {
-            local str = notation[4];//5
+	    local str = notation[4];//5
             if(direction) {
                 if(direction == 0x20)str = notation[3];//4
                 if(direction == 0x40)str = notation[7];//8
@@ -94,6 +94,10 @@ class main extends ::battle.ModifierClass {
                     str_args[player] = frames;
                     str = ::format((str_struct[0]+str_struct[1]),str_args[0],str_args[1]);
                 }
+		_.red = config.red;
+		_.green = config.green;
+		_.blue = config.blue;
+		_.alpha = config.alpha;
                 _.Set(str);
                 _.x = config.x - ((_.sx*_.width) * player);
             }

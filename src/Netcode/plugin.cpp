@@ -275,7 +275,7 @@ SQInteger update_network_constants(HSQUIRRELVM v) {
     sq_edit(v, _SC("setting"),[](HSQUIRRELVM v){
         sq_edit(v, _SC("network"),set_network_constants);
     });
-    
+
     sq_pop(v, 1);
     return 0;
 }
@@ -381,7 +381,7 @@ SQInteger ignore_lobby_punch_ping(HSQUIRRELVM v) {
 
 // template<typename T>
 // SQInteger ReceiveArray(HSQUIRRELVM v) {
-//     if (sq_gettop(v) != 2 || 
+//     if (sq_gettop(v) != 2 ||
 //         sq_gettype(v, 2) != OT_ARRAY) {
 //         return sq_throwerror(v, _SC("Expected one argument: array of MyClass instances"));
 //     }
@@ -585,7 +585,7 @@ extern "C" {
             sq_setfunc(v, _SC("deepcopy"), sq_deepcopy);
 
 // #if !DISABLE_ALL_LOGGING_FOR_BUILD
-//             sq_setprintfunc(v, 
+//             sq_setprintfunc(v,
 //                 [](HSQUIRRELVM v, const SQChar* str,...) -> void {
 //                     va_list args;
 //                     va_start(args,str);
@@ -704,7 +704,7 @@ extern "C" {
                     if (sq_gettop(v) != 4 ||
                         SQ_FAILED(sq_getfloat(v, 2, &Val)) ||
                         SQ_FAILED(sq_getfloat(v, 3, &minVal)) ||
-                        SQ_FAILED(sq_getfloat(v, 4, &maxVal)) 
+                        SQ_FAILED(sq_getfloat(v, 4, &maxVal))
                     ) {
                         return sq_throwerror(v, "Invalid arguments, expected: <Val> <minVal> <maxVal>");
                     }
@@ -716,7 +716,7 @@ extern "C" {
                     SQFloat a,b;
                     if (sq_gettop(v) != 3 ||
                         SQ_FAILED(sq_getfloat(v, 2, &a)) ||
-                        SQ_FAILED(sq_getfloat(v, 3, &b)) 
+                        SQ_FAILED(sq_getfloat(v, 3, &b))
                     ) {
                         return sq_throwerror(v, "Invalid arguments, expected: <a> <b>");
                     }
@@ -730,7 +730,7 @@ extern "C" {
                     SQFloat a,b;
                     if (sq_gettop(v) != 3 ||
                         SQ_FAILED(sq_getfloat(v, 2, &a)) ||
-                        SQ_FAILED(sq_getfloat(v, 3, &b)) 
+                        SQ_FAILED(sq_getfloat(v, 3, &b))
                     ) {
                         return sq_throwerror(v, "Invalid arguments, expected: <a> <b>");
                     }
@@ -742,12 +742,12 @@ extern "C" {
                 });
                 sq_setfunc(v, _SC("rgbaToHex"), [](HSQUIRRELVM v) -> SQInteger {
                     SQFloat r, g, b, a;
-                    if (sq_gettop(v) != 5 || 
-                        SQ_FAILED(sq_getfloat(v, 2, &r)) || 
+                    if (sq_gettop(v) != 5 ||
+                        SQ_FAILED(sq_getfloat(v, 2, &r)) ||
                         SQ_FAILED(sq_getfloat(v, 3, &g)) ||
-                        SQ_FAILED(sq_getfloat(v, 4, &b)) || 
+                        SQ_FAILED(sq_getfloat(v, 4, &b)) ||
                         SQ_FAILED(sq_getfloat(v, 5, &a))
-                    ) { 
+                    ) {
                         return sq_throwerror(v, _SC("Expected: <r> <g> <b> <a>"));
                     }
                     char hex[10];
@@ -809,7 +809,7 @@ extern "C" {
                 sq_setfunc(v, _SC("hash"), [](HSQUIRRELVM v) -> SQInteger {
                     if (sq_gettop(v) != 2)
                         return sq_throwerror(v, _SC("Invalid arguments, expected: <object>"));
-                
+
                     SQHash h = sq_gethash(v, 2);
                     sq_pushinteger(v, (SQInteger)h);
                     return 1;
@@ -857,7 +857,7 @@ extern "C" {
                             sq_pushobject(v, root);
                             sq_call(v, 1, SQFalse, SQTrue);
                             goto apply_patches;
-                        }  
+                        }
                     }
 
                     HSQOBJECT manbow;
@@ -874,7 +874,7 @@ extern "C" {
                     if (SQ_FAILED(sq_call(v, 3, SQFalse, SQTrue))) return sq_throwerror(v, _SC("call failed"));
 
                     apply_patches:
-                        sq_pushroottable(v); 
+                        sq_pushroottable(v);
                         sq_pushstring(v, _SC("plugin"), -1);
                         sq_get(v, -2);
                         sq_pushstring(v, _SC("patches"), -1);
@@ -940,7 +940,7 @@ extern "C" {
                     sq_dummy
 #endif
                 );
-                sq_setfunc(v, _SC("rpc_commit"), 
+                sq_setfunc(v, _SC("rpc_commit"),
 #if ENABLE_DISCORD_INTEGRATION
                     [](HSQUIRRELVM v) -> SQInteger {
                         discord_rpc_commit();
@@ -950,11 +950,13 @@ extern "C" {
                     sq_dummy
 #endif
                 );
+                sq_setbool(v, _SC("enabled"), get_discord_enabled());
             });
             #undef RPC_FIELD
 
             // custom render overlays
             sq_createtable(v, _SC("overlay"), [](HSQUIRRELVM v) {
+                sq_setbool(v, _SC("enabled"), get_hitbox_vis_enabled());
                 sq_setfunc(v, _SC("set_hitboxes"), [](HSQUIRRELVM v) -> SQInteger {
                     void* inst;
                     SQInteger p1_flags;

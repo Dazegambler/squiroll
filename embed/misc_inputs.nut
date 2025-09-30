@@ -26,14 +26,10 @@ class main extends ::battle.ModifierClass {
 	active = null;
 	frame_lock = null;
 	lock_override = null;
-	timeline = null;
-	epoch = null;
 	constructor() {
 		active = false;
 		lock_override = false;
 		frame_lock = false;
-		timeline = [];
-		epoch = 0;
 	}
 
 	function HandleInputs() {
@@ -51,13 +47,6 @@ class main extends ::battle.ModifierClass {
 		if (b7 && (!(b7 % 10) || b7 == 1)) {
 			::sound.PlaySE("sys_ok");
 			frame_lock = false;
-			// epoch -= 8;
-			// merge(timeline[epoch],::battle.team[0]);
-			// ::debug.test(player);
-			// ::rollback.rewind(8);
-			// ::battle.rollback.NeverHappened(4);
-			// local test = ::deepcopy(t0);
-			// ::debug.fprint_value(::manbow,"manbow.dump");
 		}
 		local b8 = ::input_all.b8;
 		if (b8 == 1) {
@@ -75,64 +64,6 @@ class main extends ::battle.ModifierClass {
 				}
 			}
 		}
-	}
-
-	function copy(lhs,rhs,known = []) {
-		local og_type = typeof lhs;
-		if ((og_type == "table" ||
-			og_type == "instance" ||
-			og_type.find("@")) &&
-			!known.find(lhs)
-		) {
-			local root = lhs;
-			if (og_type == "instance" || og_type.find("@"))root = lhs.getclass();
-			known.append(lhs);
-			foreach(k,v in root) {
-				rhs[k] <- {};
-				copy(v,rhs[k],known);
-			}
-			return true;
-		}
-		if (og_type == "array") {
-			rhs[k] <- [];
-			foreach(i,v in lhs) {
-				rhs[k].append(null);
-				copy(v,rhs[k][i]);
-			}
-			return true;
-		}
-		if (og_type == "null" ||
-			og_type == "integer" ||
-			og_type == "float" ||
-			og_type == "bool" ||
-			og_type == "string"
-		) {
-			rhs = lhs;
-			return true;
-		}
-		return false;
-	}
-
-	function iterate(object) {
-		foreach(k,v in object) {
-			if (typeof v == "table")iterate
-		}
-	}
-
-	function merge(lhs,rhs) {
-		local og_type = typeof lhs;
-		if (og_type == "table") {
-			foreach(k,v in lhs) {
-				merge(v,rhs[k]);
-			}
-		}
-		if (og_type == "array") {
-			foreach(i,v in lhs) {
-				merge(v,rhs[k][i]);
-				return null;
-			}
-		}
-		rhs = lhs;
 	}
 
 	function PreFrame() {

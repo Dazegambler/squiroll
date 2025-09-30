@@ -16,7 +16,7 @@ function GetUpdaterVersion()
 
 function GetVersionString()
 {
-	return "Ver1.21b+squiroll v"+::setting.version+"."+::setting.revision;
+	return "Ver1.21b";
 }
 
 function GetVersionSignature()
@@ -25,3 +25,8 @@ function GetVersionSignature()
 }
 
 ::SetWindowText("Touhou Hyouibana ~ Antinomy of Common Flowers. " + this.GetVersionString());
+local ver = [::setting.version,::setting.revision];
+function GetVersionString()
+{
+	return ::format("Ver1.21b+squiroll v%d.%d lobby:%d",ver[0],ver[1],::setting.version);
+}

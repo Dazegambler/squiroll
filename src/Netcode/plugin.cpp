@@ -751,8 +751,8 @@ extern "C" {
                         return sq_throwerror(v, _SC("Expected: <r> <g> <b> <a>"));
                     }
                     char hex[10];
-                    snprintf(hex, sizeof(hex), _SC("%02X%02X%02X%02X"),
-                        (int)(r * 255), (int)(g * 255), (int)(b * 255), (int)(a * 255));
+                    snprintf(hex, sizeof(hex),"%02X%02X%02X%02X",
+                        (int)(a * 255),(int)(r * 255), (int)(g * 255), (int)(b * 255));
                     sq_pushstring(v, hex, -1);
                     return 1;
                 });

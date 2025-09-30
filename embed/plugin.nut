@@ -104,20 +104,36 @@ function LoadFile(path,table) {
 }
 
 function LoadCFG(path,label,_default) {
-	this.cfg[label] <- CFG(path,_default);
+	cfg[label] <- CFG(path,_default);
 	return this.cfg[label];
 }
 
+// CALL WITHIN PLUGIN
+function CFGInit(plugin_name,default_cfg) {
+	cfg <- ::plugin.LoadCFG(plugin_name + ".ini", plugin_name, default_cfg);
+	function CheckIntegrity(table,section = null) {
+		foreach(k,v in table) {
+			if (typeof v == "table"){
+				CheckIntegrity(v,k);
+				continue;
+			}
+			if (!(k in cfg.data)) cfg.Set(v, k, section);
+		}
+	}
+	CheckIntegrity(default_cfg);
+}
+
 function Patch(file,patch) {
-	if (file in this.patches) {
-		local prev = this.patches[file];
+	if (file in patches) {
+		local prev = patches[file];
 		local new = function() {
 			prev();
 			patch();
 		}
-		this.patches[file] = new;
-	}else this.patches[file] <- patch;
+		patches[file] = new;
+	}else patches[file] <- patch;
 }
+
 
 ::mkdir("plugin");
 ::mkdir("plugin/config");

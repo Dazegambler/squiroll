@@ -4,7 +4,7 @@ class main extends ::battle.ModifierClass {
 	constructor() {
 		colors = [[1,0,0],[1,1,0],[0,1,0],[0,0,1]];
 		text = ::font.CreateSystemString("");
-		text.ConnectRenderSlot(::graphicsl.slot.status,1);
+		text.ConnectRenderSlot(::graphics.slot.status,1);
 	}
 
 	function Update() {

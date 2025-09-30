@@ -81,12 +81,12 @@ local function ConfigField(label,sqkey = null,key = null) {
 	});
 }
 
-local function ConfigNotationField(label,index) {	
+local function ConfigNotationField(label,index) {
 	local _table = table;
 	local input_arr = ::split(_table.notation,",");
 	local cinput = input_arr[index];
 	local tab = {
-		input = cinput	
+		input = cinput
 	};
 	return ::UI.ValueField(label, [tab,"input"], function (item) {
 		local item_x = this.anime.item_x;
@@ -144,6 +144,22 @@ local function ConfigKeyField(label,sqkey = null,key = null) {
 				}
 			};
 		}
+	});
+}
+
+local function ConfigFieldA(label,_table,sqkey,section,key) {
+	return ::UI.ValueField(label, [_table,sqkey], function (item) {
+		local item_x = this.anime.item_x;
+		::Dialog(2, label, function (ret) {
+			if (ret) {
+				try{ret["to"+typeof _table[sqkey]]();}
+				catch (e){return;}
+				local str = ret+"";
+				item[1].Set(ret["to"+typeof _table[sqkey]]());
+				::setting.save(_table.config_section,key,str);
+				item[1].x = ::graphics.width - item_x - (item[1].width * item[1].sx);
+			}
+		}, "");
 	});
 }
 
@@ -217,21 +233,20 @@ function Add(...) {
 		ConfigColorField("alpha")
 	),
 	ConfigPage("Input Display(p1) 2/4",null,
-		ConfigField("notation"),
 		ConfigBoolSelect("input duration","frame_count"),
 		ConfigField("offset"),
 		ConfigField("input count","list_max","count"),
 		ConfigField("timer")
 	),
 	ConfigPage("Input Display(p1) 3/4",null,
-		ConfigNotationField("Notation(1)",0),	
-		ConfigNotationField("Notation(2)",1),	
-		ConfigNotationField("Notation(3)",2),	
-		ConfigNotationField("Notation(4)",3),	
-		ConfigNotationField("Notation(5)",4),	
-		ConfigNotationField("Notation(6)",5),	
-		ConfigNotationField("Notation(7)",6),	
-		ConfigNotationField("Notation(8)",7),		
+		ConfigNotationField("Notation(1)",0),
+		ConfigNotationField("Notation(2)",1),
+		ConfigNotationField("Notation(3)",2),
+		ConfigNotationField("Notation(4)",3),
+		ConfigNotationField("Notation(5)",4),
+		ConfigNotationField("Notation(6)",5),
+		ConfigNotationField("Notation(7)",6),
+		ConfigNotationField("Notation(8)",7),
 		ConfigNotationField("Notation(9)",8)
 	),
 	ConfigPage("Input Display(p1) 4/4",null,
@@ -254,21 +269,20 @@ function Add(...) {
 		ConfigColorField("alpha")
 	),
 	ConfigPage("Input Display(p2) 2/4",null,
-		ConfigField("notation"),
 		ConfigBoolSelect("input duration","frame_count"),
 		ConfigField("offset"),
 		ConfigField("input count","list_max","count"),
 		ConfigField("timer")
 	),
 	ConfigPage("Input Display(p2) 3/4",null,
-		ConfigNotationField("Notation(1)",0),	
-		ConfigNotationField("Notation(2)",1),	
-		ConfigNotationField("Notation(3)",2),	
-		ConfigNotationField("Notation(4)",3),	
-		ConfigNotationField("Notation(5)",4),	
-		ConfigNotationField("Notation(6)",5),	
-		ConfigNotationField("Notation(7)",6),	
-		ConfigNotationField("Notation(8)",7),		
+		ConfigNotationField("Notation(1)",0),
+		ConfigNotationField("Notation(2)",1),
+		ConfigNotationField("Notation(3)",2),
+		ConfigNotationField("Notation(4)",3),
+		ConfigNotationField("Notation(5)",4),
+		ConfigNotationField("Notation(6)",5),
+		ConfigNotationField("Notation(7)",6),
+		ConfigNotationField("Notation(8)",7),
 		ConfigNotationField("Notation(9)",8)
 	),
 	ConfigPage("Input Display(p2) 4/4",null,

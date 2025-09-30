@@ -264,7 +264,9 @@ function Release() {
 	::overlay.clear();
 }
 
-function Begin(){}
+function Begin(){
+	foreach(modifier in modifiers)if(modifier.task)modifier.task.Begin();
+}
 
 function End() {
 	::sound.StopBGM(500);
@@ -307,6 +309,7 @@ input_display <- {};
 ::manbow.CompileFile("input_display.nut",input_display);
 ping_display <- {};
 ::manbow.CompileFile("ping_display.nut",ping_display);
+// rollback <- {};
+// ::manbow.CompileFile("rollback.nut",rollback);
 misc_inputs <- {};
 ::manbow.CompileFile("misc_inputs.nut",misc_inputs);
-

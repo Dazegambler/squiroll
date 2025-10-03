@@ -1,21 +1,90 @@
-this.cfg <- {};
-this.list <- {};
+cfg <- {};
+list <- {};
 
 class CFG {
-	filepath = ""
-	data = {}
+	filepath = null;
+	default_cfg = null;
+	data = null;
+	UI = {
+		function Page(section,_table,...) {
+			return function () {
+				this.anime.data.push([]);
+				this.proc.push([]);
+				foreach (elem in vargv) {
+					this.anime.data.top().push(elem[0]);
+					this.proc.top().push(elem[1]);
+				}
+				local title = ::UI.Title(section);
+				this.anime.data.top().push(title[0]);
+				this.proc.top().push(title[1]);
+			};
+		}
+
+		function BoolSelect(label,sqkey,section = null) {
+			local table = section ? data[section] : data;
+			local set = function(val, key, section = null) {
+			    Set(val, key, section);
+			};
+			return ::UI.Enum(label,[table,sqkey],function(item) {
+				::menu.help.Set(help_item);
+				Update = UpdateCommonItem;
+				anime.highlight.Set(item[1].left, item[1].top, item[1].right, item[1].bottom);
+				common_cursor = item[1].cursor;
+				common_callback_ok = function() {
+					local ret = (common_cursor.val != 0);
+					item[1].value.set(ret);
+					set(ret, sqkey, section);
+					item = null;
+					anime.highlight.Reset();
+				}
+			});
+		}
+
+		function ValueField(label,sqkey,section = null) {
+			local table = section ? data[section] : data;
+			local set = function(val,key, section = null) {
+				Set(val, key, section);
+			};
+			return ::UI.ValueField(label,[table,sqkey],function(item){
+				local item_x = anime.item_x;
+				::Dialog(2, cfg_str, function (ret) {
+					if (ret) {
+						try{ret["to"+typeof table[sqkey]]();}
+						catch (e){return;}
+						local str = ret+"";
+						local val = ret["to" + typeof table[sqkey]]();
+						item[1].Set(val);
+						set(val,sqkey,section);
+						item[1].x = ::graphics.width - item_x - (item[1].width * item[1].sx);
+					}
+				}, "");
+			});
+		}
+	}
 	constructor(path,_default){
+		default_cfg = _default;
 		filepath = "plugin/config/"+path;
 		try{
-			local f = file(this.filepath,"rb");
+			local f = file(filepath,"rb");
+			data = {};
 			f.close();
-			this.Read();
+			Read();
+			CheckIntegrity();
 		}catch(e) {
-			this.data = _default;
-			this.Write();
+			data = default_cfg;
+			Write();
 		}
 	}
 
+	function CheckIntegrity(section = null) {
+		foreach(k,v in data) {
+			if (typeof v == "table"){
+				CheckIntegrity(k);
+				continue;
+			}
+			if (!(k in cfg.data)) cfg.Set(v, k, section);
+		}
+	}
 
 	function Read() {
 		local function parse(str) {
@@ -30,7 +99,7 @@ class CFG {
 			return str;
 		}
 
-		local content = ::readfile(this.filepath);
+		local content = ::readfile(filepath);
 		local lines = ::split(content, "\n");
 		local section = null;
 
@@ -40,7 +109,7 @@ class CFG {
 
 			if (line[0] == '[' && line[line.len()-1] == ']') {
 				section = ::strip(line.slice(1, line.len()-1));
-				if (!(section in this.data)) this.data[section] <- {};
+				if (!(section in data)) data[section] <- {};
 			} else {
 				local eq = line.find("=");
 				if (eq != null) {
@@ -59,7 +128,7 @@ class CFG {
 
 	function Write() {
 		local buffer = "";
-		foreach(k,v in this.data) {
+		foreach(k,v in data) {
 			if (typeof v != "function") {
 				if (typeof v != "table")buffer += format("%s=%s\n",k,v.tostring());
 				else {
@@ -77,25 +146,29 @@ class CFG {
 				}
 			}
 		}
-		local file = ::writefile(this.filepath,buffer);
+		local file = ::writefile(filepath,buffer);
 	}
 
 	function Set(value,key,section = null) {
 		if (!section) {
-			this.data[key] <- value;
+			data[key] <- value;
 		}else {
-			this.data[section][key] <- value;
+			data[section][key] <- value;
 		}
-		this.Write();
+		Write();
 	}
 
 	function Remove(key,section = null) {
 		if (!section) {
-			delete this.data[key];
+			delete data[key];
 		}else {
-			delete this.data[section][key];
+			delete data[section][key];
 		}
-		this.Write();
+		Write();
+	}
+
+	function CreateConfigPage() {
+
 	}
 }
 
@@ -105,7 +178,7 @@ function LoadFile(path,table) {
 
 function LoadCFG(path,label,_default) {
 	cfg[label] <- CFG(path,_default);
-	return this.cfg[label];
+	return cfg[label];
 }
 
 // CALL WITHIN PLUGIN
@@ -140,7 +213,7 @@ function Patch(file,patch) {
 foreach(file in ::listfiles("plugin")) {
 	if (!file.find(".nut"))continue;
 	local label = ::strip(file.slice(0,file.len()-4));
-	this.list[label] <- {};
-	local table = this.list[label];
-	this.LoadFile(file,table);
+	list[label] <- {};
+	local table = list[label];
+	LoadFile(file,table);
 }

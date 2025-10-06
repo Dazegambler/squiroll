@@ -65,7 +65,7 @@ class CFG {
 		default_cfg = _default;
 		filepath = "plugin/config/"+path;
 		try{
-			local f = file(filepath,"rb");
+			local f = ::file(filepath,"rb");
 			data = {};
 			f.close();
 			Read();
@@ -76,13 +76,15 @@ class CFG {
 		}
 	}
 
-	function CheckIntegrity(section = null) {
-		foreach(k,v in data) {
+	function CheckIntegrity() {
+		foreach(k, v in data) {
 			if (typeof v == "table"){
-				CheckIntegrity(k);
-				continue;
+				foreach(_k,_v in v) {
+					if (!(_k in data[k])) cfg.Set(_v, _k, k);
+				}
+			}else {
+				if (!(k in data)) cfg.Set(v, k);
 			}
-			if (!(k in cfg.data)) cfg.Set(v, k, section);
 		}
 	}
 
@@ -168,7 +170,6 @@ class CFG {
 	}
 
 	function CreateConfigPage() {
-
 	}
 }
 
@@ -181,19 +182,14 @@ function LoadCFG(path,label,_default) {
 	return cfg[label];
 }
 
+function LoadCFGA(label,_default) {
+	cfg[label] <- CFG(label + ".ini", _default);
+	return cfg[label];
+}
+
 // CALL WITHIN PLUGIN
 function CFGInit(plugin_name,default_cfg) {
 	cfg <- ::plugin.LoadCFG(plugin_name + ".ini", plugin_name, default_cfg);
-	function CheckIntegrity(table,section = null) {
-		foreach(k,v in table) {
-			if (typeof v == "table"){
-				CheckIntegrity(v,k);
-				continue;
-			}
-			if (!(k in cfg.data)) cfg.Set(v, k, section);
-		}
-	}
-	CheckIntegrity(default_cfg);
 }
 
 function Patch(file,patch) {

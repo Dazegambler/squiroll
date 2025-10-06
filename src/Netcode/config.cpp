@@ -74,7 +74,7 @@ CONFIG_INT(PING, X, "x", 640);
 CONFIG_INT(PING, Y, "y", 705);
 CONFIG_FLT(PING, SCALE_X, "scale_x", 1.0);
 CONFIG_FLT(PING, SCALE_Y, "scale_y", 1.0);
-CONFIG_BOL(PING, SIMPLE, "simple", true);
+CONFIG_BOL(PING, SIMPLE, "simple", false);
 CONFIG_INT(PING, GREAT_THRESHOLD, "great_threshold", 60);
 CONFIG_INT(PING, GOOD_THRESHOLD, "good_threshold", 130);
 CONFIG_INT(PING, BAD_THRESHOLD, "bad_threshold", 200);
@@ -138,6 +138,7 @@ CONFIG_BOL(NETWORK, HIDE_NAME, "hide_name", false);
 CONFIG_BOL(NETWORK, PREVENT_INPUT_DROPS, "prevent_input_drops", true);
 CONFIG_BOL(NETWORK, HIDE_PROFILE_PICTURES, "hide_profile_pictures", false);
 CONFIG_BOL(NETWORK, AUTO_SWITCH,"auto_seach_host",true);
+CONFIG_STR(NETWORK, BLACKLIST,"blacklist","");
 
 #define PERF_SECTION_NAME "performance"
 CONFIG_BOL(PERF, CACHE_RSA, "cache_rsa", true);
@@ -231,6 +232,7 @@ static inline constexpr const char
         CONFIG_DEFAULT(NETWORK, PREVENT_INPUT_DROPS),
         CONFIG_DEFAULT(NETWORK, HIDE_PROFILE_PICTURES),
         CONFIG_DEFAULT(NETWORK, AUTO_SWITCH),
+        CONFIG_DEFAULT(NETWORK,BLACKLIST),
 
         CONFIG_DEFAULT(PERF, CACHE_RSA),
         CONFIG_DEFAULT(PERF, BETTER_GAME_LOOP),
@@ -747,6 +749,18 @@ bool get_auto_switch() {
 
 void set_ipv6_state(bool state) {
     set_config_string(NETWORK_SECTION_NAME, NETWORK_IPV6_KEY, bool_str(state));
+}
+
+static char NETWORK_BLACKLIST_BUFFER[1024]{ '\0' };
+const char* get_network_blacklist() {
+    const char* blacklist;
+    if (
+        use_config &&
+        get_config_string(NETWORK_SECTION_NAME, NETWORK_BLACKLIST_KEY, NETWORK_BLACKLIST_BUFFER)
+    ) {
+        blacklist = NETWORK_BLACKLIST_BUFFER;
+    }
+    return blacklist;
 }
 
 // ====================

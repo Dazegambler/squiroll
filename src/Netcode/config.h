@@ -11,11 +11,11 @@
 
 // Increase the main version number whenever a change
 // results in incompatibilites with the previous netcode.
-static inline constexpr size_t PLUGIN_VERSION = 1;
+static inline constexpr size_t PLUGIN_VERSION = 2;
 // Increase the revision number for bugfixing builds and
 // other sorts of changes that don't make the netcode
 // incompatible. Reset to 0 whenever increasing the main version.
-static inline constexpr size_t PLUGIN_REVISION = 5;
+static inline constexpr size_t PLUGIN_REVISION = 0;
 
 extern int32_t GAME_VERSION;
 
@@ -112,6 +112,7 @@ bool get_hide_name_enabled();
 bool get_prevent_input_drops();
 bool get_hide_profile_pictures_enabled();
 bool get_auto_switch();
+const char* get_network_blacklist();
 void set_ipv6_state(bool state);
 
 bool get_cache_rsa_enabled();

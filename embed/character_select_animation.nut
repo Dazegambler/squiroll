@@ -192,13 +192,24 @@ function Initialize()
 		for( local i = 0; i < 2; i = ++i )
 		{
 			local custom_icon = ::manbow.Texture();
-			v = {};
-			v.icon <- ::manbow.Sprite();
-			if (!::setting.network.hide_profile_pictures && ::network.icon[i] != null && custom_icon.CreateFromBase64(::network.icon[i], 32, 32)) {
+			v = {
+				base64 = ""
+				id = i
+				icon = ::manbow.Sprite()
+			};
+			if (!::setting.network.hide_profile_pictures &&
+				::network.icon[i] != null &&
+				custom_icon.CreateFromBase64(::network.icon[i],32,32)) {
+				v.base64 = ::network.icon[i];
 				v.icon.Initialize(custom_icon, 0, 0, 32, 32);
-			} else {
+			}else {
 				v.icon.Initialize(::menu.cursor.texture, 160, i * 32, 32, 32);
 			}
+			// if (!::setting.network.hide_profile_pictures && ::network.icon[i] != null && custom_icon.CreateFromBase64(::network.icon[i], 32, 32)) {
+			// 	v.icon.Initialize(custom_icon, 0, 0, 32, 32);
+			// } else {
+			// 	v.icon.Initialize(::menu.cursor.texture, 160, i * 32, 32, 32);
+			// }
 			v.icon.ConnectRenderSlot(::graphics.slot.ui, 40000);
 			v.icon.x = i == 0 ? 16 : 1280 - 16 - 32;
 			v.icon.y = 36;
@@ -207,8 +218,13 @@ function Initialize()
 			v.text.x = i == 0 ? v.icon.x + 32 : v.icon.x - v.text.width * v.text.sx;
 			v.text.y = v.icon.y + 2;
 			v.text.ConnectRenderSlot(::graphics.slot.ui, 40000);
-			v.Update <- function ()
-			{
+			v.Update <- function () {
+				if (base64 != ::network.icon[id]) {
+					base64 = ::network.icon[id];
+					local new_icon = ::manbow.Texture();
+					new_icon.CreateFromBase64(base64, 32, 32);
+					v.icon.Initialize(new_icon, 0, 0, 32, 32);
+				}
 			};
 			this.data.push(v);
 		}

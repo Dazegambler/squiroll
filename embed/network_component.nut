@@ -39,14 +39,14 @@ icon <- [
 	null
 ];
 local_icon <- "";
+chunked_icon <- [];
 blacklist <- [];
-function func_get_delay()
-{
+
+function func_get_delay() {
 	return 0;
 }
 
-function Initialize()
-{
+function Initialize() {
 	inst = null;
 	inst_connect = null;
 	return_code = -1;
@@ -69,7 +69,14 @@ function Initialize()
 	};
 
 	local_icon = ::manbow.Texture().GetBase64("profile.bmp", 32, 32);
+	chunked_icon = [];
+	local div = 3;
+	local chunk_size = local_icon.len() / div;
+	for (local i = 0; i < div; ++i) {
+		chunked_icon.append(local_icon.slice(0 + (chunk_size * i), chunk_size * (i + 1)));
+	}
 	blacklist = ::split(::setting.network.blacklist, ",");
+	foreach(name in blacklist)::print("in blacklist:" + name + "\n");
 }
 
 function Terminate()
@@ -128,18 +135,17 @@ function StartupServer(port,mode) {
 	local mb_server = ::manbow.NetworkServer();
 	mb_server.ConnectRequest = function (id,context,table_in,table_out) {
 		table_out.message <- "";
-		//add connection request form
-
-		if (::LOBBY.GetNetworkState() != ::LOBBY.CLOSED)::LOBBY.Close();
 
 		if (!("version" in table_in) || table_in.version != GetVersion()) {
 			table_out.message = "version";
 			return false;
 		}
 
-		if (blacklist.find(table_in.address)) {
-			table_out.message = "blocked";
-			return false;
+		foreach(name in blacklist) {
+			if (table_in.name == name) {
+				table_out.message = "blocked";
+				return false;
+			}
 		}
 
 		if ("is_watch" in table_in) {
@@ -168,6 +174,8 @@ function StartupServer(port,mode) {
 
 		if (inst) return false;
 
+		if (::LOBBY.GetNetworkState() != ::LOBBY.CLOSED)::LOBBY.Close();
+
 		inst = inst_connect;
 		func_get_delay = function () {
 			return::network.inst.GetChildDelay(0);
@@ -177,9 +185,9 @@ function StartupServer(port,mode) {
 
 		//local settings
 		player_name[0] = ::config.network.player_name;
-		player_name[1] = "P2";
+		player_name[1] = table_in.name.len() > 16 ? "P2" : table_in.name;
 		color_num[0] = ::savedata.GetColorNum();
-		color_num[1] = ::savedata.GetColorNum();
+		color_num[1] = table_in.color;
 		icon[0] = local_icon;
 		icon[1] = null;
 
@@ -190,17 +198,15 @@ function StartupServer(port,mode) {
 		table_out.allow_watch <- allow_watch;
 		table_out.hide_ip <- ::setting.network.hide_ip || !::setting.network.share_watch_ip;
 		table_out.use_lobby <- use_lobby;
+		table_out.name <- ::config.network.player_name.len() > 16 ? "P1" : ::config.network.player_name;
+		table_out.color <- color_num[0];
 		::sound.PlaySE(120);
 		::loop.Fade(function () {
+			::network.inst.SendToChild(0, {
+			    message = "get_profile"
+			});
 			::discord.rpc_set_details("VS online");
 			::menu.network.Suspend();
-			local t = {
-				message = "profile"
-				name = ::network.player_name[0]
-				color = ::network.color_num[0]
-				icon = ::network.local_icon
-			}
-			for (local i = 0; i < ::network.client_num; ++i) ::network.inst.SendToChild(i, t);
 			::menu.character_select.Initialize(1);
 		});
 		return true;
@@ -214,11 +220,18 @@ function StartupServer(port,mode) {
 		try {
 			if ("message" in table) {
 				switch(table.message) {
-					case "profile":
-						player_name[1] = table.name;
-						color_num[1] = table.color;
-						icon[1] = table.icon;
+					case "get_profile":
+						::print("profile image requested from p2\n");
+						foreach(chunk in chunked_icon) {
+							inst.SendToChild(0, {
+								message = "profile"
+								icon_chunk = chunk
+							});
+						}
 						break;
+					case "profile":
+						::print("profile image chunk received from p2\n");
+						icon[1] += table.icon_chunk;
 				}
 			}
 		} catch (e);
@@ -387,9 +400,11 @@ function StartupClient(addr,port,mode) {
 			return false;
 		}
 
-		if (::network.blacklist.find(table_in.address)) {
-			table_out.message = "blocked";
-			return false;
+		foreach(name in blacklist) {
+			if (table_in.name == name) {
+				table_out.message = "blocked";
+				return false;
+			}
 		}
 
 		table_out.is_parent_vs <- ::network.is_parent_vs;
@@ -424,9 +439,9 @@ function StartupClient(addr,port,mode) {
 		rand_seed = reply_table.rand_seed;
 		srand(rand_seed);
 
-		player_name[0] = "P1";
+		player_name[0] = reply_table.name.len() > 16 ? "P1" : reply_table.name;
 		player_name[1] = ::config.network.player_name;
-		color_num[0] = ::savedata.GetColorNum();
+		color_num[0] = reply_table.color;
 		color_num[1] = ::savedata.GetColorNum();
 		icon[0] = null;
 		icon[1] = local_icon;
@@ -435,21 +450,17 @@ function StartupClient(addr,port,mode) {
 		hide_host_ip = !("hide_ip" in reply_table) || reply_table.hide_ip;
 		use_lobby = reply_table.use_lobby;
 
-		funct_get_delay = function () {
+		func_get_delay = function () {
 			return ::network.inst.GetParentDelay();
 		}
 		::sound.PlaySE(120);
 		::loop.Fade(function () {
+			::network.inst.SendToParent({
+			    message = "get_profile"
+			});
 			::discord.rpc_set_details("VS Online");
 			::menu.network.Suspend();
-			local t = {
-				message = "profile"
-				name = player_name[1]
-				color = color_num[1]
-				icon = local_icon
-			}
-			for (local i = 0; i < client_num; ++i) inst.SendtoChild(i, t);
-			::menu.Character_select.Initialize(1);
+			::menu.character_select.Initialize(1);
 		});
 		return;
 	}.bindenv(this);
@@ -486,10 +497,11 @@ function StartupClient(addr,port,mode) {
 			return;
 		}
 		if (is_watch && inst) {
-			isnt.Reconnect();
+			inst.Reconnect();
 		}
 	}.bindenv(this);
 	mb_client.ReceiveFromParent = function (table) {
+		::debug.print_value(table);
 		try {
 			if ("message" in table) {
 				switch(table.message) {
@@ -499,14 +511,24 @@ function StartupClient(addr,port,mode) {
 						}
 						Disconnect();
 						break;
+					case "get_profile":
+						::print("profile image requested from p1\n");
+						foreach(chunk in chunked_icon) {
+							inst.SendToParent({
+								message = "profile"
+								icon_chunk = chunk
+							});
+						}
+						break;
 					case "profile":
-						player_name[1] = table.name;
-						color_num[1] = table.color;
-						icon[1] = table.icon;
+						::print("profile image chunk received from p1\n");
+						icon[0] += table.icon_chunk;
 						break;
 				}
 			}
-		} catch (e);
+		} catch (e) {
+			::print(::format("error reading packet:%s\n", e));
+		}
 	}.bindenv(this);
 
 	local connect_param = {
@@ -514,6 +536,8 @@ function StartupClient(addr,port,mode) {
 		address = addr
 		allow_watch = ::config.network.allow_watch
 		battle_num = 1
+		name = ::config.network.player_name.len() > 16 ? "P2" : ::config.network.player_name
+		color = ::savedata.GetColorNum()
 	};
 
 	if (mode & 1) {
@@ -740,6 +764,18 @@ function Disconnect( scene = true )
 	}
 
 	return;
+}
+
+function GetPFP() {
+	if (is_parent_vs) {
+			::network.inst.SendToChild(0, {
+			    message = "get_profile"
+			});
+			return;
+	}
+	::network.inst.SendToParent({
+	    message = "get_profile"
+	});
 }
 
 function GetDelay()

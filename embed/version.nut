@@ -28,5 +28,5 @@ function GetVersionSignature()
 local ver = [::setting.version,::setting.revision];
 function GetVersionString()
 {
-	return ::format("Ver1.21b+squiroll v%d.%d lobby:%d",ver[0],ver[1],::setting.version);
+	return::format("Ver1.21b+squiroll v%d.%d lobby:%d (DEV)", ver[0], ver[1], ::setting.version);
 }

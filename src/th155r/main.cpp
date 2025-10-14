@@ -205,6 +205,11 @@ bool execute_program_inject(InitFuncData* init_data, bool wait_for_exit) {
         }
         CloseHandle(pi.hThread);
         CloseHandle(pi.hProcess);
+    }else {
+        fprintf(stderr,
+            "CreateProcess failed...(%lX)\n"
+            , GetLastError()
+        );
     }
     return ret;
 }

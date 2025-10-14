@@ -586,6 +586,12 @@ function UpdateWaitClient()
 		::Dialog(0, ::menu.common.GetMessageText("error_ready"));
 		::network.Terminate();
 		break;
+	case 5:
+		update = UpdateMain;
+		::loop.End();
+		::Dialog(0, "the user has blocked you");
+		::network.Terminate();
+		break;
 	}
 }
 

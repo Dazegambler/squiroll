@@ -197,7 +197,7 @@ function Initialize()
 				id = i
 			};
 			if (!::setting.network.hide_profile_pictures &&
-				::network.icon[i] != null &&
+				::network.icon[i] != "" &&
 				custom_icon.CreateFromBase64(::network.icon[i],32,32)) {
 				v.icon.Initialize(custom_icon, 0, 0, 32, 32);
 			}else {
@@ -217,7 +217,7 @@ function Initialize()
 			v.text.y = v.icon.y + 2;
 			v.text.ConnectRenderSlot(::graphics.slot.ui, 40000);
 			v.Update <- function () {
-				if (::network.icon[id]) {
+				if (::network.icon[id] != "") {
 					local new_icon = ::manbow.Texture();
 					new_icon.CreateFromBase64(::network.icon[id], 32, 32);
 					icon.Initialize(new_icon, 0, 0, 32, 32);

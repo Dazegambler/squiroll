@@ -39,7 +39,7 @@ icon <- [
 	null
 ];
 local_icon <- "";
-chunked_icon <- [];
+chunked_icon <- null;
 blacklist <- [];
 
 function func_get_delay() {
@@ -68,16 +68,17 @@ function Initialize() {
 		return 0;
 	};
 
+	blacklist = ::split(::setting.network.blacklist, ",");
+	foreach(name in blacklist)::print("in blacklist:" + name + "\n");
+	chunked_icon = null;
 	local_icon = ::manbow.Texture().GetBase64("profile.bmp", 32, 32);
 	chunked_icon = [];
-	if (!local_icon) return;
+	if (local_icon == "") return;
 	local div = 3;
 	local chunk_size = local_icon.len() / div;
 	for (local i = 0; i < div; ++i) {
 		chunked_icon.append(local_icon.slice(0 + (chunk_size * i), chunk_size * (i + 1)));
 	}
-	blacklist = ::split(::setting.network.blacklist, ",");
-	foreach(name in blacklist)::print("in blacklist:" + name + "\n");
 }
 
 function Terminate()
@@ -190,7 +191,7 @@ function StartupServer(port,mode) {
 		color_num[0] = ::savedata.GetColorNum();
 		color_num[1] = table_in.color;
 		icon[0] = local_icon;
-		icon[1] = null;
+		icon[1] = "";
 
 		//reply_table
 		allow_watch = ::config.network.allow_watch && table_in.allow_watch;
@@ -203,9 +204,12 @@ function StartupServer(port,mode) {
 		table_out.color <- color_num[0];
 		::sound.PlaySE(120);
 		::loop.Fade(function () {
-			::network.inst.SendToChild(0, {
-			    message = "get_profile"
-			});
+			foreach(chunk in ::network.chunked_icon) {
+				::network.inst.SendToChild(0, {
+					message = "profile"
+					icon_chunk = chunk
+				});
+			}
 			::discord.rpc_set_details("VS online");
 			::menu.network.Suspend();
 			::menu.character_select.Initialize(1);
@@ -221,18 +225,8 @@ function StartupServer(port,mode) {
 		try {
 			if ("message" in table) {
 				switch(table.message) {
-					case "get_profile":
-						::print("profile image requested from p2\n");
-						foreach(chunk in chunked_icon) {
-							inst.SendToChild(0, {
-								message = "profile"
-								icon_chunk = chunk
-							});
-						}
-						break;
 					case "profile":
 						::print("profile image chunk received from p2\n");
-						if (icon[1] == null) icon[1] = "";
 						icon[1] += table.icon_chunk;
 				}
 			}
@@ -445,7 +439,7 @@ function StartupClient(addr,port,mode) {
 		player_name[1] = ::config.network.player_name;
 		color_num[0] = reply_table.color;
 		color_num[1] = ::savedata.GetColorNum();
-		icon[0] = null;
+		icon[0] = "";
 		icon[1] = local_icon;
 
 		allow_watch = reply_table.allow_watch;
@@ -457,9 +451,12 @@ function StartupClient(addr,port,mode) {
 		}
 		::sound.PlaySE(120);
 		::loop.Fade(function () {
-			::network.inst.SendToParent({
-			    message = "get_profile"
-			});
+			foreach(chunk in ::network.chunked_icon) {
+				::network.inst.SendToParent({
+					message = "profile"
+					icon_chunk = chunk
+				});
+			}
 			::discord.rpc_set_details("VS Online");
 			::menu.network.Suspend();
 			::menu.character_select.Initialize(1);
@@ -503,7 +500,6 @@ function StartupClient(addr,port,mode) {
 		}
 	}.bindenv(this);
 	mb_client.ReceiveFromParent = function (table) {
-		::debug.print_value(table);
 		try {
 			if ("message" in table) {
 				switch(table.message) {
@@ -513,18 +509,8 @@ function StartupClient(addr,port,mode) {
 						}
 						Disconnect();
 						break;
-					case "get_profile":
-						::print("profile image requested from p1\n");
-						foreach(chunk in chunked_icon) {
-							inst.SendToParent({
-								message = "profile"
-								icon_chunk = chunk
-							});
-						}
-						break;
 					case "profile":
 						::print("profile image chunk received from p1\n");
-						if (icon[0] == null) icon[0] = "";
 						icon[0] += table.icon_chunk;
 						break;
 				}

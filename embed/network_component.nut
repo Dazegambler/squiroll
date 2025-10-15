@@ -70,6 +70,7 @@ function Initialize() {
 
 	local_icon = ::manbow.Texture().GetBase64("profile.bmp", 32, 32);
 	chunked_icon = [];
+	if (!local_icon) return;
 	local div = 3;
 	local chunk_size = local_icon.len() / div;
 	for (local i = 0; i < div; ++i) {
@@ -231,6 +232,7 @@ function StartupServer(port,mode) {
 						break;
 					case "profile":
 						::print("profile image chunk received from p2\n");
+						if (icon[1] == null) icon[1] = "";
 						icon[1] += table.icon_chunk;
 				}
 			}
@@ -522,6 +524,7 @@ function StartupClient(addr,port,mode) {
 						break;
 					case "profile":
 						::print("profile image chunk received from p1\n");
+						if (icon[0] == null) icon[0] = "";
 						icon[0] += table.icon_chunk;
 						break;
 				}

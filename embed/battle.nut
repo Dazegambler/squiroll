@@ -172,43 +172,14 @@ function _SetupTeams(param) {
 function _SetupProfilePictures() {
 	if (::network.IsActive() && !::setting.network.hide_profile_pictures) {
 		for( local i = 0; i < 2; i = ++i ) {
-
 			local custom_icon = ::manbow.Texture();
 			if (::network.icon[i] != null && custom_icon.CreateFromBase64(::network.icon[i], 32, 32)) {
-				local part = {
-					sprite = ::manbow.Sprite()
-					base64 = ::network.icon[i]
-					id = i
-					Update = function() {
-						if (base64 != ::network.icon[id]) {
-							base64 = ::network.icon[id];
-							local icon = ::manbow.Texture();
-							icon.CreateFromBase64(base64, 32, 32);
-							sprite.Initialize(icon, 0, 0, 32, 32);
-						}
-						sprite.Update();
-					}
-				}.setdelegate({
-					_get = function (key) {
-						try {
-							return sprite[key];
-						}catch (e) {
-							throw null;
-						}
-					}
-					_set = function (key,value) {
-						try {
-							sprite[key] = value;
-						}catch (e) {
-							throw null;
-						}
-					}
-				});
-				part.Initialize(custom_icon, 0, 0, 32, 32);
-				part.x = i == 0 ? 116 : 1280 - 116 - 32;
-				part.y = 4;
-				part.ConnectRenderSlot(::graphics.slot.status, 3000);
-				gauge.AddParts(part, i == 0 ? gauge.mat_left_top : gauge.mat_right_top);
+				local icon = ::manbow.Sprite();
+				icon.Initialize(custom_icon, 0, 0, 32, 32);
+				icon.x = i == 0 ? 116 : 1280 - 116 - 32;
+				icon.y = 4;
+				icon.ConnectRenderSlot(::graphics.slot.status, 3000);
+				gauge.AddParts(icon, i == 0 ? gauge.mat_left_top : gauge.mat_right_top);
 			}
 		}
 	}

@@ -122,7 +122,7 @@ function Update()
 	{
 		this.pause_count--;
 	}
-	else if (::network.IsPlaying())
+	else if (::network.IsPlaying() && !::network.received_request)
 	{
 		if (::network.input_local)
 		{

@@ -1,4 +1,4 @@
-this.item <- [
+item <- [
 	"lobby_incomming",
 	"lobby_match",
 	"lobby_select",
@@ -14,7 +14,7 @@ this.item <- [
 	null,
 	"exit"
 ];
-this.room_name <- [
+room_name <- [
 	"Free",
 	"Novice",
 	"Veteran",
@@ -24,7 +24,7 @@ this.room_name <- [
 	"Asia",
 	"Dev"
 ];
-this.room_title <- [
+room_title <- [
 	"Free",
 	"Novice",
 	"Veteran",
@@ -34,60 +34,60 @@ this.room_title <- [
 	"Asia",
 	"Secret Dev Lobby"
 ];
-this.cursor_item <- this.Cursor(0, this.item.len(), ::input_all);
+cursor_item <- Cursor(0, item.len(), ::input_all);
 local skip = [];
 
-foreach( v in this.item )
+foreach( v in item )
 {
 	skip.push(v ? 0 : 1);
 }
 
-this.cursor_item.SetSkip(skip);
-this.update <- null;
-this.state <- 0;
-this.plugin <- {};
-this.plugin.se_lobby <- ::libact.LoadPlugin("data/plugin/se_lobby.dll");
+cursor_item.SetSkip(skip);
+update <- null;
+state <- 0;
+plugin <- {};
+plugin.se_lobby <- ::libact.LoadPlugin("data/plugin/se_lobby.dll");
 ::LOBBY.SetMaxNickLength(32);
-this.plugin.se_upnp <- ::libact.LoadPlugin("data/plugin/se_upnp.dll");
-//this.plugin.se_infomation <- ::libact.LoadPlugin("data/plugin/se_information.dll");
-this.cursor_lobby <- this.Cursor(1, this.room_name.len(), ::input_all);
-this.target_addr_v <- [];
+plugin.se_upnp <- ::libact.LoadPlugin("data/plugin/se_upnp.dll");
+//plugin.se_infomation <- ::libact.LoadPlugin("data/plugin/se_information.dll");
+cursor_lobby <- Cursor(1, room_name.len(), ::input_all);
+target_addr_v <- [];
 
 for( local i = 0; i < 12 + 5; i = ++i )
 {
-	local c = this.Cursor(0, 10, ::input_all);
+	local c = Cursor(0, 10, ::input_all);
 	c.dir = -1;
 	c.enable_ok = false;
 	c.enable_cancel = false;
-	this.target_addr_v.push(c);
+	target_addr_v.push(c);
 }
 
-this.target_addr_h <- this.Cursor(1, 12 + 5, ::input_all);
-this.server_port_v <- [];
+target_addr_h <- Cursor(1, 12 + 5, ::input_all);
+server_port_v <- [];
 
 for( local i = 0; i < 5; i = ++i )
 {
-	local c = this.Cursor(0, 10, ::input_all);
+	local c = Cursor(0, 10, ::input_all);
 	c.dir = -1;
 	c.enable_ok = false;
 	c.enable_cancel = false;
-	this.server_port_v.push(c);
+	server_port_v.push(c);
 }
 
-this.display_ip_on_wait <- false;
-this.update_help_text <- false;
+display_ip_on_wait <- false;
+update_help_text <- false;
 
-this.server_port_h <- this.Cursor(1, 5, ::input_all);
-this.cursor_upnp <- this.Cursor(1, 2, ::input_all);
-this.cursor_allow_watch <- this.Cursor(1, 2, ::input_all);
-this.timeout <- 0;
-this.upnp_timeout <- 0;
-this.retry_count <- 0;
-this.lobby_user_state <- 0;
-this.lobby_interval <- 10 * 1000;
-this.lobby_time_stamp <- ::manbow.timeGetTime() - this.lobby_interval + 1000;
+server_port_h <- Cursor(1, 5, ::input_all);
+cursor_upnp <- Cursor(1, 2, ::input_all);
+cursor_allow_watch <- Cursor(1, 2, ::input_all);
+timeout <- 0;
+upnp_timeout <- 0;
+retry_count <- 0;
+lobby_user_state <- 0;
+lobby_interval <- 10 * 1000;
+lobby_time_stamp <- ::manbow.timeGetTime() - lobby_interval + 1000;
 
-this.help <- [
+help <- [
 	"B1",
 	"ok",
 	null,
@@ -97,18 +97,18 @@ this.help <- [
 	"UD",
 	"select"
 ];
-this.help_cancel <- [
+help_cancel <- [
 	"B2",
 	"cancel"
 ];
-this.help_cancel_copy <- [
+help_cancel_copy <- [
 	"B2",
 	"cancel",
 	null,
 	"B3",
 	"copy_host"
 ];
-this.help_port <- [
+help_port <- [
 	"B1",
 	"ok",
 	null,
@@ -121,7 +121,7 @@ this.help_port <- [
 	"LR",
 	"digit"
 ];
-this.help_addr <- [
+help_addr <- [
 	"B1",
 	"ok",
 	"B2",
@@ -133,7 +133,7 @@ this.help_addr <- [
 	"LR",
 	"digit"
 ];
-this.help_item <- [
+help_item <- [
 	"B1",
 	"ok",
 	null,
@@ -143,33 +143,40 @@ this.help_item <- [
 	"LR",
 	"change"
 ];
-this.is_suspend <- false;
-this.dialog_wait <- {};
-::manbow.CompileFile("data/system/network/dialog_wait.nut", this.dialog_wait);
-this.dialog_address <- {};
-::manbow.CompileFile("data/system/network/dialog_address.nut", this.dialog_address);
-this.dialog_port <- {};
-::manbow.CompileFile("data/system/network/dialog_port.nut", this.dialog_port);
-this.dialog_connect <- {};
-::manbow.CompileFile("data/system/network/dialog_connect.nut", this.dialog_connect);
-this.anime <- {};
-::manbow.CompileFile("data/system/network/network_animation.nut", this.anime);
+help_prompt <- [
+	"B1",
+	"ok",
+	null,
+	"B2",
+	"cancel",
+];
+is_suspend <- false;
+dialog_wait <- {};
+::manbow.CompileFile("data/system/network/dialog_wait.nut", dialog_wait);
+dialog_address <- {};
+::manbow.CompileFile("data/system/network/dialog_address.nut", dialog_address);
+dialog_port <- {};
+::manbow.CompileFile("data/system/network/dialog_port.nut", dialog_port);
+dialog_connect <- {};
+::manbow.CompileFile("data/system/network/dialog_connect.nut", dialog_connect);
+anime <- {};
+::manbow.CompileFile("data/system/network/network_animation.nut", anime);
 function Initialize()
 {
-	this.item_table <- ::menu.common.LoadItemTextArray("data/system/network/item.csv");
+	item_table <- ::menu.common.LoadItemTextArray("data/system/network/item.csv");
 	::menu.cursor.Activate();
 	::menu.back.Activate();
-	this.update = this.UpdateMain;
-	this.state = 0;
-	this.is_suspend = false;
-	this.timeout = 0;
-	this.upnp_timeout = 0;
-	this.lobby_time_stamp = ::manbow.timeGetTime() - 9000;
+	update = UpdateMain;
+	state = 0;
+	is_suspend = false;
+	timeout = 0;
+	upnp_timeout = 0;
+	lobby_time_stamp = ::manbow.timeGetTime() - 9000;
 
-	if (this.cursor_item.val != 0)
+	if (cursor_item.val != 0)
 	{
-		this.cursor_item.val = 0;
-		this.cursor_item.diff = -1;
+		cursor_item.val = 0;
+		cursor_item.diff = -1;
 	}
 
 	::LOBBY.SetPrefix(::network.lobby_prefix);
@@ -177,61 +184,61 @@ function Initialize()
 	::LOBBY.SetVersionSig(::network.lobby_version_sig);
 	::LOBBY.SetStrikeFactor(1, 1000);
 	local n = ::config.network.lobby_name;
-	::config.network.lobby_name = this.room_name[0];
-	this.cursor_lobby.val = 0;
+	::config.network.lobby_name = room_name[0];
+	cursor_lobby.val = 0;
 
-	foreach( i, v in this.room_name )
+	foreach( i, v in room_name )
 	{
 		if (n == v)
 		{
 			::config.network.lobby_name = v;
-			this.cursor_lobby.val = i;
+			cursor_lobby.val = i;
 			break;
 		}
 	}
 
-	this.SetHostingPortToCursor(::config.network.hosting_port);
-	this.SetTargetHostToCursor(::config.network.target_host);
-	this.SetTargetPortToCursor(::config.network.target_port);
-	this.cursor_upnp.val = ::config.network.upnp ? 0 : 1;
-	this.cursor_allow_watch.val = ::config.network.allow_watch ? 0 : 1;
-	this.cursor_lobby.SetItemNum(this.room_name.len() - (::debug.dev() ? 0 : 1));
-	this.BeginAnime();
+	SetHostingPortToCursor(::config.network.hosting_port);
+	SetTargetHostToCursor(::config.network.target_host);
+	SetTargetPortToCursor(::config.network.target_port);
+	cursor_upnp.val = ::config.network.upnp ? 0 : 1;
+	cursor_allow_watch.val = ::config.network.allow_watch ? 0 : 1;
+	cursor_lobby.SetItemNum(room_name.len() - (::debug.dev() ? 0 : 1));
+	BeginAnime();
 	::loop.Begin(this);
 }
 
 function Terminate()
 {
-	this.state = -1;
+	state = -1;
 	::menu.help.Reset();
 	::menu.back.Deactivate();
 	::menu.cursor.Deactivate();
-	this.EndAnimeDelayed();
-	this.update = null;
-	this.LobbyTerminate();
+	EndAnimeDelayed();
+	update = null;
+	LobbyTerminate();
 	::network.Terminate();
 }
 
 function Suspend()
 {
 	::loop.End(::menu.network);
-	this.is_suspend = true;
+	is_suspend = true;
 	::menu.title.Hide();
 	::menu.help.Reset();
 	::menu.cursor.Deactivate();
 	::menu.back.Deactivate(true);
 	::effect.Clear();
-	this.EndAnime();
+	EndAnime();
 }
 
 function Resume()
 {
-	if (!this.is_suspend)
+	if (!is_suspend)
 	{
 		return;
 	}
 
-	this.is_suspend = false;
+	is_suspend = false;
 	::sound.PlayBGM(::savedata.GetTitleBGMID());
 	::menu.title.Show();
 
@@ -245,12 +252,12 @@ function Resume()
 	}
 
 	::network.Terminate();
-	this.update = this.UpdateMain;
-	this.timeout = 0;
-	this.upnp_timeout = 0;
+	update = UpdateMain;
+	timeout = 0;
+	upnp_timeout = 0;
 	::menu.cursor.Activate();
 	::menu.back.Activate();
-	this.BeginAnime();
+	BeginAnime();
 }
 
 function Update()
@@ -262,10 +269,10 @@ function Update()
 		return;
 	}
 
-	this.LobbyUpdate();
-	if (this.update)
+	LobbyUpdate();
+	if (update)
 	{
-		this.update();
+		update();
 	}
 }
 
@@ -273,8 +280,8 @@ function UpdateMain()
 {
 	::discord.rpc_commit_details_and_state("Idle", "");
 
-	::menu.help.Set(this.help);
-	this.cursor_item.Update();
+	::menu.help.Set(help);
+	cursor_item.Update();
 	::punch.ignore_ping();
 
 	if (::input_all.b0 == 1)
@@ -282,30 +289,30 @@ function UpdateMain()
 		::input_all.Lock();
 		::network.local_device_id = ::input_all.GetLastDevice();
 
-		switch(this.cursor_item.val)
+		switch(cursor_item.val)
 		{
 		case 0://wait in lobby
 			if (::LOBBY.GetNetworkState() == 2)
 			{
-				::discord.rpc_commit_details_and_state("Waiting in " + this.room_title[this.cursor_lobby.val], "");
+				::discord.rpc_commit_details_and_state("Waiting in " + room_title[cursor_lobby.val], "");
 
 				::LOBBY.SetExternalPort(::config.network.hosting_port);
 				::LOBBY.SetUserData("" + ::config.network.hosting_port);
 
-				this.upnp_timeout = 0;
+				upnp_timeout = 0;
 				if (!::config.network.upnp)
 				{
 					::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING);
 				}
 
-				this.lobby_user_state = ::LOBBY.WAIT_INCOMMING;
+				lobby_user_state = ::LOBBY.WAIT_INCOMMING;
 				::network.use_lobby = true;
 				::network.StartupServer(::config.network.hosting_port, 0);
 				::lobby.inc_user_count();
-				this.update = this.UpdateMatch;
-				this.display_ip_on_wait = false;
-				this.update_help_text = false;
-				::Dialog(-1, this.item_table.wait_incomming[0], null, this.dialog_wait.InitializeWithUPnP);
+				update = UpdateMatch;
+				display_ip_on_wait = false;
+				update_help_text = false;
+				::Dialog(-1, item_table.wait_incomming[0], null, dialog_wait.InitializeWithUPnP);
 			}
 
 			break;
@@ -318,17 +325,17 @@ function UpdateMain()
 				::LOBBY.SetExternalPort(::config.network.hosting_port);
 				::LOBBY.SetUserData("" + ::config.network.hosting_port);
 				::LOBBY.SetLobbyUserState(::LOBBY.MATCHING);
-				this.lobby_user_state = ::LOBBY.MATCHING;
-				this.update = this.UpdateMatch;
-				this.display_ip_on_wait = false;
-				this.update_help_text = true;
-				::Dialog(-1, this.item_table.find[0], null, this.dialog_wait.Initialize);
+				lobby_user_state = ::LOBBY.MATCHING;
+				update = UpdateMatch;
+				display_ip_on_wait = false;
+				update_help_text = true;
+				::Dialog(-1, item_table.find[0], null, dialog_wait.Initialize);
 			}
 
 			break;
 
 		case 2://select lobby
-			this.update = this.UpdateSelectLobby;
+			update = UpdateSelectLobby;
 			break;
 
 		case 4://wait incomming
@@ -336,21 +343,21 @@ function UpdateMain()
 
 			::network.use_lobby = false;
 			::network.StartupServer(::config.network.hosting_port, 1);
-			this.update = this.UpdateWaitServer;
+			update = UpdateWaitServer;
 			::punch.reset_ip();
-			this.update_help_text = false;
-			this.display_ip_on_wait = true;
-			::Dialog(-1, this.item_table.wait_incomming[0], null, this.dialog_wait.InitializeWithUPnP);
+			update_help_text = false;
+			display_ip_on_wait = true;
+			::Dialog(-1, item_table.wait_incomming[0], null, dialog_wait.InitializeWithUPnP);
 			break;
 
 		case 5://connecting to opponent
-			this.target_addr_h.val = 0;
-			::Dialog(-1, this.item_table.input_address[0], null, this.dialog_address.Initialize);
+			target_addr_h.val = 0;
+			::Dialog(-1, item_table.input_address[0], null, dialog_address.Initialize);
 			break;
 
 		case 6://watch
-			this.target_addr_h.val = 0;
-			::Dialog(-1, this.item_table.input_address[0], null, this.dialog_address.Initialize);
+			target_addr_h.val = 0;
+			::Dialog(-1, item_table.input_address[0], null, dialog_address.Initialize);
 			break;
 
 		case 8://player name
@@ -365,17 +372,17 @@ function UpdateMain()
 			break;
 
 		case 9://port number
-			this.SetHostingPortToCursor(::config.network.hosting_port);
-			this.server_port_h.val = 0;
-			::Dialog(-1, this.item_table.input_port[0], null, this.dialog_port.Initialize);
+			SetHostingPortToCursor(::config.network.hosting_port);
+			server_port_h.val = 0;
+			::Dialog(-1, item_table.input_port[0], null, dialog_port.Initialize);
 			break;
 
 		case 10://use upnp
-			this.update = this.UpdateUPnP;
+			update = UpdateUPnP;
 			break;
 
 		case 11://allow watch
-			this.update = this.UpdateAllowWatch;
+			update = UpdateAllowWatch;
 			break;
 
 		case 13://exit
@@ -391,65 +398,65 @@ function UpdateMain()
 
 function UpdateSelectLobby()
 {
-	::menu.help.Set(this.help_item);
-	this.cursor_lobby.Update();
+	::menu.help.Set(help_item);
+	cursor_lobby.Update();
 
-	if (this.cursor_lobby.ok)
+	if (cursor_lobby.ok)
 	{
-		::config.network.lobby_name = this.room_name[this.cursor_lobby.val];
+		::config.network.lobby_name = room_name[cursor_lobby.val];
 		::config.Save();
-		this.lobby_time_stamp = ::manbow.timeGetTime() - 9000;
+		lobby_time_stamp = ::manbow.timeGetTime() - 9000;
 		::LOBBY.Close();
-		this.update = this.UpdateMain;
+		update = UpdateMain;
 	}
 
-	if (this.cursor_lobby.cancel)
+	if (cursor_lobby.cancel)
 	{
-		this.update = this.UpdateMain;
+		update = UpdateMain;
 	}
 }
 
 function UpdateUPnP()
 {
-	::menu.help.Set(this.help_item);
-	this.cursor_upnp.Update();
+	::menu.help.Set(help_item);
+	cursor_upnp.Update();
 
-	if (this.cursor_upnp.ok)
+	if (cursor_upnp.ok)
 	{
-		::config.network.upnp = this.cursor_upnp.val == 0 ? true : false;
+		::config.network.upnp = cursor_upnp.val == 0 ? true : false;
 		::config.Save();
-		this.update = this.UpdateMain;
+		update = UpdateMain;
 	}
 
-	if (this.cursor_upnp.cancel)
+	if (cursor_upnp.cancel)
 	{
-		this.update = this.UpdateMain;
+		update = UpdateMain;
 	}
 }
 
 function UpdateAllowWatch()
 {
-	::menu.help.Set(this.help_item);
-	this.cursor_allow_watch.Update();
+	::menu.help.Set(help_item);
+	cursor_allow_watch.Update();
 
-	if (this.cursor_allow_watch.ok)
+	if (cursor_allow_watch.ok)
 	{
-		::config.network.allow_watch = this.cursor_allow_watch.val == 0 ? true : false;
+		::config.network.allow_watch = cursor_allow_watch.val == 0 ? true : false;
 		::config.Save();
-		this.update = this.UpdateMain;
+		update = UpdateMain;
 	}
 
-	if (this.cursor_allow_watch.cancel)
+	if (cursor_allow_watch.cancel)
 	{
-		this.update = this.UpdateMain;
+		update = UpdateMain;
 	}
 }
 
 function UpdateInputPort()
 {
-	::menu.help.Set(this.help_port);
-	this.server_port_h.Update();
-	this.server_port_v[this.server_port_h.val].Update();
+	::menu.help.Set(help_port);
+	server_port_h.Update();
+	server_port_v[server_port_h.val].Update();
 
 	if (::input_all.b0 == 1)
 	{
@@ -458,7 +465,7 @@ function UpdateInputPort()
 		for( local i = 0; i < 5; i = ++i )
 		{
 			port = port * 10;
-			port = port + this.server_port_v[i].val;
+			port = port + server_port_v[i].val;
 		}
 
 		::config.network.hosting_port = port;
@@ -473,24 +480,28 @@ function UpdateInputPort()
 
 function UpdateWaitServer()
 {
-	::menu.help.Set(this.update_help_text ? this.help_cancel_copy : this.help_cancel);
-
-	if (::input_all.b1 == 1)
-	{
-		::network.Terminate();
-		this.update = this.UpdateMain;
-		::loop.End();
-	}
-	if (::input_all.b2 == 1) {
-		::punch.copy_ip_to_clipboard();
+	if (::network.received_request){
+		::menu.help.Set(help_prompt);
+		if (::input_all.b0 == 1)::network.AcceptMatch();
+		if (::input_all.b1 == 1)::network.RejectMatch();
+	}else {
+		if (::input_all.b1 == 1) {
+			::network.Terminate();
+			update = UpdateMain;
+			::loop.End();
+		}
+		if (::input_all.b2 == 1) {
+			::punch.copy_ip_to_clipboard();
+		}
+		::menu.help.Set(update_help_text ? help_cancel_copy : help_cancel);
 	}
 }
 
 function UpdateInputAddr()
 {
-	::menu.help.Set(this.help_addr);
-	this.target_addr_h.Update();
-	this.target_addr_v[this.target_addr_h.val].Update();
+	::menu.help.Set(help_addr);
+	target_addr_h.Update();
+	target_addr_v[target_addr_h.val].Update();
 
 	if (::input_all.b0 == 1)
 	{
@@ -507,7 +518,7 @@ function UpdateInputAddr()
 			}
 
 			t = t * 10;
-			t = t + this.target_addr_v[i].val;
+			t = t + target_addr_v[i].val;
 		}
 
 		addr = addr + t;
@@ -516,16 +527,16 @@ function UpdateInputAddr()
 		for( local i = 12; i < 12 + 5; i = ++i )
 		{
 			port = port * 10;
-			port = port + this.target_addr_v[i].val;
+			port = port + target_addr_v[i].val;
 		}
 
-		::network.StartupClient(addr, port, this.item[this.cursor_item.val] == "watch" ? 3 : 2);
-		this.update = this.UpdateWaitClient;
+		::network.StartupClient(addr, port, item[cursor_item.val] == "watch" ? 3 : 2);
+		update = UpdateWaitClient;
 		::config.network.target_host = addr;
 		::config.network.target_port = port;
 		::config.Save();
 		::loop.End();
-		::Dialog(-1, this.item_table[this.item[this.cursor_item.val] == "watch" ? "connect_watch" : "connect"][0], null, this.dialog_connect.Initialize);
+		::Dialog(-1, item_table[item[cursor_item.val] == "watch" ? "connect_watch" : "connect"][0], null, dialog_connect.Initialize);
 	}
 	else if (::input_all.b1 == 1)
 	{
@@ -535,53 +546,53 @@ function UpdateInputAddr()
 
 	if (::input_all.b2 == 1)
 	{
-		local ret = this.GetIPAddress(::manbow.GetClipboardString());
+		local ret = GetIPAddress(::manbow.GetClipboardString());
 
 		if (ret != "")
 		{
-			this.SetTargetHostToCursor(this.GetHostName(ret));
-			this.SetTargetPortToCursor(this.GetHostPort(ret).tointeger());
+			SetTargetHostToCursor(GetHostName(ret));
+			SetTargetPortToCursor(GetHostPort(ret).tointeger());
 		}
 	}
 }
 
 function UpdateWaitClient()
 {
-	::menu.help.Set(this.help_cancel);
+	::menu.help.Set(help_cancel);
 
 	if (::input_all.b1 == 1)
 	{
 		::network.Terminate();
-		this.update = this.UpdateMain;
+		update = UpdateMain;
 		::loop.End();
-		::Dialog(-1, this.item_table.input_address[0], null, this.dialog_address.Initialize);
+		::Dialog(-1, item_table.input_address[0], null, dialog_address.Initialize);
 	}
 
 	switch(::network.return_code)
 	{
 	case 1:
-		this.update = this.UpdateMain;
+		update = UpdateMain;
 		::loop.End();
 		::Dialog(0, ::menu.common.GetMessageText("error_busy"));
 		::network.Terminate();
 		break;
 
 	case 2:
-		this.update = this.UpdateMain;
+		update = UpdateMain;
 		::loop.End();
 		::Dialog(0, ::menu.common.GetMessageText("error_version"));
 		::network.Terminate();
 		break;
 
 	case 3:
-		this.update = this.UpdateMain;
+		update = UpdateMain;
 		::loop.End();
 		::Dialog(0, ::menu.common.GetMessageText("error_watch"));
 		::network.Terminate();
 		break;
 
 	case 4:
-		this.update = this.UpdateMain;
+		update = UpdateMain;
 		::loop.End();
 		::Dialog(0, ::menu.common.GetMessageText("error_ready"));
 		::network.Terminate();
@@ -597,17 +608,17 @@ function UpdateWaitClient()
 
 function UpdateMatch()
 {
-	::menu.help.Set(this.help_cancel);
+	::menu.help.Set(help_cancel);
 
 	if (::input_all.b1 == 1)
 	{
-		if (this.cursor_item.val == 0) {
+		if (cursor_item.val == 0) {
 			::lobby.dec_user_count();
 		}
 		::LOBBY.SetLobbyUserState(::LOBBY.NO_OPERATION);
 		::network.Terminate();
 		::loop.End();
-		this.update = this.UpdateMain;
+		update = UpdateMain;
 		return;
 	}
 
@@ -615,7 +626,7 @@ function UpdateMatch()
 	{
 		if (::LOBBY.GetLobbyUserState() == ::LOBBY.NO_OPERATION)
 		{
-			if (::UPnP.GetAsyncState() == 2 || this.upnp_timeout++ > 360)
+			if (::UPnP.GetAsyncState() == 2 || upnp_timeout++ > 360)
 			{
 				::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING);
 			}
@@ -628,22 +639,22 @@ function UpdateMatch()
 			//102 matched
 			//200 searching
 			//202 matched ?
-			if (this.timeout++ > 360){
-				if (this.retry_count++ > 5) {
-					this.lobby_user_state = ::LOBBY.MATCHING;
+			if (timeout++ > 360){
+				if (retry_count++ > 5) {
+					lobby_user_state = ::LOBBY.MATCHING;
 				}
-				::LOBBY.SetLobbyUserState(this.lobby_user_state);
-				this.timeout = 0;
+				::LOBBY.SetLobbyUserState(lobby_user_state);
+				timeout = 0;
 				return;
 			}
 		// }else if (::LOBBY.GetLobbyUserState() == 200) {
-		// 	if (this.timeout++ > 31250){//roughly 5 mins 60 fps
-		// 		this.lobby_user_state = ::LOBBY.WAIT_INCOMMING;
-		// 		::LOBBY.SetLobbyUserState(this.lobby_user_state);
-		// 		this.timeout = 0;
+		// 	if (timeout++ > 31250){//roughly 5 mins 60 fps
+		// 		lobby_user_state = ::LOBBY.WAIT_INCOMMING;
+		// 		::LOBBY.SetLobbyUserState(lobby_user_state);
+		// 		timeout = 0;
 		// 	}
 		}else {
-			this.timeout = 0;
+			timeout = 0;
 		}
 	}
 
@@ -654,40 +665,40 @@ function UpdateMatch()
 	{
 		::LOBBY.SetLobbyUserState(::LOBBY.NO_OPERATION);
 		::network.Terminate();
-		::network.StartupClient(this.GetHostName(st_host), st_userdata.tointeger(), 0);
-		this.update = this.UpdateMatchWait;
+		::network.StartupClient(GetHostName(st_host), st_userdata.tointeger(), 0);
+		update = UpdateMatchWait;
 		return;
 	}
 }
 
 function UpdateMatchWait()
 {
-	::menu.help.Set(this.help_cancel);
+	::menu.help.Set(help_cancel);
 
 	if (::input_all.b1 == 1)
 	{
-		if (this.cursor_item.val == 0) {
+		if (cursor_item.val == 0) {
 			::lobby.dec_user_count();
 		}
 		::LOBBY.SetLobbyUserState(::LOBBY.NO_OPERATION);
 		::network.Terminate();
 		::loop.End();
-		this.update = this.UpdateMain;
+		update = UpdateMain;
 		return;
 	}
 
-	if (this.timeout++ > 360)
+	if (timeout++ > 360)
 	{
-		::LOBBY.SetLobbyUserState(this.lobby_user_state);
+		::LOBBY.SetLobbyUserState(lobby_user_state);
 		::network.Terminate();
-		this.timeout = 0;
+		timeout = 0;
 
-		if (this.lobby_user_state == ::LOBBY.WAIT_INCOMMING)
+		if (lobby_user_state == ::LOBBY.WAIT_INCOMMING)
 		{
 			::network.StartupServer(::config.network.hosting_port, 0);
 		}
 
-		this.update = this.UpdateMatch;
+		update = UpdateMatch;
 		return;
 	}
 }
@@ -696,12 +707,12 @@ function LobbyUpdate()
 {
 	local now = ::manbow.timeGetTime();
 
-	if (now - this.lobby_time_stamp < this.lobby_interval)
+	if (now - lobby_time_stamp < lobby_interval)
 	{
 		return;
 	}
 
-	this.lobby_time_stamp = now;
+	lobby_time_stamp = now;
 
 	if (::config.network.lobby_name != "")
 	{
@@ -716,7 +727,7 @@ function LobbyUpdate()
 	else if (::LOBBY.GetNetworkState() != ::LOBBY.CLOSED)
 	{
 		::LOBBY.Close();
-		this.lobby_time_stamp -= 9000;
+		lobby_time_stamp -= 9000;
 	}
 }
 
@@ -745,11 +756,11 @@ function SetTargetHostToCursor( t )
 			val = t.tointeger();
 		}
 
-		this.target_addr_v[i * 3 + 2].val = val % 10;
+		target_addr_v[i * 3 + 2].val = val % 10;
 		val = val / 10;
-		this.target_addr_v[i * 3 + 1].val = val % 10;
+		target_addr_v[i * 3 + 1].val = val % 10;
 		val = val / 10;
-		this.target_addr_v[i * 3].val = val;
+		target_addr_v[i * 3].val = val;
 	}
 }
 
@@ -759,7 +770,7 @@ function SetHostingPortToCursor( t )
 
 	for( local i = 4; i >= 0; i = --i )
 	{
-		this.server_port_v[i].val = t % 10;
+		server_port_v[i].val = t % 10;
 		t = t / 10;
 	}
 }
@@ -768,7 +779,7 @@ function SetTargetPortToCursor( t )
 {
 	for( local i = 4; i >= 0; i = --i )
 	{
-		this.target_addr_v[12 + i].val = t % 10;
+		target_addr_v[12 + i].val = t % 10;
 		t = t / 10;
 	}
 }
@@ -799,7 +810,7 @@ function GetHostPort( _str )
 
 function GetIPAddress( text )
 {
-	local ex = this.regexp("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:\\d{1,5}");
+	local ex = regexp("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:\\d{1,5}");
 	local ret = ex.search(text);
 
 	if (ret == null)

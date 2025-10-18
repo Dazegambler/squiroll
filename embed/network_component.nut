@@ -311,7 +311,7 @@ function StartupServer(port,mode) {
 		//||||||||||||||||||||||||
 		//||Match Request Prompt||
 		//||||||||||||||||||||||||
-		// if (::LOBBY.GetNetworkState() != ::LOBBY.CLOSED)::LOBBY.Close();
+		if (::LOBBY.GetNetworkState() != ::LOBBY.CLOSED)::LOBBY.Close();
 		inst = inst_connect;
 		func_get_delay = function() {
 			return::network.inst.GetChildDelay(0);
@@ -322,55 +322,6 @@ function StartupServer(port,mode) {
 			allow_watch = request.allow_watch
 		};
 		::sound.PlaySE(120);
-		// ::Dialog(-1,"Match Found...",null,
-		//init
-		// function() {
-		// 	obj[1].y = -40;
-		// 	Update = function () {
-		// 		local str = ::format("Match Found...%s#%dms",request.name,::network.GetDelay());
-		// 		obj[1].Set(str);
-		// 		obj[1].x = 20 + -obj[1].width / 2;
-		// 		//Match Accepted
-		// 		if (::input_all.b0) {
-		// 			::network.player_name = [::config.network.player_name, request.name.len() > 16 ? "P2" : request.name];
-		// 			::network.color = [::savedata.GetColorNum(), request.color];
-		// 			::network.icon = [::network.local_icon, ""];
-		// 			rand_seed = ::manbow.timeGetTime();
-		// 			srand(rand_seed);
-		// 			allow_watch = ::config.network.allow_watch && request.allow_watch;
-		// 			::sound.PlaySE(120);
-		// 			::loop.Fade(function () {
-		// 				::network.inst.SendToChild(0, {
-		// 					message = "yes"
-		// 					rand_seed = rand_seed
-		// 					is_parent_vs = true
-		// 					allow_watch = ::network.allow_watch
-		// 					hide_ip = ::setting.network.hide_ip || !::setting.network.share_watch_ip
-		// 					use_lobby = ::network.use_lobby
-		// 					name = ::config.network.player_name.len() > 16 ? "P1" : ::config.network.player_name
-		// 					color = ::network.color_num[0]
-		// 				});
-		// 				foreach(chunk in ::network.chunked_icon) {
-		// 					::network.inst.SendToChild(0, {
-		// 						message = "profile"
-		// 						icon_chunk = chunk
-		// 					});
-		// 				}
-		// 				::discord.rpc_set_details("VS online");
-		// 				::menu.network.Suspend();
-		// 				::menu.character_select.Initialize(1);
-		// 			})
-		// 		}
-		// 		//Match Rejected
-		// 		if (::input_all.b1) {
-		// 			::network.inst.SendToChild(0, {
-		// 			    message = "no"
-		// 			});
-		// 			::network.Disconnect();
-		// 			::loop.End();
-		// 		}
-		// 	};
-		// });
 		return true;
 	}.bindenv(this);
 
@@ -628,9 +579,9 @@ function StartupClient(addr,port,mode) {
 
 
 	mb_client.ConnectComplete = function (id,context,reply) {
-		// if (::LOBBY.GetNetworkState() != ::LOBBY.CLOSED) {
-		// 	::LOBBY.Close();
-		// }
+		if (::LOBBY.GetNetworkState() != ::LOBBY.CLOSED) {
+			::LOBBY.Close();
+		}
 		if (inst) return;
 		if ("is_watch" in reply) {
 			allow_watch = true;
@@ -728,6 +679,11 @@ function StartupClient(addr,port,mode) {
 							::menu.character_select.Initialize(1);
 						});
 						break;
+					case "no":
+						Terminate();
+						::menu.network.update = ::menu.network.UpdateMain;
+						::loop.End();
+						break;
 				}
 			}
 		} catch (e);
@@ -786,6 +742,48 @@ function Disconnect( scene = true )
 function GetDelay()
 {
 	return func_get_delay();
+}
+
+function AcceptMatch() {
+	player_name = [::config.network.player_name, received_request.name.len() > 16 ? "P2" : received_request.name];
+	color_num = [::savedata.GetColorNum(), received_request.color];
+	icon = [::network.local_icon, ""];
+	rand_seed = ::manbow.timeGetTime();
+	srand(rand_seed);
+	allow_watch = ::config.network.allow_watch && received_request.allow_watch;
+	received_request = null;
+	::sound.PlaySE(120);
+	::loop.Fade(function () {
+		::network.inst.SendToChild(0, {
+			message = "yes"
+			rand_seed = ::network.rand_seed
+			is_parent_vs = true
+			allow_watch = ::network.allow_watch
+			hide_ip = ::setting.network.hide_ip || !::setting.network.share_watch_ip
+			use_lobby = ::network.use_lobby
+			name = ::config.network.player_name.len() > 16 ? "P1" : ::config.network.player_name
+			color = ::network.color_num[0]
+		});
+		foreach(chunk in ::network.chunked_icon) {
+			::network.inst.SendToChild(0, {
+				message = "profile"
+				icon_chunk = chunk
+			});
+		}
+		::discord.rpc_set_details("VS online");
+		::menu.network.Suspend();
+		::menu.character_select.Initialize(1);
+	})
+}
+
+function RejectMatch() {
+	received_request = null;
+	::network.inst.SendToChild(0, {
+		message = "no"
+	});
+	Terminate();
+	::menu.network.update = ::menu.network.UpdateMain;
+	::loop.End();
 }
 
 function BeginStreaming()

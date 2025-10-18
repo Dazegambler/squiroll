@@ -59,48 +59,6 @@ function Update() {
 		local str = ::format("Match Found...%s#%dms", request.name, ::network.GetDelay());
 		obj[1].Set(str);
 		obj[1].x = 20 + -obj[1].width / 2;
-
-		//Match Accepted
-		if (::input_all.b0) {
-			::network.player_name = [::config.network.player_name, request.name.len() > 16 ? "P2" : request.name];
-			::network.color_num = [::savedata.GetColorNum(), request.color];
-			::network.icon = [::network.local_icon, ""];
-			::network.rand_seed = ::manbow.timeGetTime();
-			srand(::network.rand_seed);
-			::network.allow_watch = ::config.network.allow_watch && request.allow_watch;
-			::network.received_request = null;
-			::sound.PlaySE(120);
-			::loop.Fade(function () {
-				::network.inst.SendToChild(0, {
-					message = "yes"
-					rand_seed = ::network.rand_seed
-					is_parent_vs = true
-					allow_watch = ::network.allow_watch
-					hide_ip = ::setting.network.hide_ip || !::setting.network.share_watch_ip
-					use_lobby = ::network.use_lobby
-					name = ::config.network.player_name.len() > 16 ? "P1" : ::config.network.player_name
-					color = ::network.color_num[0]
-				});
-				foreach(chunk in ::network.chunked_icon) {
-					::network.inst.SendToChild(0, {
-						message = "profile"
-						icon_chunk = chunk
-					});
-				}
-				::discord.rpc_set_details("VS online");
-				::menu.network.Suspend();
-				::menu.character_select.Initialize(1);
-			})
-		}
-
-		//Match Rejected
-		if (::input_all.b1) {
-			::network.inst.SendToChild(0, {
-				message = "no"
-			});
-			::network.Disconnect();
-			::loop.End();
-		}
 	}
 	::menu.cursor.SetTarget(obj[1].x - 20 + ::graphics.width / 2, obj[1].y + 24 + ::graphics.height / 2, 0.69999999);
 	::menu.network.update();

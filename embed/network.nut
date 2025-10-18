@@ -562,6 +562,7 @@ function UpdateWaitClient()
 
 	if (::input_all.b1 == 1)
 	{
+		::network.CancelRequest();
 		::network.Terminate();
 		update = UpdateMain;
 		::loop.End();

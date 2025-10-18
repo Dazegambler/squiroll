@@ -176,7 +176,11 @@ static constexpr uint8_t battle_team_nut[] = {
 };
 
 static constexpr uint8_t loop_nut[] = {
-    #include "embed/loop.nut.h"
+#include "embed/loop.nut.h"
+};
+
+static constexpr uint8_t dialog_connect_nut[] = {
+#include "embed/dialog_connect.nut.h"
 };
 
 // static const std::unordered_map<std::string_view, const EmbedData> replacements = {
@@ -259,6 +263,7 @@ static const std::unordered_map<std::string_view, const EmbedData> embeds = {
     {"data/system/config/config.nut"sv, config_nut},
     {"data/system/config/config_animation.nut"sv, config_animation_nut},
     {"data/system/network/dialog_wait.nut"sv, dialog_wait_nut},
+    {"data/system/network/dialog_connect.nut"sv, dialog_connect_nut},
     {"data/system/select/script/character_select_animation.nut"sv, character_select_animation_nut},
     {"data/script/menu.nut"sv, menu_nut},
     {"data/system/boot/boot.nut"sv, boot_nut},

@@ -184,12 +184,12 @@ function StartupServer(port,mode) {
 		func_get_delay = function() {
 			return::network.inst.GetChildDelay(0);
 		}
+		::sound.PlaySE(120);
 		received_request = {
 			name = request.name
 			color = request.color
 			allow_watch = request.allow_watch
 		};
-		::sound.PlaySE(120);
 		return true;
 	}.bindenv(this);
 
@@ -207,8 +207,17 @@ function StartupServer(port,mode) {
 						break;
 					case "nvm":
 						Terminate();
+						received_request = null;
+						::menu.network.update = ::menu.network.UpdateMatch;
+						::LOBBY.Connect("","","",::config.network.lobby_name,::config.network.lobby_name);
+						::menu.network.lobby_user_state = ::LOBBY.WAIT_INCOMMING;
+						::LOBBY.SetLobbyUserState(::menu.network.lobby_user_state);
+						break;
+					case "afk":
+						Terminate();
 						::menu.network.update = ::menu.network.UpdateMain;
 						::loop.End();
+						received_request = null;
 						break;
 				}
 			}
@@ -347,40 +356,15 @@ function StartupClient(addr,port,mode) {
 						icon[0] += table.icon_chunk;
 						break;
 					case "yes":
-						ready = true;
-						is_parent_vs = true;
-						is_client = true;
-						rand_seed = table.rand_seed;
-						srand(rand_seed);
-
-						player_name = [table.name.len() > 16 ? "P1" : table.name,::config.network.player_name];
-						color_num = [table.color, ::savedata.GetColorNum()];
-						icon = ["", local_icon];
-
-						allow_watch = table.allow_watch;
-						hide_host_ip = !("hide_ip" in table) || table.hide_ip;
-						use_lobby = table.use_lobby;
-
-						func_get_delay = function () {
-							return::network.inst.GetParentDelay();
-						}
-						::sound.PlaySE(120);
-						::loop.Fade(function () {
-							foreach(chunk in ::network.chunked_icon) {
-								::network.inst.SendToParent({
-									message = "profile"
-									icon_chunk = chunk
-								});
-							}
-							::discord.rpc_set_details("VS Online");
-							::menu.network.Suspend();
-							::menu.character_select.Initialize(1);
-						});
+						BeginMatch(table);
 						break;
 					case "no":
 						Terminate();
-						::menu.network.update = ::menu.network.UpdateMain;
-						::loop.End();
+						::menu.network.update = ::menu.network.UpdateMatch;
+						::LOBBY.Connect("","","",::config.network.lobby_name,::config.network.lobby_name);
+						::menu.network.lobby_user_state = ::LOBBY.MATCHING;
+						::LOBBY.SetLobbyUserState(::menu.network.lobby_user_state);
+						// ::loop.End();
 						break;
 				}
 			}
@@ -442,10 +426,56 @@ function GetDelay()
 	return func_get_delay();
 }
 
+function BeginMatch(table) {
+	ready = true;
+	is_parent_vs = true;
+	is_client = true;
+	rand_seed = table.rand_seed;
+	srand(rand_seed);
+
+	player_name = [table.name.len() > 16 ? "P1" : table.name,::config.network.player_name];
+	color_num = [table.color, ::savedata.GetColorNum()];
+	icon = ["", local_icon];
+
+	allow_watch = table.allow_watch;
+	hide_host_ip = !("hide_ip" in table) || table.hide_ip;
+	use_lobby = table.use_lobby;
+
+	func_get_delay = function () {
+		return::network.inst.GetParentDelay();
+	}
+	::sound.PlaySE(120);
+	::loop.Fade(function () {
+		foreach(chunk in ::network.chunked_icon) {
+			::network.inst.SendToParent({
+				message = "profile"
+				icon_chunk = chunk
+			});
+		}
+		::discord.rpc_set_details("VS Online");
+		::menu.network.Suspend();
+		::menu.character_select.Initialize(1);
+	});
+}
+
 function CancelRequest() {
 	inst.SendToParent({
 	    message = "nvm"
 	});
+	Terminate();
+	::LOBBY.Connect("","","",::config.network.lobby_name,::config.network.lobby_name);
+	::menu.network.lobby_user_state = ::LOBBY.MATCHING;
+	::LOBBY.SetLobbyUserState(::menu.network.lobby_user_state);
+}
+
+function HostAFK() {
+	inst.SendToParent({
+		message = "afk"
+	});
+	Terminate();
+	::LOBBY.Connect("","","",::config.network.lobby_name,::config.network.lobby_name);
+	::menu.network.lobby_user_state = ::LOBBY.MATCHING;
+	::LOBBY.SetLobbyUserState(::menu.network.lobby_user_state);
 }
 
 function AcceptMatch() {

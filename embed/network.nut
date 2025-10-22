@@ -7,6 +7,7 @@ item <- [
 	"client",
 	"watch",
 	null,
+	"setting"
 	"player_name",
 	"port",
 	"upnp",
@@ -164,6 +165,7 @@ anime <- {};
 function Initialize()
 {
 	item_table <- ::menu.common.LoadItemTextArray("data/system/network/item.csv");
+	item_table.setting <- ["settings"];
 	::menu.cursor.Activate();
 	::menu.back.Activate();
 	update = UpdateMain;
@@ -360,7 +362,11 @@ function UpdateMain()
 			::Dialog(-1, item_table.input_address[0], null, dialog_address.Initialize);
 			break;
 
-		case 8://player name
+		case 8://network settings
+			Suspend();
+			::menu.network_config.Initialize();
+			break;
+		case 9://player name
 			::Dialog(2, ::menu.common.GetMessageText("input_name"), function ( ret )
 			{
 				if (ret)
@@ -371,21 +377,21 @@ function UpdateMain()
 			}, ::config.network.player_name);
 			break;
 
-		case 9://port number
+		case 10://port number
 			SetHostingPortToCursor(::config.network.hosting_port);
 			server_port_h.val = 0;
 			::Dialog(-1, item_table.input_port[0], null, dialog_port.Initialize);
 			break;
 
-		case 10://use upnp
+		case 11://use upnp
 			update = UpdateUPnP;
 			break;
 
-		case 11://allow watch
+		case 12://allow watch
 			update = UpdateAllowWatch;
 			break;
 
-		case 13://exit
+		case 14://exit
 			::loop.End();
 			break;
 		}
@@ -480,21 +486,16 @@ function UpdateInputPort()
 
 function UpdateWaitServer()
 {
-	if (::network.received_request){
-		::menu.help.Set(help_prompt);
-		if (::input_all.b0 == 1)::network.AcceptMatch();
-		if (::input_all.b1 == 1)::network.RejectMatch();
-	}else {
-		if (::input_all.b1 == 1) {
-			::network.Terminate();
-			update = UpdateMain;
-			::loop.End();
-		}
-		if (::input_all.b2 == 1) {
-			::punch.copy_ip_to_clipboard();
-		}
-		::menu.help.Set(update_help_text ? help_cancel_copy : help_cancel);
+	if (::network.received_request)::network.AcceptMatch();
+	if (::input_all.b1 == 1) {
+		::network.Terminate();
+		update = UpdateMain;
+		::loop.End();
 	}
+	if (::input_all.b2 == 1) {
+		::punch.copy_ip_to_clipboard();
+	}
+	::menu.help.Set(update_help_text ? help_cancel_copy : help_cancel);
 }
 
 function UpdateInputAddr()
@@ -562,7 +563,6 @@ function UpdateWaitClient()
 
 	if (::input_all.b1 == 1)
 	{
-		::network.CancelRequest();
 		::network.Terminate();
 		update = UpdateMain;
 		::loop.End();
@@ -611,18 +611,22 @@ function UpdateMatch()
 {
 	::menu.help.Set(help_cancel);
 
-	if (::input_all.b1 == 1)
-	{
-		if (cursor_item.val == 0) {
-			::lobby.dec_user_count();
+	if (::network.received_request) {
+		::menu.help.Set(help_prompt);
+		if (::input_all.b0 == 1)::network.AcceptMatch();
+		if (::input_all.b1 == 1)::network.RejectMatch();
+	}else {
+		if (::input_all.b1 == 1) {
+			if (cursor_item.val == 0) {
+				::lobby.dec_user_count();
+			}
+			::LOBBY.SetLobbyUserState(::LOBBY.NO_OPERATION);
+			::network.Terminate();
+			::loop.End();
+			update = UpdateMain;
+			return;
 		}
-		::LOBBY.SetLobbyUserState(::LOBBY.NO_OPERATION);
-		::network.Terminate();
-		::loop.End();
-		update = UpdateMain;
-		return;
 	}
-
 	if (::config.network.upnp)
 	{
 		if (::LOBBY.GetLobbyUserState() == ::LOBBY.NO_OPERATION)
@@ -634,36 +638,35 @@ function UpdateMatch()
 		}
 	}
 
-	if (true){
-		if (::LOBBY.GetLobbyUserState() == 102) {
-			//100 hosting
-			//102 matched
-			//200 searching
-			//202 matched ?
-			if (timeout++ > 360){
-				if (retry_count++ > 5) {
-					lobby_user_state = ::LOBBY.MATCHING;
-				}
-				::LOBBY.SetLobbyUserState(lobby_user_state);
-				timeout = 0;
-				return;
+	if (::LOBBY.GetLobbyUserState() == 102) {
+		//100 hosting
+		//102 matched
+		//200 searching
+		//202 matched ?
+		if (timeout++ > 360){
+			if (retry_count++ > 5) {
+				lobby_user_state = ::LOBBY.MATCHING;
 			}
-		// }else if (::LOBBY.GetLobbyUserState() == 200) {
-		// 	if (timeout++ > 31250){//roughly 5 mins 60 fps
-		// 		lobby_user_state = ::LOBBY.WAIT_INCOMMING;
-		// 		::LOBBY.SetLobbyUserState(lobby_user_state);
-		// 		timeout = 0;
-		// 	}
-		}else {
+			::LOBBY.SetLobbyUserState(lobby_user_state);
 			timeout = 0;
+			return;
 		}
+	}else {
+		timeout = 0;
 	}
 
 	local st_host = ::LOBBY.GetMatchHost();
+
+	// local ar_host = ::split(st_host, ":");
+	// if (ar_host.len()) {
+	// 	ar_host[0] = "127.0.0.1";
+	// 	st_host = ar_host[0] + ":" + ar_host[1];
+	// }
+
 	local st_userdata = ::LOBBY.GetMatchUserData();
 
-	if (st_host != "")
-	{
+	//client only
+	if (st_host != "") {
 		::LOBBY.SetLobbyUserState(::LOBBY.NO_OPERATION);
 		::network.Terminate();
 		::network.StartupClient(GetHostName(st_host), st_userdata.tointeger(), 0);
@@ -672,6 +675,7 @@ function UpdateMatch()
 	}
 }
 
+//client only
 function UpdateMatchWait()
 {
 	::menu.help.Set(help_cancel);
@@ -688,14 +692,15 @@ function UpdateMatchWait()
 		return;
 	}
 
-	if (timeout++ > 360)
-	{
+	//source of disconnection
+	if (timeout++ > 360/*18000*/) {
+		::print("host is afk\n");
 		::LOBBY.SetLobbyUserState(lobby_user_state);
-		::network.Terminate();
+		::network.HostAFK();
+		// ::network.Terminate();
 		timeout = 0;
 
-		if (lobby_user_state == ::LOBBY.WAIT_INCOMMING)
-		{
+		if (lobby_user_state == ::LOBBY.WAIT_INCOMMING) {
 			::network.StartupServer(::config.network.hosting_port, 0);
 		}
 

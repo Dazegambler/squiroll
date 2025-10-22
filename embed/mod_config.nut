@@ -202,13 +202,6 @@ function Add(...) {
 }
 
 ::UI.Menu.call(this,
-	ConfigPage("Network",table = ::setting.network,
-		ConfigBoolSelect("hide ip","hide_ip"),
-		ConfigBoolSelect("share spectate ip","share_watch_ip"),
-		ConfigBoolSelect("hide names","hide_opponent_name","hide_name"),
-		ConfigBoolSelect("hide profile images","hide_opponent_name","hide_name"),
-		ConfigBoolSelect("lobby auto switch","auto_lobby_state_switch","auto_seach_host")
-	),
 	ConfigPage("Ping",table = ::setting.ping,
 		ConfigBoolSelect("enabled"),
 		ConfigBoolSelect("show input delay","input_delay","frames"),

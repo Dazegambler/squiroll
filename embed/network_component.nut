@@ -84,8 +84,9 @@ function Initialize() {
 	}
 }
 
-function Terminate()
-{
+function Terminate() {
+	::menu.network.timeout = 0;
+	received_request = null;
 	if (upnp_port > 0)
 	{
 		try
@@ -190,6 +191,7 @@ function StartupServer(port,mode) {
 			color = request.color
 			allow_watch = request.allow_watch
 		};
+		reply.name <- ::config.network.player_name;
 		return true;
 	}.bindenv(this);
 
@@ -207,7 +209,6 @@ function StartupServer(port,mode) {
 						break;
 					case "nvm":
 						Terminate();
-						received_request = null;
 						::menu.network.update = ::menu.network.UpdateMatch;
 						::LOBBY.Connect("","","",::config.network.lobby_name,::config.network.lobby_name);
 						::menu.network.lobby_user_state = ::LOBBY.WAIT_INCOMMING;
@@ -218,7 +219,6 @@ function StartupServer(port,mode) {
 						Terminate();
 						::menu.network.update = ::menu.network.UpdateMain;
 						::loop.End();
-						received_request = null;
 						break;
 				}
 			}
@@ -304,6 +304,12 @@ function StartupClient(addr,port,mode) {
 			return;
 		}
 		inst = inst_connect;
+		func_get_delay = function () {
+			return::network.inst.GetParentDelay();
+		}
+		received_request = {
+			name  = reply.name
+		};
 		return;
 	}.bindenv(this);
 	mb_client.ConnectReject = function (context,table) {
@@ -389,8 +395,7 @@ function StartupClient(addr,port,mode) {
 	return mb_client.Connect(addr, port, connect_param);
 }
 
-function Disconnect( scene = true )
-{
+function Disconnect( scene = true ) {
 	if (is_disconnect)
 	{
 		return;
@@ -422,12 +427,12 @@ function Disconnect( scene = true )
 	return;
 }
 
-function GetDelay()
-{
+function GetDelay() {
 	return func_get_delay();
 }
 
 function BeginMatch(table) {
+	received_request = null;
 	ready = true;
 	is_parent_vs = true;
 	is_client = true;
@@ -442,9 +447,9 @@ function BeginMatch(table) {
 	hide_host_ip = !("hide_ip" in table) || table.hide_ip;
 	use_lobby = table.use_lobby;
 
-	func_get_delay = function () {
-		return::network.inst.GetParentDelay();
-	}
+	// func_get_delay = function () {
+	// 	return::network.inst.GetParentDelay();
+	// }
 	::sound.PlaySE(120);
 	::loop.Fade(function () {
 		foreach(chunk in ::network.chunked_icon) {
@@ -514,7 +519,6 @@ function AcceptMatch() {
 }
 
 function RejectMatch() {
-	received_request = null;
 	::network.inst.SendToChild(0, {
 		message = "no"
 	});
@@ -527,28 +531,23 @@ function RejectMatch() {
 	// ::loop.End();
 }
 
-function BeginStreaming()
-{
+function BeginStreaming() {
 	inst.BeginStreaming();
 }
 
-function EndStreaming()
-{
+function EndStreaming() {
 	inst.EndStreaming();
 }
 
-function BeginStreamingPlay( func_begin, func_end )
-{
+function BeginStreamingPlay( func_begin, func_end ) {
 	inst.BeginStreamingPlay(func_begin, func_end);
 }
 
-function IsEnableStreamingBuffer()
-{
+function IsEnableStreamingBuffer() {
 	return inst.StreamingPlay();
 }
 
-function GetHostName( _str )
-{
+function GetHostName( _str ) {
 	local delimit_pos = _str.find(":");
 
 	if (delimit_pos != null)
@@ -559,8 +558,7 @@ function GetHostName( _str )
 	return _str;
 }
 
-function GetHostPort( _str )
-{
+function GetHostPort( _str ) {
 	local delimit_pos = _str.find(":");
 
 	if (delimit_pos != null)
@@ -571,8 +569,7 @@ function GetHostPort( _str )
 	return null;
 }
 
-function GetIPAddress( text )
-{
+function GetIPAddress( text ) {
 	local ex = regexp("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:\\d{1,5}");
 	local ret = ex.search(text);
 

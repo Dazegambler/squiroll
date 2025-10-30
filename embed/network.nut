@@ -612,6 +612,7 @@ function UpdateMatch()
 	::menu.help.Set(help_cancel);
 
 	if (::network.received_request) {
+		timeout++;
 		::menu.help.Set(help_prompt);
 		if (::input_all.b0 == 1)::network.AcceptMatch();
 		if (::input_all.b1 == 1)::network.RejectMatch();
@@ -627,8 +628,7 @@ function UpdateMatch()
 			return;
 		}
 	}
-	if (::config.network.upnp)
-	{
+	if (::config.network.upnp) {
 		if (::LOBBY.GetLobbyUserState() == ::LOBBY.NO_OPERATION)
 		{
 			if (::UPnP.GetAsyncState() == 2 || upnp_timeout++ > 360)
@@ -651,17 +651,18 @@ function UpdateMatch()
 			timeout = 0;
 			return;
 		}
-	}else {
-		timeout = 0;
 	}
+	// else {
+	// 	timeout = 0;
+	// }
 
 	local st_host = ::LOBBY.GetMatchHost();
 
-	// local ar_host = ::split(st_host, ":");
-	// if (ar_host.len()) {
-	// 	ar_host[0] = "127.0.0.1";
-	// 	st_host = ar_host[0] + ":" + ar_host[1];
-	// }
+	local ar_host = ::split(st_host, ":");
+	if (ar_host.len()) {
+		ar_host[0] = "127.0.0.1";
+		st_host = ar_host[0] + ":" + ar_host[1];
+	}
 
 	local st_userdata = ::LOBBY.GetMatchUserData();
 
@@ -693,7 +694,7 @@ function UpdateMatchWait()
 		return;
 	}
 
-	if (timeout++ > 18000) {
+	if (timeout++ > 1800) {
 		::print("host is afk\n");
 		::LOBBY.SetLobbyUserState(lobby_user_state);
 		::network.HostAFK();

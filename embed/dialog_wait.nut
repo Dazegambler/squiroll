@@ -56,11 +56,13 @@ function Update() {
 	}
 	if (::network.received_request) {
 		local request = ::network.received_request;
-		local str = ::format("Match Found...%s#%dms", request.name, ::network.GetDelay());
+		local timeleft = 30 - (::menu.network.timeout / 60);
+		timeleft = ::math.clamp(timeleft, 0, 30);
+		local str = ::format("Found:%s#%dms(%d)", request.name, ::network.GetDelay(),timeleft);
 		obj[1].Set(str);
 		obj[1].x = 20 + -obj[1].width / 2;
 	}else {
-		obj[1].Set(::menu.network.item_table.wait_incomming[0]);
+		obj[1].Set("Finding a Match...");
 		obj[1].x = 20 + -obj[1].width / 2;
 	}
 	::menu.cursor.SetTarget(obj[1].x - 20 + ::graphics.width / 2, obj[1].y + 24 + ::graphics.height / 2, 0.69999999);

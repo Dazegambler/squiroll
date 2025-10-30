@@ -271,6 +271,16 @@ function Page(...) {
     };
 }
 
+/*
+[section_name]
+option_label=type[bool,[...](enum,integer),string,float,integer],default_value
+option1=bool:true
+option2=["enum1","enum2","enum3",...]:1
+option3=string:"default"
+option4=float:420.69
+option5=integer:1337
+*/
+
 function Menu(...) {
     this.help <- ["B1","ok",null,"B2","return",null,"UD","select"];
     this.help_item <- ["B1","ok",null,"B2","cancel",null,"LR","change"];

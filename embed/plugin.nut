@@ -22,7 +22,7 @@ class CFG {
 
 		function BoolSelect(label,sqkey,section = null) {
 			local table = section ? data[section] : data;
-			local set = function(val, key, section = null) {
+			local set = function(val, key, section) {
 			    Set(val, key, section);
 			};
 			return ::UI.Enum(label,[table,sqkey],function(item) {
@@ -36,7 +36,11 @@ class CFG {
 					set(ret, sqkey, section);
 					item = null;
 					anime.highlight.Reset();
-				}
+				};
+				common_callback_cancel = function() {
+					item = null;
+					anime.highlight.Reset();
+				};
 			});
 		}
 
@@ -60,6 +64,30 @@ class CFG {
 				}, "");
 			});
 		}
+
+		function EnumField(label,options,sqkey,section = null) {
+			local table = section ? data[section] : data;
+			local set = function(val, key, section) {
+				Set(val, key, section);
+			}
+			return ::UI.Enum(label,[table,sqkey],function(item) {
+				::menu.help.Set(help_item);
+				Update = UpdateCommonItem;
+				anime.highlight.Set(item[1].left, item[1].top, item[1].right, item[1].bottom);
+				common_cursor = item[1].cursor;
+				common_callback_ok = function() {
+					local ret = common_cursor.val;
+					item[1].value.set(ret);
+					set(ret, sqkey, section);
+					item = null;
+					anime.highlight.Reset();
+				};
+				common_callback_cancel = function() {
+					item = null;
+					anime.highlight.Reset();
+				};
+			},options);
+		}
 	}
 	constructor(path,_default){
 		default_cfg = _default;
@@ -80,10 +108,10 @@ class CFG {
 		foreach(k, v in data) {
 			if (typeof v == "table"){
 				foreach(_k,_v in v) {
-					if (!(_k in data[k])) cfg.Set(_v, _k, k);
+					if (!(_k in data[k])) Set(_v, _k, k);
 				}
 			}else {
-				if (!(k in data)) cfg.Set(v, k);
+				if (!(k in data)) Set(v, k);
 			}
 		}
 	}

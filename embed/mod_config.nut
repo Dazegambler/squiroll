@@ -7,9 +7,9 @@
 // 		}),
 // 		::UI.ValueField("value field", ::graphics),
 // 		::UI.ValueField("input field", test, function (page, index) {
-// 			local items = this.anime.page[page].item;
+// 			local items = anime.page[page].item;
 // 			local text = items[index][1];
-// 			local item_x = this.anime.item_x;
+// 			local item_x = anime.item_x;
 // 			::Dialog(2, "input dialog", function (ret) {
 // 				test = ret;
 // 				text.Set(ret+"");
@@ -17,15 +17,15 @@
 // 			}, test.tostring());
 // 		}),
 // 		::UI.Enum("bool object",true,function(page,index) {
-// 			::menu.help.Set(this.help_item);
-// 			this.Update = this.UpdateCommonItem;
-// 			local items = this.anime.page[page].item;
+// 			::menu.help.Set(help_item);
+// 			Update = UpdateCommonItem;
+// 			local items = anime.page[page].item;
 // 			local cursor = items[index].top().cursor;
-// 			this.common_cursor = cursor;
-// 			this.common_callback_ok = function () {
+// 			common_cursor = cursor;
+// 			common_callback_ok = function () {
 // 				::Dialog(0, "success!",null,null);
 // 			};
-// 			this.common_callback_cancel = function () {
+// 			common_callback_cancel = function () {
 
 // 			};
 // 		})
@@ -44,20 +44,20 @@ local function ConfigBoolSelect(label,sqkey = null,key = null) {
 	if (!key)key = sqkey;
 	local _table = table;
 	return ::UI.Enum(label, [_table,sqkey],function (item) {
-		::menu.help.Set(this.help_item);
-		this.Update = this.UpdateCommonItem;
-		this.anime.highlight.Set(item[1].left,item[1].top,item[1].right,item[1].bottom);
-		this.common_cursor = item[1].cursor;
-		this.common_callback_ok = function () {
-			local ret = (this.common_cursor.val != 0);
+		::menu.help.Set(help_item);
+		Update = UpdateCommonItem;
+		anime.highlight.Set(item[1].left,item[1].top,item[1].right,item[1].bottom);
+		common_cursor = item[1].cursor;
+		common_callback_ok = function () {
+			local ret = (common_cursor.val != 0);
 			item[1].value.set(ret);
 			::setting.save(_table.config_section,key,ret.tostring());
 			item = null;
-			this.anime.highlight.Reset();
+			anime.highlight.Reset();
 		};
-		this.common_callback_cancel = function () {
+		common_callback_cancel = function () {
 			item = null;
-			this.anime.highlight.Reset();
+			anime.highlight.Reset();
 		};
 	});
 }
@@ -67,7 +67,7 @@ local function ConfigField(label,sqkey = null,key = null) {
 	if (!key)key = sqkey;
 	local _table = table;
 	return ::UI.ValueField(label, [_table,sqkey], function (item) {
-		local item_x = this.anime.item_x;
+		local item_x = anime.item_x;
 		::Dialog(2, label, function (ret) {
 			if (ret) {
 				try{ret["to"+typeof _table[sqkey]]();}
@@ -89,7 +89,7 @@ local function ConfigNotationField(label,index) {
 		input = cinput
 	};
 	return ::UI.ValueField(label, [tab,"input"], function (item) {
-		local item_x = this.anime.item_x;
+		local item_x = anime.item_x;
 		::Dialog(2, label, function (ret) {
 			if (ret) {
 				input_arr[index] = ret;
@@ -109,7 +109,7 @@ local function ConfigColorField(label,sqkey = null) {
 	if (!sqkey)sqkey = label;
 	local _table = table;
 	return ::UI.ValueField(label, [_table,sqkey], function (item) {
-		local item_x = this.anime.item_x;
+		local item_x = anime.item_x;
 		::Dialog(2,label, function (ret) {
 			if (ret) {
 				try{ret.tofloat();}
@@ -129,17 +129,17 @@ local function ConfigKeyField(label,sqkey = null,key = null) {
 	if (!key)key = sqkey;
 	local _table = table;
 	return ::UI.ValueField(label, [_table,sqkey], function (item) {
-		this.Update = function () {
+		Update = function () {
 			if (::manbow.GetKeyboardState() >= 0)return;
 			if (::manbow.GetPadButtonState() >= 0)return;
-			this.Update = function () {
+			Update = function () {
 				local id = ::manbow.GetKeyboardState();
 				if (id >= 0){
 					::sound.PlaySE("sys_ok");
 					item[1].Set(id);
 					::setting.save(_table.config_section,key,id.tostring());
-					item[1].x = ::graphics.width - this.anime.item_x - (item[1].width * item[1].sx);
-					this.Update = this.UpdateMain;
+					item[1].x = ::graphics.width - anime.item_x - (item[1].width * item[1].sx);
+					Update = UpdateMain;
 					return;
 				}
 			};
@@ -147,21 +147,44 @@ local function ConfigKeyField(label,sqkey = null,key = null) {
 	});
 }
 
-local function ConfigFieldA(label,_table,sqkey,section,key) {
-	return ::UI.ValueField(label, [_table,sqkey], function (item) {
-		local item_x = this.anime.item_x;
-		::Dialog(2, label, function (ret) {
-			if (ret) {
-				try{ret["to"+typeof _table[sqkey]]();}
-				catch (e){return;}
-				local str = ret+"";
-				item[1].Set(ret["to"+typeof _table[sqkey]]());
-				::setting.save(_table.config_section,key,str);
-				item[1].x = ::graphics.width - item_x - (item[1].width * item[1].sx);
-			}
-		}, "");
-	});
+local function ConfigEnumField(label,options,sq_key = null,key = null) {
+	if (!sqkey) sqkey = label;
+	if (!key) key = sqkey;
+	local _table = table;
+	return ::UI.Enum(label, [_table,sqkey],function (item) {
+		::menu.help.Set(help_item);
+		Update = UpdateCommonItem;
+		anime.highlight.Set(item[1].left,item[1].top,item[1].right,item[1].bottom);
+		common_cursor = item[1].cursor;
+		common_callback_ok = function () {
+			local ret = common_cursor.val;
+			item[1].value.set(ret);
+			::setting.save(_table.config_section,key,ret.tostring());
+			item = null;
+			anime.highlight.Reset();
+		};
+		common_callback_cancel = function () {
+			item = null;
+			anime.highlight.Reset();
+		};
+	},options);
 }
+
+// local function ConfigFieldA(label,_table,sqkey,section,key) {
+// 	return ::UI.ValueField(label, [_table,sqkey], function (item) {
+// 		local item_x = anime.item_x;
+// 		::Dialog(2, label, function (ret) {
+// 			if (ret) {
+// 				try{ret["to"+typeof _table[sqkey]]();}
+// 				catch (e){return;}
+// 				local str = ret+"";
+// 				item[1].Set(ret["to"+typeof _table[sqkey]]());
+// 				::setting.save(_table.config_section,key,str);
+// 				item[1].x = ::graphics.width - item_x - (item[1].width * item[1].sx);
+// 			}
+// 		}, "");
+// 	});
+// }
 
 local function ConfigBoolSelectA(label,table,sqkey,section,key) {
 	return ::UI.Enum(label,[table,sqkey],function (item) {
@@ -185,15 +208,15 @@ local function ConfigBoolSelectA(label,table,sqkey,section,key) {
 
 local function ConfigPage(section,_table,...) {
 	return function () {
-		this.anime.data.push([]);
-		this.proc.push([]);
+		anime.data.push([]);
+		proc.push([]);
 		foreach (elem in vargv) {
-			this.anime.data.top().push(elem[0]);
-			this.proc.top().push(elem[1]);
+			anime.data.top().push(elem[0]);
+			proc.top().push(elem[1]);
 		}
 		local title = ::UI.Title(section);
-		this.anime.data.top().push(title[0]);
-		this.proc.top().push(title[1]);
+		anime.data.top().push(title[0]);
+		proc.top().push(title[1]);
 	};
 }
 

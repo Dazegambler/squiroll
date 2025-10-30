@@ -657,11 +657,11 @@ function UpdateMatch()
 
 	local st_host = ::LOBBY.GetMatchHost();
 
-	// local ar_host = ::split(st_host, ":");
-	// if (ar_host.len()) {
-	// 	ar_host[0] = "127.0.0.1";
-	// 	st_host = ar_host[0] + ":" + ar_host[1];
-	// }
+	local ar_host = ::split(st_host, ":");
+	if (ar_host.len()) {
+		ar_host[0] = "127.0.0.1";
+		st_host = ar_host[0] + ":" + ar_host[1];
+	}
 
 	local st_userdata = ::LOBBY.GetMatchUserData();
 
@@ -685,15 +685,15 @@ function UpdateMatchWait()
 		if (cursor_item.val == 0) {
 			::lobby.dec_user_count();
 		}
-		::LOBBY.SetLobbyUserState(::LOBBY.NO_OPERATION);
-		::network.Terminate();
-		::loop.End();
+		::network.CancelRequest();
+		// ::LOBBY.SetLobbyUserState(::LOBBY.NO_OPERATION);
+		// ::network.Terminate();
+		// ::loop.End();
 		update = UpdateMain;
 		return;
 	}
 
-	//source of disconnection
-	if (timeout++ > 360/*18000*/) {
+	if (timeout++ > 18000) {
 		::print("host is afk\n");
 		::LOBBY.SetLobbyUserState(lobby_user_state);
 		::network.HostAFK();

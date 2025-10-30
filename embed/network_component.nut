@@ -212,6 +212,7 @@ function StartupServer(port,mode) {
 						::LOBBY.Connect("","","",::config.network.lobby_name,::config.network.lobby_name);
 						::menu.network.lobby_user_state = ::LOBBY.WAIT_INCOMMING;
 						::LOBBY.SetLobbyUserState(::menu.network.lobby_user_state);
+						::network.StartupServer(::config.network.hosting_port, 0);
 						break;
 					case "afk":
 						Terminate();
@@ -464,8 +465,9 @@ function CancelRequest() {
 	});
 	Terminate();
 	::LOBBY.Connect("","","",::config.network.lobby_name,::config.network.lobby_name);
-	::menu.network.lobby_user_state = ::LOBBY.MATCHING;
+	::menu.network.lobby_user_state = ::LOBBY.NO_OPERATION;
 	::LOBBY.SetLobbyUserState(::menu.network.lobby_user_state);
+	::loop.End();
 }
 
 function HostAFK() {
@@ -517,8 +519,12 @@ function RejectMatch() {
 		message = "no"
 	});
 	Terminate();
-	::menu.network.update = ::menu.network.UpdateMain;
-	::loop.End();
+	::LOBBY.Connect("", "", "", ::config.network.lobby_name, ::config.network.lobby_name);
+	::menu.network.lobby_user_state = ::LOBBY.WAIT_INCOMMING;
+	::LOBBY.SetLobbyUserState(::menu.network.lobby_user_state);
+	StartupServer(::config.network.hosting_port, 0);
+	::menu.network.update = ::menu.network.UpdateMatch;
+	// ::loop.End();
 }
 
 function BeginStreaming()

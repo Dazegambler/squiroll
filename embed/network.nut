@@ -657,11 +657,11 @@ function UpdateMatch()
 
 	local st_host = ::LOBBY.GetMatchHost();
 
-	local ar_host = ::split(st_host, ":");
-	if (ar_host.len()) {
-		ar_host[0] = "127.0.0.1";
-		st_host = ar_host[0] + ":" + ar_host[1];
-	}
+	// local ar_host = ::split(st_host, ":");
+	// if (ar_host.len()) {
+	// 	ar_host[0] = "127.0.0.1";
+	// 	st_host = ar_host[0] + ":" + ar_host[1];
+	// }
 
 	local st_userdata = ::LOBBY.GetMatchUserData();
 

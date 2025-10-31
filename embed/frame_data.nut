@@ -1,3 +1,48 @@
+local createplayer = ::actor.CreatePlayer;
+::actor.CreatePlayer = function (actor_name, src_name, color, mode, difficulty) {
+	local t = createplayer(actor_name,src_name,color,mode,difficulty);
+	
+	local setmotion = t.player_class.SetMotion;
+	t.player_class.SetMotion <- function (motion,take) {
+		setmotion(motion,take);
+		local frame_data = ::battle.modifiers.frame_data.task;
+		if (frame_data &&
+			frame_data.team == team &&
+			frame_data.current_data
+		) {
+			if (frame_data.current_data.motion != motion &&
+				frame_data.current_data.take >= keyTake
+			) {
+				if (motion >= 1000) {
+					frame_data.IsNewMove();
+				}else {
+					frame_data.current_data.motion = motion;
+				}
+			}
+		}
+	};
+
+	t.shot_class.active <- false;
+	
+	local shot_commonupdate = t.shot_class.Shot_CommonUpdate;
+	t.shot_class.Shot_CommonUpdate <- function () {
+		local b = shot_commonupdate()
+		if (b) {
+			local frame_task = ::battle.modifiers.frame_data.task;
+			if (frame_task &&
+				::setting.frame_data.enabled &&
+				::setting.frame_data.IsFrameActive(this) &&
+				!active
+			) {
+				frame_task.active = active = true;
+				frame_task.current_data.metadata = ::setting.frame_data.GetMetadata(this);
+			}
+		}
+		return b
+	};
+
+	return t;
+};
 class display_module {
     text = null;
     max_w = null;

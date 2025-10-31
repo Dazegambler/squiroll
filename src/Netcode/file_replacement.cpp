@@ -167,9 +167,9 @@ static constexpr uint8_t kokoro_nut[] = {
 #endif
 };
 
-static constexpr uint8_t actor_nut[] = {
-#include "embed/actor.nut.h"
-};
+//static constexpr uint8_t actor_nut[] = {
+//#include "embed/actor.nut.h"
+//};
 
 static constexpr uint8_t battle_team_nut[] = {
 #include "embed/battle_team.nut.h"
@@ -278,7 +278,7 @@ static const std::unordered_map<std::string_view, const EmbedData> embeds = {
     {"data/actor/mokou.nut"sv, mokou_nut},
     {"data/actor/tenshi_shot.nut"sv, tenshi_shot_nut},
     {"data/actor/kokoro.nut"sv, kokoro_nut},
-    {"data/script/actor.nut"sv, actor_nut},
+    //{"data/script/actor.nut"sv, actor_nut},
     {"data/script/battle/battle_team.nut"sv, battle_team_nut},
     {"data/script/loop.nut"sv, loop_nut},
 

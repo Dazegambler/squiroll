@@ -45,26 +45,6 @@ class InitializeParam {
 	}
 }
 
-class ModifierClass {
-	function Begin(){};
-	function PreFrame(){return true};
-	function Update(){};
-	function PostFrame(){};
-	function Release(){};
-}
-
-class Modifier {
-	task = null;
-	enabled = null;
-	async = null;
-	base_class = null;
-	constructor(_base,_async = false,_enabled = @()false){
-		base_class = _base;
-		async = _async;
-		enabled = _enabled;
-	}
-}
-
 name_overrides <- {
     hijiri = "Byakuren",
     sinmyoumaru = "Shinmyoumaru",
@@ -217,7 +197,7 @@ function Create( param ) {
 	_SetupProfilePictures();
 	_SetupInputs(param);
 	_SetupModifiers(param);
-	// ::rollback.start();
+	//::rollback.start();
 }
 
 function _ClearRPC() {
@@ -258,7 +238,7 @@ function _ClearBattle() {
 
 function Release() {
 	_ClearRPC();
-	// ::rollback.stop();
+	//::rollback.stop();
 	_ClearModifiers();
 	_ClearBattle();
 	::overlay.clear();

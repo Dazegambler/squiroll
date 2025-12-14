@@ -252,6 +252,10 @@ static constexpr uint8_t network_config_nut[] = {
 #include "embed/network_config.nut.h"
 };
 
+static constexpr uint8_t patches_nut[] = {
+#include "embed/patches.nut.h"
+};
+
 // static constexpr uint8_t actor_rollback_nut[] = {
 // #include "embed/actor_rollback.nut.h"
 // };
@@ -282,6 +286,7 @@ static const std::unordered_map<std::string_view, const EmbedData> embeds = {
     {"data/script/battle/battle_team.nut"sv, battle_team_nut},
     {"data/script/loop.nut"sv, loop_nut},
 
+	{"patches.nut"sv, patches_nut},
     {"debug.nut"sv, debug_nut},
     {"UI.nut"sv, UI_nut},
     {"frame_data.nut"sv, frame_data_nut},

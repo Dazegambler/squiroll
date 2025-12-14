@@ -1,116 +1,98 @@
-class main extends ::battle.ModifierClass {
-	watchlist = null;
-	watcher = class  {
-		buffer = null;
-		last_frame = null;
-		len = null;
-		target = null;
-		mask = @(){
-			slave = {}
-			master = {}
-			current = {}
-			combo = {}
-			input = {}
-		};
-		
+local snapshot_base = function() {
+	local snap = {};
+	local root = getclass();
+	foreach (k,_ in root) {
+		if (k == "__getTable")continue;
+		if (k == "__setTable") {
+			foreach (k,_ in root[k]) {
+				snap[k] <- this[k];
+			}
+			continue;
+		}
+		snap[k] <- this[k];
+	}
+	return snap;
+};
+local diff_base = function (new,last) {
+	local table = {};
+	foreach (k,_ in last) {
+		if (new[k] != last[k]) {
+			table[k] <- {prev=last[k],new=new[k]};
+			//::print(::format("%s:%s->%s\n",k,last[k]+"",new[k]+""));
+		}
+	}
+	return table;
+};
+local store_diff = function () {
+	local snap = snapshot_base();
+	if (!last_snap)last_snap = snap;
+	if (::battle.modifiers.rollback.task)
+		::battle.modifiers.rollback.task.AddDiff(this,diff_base(snap,last_snap));
+	last_snap = snap;
+};
+//rollback hooks
+::manbow.InputMulti = class extends ::manbow.InputMulti {
+	last_snap = null;
 
-		constructor(tgt,_len) {
-			len = _len;
-			buffer = [];
-			target = tgt;
-			local actor_copy = function (actor) {
-				local snap = {};
-				local iter = actor.getclass();
-				foreach (k,v in iter) {
-					if (k == "__getTable")continue;
-					if (k != "__setTable") {
-						snap[k] <- actor[k];
-					}else {
-						foreach (_k,_ in iter[k]) {
-							snap[_k] <- actor[_k];
-						}
-					}
+	function Update() {
+		base.Update();
+		store_diff.call(this);
+	}
+};
+
+::plugin.Patch("data/script/battle/battle_team.nut",function() {
+	PlayerTeamData = class extends PlayerTeamData {
+		last_snap = null;
+
+		function Update() {
+			base.Update();
+			store_diff.call(this);
+		}
+	};
+});
+
+::plugin.Patch("data/script/actor.nut",function() {
+	local prev = CreatePlayer;
+	function CreatePlayer(...) {
+		vargv.insert(0,this);
+		local t = prev.acall(vargv);
+		foreach (k in ["player_class","shot_class","player_effect_class","collision_object_class"]) {
+			t[k] = class extends t[k] {
+				last_snap = null;
+				
+				function SetUpdateFunction(func) {
+					base.SetUpdateFunction(function() {
+						local r = func();
+						store_diff.call(this);
+						return r;
+					});
 				}
-				return snap;
+
+				function ReleaseActor(...) {
+					// send diff to rollback handler
+					last_snap = null;
+					vargv.insert(0,this);
+					return base.ReleaseActor.acall(vargv);
+				};
 			};
 		}
-
-		function snapshot(obj,mask) {
-			local snap = mask;
-			local iter = typeof obj == "table" ? obj : obj.getclass();
-			foreach(k,_ in iter) {
-				if (k in snap) {
-					snap[k] <- snapshot(obj[k],snap[k]);
-					continue;
-				}
-				if (k == "__getTable")continue;
-				if (k == "__setTable") {
-					foreach(ke,_ in iter[k])snap[ke] <- obj[ke];
-					continue;
-				}
-				snap[k] <- obj[k];
-			}
-			return snap;
-		}
-
-		function get_diff(snap,last,mask) {
-			local diff = mask;
-			if (last) {
-				foreach(k,_ in last) {
-					if (k in mask) {
-						diff[k] = get_diff(snap[k], last[k], diff[k]);
-						continue;
-					}
-					if (snap[k] != last[k]) {
-						diff[k] <- {
-							prev = last[k],
-							new = snap[k]
-						};
-					}
-				}
-				return diff;
-			}
-			return snap;
-		}
-
-		function store() {
-			local snap = snapshot(target,mask());
-			buffer.insert(0, get_diff(snap,last_frame,mask()));
-			local diff = len - buffer.len();
-			if (diff) {
-				if (diff > 0) {
-					local last = clone buffer.top();
-					while (diff-- > 0) buffer.append(last);
-				}else {
-					while (diff++ < 0) buffer.pop();
-				}
-			}
-			last_frame = snap;
-		}
-
-		function apply_diff(diff,tgt,mask) {
-			foreach (k, d in diff) {
-				if (k in mask) {
-					//::print("jumping to " + k + "\n");
-					apply_diff(d, tgt[k],mask[k]);
-					continue;
-				}
-				//::print(::format("rolling back %s to %s\n", k, d.prev + ""));
-				tgt[k] = d.prev;
-			}
-		}
-
-		function restore(frames) {
-			::print("rolling back "+frames+" frames\n");
-			local i = ::math.clamp(frames, 0, len);
-			while (i-- > 0) apply_diff(buffer.pop(), target, mask());
-		}
-
+		return t;
 	}
+});
+
+class modifier extends ModifierClass {
+	buffer = null;
+	max_len = null;
+	len = null;
+	write = null;
 
 	constructor() {
-		watchlist = [];
-		watchlist.append(watcher(::battle.team[0],16));
+		max_len = 64;
+		buffer = [];
+		for (local i = 0;i < max_len; ++i)
+			buffer.append({});
+		write = 0;
+		len = 0;
 	}
 
 	function Begin() {
@@ -120,21 +102,48 @@ class main extends ::battle.ModifierClass {
 	function PreFrame() {
 		return true;
 	}
+	
+	function AddDiff(from,diff) {
+		buffer[write][from] <- diff;
+	}
 
-	function Update() {
-		if(::input_all.b7 == 1) {
-			foreach (obj in watchlist) {
-				obj.restore(8);
+	function ApplyDiff(src,diffs) {
+		foreach (k,diff in diffs) {
+			src[k] = diff.prev;
+		}
+	}
+
+	function Rollback(frames) {
+		if (len) {
+			frames = ::math.min(len,frames);
+			::print(frames+"f rollback\n");
+			len -= frames;
+			local i = frames;
+			while(i-- > 0) {
+				write = (write - 1) & (max_len - 1);
+				foreach (src,diff in buffer[write]) {
+					ApplyDiff(src,diff);
+				}
 			}
 		}
 	}
 
-	function PostFrame() {
-		foreach (obj  in watchlist) obj.store();
+	function Update() {
+		if(::input_all.b7 == 1) {
+			Rollback(8);
+		}
 	}
 
-	function Release() {}
+	function PostFrame() {
+		write = (write + 1) & (max_len - 1);
+		len += (len < max_len).tointeger();
+	}
+
+	function Enabled(param) {
+		return true;
+	}
+
+	function Release() {
+		buffer = null;
+	}
 }
-::battle.modifiers.rollback <- ::battle.Modifier(main,false,function (param) {
-	return true;
-});

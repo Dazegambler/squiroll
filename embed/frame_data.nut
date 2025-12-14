@@ -1,48 +1,56 @@
+// Patches
 local createplayer = ::actor.CreatePlayer;
-::actor.CreatePlayer = function (actor_name, src_name, color, mode, difficulty) {
-	local t = createplayer(actor_name,src_name,color,mode,difficulty);
+::actor.CreatePlayer = function (...) {
+	vargv.insert(0,this);
+	local t = createplayer.acall(vargv);
 	
-	local setmotion = t.player_class.SetMotion;
-	t.player_class.SetMotion <- function (motion,take) {
-		setmotion(motion,take);
-		local frame_data = ::battle.modifiers.frame_data.task;
-		if (frame_data &&
-			frame_data.team == team &&
-			frame_data.current_data
-		) {
-			if (frame_data.current_data.motion != motion &&
-				frame_data.current_data.take >= keyTake
+	t.player_class = class extends t.player_class {
+		function SetMotion(motion, take) {
+			base.SetMotion(motion,take);
+			local task = ::battle.modifiers.frame_data.task;
+			if (task &&
+				task.team == team &&
+				task.current_data
 			) {
-				if (motion >= 1000) {
-					frame_data.IsNewMove();
-				}else {
-					frame_data.current_data.motion = motion;
+				if (task.current_data.motion != motion &&
+					task.current_data.take >= keyTake
+				) {
+					if (motion >= 1000) {
+						task.IsNewMove();
+					}else {
+						task.current_data.motion = motion;
+					}
 				}
 			}
 		}
 	};
 
-	t.shot_class.active <- false;
+	t.shot_class = class extends t.shot_class {
+		active = false;
 	
-	local shot_commonupdate = t.shot_class.Shot_CommonUpdate;
-	t.shot_class.Shot_CommonUpdate <- function () {
-		local b = shot_commonupdate()
-		if (b) {
-			local frame_task = ::battle.modifiers.frame_data.task;
-			if (frame_task &&
-				::setting.frame_data.enabled &&
-				::setting.frame_data.IsFrameActive(this) &&
-				!active
-			) {
-				frame_task.active = active = true;
-				frame_task.current_data.metadata = ::setting.frame_data.GetMetadata(this);
+		function Shot_CommonUpdate() {
+			local b = base.Shot_CommonUpdate();
+			if (b) {
+				local task = ::battle.modifiers.frame_data.task;
+				if (task &&
+					::setting.frame_data.enabled &&
+					::setting.frame_data.IsFrameActive(this) &&
+					!active
+				) {
+					task.active = active = true;
+					task.current_data.metadata = ::setting.frame_data.GetMetadata(this);
+				}
 			}
+			return b;
 		}
-		return b
 	};
-
 	return t;
 };
+
+// Config
+
+
+// Main Class
 class display_module {
     text = null;
     max_w = null;
@@ -57,7 +65,7 @@ class display_module {
     function Clear() {text.Set("");}
 }
 
-class main extends ::battle.ModifierClass {
+class main extends ::plugin.ModifierClass {
 
     frame_data = class extends display_module {
         function Render(data) {
@@ -86,7 +94,7 @@ class main extends ::battle.ModifierClass {
             }
 
             text.Set(frame);
-            text.sx = ::math.clamp(max_w / text.width,0.1,0.75);
+            text.sx = ::math.fclamp(max_w / text.width,0.1,0.75);
             text.x = 5;
             text.y = 5;
         }
@@ -130,7 +138,7 @@ class main extends ::battle.ModifierClass {
             if (flags != "") flags = flags.slice(0, -1); // Slice removes the trailing comma
 
             text.Set(format("flagState:[%s]", flags));
-            text.sx = ::math.clamp(max_w / text.width,0.1,0.75);
+            text.sx = ::math.fclamp(max_w / text.width,0.1,0.75);
             text.x = 5;
             text.y = 5 + (text.height * text.sy);
         }
@@ -174,7 +182,7 @@ class main extends ::battle.ModifierClass {
             if (flags != "")flags = flags.slice(0, -1); // Slice removes the trailing comma
 
             text.Set(format("flagAttack:[%s]", flags));
-            text.sx = ::math.clamp(max_w / text.width,0.1,0.75);
+            text.sx = ::math.fclamp(max_w / text.width,0.1,0.75);
             text.x = 5;
             text.y = 5 + (text.height * text.sy) * 2;
         }
@@ -220,7 +228,7 @@ class main extends ::battle.ModifierClass {
             text[11].Set(format("atk(type/rank): %d/%d",data.metadata[21],data.metadata[22]));
 
             foreach(i,txt in text){
-                txt.sx = ::math.clamp(max_w / txt.width,0.1,0.75);
+                txt.sx = ::math.fclamp(max_w / txt.width,0.1,0.75);
                 txt.x = 1011;
                 txt.y = 5 + ((txt.height * txt.sy) * i);
             }
@@ -323,7 +331,7 @@ class main extends ::battle.ModifierClass {
             foreach(i,arr in text) {
                 foreach(w,_text in arr) {
                     _text.Set(txt[i][w]);
-                    _text.sx = ::math.clamp(max_w / _text.width,0.1,max_sx);
+                    _text.sx = ::math.fclamp(max_w / _text.width,0.1,max_sx);
                     _text.sy = ::setting.frame_data.sy - ((::setting.frame_data.sy / 2) * i)
                     _text.y = ::setting.frame_data.y;
                     _text.x = ::setting.frame_data.x;
@@ -490,21 +498,23 @@ class main extends ::battle.ModifierClass {
         }
         active = false;
     }
+	
+	function Enabled(param) {
+	    ::setting.frame_data.update_consts();
+	    local enabled = (param.game_mode == 40);
+	    if (enabled) {
+	        local practicerestart = PracticeRestart;
+			function PracticeRestart() {
+				local frame_task = modifiers.frame_data.task;
+				if (frame_task) {
+					frame_task.full = false;
+					frame_task.ClearAll();
+					frame_task.current_data = frame_task.NewData();
+				}
+				practicerestart();
+			};
+	    }
+	    return enabled;
+	}
 };
-::battle.modifiers.frame_data <- ::battle.Modifier(main,false,function (param) {
-    ::setting.frame_data.update_consts();
-    local enabled = (param.game_mode == 40);
-    if (enabled) {
-        local practicerestart = PracticeRestart;
-		function PracticeRestart() {
-			local frame_task = modifiers.frame_data.task;
-			if (frame_task) {
-				frame_task.full = false;
-				frame_task.ClearAll();
-				frame_task.current_data = frame_task.NewData();
-			}
-			practicerestart();
-		};
-    }
-    return enabled;
-});
+::battle.modifiers.frame_data <- ::plugin.Modifier(main);

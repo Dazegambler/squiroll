@@ -165,7 +165,6 @@ anime <- {};
 function Initialize()
 {
 	item_table <- ::menu.common.LoadItemTextArray("data/system/network/item.csv");
-	item_table.setting <- ["settings"];
 	::menu.cursor.Activate();
 	::menu.back.Activate();
 	update = UpdateMain;

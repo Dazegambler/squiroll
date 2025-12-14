@@ -146,9 +146,9 @@ static void patch_se_libact(void* base_address) {
     libact_base_address = (uintptr_t)base_address;
 
 #if ALLOCATION_PATCH_TYPE == PATCH_SQUIRREL_ALLOCS
-    //hotpatch_rel32(based_pointer(base_address, 0xC4BE5), my_malloc);
-    //hotpatch_rel32(based_pointer(base_address, 0xC4C89), my_realloc);
-    //hotpatch_rel32(based_pointer(base_address, 0xC4C75), my_free);
+    hotpatch_rel32(based_pointer(base_address, 0xC4BE5), my_malloc);
+    hotpatch_rel32(based_pointer(base_address, 0xC4C89), my_realloc);
+    hotpatch_rel32(based_pointer(base_address, 0xC4C75), my_free);
 #elif ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS
     hotpatch_jump(based_pointer(base_address, 0x134632), my_malloc);
     hotpatch_jump(based_pointer(base_address, 0x12C67B), my_calloc);

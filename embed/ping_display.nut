@@ -1,4 +1,5 @@
-class main extends ::battle.ModifierClass {
+class main extends ::plugin.ModifierClass {
+	async = true;
 	text = null;
 	colors = null;
 	constructor() {
@@ -32,8 +33,10 @@ class main extends ::battle.ModifierClass {
 		text.x = ::setting.ping.x - ((text.width * text.sx) / 2);
 		text.y = (::setting.ping.y - text.height);
 	}
+
+	function Enabled(param) {
+		::setting.ping.update_consts();
+		return (::network.IsPlaying() && ::setting.ping.enabled);
+	}
 };
-::battle.modifiers.ping_display <- ::battle.Modifier(main,true,function (param) {
-	::setting.ping.update_consts();
-	return (::network.IsPlaying() && ::setting.ping.enabled);
-});
+::battle.modifiers.ping_display <- ::plugin.Modifier(main);

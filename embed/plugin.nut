@@ -1,5 +1,7 @@
 cfg <- {};
 list <- {};
+patches <- {};
+patches_csv <- {};
 
 class CFG {
 	filepath = null;
@@ -201,6 +203,28 @@ class CFG {
 	}
 }
 
+class ModifierClass {
+	async = false;
+	function Enabled(param){return false};
+	function Begin(){};
+	function PreFrame(){return true};
+	function Update(){};
+	function Release(){};
+	function PostFrame(){};
+}
+
+class Modifier {
+	task = null;
+	enabled = null;
+	async = null;
+	base_class = null;
+	constructor(_base) {
+		base_class = _base;
+		async = _base.async;
+		enabled = _base.Enabled;
+	}
+}
+
 function LoadFile(path,table) {
 	::loadfile("plugin/"+path,true).call(table);
 }
@@ -231,13 +255,48 @@ function Patch(file,patch) {
 	}else patches[file] <- patch;
 }
 
+function PatchCSV(csv,patch) {
+	if (csv in patches_csv) {
+		local prev = patches_csv[csv];
+		local new = function(table) {
+			prev(table);
+			patch(table);
+		};
+		patches_csv[csv] = new;
+	}else patches_csv[csv] <- patch;
+}
+
+function AddModifier(base_class,label) {
+	Patch("data/script/battle/battle.nut",function() {
+		modifiers[label] <- ::plugin.Modifier(base_class);
+	});
+}
+
+function LoadPlugin(path,label) {
+	local cls = ModifierClass;
+	local table = list[label] <- {
+		ModifierClass = cls
+	};
+	LoadFile(path,table);
+	if ("modifier" in table)AddModifier(table.modifier,label);
+}
+
+Patch("data/system/component/menu_common.nut",function() {
+	local prev = LoadItemTextArray;
+	function LoadItemTextArray(filename) {
+		local table = prev(filename);
+		if (filename in ::plugin.patches_csv) {
+			local patch = ::plugin.patches_csv[filename];
+			patch(table);
+		};
+		return table;
+	}
+});
 
 ::mkdir("plugin");
 ::mkdir("plugin/config");
 foreach(file in ::listfiles("plugin")) {
 	if (!file.find(".nut"))continue;
 	local label = ::strip(file.slice(0,file.len()-4));
-	list[label] <- {};
-	local table = list[label];
-	LoadFile(file,table);
+	LoadPlugin(file,label);
 }

@@ -114,7 +114,7 @@ local function ConfigColorField(label,sqkey = null) {
 			if (ret) {
 				try{ret.tofloat();}
 				catch (e){return;}
-				local val = ::math.clamp(ret.tofloat(),0,1);
+				local val = ::math.fclamp(ret.tofloat(),0,1);
 				local str = ret+"";
 				item[1].Set(val);
 				::setting.save(_table.config_section,"color",::math.rgbaToHex(_table.red,_table.green,_table.blue,_table.alpha));

@@ -33,7 +33,7 @@ function TextObj(str) {
         function Update() {
             this.text.Set(this.str.get());
             this.calc_x();
-            // this.text.sx = ::math.min(1, this.text_max_length / this.text.width);
+            // this.text.sx = ::math.fmin(1, this.text_max_length / this.text.width);
             // this.text.x = this.x - ((this.text.width * this.text.sx) / 2);
         }
 
@@ -180,7 +180,7 @@ function Text(str) {
         local obj = [::font.CreateSystemString(str)];
         obj[0].ConnectRenderSlot(::graphics.slot.front,0);
         obj[0].y = this.item_y + index * this.item_margin - 34;
-        obj[0].sx = ::math.min(1, (this.item_max_length*2) / obj[0].width);
+        obj[0].sx = ::math.fmin(1, (this.item_max_length*2) / obj[0].width);
         obj[0].x = this.item_x;
 
         page.item.push(obj);
@@ -194,7 +194,7 @@ function Button(str,onclick) {
         local obj = [::font.CreateSystemString(str)];
         obj[0].ConnectRenderSlot(::graphics.slot.front,0);
         obj[0].y = this.item_y + index * this.item_margin - 34;
-        obj[0].sx = ::math.min(1, this.item_max_length / obj[0].width);
+        obj[0].sx = ::math.fmin(1, this.item_max_length / obj[0].width);
         obj[0].x = this.item_x;
 
         page.item.push(obj);
@@ -209,7 +209,7 @@ function Enum(str,_value,onedit,options = ["disabled","enabled"]) {
         local obj = [::font.CreateSystemString(str),::UI.EnumSelector(value,options)];
         obj[0].ConnectRenderSlot(::graphics.slot.front,0);
         obj[0].y = this.item_y + index * this.item_margin - 34;
-        obj[0].sx = ::math.min(1, this.item_max_length / obj[0].width);
+        obj[0].sx = ::math.fmin(1, this.item_max_length / obj[0].width);
         obj[0].x = this.item_x;
 
         obj[1].text.blue = 0;
@@ -242,7 +242,7 @@ function ValueField(str,_value,onedit = function(...){}) {
         local obj = [::font.CreateSystemString(str), ::UI.TextObj(value)];
         obj[0].ConnectRenderSlot(::graphics.slot.front,0);
         obj[0].y = this.item_y + index * this.item_margin - 34;
-        obj[0].sx = ::math.min(1, this.item_max_length / obj[0].width);
+        obj[0].sx = ::math.fmin(1, this.item_max_length / obj[0].width);
         obj[0].x = this.item_x;
 
         obj[1].blue = 0;
@@ -251,7 +251,7 @@ function ValueField(str,_value,onedit = function(...){}) {
         local max_length = this.item_max_length;
         local x = this.item_x;
         obj[1].calc_x = function () {
-            this.text.sx = ::math.min(1, max_length / this.text.width);
+            this.text.sx = ::math.fmin(1, max_length / this.text.width);
             this.text.x = ::graphics.width - x - (this.text.width * this.text.sx);
         };
         page.item.push(obj);
@@ -402,7 +402,7 @@ function Menu(...) {
         this.cursor_index.Update();
 
         if (this.cursor_index.diff && !this.anime.page[this.cursor_page.val].item[this.cursor_index.val][0].width) {
-            this.cursor_index.val = ::math.min(this.cursor_index.item_num - 1, this.cursor_index.val + this.cursor_index.diff);
+            this.cursor_index.val = ::math.fmin(this.cursor_index.item_num - 1, this.cursor_index.val + this.cursor_index.diff);
         }
         if (this.cursor_index.ok){
             local item = this.anime.page[this.cursor_page.val].item[this.cursor_index.val];

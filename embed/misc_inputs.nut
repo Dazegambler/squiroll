@@ -21,7 +21,7 @@
 //" [" 26
 //" " 12
 // "   " 26
-class main extends ::battle.ModifierClass {
+class main extends ::plugin.ModifierClass {
 	lastinput = null;
 	active = null;
 	frame_lock = null;
@@ -75,9 +75,6 @@ class main extends ::battle.ModifierClass {
 	}
 
 	function Update() {
-		// epoch = ::math.clamp(epoch+1,0,timeline.len());
-		// timeline.insert(epoch,{});
-		// copy(::battle.team[0],timeline[epoch]);
 		local current = ::battle.team[0].current;
 		frame_lock = false;
 		if (!::network.IsActive() && ::setting.frame_data.frame_stepping) {
@@ -91,17 +88,18 @@ class main extends ::battle.ModifierClass {
 			}
 		}
 	}
-};
-::battle.modifiers.misc_inputs <- ::battle.Modifier(main,false,function (param) {
-	local enabled = (::network.IsPlaying != true);
-	if (enabled) {
-		if (param.game_mode == 40) {
-			local practicerestart = PracticeRestart;
-			function PracticeRestart() {
-				modifiers.misc_inputs.task.active = true;
-				practicerestart();
+	function Enabled(param) {
+		local enabled = (::network.IsPlaying != true);
+		if (enabled) {
+			if (param.game_mode == 40) {
+				local practicerestart = PracticeRestart;
+				function PracticeRestart() {
+					modifiers.misc_inputs.task.active = true;
+					practicerestart();
+				}
 			}
 		}
+		return enabled;
 	}
-	return enabled;
-});
+};
+::battle.modifiers.misc_inputs <- ::plugin.Modifier(main);

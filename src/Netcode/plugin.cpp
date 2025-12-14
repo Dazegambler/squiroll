@@ -700,7 +700,7 @@ extern "C" {
             });
 
             sq_createtable(v, _SC("math"),[](HSQUIRRELVM v) {
-                sq_setfunc(v,_SC("clamp"),[](HSQUIRRELVM v) -> SQInteger {
+                sq_setfunc(v,_SC("fclamp"),[](HSQUIRRELVM v) -> SQInteger {
                     SQFloat Val,minVal,maxVal;
                     if (sq_gettop(v) != 4 ||
                         SQ_FAILED(sq_getfloat(v, 2, &Val)) ||
@@ -713,7 +713,7 @@ extern "C" {
                     sq_pushfloat(v, result);
                     return 1;
                 });
-                sq_setfunc(v, _SC("min"),[](HSQUIRRELVM v) -> SQInteger {
+                sq_setfunc(v, _SC("fmin"),[](HSQUIRRELVM v) -> SQInteger {
                     SQFloat a,b;
                     if (sq_gettop(v) != 3 ||
                         SQ_FAILED(sq_getfloat(v, 2, &a)) ||
@@ -727,7 +727,7 @@ extern "C" {
                     sq_pushfloat(v, a < b ? a : b);
                     return 1;
                 });
-                sq_setfunc(v, _SC("max"),[](HSQUIRRELVM v) -> SQInteger {
+                sq_setfunc(v, _SC("fmax"),[](HSQUIRRELVM v) -> SQInteger {
                     SQFloat a,b;
                     if (sq_gettop(v) != 3 ||
                         SQ_FAILED(sq_getfloat(v, 2, &a)) ||
@@ -739,6 +739,47 @@ extern "C" {
                     sq_getfloat(v, 3, &b);
 
                     sq_pushfloat(v, a > b ? a : b);
+                    return 1;
+                });
+                sq_setfunc(v,_SC("clamp"),[](HSQUIRRELVM v) -> SQInteger {
+                    SQInteger Val,minVal,maxVal;
+                    if (sq_gettop(v) != 4 ||
+                        SQ_FAILED(sq_getinteger(v, 2, &Val)) ||
+                        SQ_FAILED(sq_getinteger(v, 3, &minVal)) ||
+                        SQ_FAILED(sq_getinteger(v, 4, &maxVal))
+                    ) {
+                        return sq_throwerror(v, "Invalid arguments, expected: <Val> <minVal> <maxVal>");
+                    }
+                    SQInteger result = Val < minVal ? minVal : (Val > maxVal ? maxVal : Val);
+                    sq_pushinteger(v, result);
+                    return 1;
+                });
+                sq_setfunc(v, _SC("min"),[](HSQUIRRELVM v) -> SQInteger {
+                    SQInteger a,b;
+                    if (sq_gettop(v) != 3 ||
+                        SQ_FAILED(sq_getinteger(v, 2, &a)) ||
+                        SQ_FAILED(sq_getinteger(v, 3, &b))
+                    ) {
+                        return sq_throwerror(v, "Invalid arguments, expected: <a> <b>");
+                    }
+                    sq_getinteger(v, 2, &a);
+                    sq_getinteger(v, 3, &b);
+
+                    sq_pushinteger(v, a < b ? a : b);
+                    return 1;
+                });
+                sq_setfunc(v, _SC("max"),[](HSQUIRRELVM v) -> SQInteger {
+                    SQInteger a,b;
+                    if (sq_gettop(v) != 3 ||
+                        SQ_FAILED(sq_getinteger(v, 2, &a)) ||
+                        SQ_FAILED(sq_getinteger(v, 3, &b))
+                    ) {
+                        return sq_throwerror(v, "Invalid arguments, expected: <a> <b>");
+                    }
+                    sq_getinteger(v, 2, &a);
+                    sq_getinteger(v, 3, &b);
+
+                    sq_pushinteger(v, a > b ? a : b);
                     return 1;
                 });
                 sq_setfunc(v, _SC("rgbaToHex"), [](HSQUIRRELVM v) -> SQInteger {
@@ -825,10 +866,6 @@ extern "C" {
                     debug((ManbowActor2D*)player);
                     return 0;
                 });
-            });
-
-            sq_createtable(v, _SC("plugin"), [](HSQUIRRELVM v) {
-                sq_createtable(v, _SC("patches"),[](HSQUIRRELVM v){});
             });
 
             // modifications to the manbow table

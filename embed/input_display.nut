@@ -6,7 +6,7 @@
 //0x10-D
 //0x20-X- 0x200-X+ 4 priority
 //0x40-Y+ 0x400-Y- 8 prioritY
-class main extends ::battle.ModifierClass {
+class main extends ::plugin.ModifierClass {
     display = class {
         player = null;
         data = null;
@@ -141,9 +141,10 @@ class main extends ::battle.ModifierClass {
     function Release() {
         list = null;
     }
-};
-::battle.modifiers.input_display <- ::battle.Modifier(main,false,function (param) {
-    ::setting.input_display.update_consts();
-    return true;//::setting.input_display.p1.enabled || ::setting.input_display.p2.enabled;
-});
 
+	function Enabled(param) {
+		::setting.input_display.update_consts();
+		return true;
+	}
+};
+::battle.modifiers.input_display <- ::plugin.Modifier(main);

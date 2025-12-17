@@ -560,8 +560,6 @@ void thisfastcall packet_parser_hook(
     );
 }
 
-#if BETTER_BLACK_SCREEN_FIX
-
 struct BoostLock {
     void* mutex_addr;
     bool is_locked;
@@ -732,8 +730,6 @@ static constexpr uint8_t unlock_fixB11[] = {
     BASE_NOP2
 };
 
-#endif
-
 enum InputBits : uint16_t {
     INPUT_LEFT = 1,
     INPUT_RIGHT = 2,
@@ -807,16 +803,31 @@ void thiscall WriteSingleInput_hook(TF4InputRecorderDevice* self, uint16_t input
     block_new_button_presses = false;
 }
 
-void patch_netplay() {
+void patch_sockets() {
+#if (NETPLAY_PATCH_TYPE == NETPLAY_DISABLE) && (CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS)
+    hotpatch_icall(0x170501_R, WSASendTo_log);
+#endif
 
-#if BETTER_BLACK_SCREEN_FIX
+    hotpatch_icall(0x1702F3_R, bind_inherited_socket);
+    hotpatch_icall(0x170641_R, inherit_punch_socket);
+    hotpatch_icall(0x170382_R, close_punch_socket);
+    hotpatch_icall(0x1703ED_R, close_punch_socket);
+
+    // This regular send call looks unused, so
+    // just break it and see if anything dies.
+    mem_write(0x17045A_R, INT3_BYTES);
+
+    //mem_write(0x1709C7_R, INT3_BYTES);
+    //mem_write(0x170F44_R, INT3_BYTES);
+}
+
+void patch_netplay() {
     //mem_write(0x171F66_R, PATCH_BYTES<0x1E>);
     mem_write(0x17C6E6_R, PATCH_BYTES<0x1E>);
     mem_write(0x17C6FB_R, PATCH_BYTES<0x1E>);
     mem_write(0x17C945_R, PATCH_BYTES<0x1E>);
     mem_write(0x171F4B_R, NOP_BYTES(1));
     mem_write(0x171F64_R, PATCH_BYTES<0x89>);
-#endif
 
     if ((enable_netplay = get_netplay_state())) {
         mem_write(patchA_addr, PATCH_BYTES<INT8_MAX>);
@@ -836,7 +847,6 @@ void patch_netplay() {
     //hotpatch_import(wsasendto_import_addr, my_WSASendTo);
     hotpatch_icall(0x170501_R, my_WSASendTo);
 
-#if BETTER_BLACK_SCREEN_FIX
     mem_write(0x172FF1_R, unlock_fixB1);
     mem_write(0x173094_R, unlock_fixB2);
     mem_write(0x178C2D_R, unlock_fixB3);
@@ -860,7 +870,6 @@ void patch_netplay() {
     nounroll for (size_t i = 0; i < countof(unlock_fixA_addrs); ++i) {
         hotpatch_rel32(based_pointer(base, unlock_fixA_addrs[i]), fix_black_screen_unlock);
     }
-#endif
 
     hotpatch_call(0xD6075_R, &SyncInput_hook); // Manbow::NetworkServerImpl::SyncInput
     hotpatch_call(0xDF6FA_R, &SyncInput_hook); // Manbow::NetworkClientImpl::SyncInput

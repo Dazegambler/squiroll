@@ -19,6 +19,7 @@
 #include "lobby.h"
 #include "better_game_loop.h"
 #include "discord.h"
+#include "RSACache.h"
 
 #include <shared.h>
 
@@ -38,16 +39,6 @@ uint64_t qpc_second_frequency;
 uint64_t qpc_frame_frequency;
 uint64_t qpc_milli_frequency;
 uint64_t qpc_micro_frequency;
-
-/*
-void Cleanup() {
-}
-*/
-
-struct ScriptAPI {
-    uint8_t dummy[0xF8];
-    bool load_plugins_from_pak;
-};
 
 static const auto patch_se_upnp = [](void* base_address) {
 #if ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS
@@ -77,12 +68,12 @@ static auto patch_se_information = [](void* base_address) {
 
 static auto patch_se_trust = [](void* base_address) {
 #if ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS
-    //hotpatch_jump(based_pointer(base_address, 0x5BA7), my_malloc);
-    //hotpatch_jump(based_pointer(base_address, 0x5C92), my_calloc);
-    //hotpatch_jump(based_pointer(base_address, 0x936E), my_realloc);
-    //hotpatch_jump(based_pointer(base_address, 0x5B6D), my_free);
-    //hotpatch_jump(based_pointer(base_address, 0x78AB), my_recalloc);
-    //hotpatch_jump(based_pointer(base_address, 0x933B), my_msize);
+    hotpatch_jump(based_pointer(base_address, 0x5BA7), my_malloc);
+    hotpatch_jump(based_pointer(base_address, 0x5C92), my_calloc);
+    hotpatch_jump(based_pointer(base_address, 0x936E), my_realloc);
+    hotpatch_jump(based_pointer(base_address, 0x5B6D), my_free);
+    hotpatch_jump(based_pointer(base_address, 0x78AB), my_recalloc);
+    hotpatch_jump(based_pointer(base_address, 0x933B), my_msize);
 #endif
 
     /*
@@ -213,236 +204,20 @@ plugin_load_end:
     return base_address;
 }
 
-#define sq_vm_malloc_call_addr (0x186745_R)
-#define sq_vm_realloc_call_addr (0x18675A_R)
-#define sq_vm_free_call_addr (0x186737_R)
-
-#define malloc_base_addr (0x312D61_R)
-#define calloc_base_addr (0x3122EA_R)
-#define realloc_base_addr (0x312DAF_R)
-#define free_base_addr (0x312347_R)
-#define recalloc_base_addr (0x3182DF_R)
-#define msize_base_addr (0x31ED30_R)
-
 #define entrypoint_base_addr (0x2E1B8C_R)
 #define D3DX11CreateShaderResourceViewFromMemory_import_addr (0x388534_R)
-
-#define WSASend_import_addr (0x3884D0_R)
-#define WSASendTo_import_addr (0x3884D4_R)
-#define WSARecvFrom_import_addr (0x3884D8_R)
-#define bind_import_addr (0x3884E0_R)
-#define closesocket_import_addr (0x388514_R)
 
 #define patch_act_script_plugin_hook_addr (0x127ADC_R)
 
 #define createmutex_patch_addr (0x01DC61_R)
 
-// Basic thcrap style replacement mode
-#define file_replacement_hook_addrA (0x23FAA_R)
-#define file_replacement_read_addrA (0x2DFA1_R)
-#define file_replacement_read_addrB (0x2DFED_R)
-#define CloseHandle_import_addr (0x3881DC_R)
-
-// No encryption replacement mode
-#define file_replacement_hook_addrB (0x23F98_R)
-
-#define load_th155_pak_call_addr (0x1DE1E_R)
-#define load_th155b_pak_call_addr (0x1DE79_R)
-#define parse_archive_addr (0x25420_R)
-#define rsa_decrypt_addr (0x26940_R)
-
 #define IsProcessorFeaturePresent_import_addr (0x388308_R)
-
-static void patch_sockets() {
-#if (NETPLAY_PATCH_TYPE == NETPLAY_DISABLE) && (CONNECTION_LOGGING & CONNECTION_LOGGING_UDP_PACKETS)
-    hotpatch_icall(0x170501_R, WSASendTo_log);
-#endif
-
-    hotpatch_icall(0x1702F3_R, bind_inherited_socket);
-    hotpatch_icall(0x170641_R, inherit_punch_socket);
-    hotpatch_icall(0x170382_R, close_punch_socket);
-    hotpatch_icall(0x1703ED_R, close_punch_socket);
-
-    // This regular send call looks unused, so
-    // just break it and see if anything dies.
-    mem_write(0x17045A_R, INT3_BYTES);
-
-    //mem_write(0x1709C7_R, INT3_BYTES);
-    //mem_write(0x170F44_R, INT3_BYTES);
-}
-
-static void patch_allocman() {
-#if ALLOCATION_PATCH_TYPE == PATCH_SQUIRREL_ALLOCS
-    hotpatch_rel32(sq_vm_malloc_call_addr, my_malloc);
-    hotpatch_rel32(sq_vm_realloc_call_addr, my_realloc);
-    hotpatch_rel32(sq_vm_free_call_addr, my_free);
-#elif ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS
-    hotpatch_jump(malloc_base_addr, my_malloc);
-    hotpatch_jump(calloc_base_addr, my_calloc);
-    hotpatch_jump(realloc_base_addr, my_realloc);
-    hotpatch_jump(free_base_addr, my_free);
-    hotpatch_jump(recalloc_base_addr, my_recalloc);
-    hotpatch_jump(msize_base_addr, my_msize);
-#endif
-}
-
-#if FILE_REPLACEMENT_TYPE != FILE_REPLACEMENT_NONE
-static void patch_file_loading() {
-
-// #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
-//     hotpatch_call(file_replacement_hook_addrA, file_replacement_hook);
-
-//     static constexpr uint8_t patch[] = { 0xE9, 0x8C, 0x00, 0x00, 0x00, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC };
-//     mem_write(file_replacement_hook_addrA + 5, patch);
-
-//     hotpatch_icall(file_replacement_read_addrA, file_replacement_read);
-//     hotpatch_icall(file_replacement_read_addrB, file_replacement_read);
-
-//     hotpatch_import(CloseHandle_import_addr, close_handle_hook);
-
-// #elif FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-
-//     hotpatch_call(file_replacement_hook_addrB, file_replacement_hook);
-
-//     static constexpr uint8_t patchA[] = {
-//         0x85, 0xD2,                         // TEST EDX, EDX
-//         0x0F, 0x85, 0xBF, 0x00, 0x00, 0x00, // JNZ Rx24064
-//         0x0F, 0x1F, 0x44, 0x00, 0x00        // NOP
-//     };
-//     mem_write(file_replacement_hook_addrB + 5, patchA);
-
-
-//     // Attempt at fixing CSV loading
-//     // Might confuse thcrap by omitting seek?
-//     static constexpr uint8_t patchB[] = {
-//         0x89, 0x95, 0x80, 0xFF, 0xFE, 0xFF, // MOV DWORD PTR [EBP-10080], EDX
-//         0x81, 0xFA, 0x54, 0x46, 0x43, 0x53, // CMP EDX, 0x53434654
-//         0x0F, 0x85, 0x89, 0x03, 0x00, 0x00, // JNE Rx15296A
-//         0x89, 0x4D, 0xC8,                   // MOV DWORD PTR [EBP-38], ECX
-//         0x89, 0x75, 0xE0,                   // MOV DWORD PTR [EBP-20], ESI
-//         0x8D, 0x8D, 0xA4, 0xFF, 0xFE, 0xFF  // LEA ECX, [EBP-1005C]
-//     };
-
-//     static constexpr uint8_t patchC[] = {
-//         0xCC, 0xCC,
-//         0xC7, 0x45, 0xB0, 0x00, 0x00, 0x00, 0x00, // MOV DWORD [EBP-50], 0
-//     };
-
-//     mem_write(0x1525CF_R, patchB);
-//     mem_write(0x152968_R, patchC);
-
-// #endif
-
-#if DUMP_TFCS_FILES
-    static constexpr uint8_t patchD[] = {
-        BASE_NOP(36),
-        0x89, 0xD9,         // MOV ECX, EBX
-        0x8B, 0x55, 0x08,   // MOV EDX, DWORD PTR [EBP+8]
-        0xE8                // CALL
-    };
-    mem_write(0x1526C8_R, patchD);
-    hotpatch_rel32(0x1526F2_R, dump_tfcs);
-#endif
-}
-#endif
 
 static inline void disable_original_game_logging() {
     // Disable regular printf
     hotpatch_ret(0x25270_R, 0);
     // Skip libpng warning fprintf calls
     mem_write(0x13BBD1_R, PATCH_BYTES<0x09>);
-}
-
-typedef bool thisfastcall parse_archive_t(
-    void* self,
-    thisfastcall_edx(int dummy_edx, )
-    const char* filename,
-    void* idk
-);
-
-static uint8_t* rsa_cache = nullptr;
-static uint8_t* rsa_cache_cur = nullptr;
-static uint8_t* rsa_cache_end = nullptr;
-static char cache_path[MAX_PATH];
-static FILE* cache_write_file = nullptr;
-
-[[noreturn]] static void cache_corrupt() {
-    DeleteFileW(L"th155.pak.cache");
-    DeleteFileW(L"th155b.pak.cache");
-    MessageBoxA(NULL, "The RSA cache seems to be corrupt or outdated.\nPlease restart your game.", "squiroll", MB_ICONERROR);
-    ExitProcess(1);
-}
-
-static bool thisfastcall parse_archive_hook(void* self, thisfastcall_edx(int dummy_edx,) const char* filename, void* idk) {
-    snprintf(cache_path, sizeof(cache_path), "%s.cache", filename);
-    FILE* cache_file = fopen(cache_path, "rb");
-    if (expect(cache_file != NULL, true)) {
-        fseek(cache_file, 0, SEEK_END);
-        size_t rsa_cache_len = ftell(cache_file);
-        rewind(cache_file);
-        rsa_cache_cur = rsa_cache = (uint8_t*)malloc(rsa_cache_len);
-        rsa_cache_end = rsa_cache + rsa_cache_len;
-        fread(rsa_cache, 1, rsa_cache_len, cache_file);
-        fclose(cache_file);
-        cache_file = NULL;
-    } else {
-        cache_write_file = cache_file = fopen(cache_path, "wb");
-    }
-
-    bool ret = ((parse_archive_t*)parse_archive_addr)(self, thisfastcall_edx(dummy_edx,) filename, idk);
-
-    if (expect(!cache_file, true)) {
-        if (expect(rsa_cache_cur != rsa_cache_end, false)) {
-            log_printf("%s didn't use the whole cache! 0x%zX vs 0x%zX\n", filename, (size_t)(rsa_cache_cur - rsa_cache), (size_t)(rsa_cache_end - rsa_cache));
-            cache_corrupt();
-        }
-        free(rsa_cache);
-        rsa_cache = nullptr;
-        rsa_cache_cur = nullptr;
-        rsa_cache_end = nullptr;
-    } else {
-        fclose(cache_file);
-        cache_write_file = nullptr;
-    }
-    return ret;
-}
-
-typedef int thisfastcall rsa_decrypt_t(
-    void* self,
-    thisfastcall_edx(int dummy_edx, )
-    void* src,
-    void* dst
-);
-
-static int thisfastcall rsa_decrypt_hook(void* self, thisfastcall_edx(int dummy_edx,) void* src, void* dst) {
-    FILE* cache_file = cache_write_file;
-    if (expect(!cache_file, true)) {
-        if (expect(rsa_cache_cur + 0x40 > rsa_cache_end, false)) {
-            log_printf("%s is truncated!\n", cache_path);
-            cache_corrupt();
-        }
-        memcpy(dst, rsa_cache_cur, 0x40);
-        rsa_cache_cur += 0x40;
-    } else {
-        memset(dst, 0, 0x40); // rsa_decrypt doesn't always fill the whole buffer because src is padded
-        if (((rsa_decrypt_t*)rsa_decrypt_addr)(self, thisfastcall_edx(dummy_edx, ) src, dst) == -1) {
-            return -1;
-        }
-        fwrite(dst, 0x40, 1, cache_file);
-    }
-    return 0;
-}
-
-static void patch_archive_parsing() {
-    hotpatch_rel32(load_th155_pak_call_addr, parse_archive_hook);
-    hotpatch_rel32(load_th155b_pak_call_addr, parse_archive_hook);
-
-    static constexpr uintptr_t rsa_decrypt_calls[] = { 0x25874, 0x258F7, 0x25954, 0x259EC, 0x25DCE, 0x25E49, 0x25E81, 0x25EB0 };
-
-    uintptr_t base = base_address;
-    nounroll for (size_t i = 0; i < countof(rsa_decrypt_calls); ++i) {
-        hotpatch_rel32(based_pointer(base, rsa_decrypt_calls[i]), rsa_decrypt_hook);
-    }
 }
 
 static BOOL __stdcall IsProcessorFeaturePresent_hook(DWORD ProcessorFeature) {
@@ -504,7 +279,7 @@ bool common_init(
     // Turn off scroll lock to simplify static management for the toggle func
     SetScrollLockState(false);
 
-    // patch_allocman();
+    patch_allocman();
 
     // Allow launching multiple instances of the game
     mem_write(createmutex_patch_addr, PATCH_BYTES<0x68, 0x00, 0x00, 0x00, 0x00>); //mutex patch
@@ -525,20 +300,12 @@ bool common_init(
 
     //mem_write(0x1DEAD_R, INFINITE_LOOP_BYTES); // Replaces a TEST ECX, ECX
 
-// #if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_NO_CRYPT
-    patch_file_loading();
-// #endif
-
-    if (get_cache_rsa_enabled()) {
-        patch_archive_parsing();
-    }
+    if (get_cache_rsa_enabled())patch_archive_parsing();
 
     // Disable fastfail to allow exception handlers to catch more crashes
     hotpatch_import(IsProcessorFeaturePresent_import_addr, IsProcessorFeaturePresent_hook);
 
-    if (get_better_game_loop_enabled()) {
-        init_better_game_loop();
-    }
+    if (get_better_game_loop_enabled())init_better_game_loop();
 
 #if ENABLE_DISCORD_INTEGRATION
     int8_t discord_state = get_discord_enabled();
@@ -593,9 +360,6 @@ extern "C" {
             )
         ) {
             yes_tampering();
-#if FILE_REPLACEMENT_TYPE == FILE_REPLACEMENT_BASIC_THCRAP
-            patch_file_loading();
-#endif
             return 0;
         }
         return 1;

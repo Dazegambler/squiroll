@@ -16,8 +16,20 @@
 #include "alloc_man.h"
 #include "log.h"
 #include "util.h"
+#include "patch_utils.h"
 
 #if ALLOCATION_PATCH_TYPE != PATCH_NO_ALLOCS
+
+#define sq_vm_malloc_call_addr (0x186745_R)
+#define sq_vm_realloc_call_addr (0x18675A_R)
+#define sq_vm_free_call_addr (0x186737_R)
+
+#define malloc_base_addr (0x312D61_R)
+#define calloc_base_addr (0x3122EA_R)
+#define realloc_base_addr (0x312DAF_R)
+#define free_base_addr (0x312347_R)
+#define recalloc_base_addr (0x3182DF_R)
+#define msize_base_addr (0x31ED30_R)
 
 #define SHRINK_ROLLBACK_BUFFERS 0
 
@@ -453,6 +465,21 @@ void* cdecl my_recalloc(void* ptr, size_t num, size_t size) {
         return NULL;
     }
     return my_calloc(num, size);
+}
+
+void patch_allocman() {
+#if ALLOCATION_PATCH_TYPE == PATCH_SQUIRREL_ALLOCS
+    hotpatch_rel32(sq_vm_malloc_call_addr, my_malloc);
+    hotpatch_rel32(sq_vm_realloc_call_addr, my_realloc);
+    hotpatch_rel32(sq_vm_free_call_addr, my_free);
+#elif ALLOCATION_PATCH_TYPE == PATCH_ALL_ALLOCS
+    hotpatch_jump(malloc_base_addr, my_malloc);
+    hotpatch_jump(calloc_base_addr, my_calloc);
+    hotpatch_jump(realloc_base_addr, my_realloc);
+    hotpatch_jump(free_base_addr, my_free);
+    hotpatch_jump(recalloc_base_addr, my_recalloc);
+    hotpatch_jump(msize_base_addr, my_msize);
+#endif
 }
 
 #endif

@@ -40,6 +40,8 @@ size_t cdecl my_msize(void* ptr);
 void* cdecl my_expand(void* ptr, size_t new_size);
 void* cdecl my_realloc(void* ptr, size_t new_size);
 void* cdecl my_recalloc(void* ptr, size_t num, size_t size);
+
+void patch_allocman();
 #endif
 
 #endif

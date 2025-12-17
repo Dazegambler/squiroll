@@ -18,12 +18,12 @@
 #define ZNET_SIZE_OPTIMIZE_PRINTS 1
 #include "packet_types.h"
 
-#define BETTER_BLACK_SCREEN_FIX 1
 #define ALT_PACKET9_FIX 1
 
 extern bool resyncing;
 extern int32_t local_buffered_frames;
 
+void patch_sockets();
 void patch_netplay();
 
 static inline constexpr PacketPunch PUNCH_PACKET = {

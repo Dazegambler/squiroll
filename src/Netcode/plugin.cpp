@@ -802,10 +802,10 @@ extern "C" {
 
             // rollback table setup
             sq_createtable(v, _SC("rollback"), [](HSQUIRRELVM v) {
-                sq_setfunc(v, _SC("update_delay"), update_delay);
+				sq_setfunc(v, _SC("update_delay"), update_delay);
                 sq_setfunc(v, _SC("resyncing"), SQPUSH_BOOL_FUNC(resyncing));
                 sq_setfunc(v, _SC("get_buffered_frames"), SQPUSH_INT_FUNC(local_buffered_frames));
-                sq_setfunc(v, _SC("start"), [](HSQUIRRELVM v) -> SQInteger {
+				sq_setfunc(v, _SC("start"), [](HSQUIRRELVM v) -> SQInteger {
                     rollback_start();
                     return 1;
                 });
@@ -831,6 +831,21 @@ extern "C" {
                     rollback_rewind(frames);
                     return 0;
                 });
+				sq_setfunc(v, _SC("rewindA"), [](HSQUIRRELVM v) -> SQInteger {
+					SQInteger frames;
+					if (sq_gettop(v) != 2 ||
+						SQ_FAILED(sq_getinteger(v, 2, &frames))
+					) {
+						return sq_throwerror(v, _SC("SYNTAX_ERROR@::rollback.rewindA: <frames>"));
+					}
+					auto res = rollback_allocs(frames);
+					sq_pushinteger(v,res);
+					return 1;
+				});
+				sq_setfunc(v, _SC("getactors"), [](HSQUIRRELVM v) -> SQInteger {
+						
+					return 1;
+				});
             });
 
             sq_createtable(v, _SC("punch"), [](HSQUIRRELVM v) {

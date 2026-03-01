@@ -279,7 +279,7 @@ bool common_init(
     // Turn off scroll lock to simplify static management for the toggle func
     SetScrollLockState(false);
 
-    patch_allocman();
+    //patch_allocman();
 
     // Allow launching multiple instances of the game
     mem_write(createmutex_patch_addr, PATCH_BYTES<0x68, 0x00, 0x00, 0x00, 0x00>); //mutex patch

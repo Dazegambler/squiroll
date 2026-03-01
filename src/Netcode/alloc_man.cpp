@@ -302,12 +302,13 @@ struct AllocManager {
     }
     
     size_t rollback(size_t frames) {
-        frames = std::min(frames, this->available_frames);
+		frames = std::min(frames, this->available_frames);
         if (frames) {
             size_t index = this->rollback_index(frames);
-            this->for_each_saved_alloc(index, [=](SavedAlloc* saved_data) {
-                AllocData* alloc = saved_data->ptr;
-                alloc->rollback(frames, saved_data);
+            log_printf("index = %d\n",index);
+			this->for_each_saved_alloc(index, [=](SavedAlloc* saved_data) {
+				AllocData* alloc = saved_data->ptr;
+				alloc->rollback(frames, saved_data);
             });
             // Any allocations without a rollback tag set
             // must have allocated after this rollback frame,
@@ -350,18 +351,14 @@ size_t fastcall rollback_allocs(size_t frames) {
 
 void update_allocs() {
     std::lock_guard<SpinLock> lock(alloc_lock);
-    if (HasScrollLockChanged()) {
-        alloc_man.rollback(SAVED_FRAMES);
-    }
-    else {
-        alloc_man.tick();
-    }
+    alloc_man.tick();
 }
 
 void reset_rollback_buffers() {
     alloc_man.available_frames = 0;
 }
 
+// Patches
 void* cdecl my_malloc(size_t size) {
     AllocData* real_alloc = (AllocData*)malloc(AllocData::buffer_size(size));
     if (expect(real_alloc != NULL, true)) {
@@ -373,7 +370,6 @@ void* cdecl my_malloc(size_t size) {
     // Out of memory
     return NULL;
 }
-
 void* cdecl my_calloc(size_t num, size_t size) {
     size_t total_size = num * size;
     void* ret = my_malloc(total_size);

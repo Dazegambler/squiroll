@@ -44,42 +44,6 @@ int32_t get_binds_hide_ui();
 int32_t get_binds_step_frame();
 int32_t get_binds_step_toggle();
 
-bool get_ping_enabled();
-bool get_ping_simple();
-int32_t get_ping_x();
-int32_t get_ping_y();
-float get_ping_scale_x();
-float get_ping_scale_y();
-int32_t get_ping_great_thresh();
-int32_t get_ping_good_thresh();
-int32_t get_ping_bad_thresh();
-// uint32_t get_ping_color();
-bool get_ping_frames();
-
-bool get_inputp1_enabled();
-int32_t get_inputp1_x();
-int32_t get_inputp1_y();
-float get_inputp1_scale_x();
-float get_inputp1_scale_y();
-int32_t get_inputp1_offset();
-int32_t get_inputp1_count();
-uint32_t get_inputp1_color();
-int32_t get_inputp1_timer();
-const char* get_inputp1_notation();
-bool get_inputp1_frame_count();
-
-bool get_inputp2_enabled();
-int32_t get_inputp2_x();
-int32_t get_inputp2_y();
-float get_inputp2_scale_x();
-float get_inputp2_scale_y();
-int32_t get_inputp2_offset();
-int32_t get_inputp2_count();
-uint32_t get_inputp2_color();
-int32_t get_inputp2_timer();
-const char* get_inputp2_notation();
-bool get_inputp2_frame_count();
-
 bool get_hitbox_vis_enabled();
 int32_t get_hitbox_border_width();
 float get_hitbox_inner_alpha();
@@ -91,18 +55,6 @@ uint32_t get_hitbox_player_unhit_color();
 uint32_t get_hitbox_player_ungrab_color();
 uint32_t get_hitbox_player_unhit_ungrab_color();
 uint32_t get_hitbox_misc_hurt_color();
-
-bool get_frame_data_enabled();
-int32_t get_frame_data_x();
-int32_t get_frame_data_y();
-float get_frame_data_scale_x();
-float get_frame_data_scale_y();
-int32_t get_frame_data_width();
-// uint32_t get_frame_data_color();
-int32_t get_frame_data_timer();
-// bool get_frame_data_flags();
-bool get_frame_data_frame_stepping();
-// bool get_frame_data_framebar();
 
 int8_t get_ipv6_state();
 bool get_netplay_state();

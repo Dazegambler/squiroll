@@ -136,85 +136,6 @@ bool sq_eval(HSQUIRRELVM v, HSQOBJECT root, const SQChar *code, bool get_result 
     return true;
 }
 
-static inline void set_ping_constants(HSQUIRRELVM v) {
-    sq_setstring(v, _SC("config_section"),"ping");
-    sq_setbool(v, _SC("enabled"), get_ping_enabled());
-    sq_setbool(v, _SC("simple"), get_ping_simple());
-    sq_setinteger(v, _SC("x"), get_ping_x());
-    sq_setinteger(v, _SC("y"), get_ping_y());
-    sq_setfloat(v, _SC("sx"), get_ping_scale_x());
-    sq_setfloat(v, _SC("sy"), get_ping_scale_y());
-    sq_setinteger(v, _SC("great_threshold"), get_ping_great_thresh());
-    sq_setinteger(v, _SC("good_threshold"), get_ping_good_thresh());
-    sq_setinteger(v, _SC("bad_threshold"), get_ping_bad_thresh());
-    // uint32_t color = get_ping_color();
-    // sq_setfloat(v, _SC("blue"), (float)(uint8_t)color / 255.0f);
-    // sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);
-    // sq_setfloat(v, _SC("red"), (float)(uint8_t)(color >> 16) / 255.0f);
-    // sq_setfloat(v, _SC("alpha"), (float)(uint8_t)(color >> 24) / 255.0f);
-    sq_setbool(v, _SC("input_delay"), get_ping_frames());
-}
-
-static inline void set_inputp1_constants(HSQUIRRELVM v) {
-    sq_setstring(v, _SC("config_section"),"input_display_p1");
-    sq_setbool(v, _SC("enabled"), get_inputp1_enabled());
-    sq_setinteger(v, _SC("x"), get_inputp1_x());
-    sq_setinteger(v, _SC("y"), get_inputp1_y());
-    sq_setfloat(v, _SC("sx"), get_inputp1_scale_x());
-    sq_setfloat(v, _SC("sy"), get_inputp1_scale_y());
-    sq_setinteger(v, _SC("offset"), get_inputp1_offset());
-    sq_setinteger(v, _SC("list_max"), get_inputp1_count());
-    uint32_t color = get_inputp1_color();
-    sq_setfloat(v, _SC("blue"), (float)(uint8_t)color / 255.0f);
-    sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);
-    sq_setfloat(v, _SC("red"), (float)(uint8_t)(color >> 16) / 255.0f);
-    sq_setfloat(v, _SC("alpha"), (float)(uint8_t)(color >> 24) / 255.0f);
-    int32_t timer = get_inputp1_timer();
-    sq_setinteger(v, _SC("timer"), timer > 0 ? timer : 0);
-    sq_setstring(v, _SC("notation"), get_inputp1_notation());
-    sq_setbool(v, _SC("frame_count"), get_inputp1_frame_count());
-}
-
-static inline void set_inputp2_constants(HSQUIRRELVM v) {
-    sq_setstring(v, _SC("config_section"),"input_display_p2");
-    sq_setbool(v, _SC("enabled"), get_inputp2_enabled());
-    sq_setinteger(v, _SC("x"), get_inputp2_x());
-    sq_setinteger(v, _SC("y"), get_inputp2_y());
-    sq_setfloat(v, _SC("sx"), get_inputp2_scale_x());
-    sq_setfloat(v, _SC("sy"), get_inputp2_scale_y());
-    sq_setinteger(v, _SC("offset"), get_inputp2_offset());
-    sq_setinteger(v, _SC("list_max"), get_inputp2_count());
-    uint32_t color = get_inputp2_color();
-    sq_setfloat(v, _SC("blue"), (float)(uint8_t)color / 255.0f);
-    sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);
-    sq_setfloat(v, _SC("red"), (float)(uint8_t)(color >> 16) / 255.0f);
-    sq_setfloat(v, _SC("alpha"), (float)(uint8_t)(color >> 24) / 255.0f);
-    int32_t timer = get_inputp2_timer();
-    sq_setinteger(v, _SC("timer"), timer > 0 ? timer : 0);
-    sq_setstring(v, _SC("notation"), get_inputp2_notation());
-    sq_setbool(v, _SC("frame_count"),get_inputp2_frame_count());
-}
-
-static inline void set_frame_data_constants(HSQUIRRELVM v) {
-    sq_setstring(v, _SC("config_section"),"frame_data_display");
-    sq_setbool(v, _SC("enabled"), get_frame_data_enabled());
-    // sq_setbool(v, _SC("input_flags"), get_frame_data_flags());
-    sq_setbool(v, _SC("frame_stepping"), get_frame_data_frame_stepping());
-    // sq_setbool(v, _SC("framebar"), get_frame_data_framebar());
-    sq_setinteger(v, _SC("x"), get_frame_data_x());
-    sq_setinteger(v, _SC("y"), get_frame_data_y());
-    sq_setinteger(v, _SC("width"),get_frame_data_width());
-    sq_setfloat(v, _SC("sx"), get_frame_data_scale_x());
-    sq_setfloat(v, _SC("sy"), get_frame_data_scale_y());
-    // uint32_t color = get_frame_data_color();
-    // sq_setfloat(v, _SC("blue"), (float)(uint8_t)color / 255.0f);
-    // sq_setfloat(v, _SC("green"), (float)(uint8_t)(color >> 8) / 255.0f);
-    // sq_setfloat(v, _SC("red"), (float)(uint8_t)(color >> 16) / 255.0f);
-    // sq_setfloat(v, _SC("alpha"), (float)(uint8_t)(color >> 24) / 255.0f);
-    int32_t timer = get_frame_data_timer();
-    sq_setinteger(v, _SC("timer"), timer > 0 ? timer : 0);
-}
-
 static inline void set_network_constants(HSQUIRRELVM v) {
     sq_setstring(v, _SC("config_section"),"network");
     sq_setbool(v, _SC("hide_opponent_name"), get_hide_name_enabled());
@@ -232,42 +153,6 @@ static inline void set_binds_constants(HSQUIRRELVM v) {
     sq_setinteger(v, _SC("hide_ui"), get_binds_hide_ui());
     sq_setinteger(v, _SC("step_frame"), get_binds_step_frame());
     sq_setinteger(v, _SC("step_toggle"), get_binds_step_toggle());
-}
-
-SQInteger update_ping_constants(HSQUIRRELVM v) {
-    sq_pushroottable(v);
-
-    sq_edit(v, _SC("setting"), [](HSQUIRRELVM v) {
-        sq_edit(v, _SC("ping"), set_ping_constants);
-    });
-
-    sq_pop(v, 1);
-    return 0;
-}
-
-SQInteger update_input_constants(HSQUIRRELVM v) {
-    sq_pushroottable(v);
-
-    sq_edit(v, _SC("setting"), [](HSQUIRRELVM v) {
-        sq_edit(v, _SC("input_display"), [](HSQUIRRELVM v) {
-            sq_edit(v, _SC("p1"), set_inputp1_constants);
-            sq_edit(v, _SC("p2"), set_inputp2_constants);
-        });
-    });
-
-    sq_pop(v, 1);
-    return 0;
-}
-
-SQInteger update_frame_data_constants(HSQUIRRELVM v) {
-    sq_pushroottable(v);
-
-    sq_edit(v, _SC("setting"), [](HSQUIRRELVM v) {
-        sq_edit(v, _SC("frame_data"), set_frame_data_constants);
-    });
-
-    sq_pop(v, 1);
-    return 0;
 }
 
 SQInteger update_network_constants(HSQUIRRELVM v) {
@@ -585,24 +470,6 @@ extern "C" {
             });
             sq_setfunc(v, _SC("deepcopy"), sq_deepcopy);
 
-// #if !DISABLE_ALL_LOGGING_FOR_BUILD
-//             sq_setprintfunc(v,
-//                 [](HSQUIRRELVM v, const SQChar* str,...) -> void {
-//                     va_list args;
-//                     va_start(args,str);
-//                     vprintf(str,args);
-//                     va_end(args);
-//                 },
-//                 [](HSQUIRRELVM v, const SQChar* err,...) -> void {
-//                     va_list args;
-//                     va_start(args, err);
-//                     log_fprintf(stderr, "Squirrel runtime exception: ");
-//                     vfprintf(stderr, err, args);
-//                     va_end(args);
-
-//                 });
-// #endif
-
             // setting table setup
             sq_createtable(v, _SC("setting"), [](HSQUIRRELVM v) {
                 sq_setinteger(v, _SC("version"), PLUGIN_VERSION);
@@ -635,16 +502,11 @@ extern "C" {
                     sq_setfunc(v, _SC("update_consts"), update_network_constants);
                     set_network_constants(v);
                 });
-                sq_createtable(v, _SC("ping"), [](HSQUIRRELVM v) {
-                    sq_setfunc(v, _SC("update_consts"), update_ping_constants);
-                    set_ping_constants(v);
-                });
                 sq_createtable(v, _SC("binds"), [](HSQUIRRELVM v) {
                     sq_setfunc(v, _SC("update_consts"), update_binds_constants);
                     set_binds_constants(v);
                 });
                 sq_createtable(v, _SC("frame_data"), [](HSQUIRRELVM v) {
-                    sq_setfunc(v, _SC("update_consts"), update_frame_data_constants);
                     sq_setfunc(v, _SC("IsFrameActive"), [](HSQUIRRELVM v) -> SQInteger {
                         void* inst;
                         if (sq_gettop(v) != 2 ||
@@ -690,12 +552,6 @@ extern "C" {
                         sq_pushbool(v, NewTake((ManbowActor2D*)inst));
                         return 1;
                     });
-                    set_frame_data_constants(v);
-                });
-                sq_createtable(v, _SC("input_display"), [](HSQUIRRELVM v) {
-                    sq_setfunc(v, _SC("update_consts"), update_input_constants);
-                    sq_createtable(v, _SC("p1"), set_inputp1_constants);
-                    sq_createtable(v, _SC("p2"), set_inputp2_constants);
                 });
             });
 

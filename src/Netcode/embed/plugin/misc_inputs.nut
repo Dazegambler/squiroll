@@ -1,0 +1,104 @@
+// local test = ::font.CreateSystemString(" \f");
+// ::print(format("width:%d\n",test.width - 12));
+//'b' 19
+//'B' 20
+//'d' 19
+//'D' 23
+//'s' 16
+//'S' 19
+//'c' 17
+//'C' 21
+//'#' 23
+//' ' 7
+//'~' 14
+//'/' 14
+//'|-' 21
+//'-' 13
+//'_' 14
+//'|' 8
+//'[]' 28
+//" []" 40
+//" [" 26
+//" " 12
+// "   " 26
+class modifier extends modifier {
+	lastinput = null;
+	active = null;
+	frame_lock = null;
+	lock_override = null;
+	constructor() {
+		active = false;
+		lock_override = false;
+		frame_lock = false;
+	}
+
+	function HandleInputs() {
+		if (::input_all.b6 == 1) {
+			local now = ::date().sec;
+			if (lastinput && !(now - lastinput)) {
+				if (!(active = !active)) ::battle.gauge.Hide();
+				else ::battle.gauge.Show(0);
+				if (::battle.modifiers.frame_data.task) ::battle.modifiers.frame_data.task.full = !active;
+				lastinput = 0;
+				// ::sound.PlaySE("sys_ok");
+			}else lastinput = now;
+		}
+		local b7 = ::input_all.b7;
+		if (b7 && (!(b7 % 10) || b7 == 1)) {
+			::sound.PlaySE("sys_ok");
+			frame_lock = false;
+		}
+		local b8 = ::input_all.b8;
+		if (b8 == 1) {
+			if (lock_override)lock_override = false;
+			else {
+				local now = ::date().sec;
+				if (lastinput && !(now - lastinput)) {
+					lock_override = true;
+					lastinput = 0;
+				}else  {
+					lastinput = now;
+                    local config = ::plugin.cfg.frame_data.data;
+					local enabled = !cfg.frame_stepping;
+					config.Set(enabled,frame_step);
+				}
+			}
+		}
+	}
+
+	function PreFrame() {
+		HandleInputs();
+		if (::plugin.cfg.frame_data.data.frame_step) {
+			return !frame_lock;
+		}
+		return true;
+	}
+
+	function Update() {
+		local current = ::battle.team[0].current;
+		frame_lock = false;
+		if (!::network.IsActive() && ::plugin.cfg.frame_data.data.frame_step) {
+			frame_lock = lock_override;
+			if (!frame_lock && ::replay.GetState() != ::replay.PLAY) {
+				frame_lock = (
+					current.motion >= 1000 &&
+					::setting.frame_data.hasData(current) &&
+					!current.hitStopTime && !current.team.time_stop_count
+				);
+			}
+		}
+	}
+	function Enabled(param) {
+		local enabled = (::network.IsPlaying != true);
+		if (enabled) {
+			if (param.game_mode == 40) {
+				local practicerestart = PracticeRestart;
+				function PracticeRestart() {
+					modifiers.misc_inputs.task.active = true;
+					practicerestart();
+				}
+			}
+		}
+		return enabled;
+	}
+};

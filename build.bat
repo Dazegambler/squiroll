@@ -1,18 +1,4 @@
 @echo off
-
-set MAKE_EMBED_PATH=tools\make_embed_windows.exe
-set CONDENSE_NUT_PATH=tools\condense_nut_windows.exe
-
-set EMBEDS_DIR=embed
-set EMBEDS_DEST_DIR=src/Netcode/embed
-
-mkdir "%EMBEDS_DIR%"
-mkdir "%EMBEDS_DEST_DIR%"
-
-for %%F in (%EMBEDS_DIR%\*) do (
-    %MAKE_EMBED_PATH% %%F %EMBEDS_DEST_DIR%\%%~nxF.h
-)
-
 rc src/th155r/th155r.rc
 
 set DEFINES=-D_CRT_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -DNOMINMAX -D_WINSOCKAPI_ -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -D_CRT_DECLARE_NONSTDC_NAMES

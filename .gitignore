@@ -1,12 +1,8 @@
 **/build/
 *.exe
 *.dll
-/tools/*.exe
-/tools/*.run
-/src/lobby/*.run
+src/lobby/*.run
 /src/lobby/*.exe
-/compressed_nuts
-/src/Netcode/embed
 .vs*
 out/
 *.lib

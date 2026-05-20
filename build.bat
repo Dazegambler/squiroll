@@ -1,7 +1,7 @@
 @echo off
 
 :: Generate embed files from manifest
-call generate_embeds.bat
+python generate_embeds.py
 
 rc src/th155r/th155r.rc
 

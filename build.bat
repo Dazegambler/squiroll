@@ -1,4 +1,8 @@
 @echo off
+
+:: Generate embed files from manifest
+call generate_embeds.bat
+
 rc src/th155r/th155r.rc
 
 set DEFINES=-D_CRT_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -DNOMINMAX -D_WINSOCKAPI_ -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -D_CRT_DECLARE_NONSTDC_NAMES

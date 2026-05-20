@@ -1,0 +1,67 @@
+# Embed Manifest
+# Format: source_path=target_path[=varname]
+#   source_path: path relative to src/Netcode/ (used in #embed directive)
+#   target_path: path in the game's virtual filesystem (used in embeds map)
+#   varname:     (optional) C++ variable name suffix. Auto-derived from filename if omitted.
+#                Required when filenames would collide (e.g. menu.nut in multiple dirs).
+#
+# To add a new embedded script:
+#   1. Place the .nut file under src/Netcode/embed/
+#   2. Add an entry here
+#   3. Run build.bat (which calls generate_embeds.bat)
+#   4. No other C++ changes needed!
+
+# === FILE REPLACEMENTS ===
+
+# Battle
+embed/battle/battle.nut=data/script/battle/battle.nut
+embed/battle/battle_network.nut=data/script/battle/battle_network.nut
+embed/battle/battle_team.nut=data/script/battle/battle_team.nut
+embed/battle/battle_vs_player.nut=data/script/battle/battle_vs_player.nut
+
+# Network
+embed/network/network.nut=data/system/network/network.nut
+embed/network/network_component.nut=data/system/component/network.nut
+embed/network/network_animation.nut=data/system/network/network_animation.nut
+
+# Config
+embed/config/config.nut=data/system/config/config.nut
+embed/config/config_animation.nut=data/system/config/config_animation.nut
+embed/config/mod_config.nut=squiroll/config/mod_config.nut
+embed/config/network_config.nut=squiroll/config/network_config.nut
+
+# Dialog
+embed/dialog/dialog_wait.nut=data/system/network/dialog_wait.nut
+embed/dialog/dialog_connect.nut=data/system/network/dialog_connect.nut
+
+# Character
+embed/character/mokou.nut=data/actor/mokou.nut
+embed/character/tenshi_shot.nut=data/actor/tenshi_shot.nut
+embed/character/kokoro.nut=data/actor/kokoro.nut
+
+# Misc
+embed/version.nut=data/script/version.nut
+embed/title.nut=data/system/title/title.nut
+embed/character_select_animation.nut=data/system/select/script/character_select_animation.nut
+embed/menu.nut=data/script/menu.nut
+embed/boot.nut=data/system/boot/boot.nut
+embed/watch.nut=data/system/watch/watch.nut
+embed/replay_select_view.nut=data/system/replay_select/replay_select_view.nut
+embed/input.nut=data/script/input.nut
+embed/loop.nut=data/script/loop.nut
+
+# === NEW FILES ===
+
+# Plugin
+embed/plugin/core/cfg.nut=squiroll/plugin/core/cfg.nut=pluginCFG
+embed/plugin/core/manager.nut=squiroll/plugin/core/manager.nut=plugin
+embed/plugin/frame_data.nut=squiroll/plugin/frame_data.nut
+embed/plugin/input_display.nut=squiroll/plugin/input_display.nut
+embed/plugin/ping_display.nut=squiroll/plugin/ping_display.nut
+embed/plugin/misc_inputs.nut=squiroll/plugin/misc_inputs.nut
+embed/plugin/rollback.nut=squiroll/plugin/rollback.nut
+
+# UI
+embed/UI/core.nut=squiroll/UI/core.nut=UICore
+embed/UI/menu.nut=squiroll/UI/menu.nut=UIMenu
+embed/UI/ui.nut=squiroll/UI/ui.nut=UI

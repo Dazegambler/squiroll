@@ -40,10 +40,6 @@ const char* get_lobby_host(const char* host);
 const char* get_lobby_port(const char* port);
 const char* get_lobby_pass(const char* pass);
 
-int32_t get_binds_hide_ui();
-int32_t get_binds_step_frame();
-int32_t get_binds_step_toggle();
-
 bool get_hitbox_vis_enabled();
 int32_t get_hitbox_border_width();
 float get_hitbox_inner_alpha();
@@ -57,18 +53,13 @@ uint32_t get_hitbox_player_unhit_ungrab_color();
 uint32_t get_hitbox_misc_hurt_color();
 
 int8_t get_ipv6_state();
-bool get_netplay_state();
 bool get_hide_ip_enabled();
 bool get_share_watch_ip_enabled();
 bool get_hide_name_enabled();
-bool get_prevent_input_drops();
 bool get_hide_profile_pictures_enabled();
-// bool get_auto_switch();
-const char* get_network_blacklist();
 void set_ipv6_state(bool state);
 
 bool get_cache_rsa_enabled();
-bool get_better_game_loop_enabled();
 float get_timer_leniency();
 
 bool get_hide_wip_enabled();

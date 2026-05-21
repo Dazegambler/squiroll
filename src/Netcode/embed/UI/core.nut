@@ -25,7 +25,8 @@ class Text extends ::manbow.String {
 	max_length = null;
 
 	constructor(str,font = ::font.system,max_len = 288) {
-		max_length = max_len;
+		base.constructor();
+        max_length = max_len;
 		Initialize(font);
 		SetSpace(-5,0);
 		SetOutline(true);
@@ -41,7 +42,7 @@ class Text extends ::manbow.String {
 };
 
 //pointer display
-class Pointer extends Text {
+class LiveText extends Text {
     ptr = null;
     constructor(p) {
         ptr = p;
@@ -72,7 +73,7 @@ class Enum extends Text {
         values = table;
         base.constructor(values[0]);
         blue = 0;
-        cursor = this.Cursor(1, values.len,::input_all);
+        cursor = this.Cursor(1, values.len(),::input_all);
     }
 
     function Update() {

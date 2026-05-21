@@ -305,7 +305,7 @@ bool common_init(
     // Disable fastfail to allow exception handlers to catch more crashes
     hotpatch_import(IsProcessorFeaturePresent_import_addr, IsProcessorFeaturePresent_hook);
 
-    if (get_better_game_loop_enabled())init_better_game_loop();
+    init_better_game_loop();
 
 #if ENABLE_DISCORD_INTEGRATION
     int8_t discord_state = get_discord_enabled();

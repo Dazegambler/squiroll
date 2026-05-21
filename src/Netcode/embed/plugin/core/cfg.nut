@@ -10,18 +10,6 @@ class CFG {
 	}
 
 	function Read() {
-		local function parse(str) {
-			local val = null;
-			try{val = str.tofloat();}catch(e){}
-			if (val&&val.tostring == str)return val;
-			try{val = str.tointeger();}catch(e){}
-			if (val&&val.tostring() == str)return val;
-			local lower = str.tolower();
-			if (lower == "true")return true;
-			if (lower == "false")return false;
-			return str;
-		}
-
 		local content = ::readfile(filepath);
 		local lines = ::split(content,"\n");
 		local table = data;
@@ -39,8 +27,8 @@ class CFG {
 			if (!eq)continue;
 			local key = ::strip(line.slice(0,eq));
 			local str = ::strip(line.slice(eq+1));
-			local value = parse(str);
-			table[key] = value;
+			local type = typeof table[key];
+            table[key] = str["to"+type]();
 		}
 	}
 

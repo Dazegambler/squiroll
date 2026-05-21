@@ -56,8 +56,8 @@ class modifier extends modifier {
             config = ::plugin.cfg.input_display.data["p"+(player+1)];
             notation = ::split(config.notation,",");
 
-            for (local i = 0; i < config.list_max; ++i) {
-                local t = ::UI.core.Text("");
+            for (local i = 0; i < config.count; ++i) {
+                local t = ::UI.Core.Text("");
                 t.x = config.x;
                 t.y = config.y - (i * config.offset);
                 t.sx = config.sx;

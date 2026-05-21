@@ -1,51 +1,64 @@
 // CORE ELEMENTS
 class Entry {
-    label = null;
+    elem = null;
     visible = null;
-    x = 0;
-    y = 0;
 
     constructor(idx,str) {
         visible = false;
-        label = ::UI.Core.Text(str,::font.system,576);
-        label.y = 200 + (idx * 42) - 34;
-        label.x = 320;
-    }
-
-    function ConnectRenderSlot(slot,priority) {
-        label.ConnectRenderSlot(slot,priority);
-    }
-
-    function DisconnectRenderSlot() {
-        label.DisconnectRenderSlot();
+        elem = {
+            label = ::UI.Core.Text(str,::font.system,576)
+        };
+        elem.label.y = 200 + (idx * 42) - 34;
+        elem.label.x = 320;
     }
 
     function OnClick() {}
+  
+    function ConnectRenderSlot(slot,priority) {
+        foreach (e in elem)e.ConnectRenderSlot(slot,priority);
+    }
+
+    function DisconnectRenderSlot() {
+        foreach (e in elem)e.DisconnectRenderSlot();
+    }
+
+    function SetWorldTransform(mat) {
+        foreach (e in elem)e.SetWorldTransform(mat);
+    }
+
     function Update() {
-        label.Update();
+        foreach (e in elem) {
+            e.visible = visible;
+            e.Update();
+        }
     }
 };
 
 // STRUCTURE ELEMENTS
 class Title extends Entry {
     constructor(str) {
-        label = ::UI.Core.Text(str,::font.system,576);
-        label.sx = label.sy = 1.75;
-        label.SetGradation(true);
-        label.red2 = 1.0;
-        label.green2 = 0.75;
-        label.blue2 = 0.83;
-        label.red = label.green = label.blue = 2.0;
-        label.x = 640 - ((label.width * label.sx) / 2);
-        label.y = 96 - (label.height * label.sy);
+        elem = {
+            label = ::UI.Core.Text(str,::font.system,576)
+        };
+        elem.label.sx = 1.75;
+        elem.label.sy = 1.75;
+        elem.label.SetGradation(true);
+        elem.label.red2 = 1.0;
+        elem.label.green2 = 0.75;
+        elem.label.blue2 = 0.83;
+
+        elem.label.x = 640 - ((elem.label.width * elem.label.sx) / 2);
+        elem.label.y = 96 - (elem.label.height * elem.label.sy);
     }
 };
 
 class Header extends Entry {
     constructor(idx,str) {
-        label = ::UI.Core.Text(str,::font.system,576);
-        label.y = 200 + (idx * 42) - 34;
-        label.x = 640 - ((label.wdith * label.sx) / 2);
+        elem = {
+            label = ::UI.Core.Text(str,::font.system,576)
+        };
+        elem.label.y = 200 + (idx * 42) - 34;
+        elem.label.x = 640 - ((elem.label.width * elem.label.sx) / 2);
     }
 };
 
@@ -64,21 +77,15 @@ class Button extends Entry {
 
 class Value extends Entry {
     ptr = null;
-    val = null;
     onclick = null;
 
     constructor(idx,str,src,on_click) {
         ptr = src;
         onclick = on_click;
         base.constructor(idx,str);
-        val = ::UI.Core.Pointer(ptr);
+        local val = elem.val <- ::UI.Core.LiveText(ptr);
         val.x = ::graphics.width - 320 - (val.width * val.sx);
         val.y = 200 + (idx * 42) - 34;
-    }
-
-    function Update() {
-        label.Update();
-        val.Update();
     }
 
     function OnClick() {
@@ -87,15 +94,12 @@ class Value extends Entry {
 };
 
 class Enum extends Entry {
-    ptr = null;
-    val = null;
     onclick = null;
 
-    constructor(idx,str,src,on_click,opts = ["disabled","enabled"]) {
-        ptr = src;
+    constructor(idx,str,init,on_click,opts = ["disabled","enabled"]) {
         base.constructor(idx,str);
         onclick = on_click;
-        val = ::UI.Core.Enum(opts);
+        local val = elem.val <- ::UI.Core.Enum(idx,opts);
         local w = 0;
         local h = 0;
         foreach (v in opts) {
@@ -107,16 +111,11 @@ class Enum extends Entry {
         val.x = ::graphics.width - 320 - (w * val.sx);
         val.y = 200 + (idx * 42) - 34;
 
-        val.left = x - 8;
-        val.right = x + w + 8;
-        val.top = y + 10;
+        val.left = val.x - 8;
+        val.right = val.x + w + 8;
+        val.top = val.y + 10;
         val.bottom = val.top + h + 3;
-        val.cursor.val = ptr.Get().tointeger();
-    }
-
-    function Update() {
-        label.Update();
-        val.Update();
+        val.cursor.val = init;
     }
 
     function OnClick() {
@@ -128,7 +127,6 @@ class Page {
     uiBase = null;
     item = null;
     visible = null;
-    slot = null;
     x = null;
     y = null;
 
@@ -142,24 +140,18 @@ class Page {
     }
 
     function ConnectRenderSlot(_slot,priority) {
-        foreach (elem in item) {
-            elem.ConnectRenderSlot(_slot,priority);
-        }
-        slot = _slot;
+        foreach (elem in item)elem.ConnectRenderSlot(_slot,priority);
     }
 
     function DisconnectRenderSlot() {
-        foreach (elem in item) {
-            elem.DisconnectRenderSlot();
-        }
-        slot = null;
+        foreach (elem in item)elem.DisconnectRenderSlot();
     }
 
     function Update(mat) {
         mat.SetTranslation(x,0,0);
         foreach (i in item) {
             i.visible = visible;
-            if (i.visible)i.SetWorldTransform(mat);
+            i.SetWorldTransform(mat);
             i.Update();
         }
     }
@@ -177,7 +169,10 @@ function Create(...) {
         function Initialize() {
             highlight <- UIItemHighlight();
             pager <- UIPager();
-            foreach (page in action.pages) pager.Append(page.uiBase);   
+            foreach (page in action.page) {
+                pager.Append(page.uiBase);   
+                page.ConnectRenderSlot(::graphics.slot.front,0);
+            }
             pager.Activate(0,-2000);
             ::loop.AddTask(this);
         }
@@ -185,29 +180,28 @@ function Create(...) {
         function Update(){
             pager.Set(action.cursor_page.val);
             local mat = ::manbow.Matrix();
-            foreach (page in buffer)page.Update(mat);
-            local entry = buffer.item[action.cursor_index.val];
+            foreach (p in action.page)p.Update(mat);
+            local entry = action.page[action.cursor_page.val].item[action.cursor_index.val].elem.label;
             ::menu.cursor.SetTarget(entry.x - 20, entry.y + 23, 0.7);
         }
 
         function Terminate() {
             ::loop.DeleteTask(this);
             pager = null;
-            hightlight = null;
-            buffer = null;
+            highlight = null;
+            foreach(page in action.page)page.DisconnectRenderSlot();
         }
     };
     anime.action <- this.weakref();
 
     function Initialize() {
-        UpdateBuffer(0);
-        cursor_index <- this.Cursor(0, anime.buffer[1].item.len() - 1,::input_all);
+        cursor_index <- this.Cursor(0, page[0].item.len(),::input_all);
         cursor_index.se_ok = 0;
 
         cursor_page <- this.Cursor(1, page.len(), ::input_all);
         cursor_page.enable_ok = false;
         cursor_page.enable_cancel = false;
-
+        
         ::menu.cursor.Activate();
         ::menu.back.Activate();
         ::menu.help.Set(help);
@@ -218,22 +212,11 @@ function Create(...) {
 
     function Terminate() {
         EndAnime();
+        delete cursor_page;
+        delete cursor_index;
         ::menu.back.Deactivate(true);
         ::menu.cursor.Deactivate();
         ::menu.help.Reset();
-    }
-
-    function Index(i) {
-        local len = page.len();
-        return (i % len + len) % len;
-    }
-
-    function UpdateBuffer(pivot) {
-        anime.buffer <- [
-            pages[Index(pivot - 1)],
-            pages[Index(pivot)],
-            pages[Index(pivot + 1)]
-        ];
     }
 
     function UpdateCommonItem() {
@@ -252,22 +235,15 @@ function Create(...) {
         
         cursor_page.Update();
         if (cursor_page.diff) {
-            anime.buffer[1 - cursor_page.diff].DisconnectRenderSlot();
-            UpdateBuffer(cursor_page.val);
-            anime.buffer[1 + cursor_page.diff].ConnectRenderSlot(::graphics.slot.front,0);
-
             local prev = cursor_index.val;
-            cursor_index <- this.Cursor(0, page[cursor_page.val].item.len() - 1, ::input_all);
+            cursor_index <- this.Cursor(0, page[cursor_page.val].item.len(), ::input_all);
             cursor_index.se_ok = 0;
             cursor_index.val = cursor_index.item_num <= prev ? cursor_index.item_num - 1 : prev;
         }
-
+        
         cursor_index.Update();
-        if (cursor_index.diff && !anime.page[cursor_page.val].item[cursor_index.val].width) {
-            cursor_index.val = ::math.min(cursor_index.item_num - 1, cursor_index.val + cursor_index.diff);
-        }
         if (cursor_index.ok){
-            local item = anime.buffer[1].item[cursor_index.val];
+            local item = page[cursor_page.val].item[cursor_index.val];
             item.OnClick();
         }else if (cursor_index.cancel){
             ::loop.End();

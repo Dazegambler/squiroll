@@ -765,7 +765,7 @@ void thiscall SyncInput_hook(ManbowNetworkInputSession* self) {
         min_frame_diff = std::min(min_frame_diff, diff);
     }
 
-    if (min_frame_diff == 0 && get_prevent_input_drops()) {
+    if (min_frame_diff == 0) {
         // Only buffer newly pressed button inputs from a lag frame ONCE
         // Should prevent accidentally triggering spell cards/last words
         uint16_t input = ((uint16_t (thiscall*)(TF4InputDeviceState*))(0x169D80_R))(&self->local_input->state);
@@ -829,15 +829,12 @@ void patch_netplay() {
     mem_write(0x171F4B_R, NOP_BYTES(1));
     mem_write(0x171F64_R, PATCH_BYTES<0x89>);
 
-    if ((enable_netplay = get_netplay_state())) {
-        mem_write(patchA_addr, PATCH_BYTES<INT8_MAX>);
+    mem_write(patchA_addr, PATCH_BYTES<INT8_MAX>);
 #if USE_ORIGINAL_RESYNC
-        resync_patch(160);
+    resync_patch(160);
 #else
-        //resync_patch(-5);
+    resync_patch(-5);
 #endif
-    }
-
     // This may seem redundant, but it helps prevent
     // conflicts with the original netplay patch
     //hotpatch_import(wsarecvfrom_import_addr, WSARecvFrom);

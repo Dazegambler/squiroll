@@ -11,7 +11,7 @@ class modifier extends modifier {
 	text = null;
 	colors = [[1,0,0],[1,1,0],[0,1,0],[0,0,1]];
     constructor() {
-		text = ::UI.core.Text("");
+		text = ::UI.Core.Text("");
 		text.ConnectRenderSlot(::graphics.slot.status,1);
 	}
 

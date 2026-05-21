@@ -66,7 +66,7 @@ class display_module {
     max_w = null;
     constructor() {
         max_w = 1010;
-        text = ::UI.core.Text("");
+        text = ::UI.Core.Text("");
         text.sy = 0.75;
         text.red = text.green = text.blue = text.alpha = 1;
         text.ConnectRenderSlot(::graphics.slot.info,1);
@@ -215,7 +215,7 @@ class modifier extends modifier {
             ];
             max_w = 256;
             foreach (i,_ in text) {
-                text[i] = ::UI.core.Text("");
+                text[i] = ::UI.Core.Text("");
                 text[i].sy = 0.75;
                 text[i].red = text[i].green = text[i].blue = text[i].alpha = 1;
                 text[i].ConnectRenderSlot(::graphics.slot.info,1);
@@ -283,7 +283,7 @@ class modifier extends modifier {
             foreach(i,texts in text) {
                 foreach(w,_ in texts) {
                     local color = colors[w];
-                    texts[w] = ::UI.core.Text("");
+                    texts[w] = ::UI.Core.Text("");
                     texts[w].red = color[1 - i];
                     texts[w].green = color[0 + i];
                     texts[w].blue = color[2];

@@ -63,11 +63,6 @@ CONFIG_STR(LOBBY, PORT, "lobby_port", "1550");
 #endif
 CONFIG_STR(LOBBY, PASS, "lobby_password", "kzxmckfqbpqieh8rw<rczuturKfnsjxhauhybttboiuuzmWdmnt5mnlczpythaxf");
 
-#define BINDS_SECTION_NAME "binds"
-CONFIG_INT(BINDS,HIDE_UI,"hide_ui",41);
-CONFIG_INT(BINDS,STEP_FRAME,"step_frame",2);
-CONFIG_INT(BINDS,STEP_TOGGLE,"step_toggle",3);
-
 #define HITBOX_VIS_SECTION_NAME "hitbox_vis"
 CONFIG_BOL(HITBOX_VIS, ENABLED, "enabled", false);
 CONFIG_INT(HITBOX_VIS, BORDER_WIDTH, "border_width", 2);
@@ -83,18 +78,13 @@ CONFIG_HEX(HITBOX_VIS, MISC_HURT_COLOR, "misc_hurt_color", FFFFFF00);
 
 #define NETWORK_SECTION_NAME "network"
 CONFIG_TST(NETWORK, IPV6, "enable_ipv6");
-CONFIG_BOL(NETWORK, NETPLAY, "netplay", true);
 CONFIG_BOL(NETWORK, HIDE_IP, "hide_ip", false);
 CONFIG_BOL(NETWORK, SHARE_WATCH_IP, "share_watch_ip", false);
 CONFIG_BOL(NETWORK, HIDE_NAME, "hide_name", false);
-CONFIG_BOL(NETWORK, PREVENT_INPUT_DROPS, "prevent_input_drops", true);
 CONFIG_BOL(NETWORK, HIDE_PROFILE_PICTURES, "hide_profile_pictures", false);
-// CONFIG_BOL(NETWORK, AUTO_SWITCH,"auto_seach_host",true);
-CONFIG_STR(NETWORK, BLACKLIST,"blacklist","");
 
 #define PERF_SECTION_NAME "performance"
 CONFIG_BOL(PERF, CACHE_RSA, "cache_rsa", true);
-CONFIG_BOL(PERF, BETTER_GAME_LOOP, "better_game_loop", true);
 CONFIG_FLT(PERF, TIMER_LENIENCY, "timer_leniency", 4.0);
 
 #define MISC_SECTION_NAME "misc"
@@ -116,10 +106,6 @@ static inline constexpr const char
         CONFIG_DEFAULT(LOBBY, PORT),
         CONFIG_DEFAULT(LOBBY, PASS),
 
-        CONFIG_DEFAULT(BINDS,HIDE_UI),
-        CONFIG_DEFAULT(BINDS,STEP_FRAME),
-        CONFIG_DEFAULT(BINDS,STEP_TOGGLE),
-
         CONFIG_DEFAULT(HITBOX_VIS, ENABLED),
         CONFIG_DEFAULT(HITBOX_VIS, BORDER_WIDTH),
         CONFIG_DEFAULT(HITBOX_VIS, INNER_ALPHA),
@@ -133,17 +119,12 @@ static inline constexpr const char
         CONFIG_DEFAULT(HITBOX_VIS, MISC_HURT_COLOR),
 
         CONFIG_DEFAULT(NETWORK, IPV6),
-        CONFIG_DEFAULT(NETWORK, NETPLAY),
         CONFIG_DEFAULT(NETWORK, HIDE_IP),
         CONFIG_DEFAULT(NETWORK, SHARE_WATCH_IP),
         CONFIG_DEFAULT(NETWORK, HIDE_NAME),
-        CONFIG_DEFAULT(NETWORK, PREVENT_INPUT_DROPS),
         CONFIG_DEFAULT(NETWORK, HIDE_PROFILE_PICTURES),
-        // CONFIG_DEFAULT(NETWORK, AUTO_SWITCH),
-        CONFIG_DEFAULT(NETWORK,BLACKLIST),
 
         CONFIG_DEFAULT(PERF, CACHE_RSA),
-        CONFIG_DEFAULT(PERF, BETTER_GAME_LOOP),
         CONFIG_DEFAULT(PERF, TIMER_LENIENCY),
 
         CONFIG_DEFAULT(MISC, HIDE_WIP),
@@ -339,24 +320,6 @@ const char* get_lobby_pass(const char* pass) {
     }
     return pass;
 }
-// ====================
-// BINDS
-// ====================
-
-static char BINDS_HIDE_UI_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{'\0'};
-int32_t get_binds_hide_ui() {
-    return GET_INT_CONFIG(BINDS,HIDE_UI);
-}
-
-static char BINDS_STEP_FRAME_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{'\0'};
-int32_t get_binds_step_frame() {
-    return GET_INT_CONFIG(BINDS,STEP_FRAME);
-}
-
-static char BINDS_STEP_TOGGLE_BUFFER[INTEGER_BUFFER_SIZE<int32_t>]{'\0'};
-int32_t get_binds_step_toggle() {
-    return GET_INT_CONFIG(BINDS,STEP_TOGGLE);
-}
 
 // ====================
 // HITBOX VISUALIZER
@@ -426,11 +389,6 @@ int8_t get_ipv6_state() {
     return GET_TEST_CONFIG(NETWORK, IPV6);
 }
 
-static char NETWORK_NETPLAY_BUFFER[8]{ '\0' };
-bool get_netplay_state() {
-    return GET_BOOL_CONFIG(NETWORK, NETPLAY);
-}
-
 static char NETWORK_HIDE_IP_BUFFER[8]{ '\0' };
 bool get_hide_ip_enabled() {
     return GET_BOOL_CONFIG(NETWORK, HIDE_IP);
@@ -446,35 +404,13 @@ bool get_hide_name_enabled() {
     return GET_BOOL_CONFIG(NETWORK, HIDE_NAME);
 }
 
-static char NETWORK_PREVENT_INPUT_DROPS_BUFFER[8]{ '\0' };
-bool get_prevent_input_drops() {
-    return GET_BOOL_CONFIG(NETWORK, PREVENT_INPUT_DROPS);
-}
-
 static char NETWORK_HIDE_PROFILE_PICTURES_BUFFER[8]{ '\0' };
 bool get_hide_profile_pictures_enabled() {
     return GET_BOOL_CONFIG(NETWORK, HIDE_PROFILE_PICTURES);
 }
 
-// static char NETWORK_AUTO_SWITCH_BUFFER[8]{'\0'};
-// bool get_auto_switch() {
-//   return GET_BOOL_CONFIG(NETWORK, AUTO_SWITCH);
-// }
-
 void set_ipv6_state(bool state) {
     set_config_string(NETWORK_SECTION_NAME, NETWORK_IPV6_KEY, bool_str(state));
-}
-
-static char NETWORK_BLACKLIST_BUFFER[1024]{ '\0' };
-const char* get_network_blacklist() {
-    const char* blacklist;
-    if (
-        use_config &&
-        get_config_string(NETWORK_SECTION_NAME, NETWORK_BLACKLIST_KEY, NETWORK_BLACKLIST_BUFFER)
-    ) {
-        blacklist = NETWORK_BLACKLIST_BUFFER;
-    }
-    return blacklist;
 }
 
 // ====================
@@ -511,11 +447,6 @@ void set_discord_enabled(bool state) {
 static char PERF_CACHE_RSA_BUFFER[8]{ '\0' };
 bool get_cache_rsa_enabled() {
     return GET_BOOL_CONFIG(PERF, CACHE_RSA);
-}
-
-static char PERF_BETTER_GAME_LOOP_BUFFER[8]{ '\0' };
-bool get_better_game_loop_enabled() {
-    return GET_BOOL_CONFIG(PERF, BETTER_GAME_LOOP);
 }
 
 static char PERF_TIMER_LENIENCY_BUFFER[FLOAT_BUFFER_SIZE<float>]{ '\0' };

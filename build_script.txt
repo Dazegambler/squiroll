@@ -1,0 +1,17 @@
+[SHARED]
+COMPILER = clang_cl
+RC = llvm-rc
+DEFINES = -D_CRT_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -DNOMINMAX -D_WINSOCK_API_ -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -D_CRT_DECLARE_NONSTDC_NAMES
+WARNINGS = -Wno-cpp -Wno-narrowing -Wno-c99-designator -Wno-c23-extensions
+FLAGS = /Gs- /GS- /clang:-fwrapv /Zc:threadSafeInit- -mfpmath=sse -msse -msse2 -mstack-probe-size=1024 -flto=full -mstack-alignment=4 -mno-stackrealign /clang:-fomit-frame-pointer
+ARGS = -m32 -fuse-ld=lld /EHsc /Isrc/shared -O2 /std:c++20 WARNINGS DEFINES FLAGS
+TH155R_SRC = src/th155r/main.cpp src/th155r/th155r.res
+NETCODE_ARG = /Isrc/Netcode/include /DLL user32.lib WS2_32.lib dbghelp.lib winm.lib -exclude-all-symbols -kill-at /DEF:Netcode.def
+NETCODE_SRC = src/Netcode/*.cpp
+th155r_res = RC src/th155r/th155r.rc
+th155r = COMPILER ARGS TH155R_SRC /OUT:th155r.exe
+netcode = COMPILER ARGS NETCODE_ARG NETCODE_SRC /OUT:Netcode.dll  
+[LINUX]
+PREFIX = $HOME/.xwin-cache/splat
+ARGS = ARGS /imsvc$PREFIX/crt/include /imsvc$PREFIX/sdk/include/shared  /imsvc$PREFIX/sdk/include/ucrt /imsvc$PREFIX/sdk/include/um
+ARGS = ARGS /LIBPATH:$PREFIX/crt/lib/x86 /LIBPATH:$PREFIX/sdk/lib/ucrt/x86 /LIBPATH:$PREFIX/sdk/lib/um/x86

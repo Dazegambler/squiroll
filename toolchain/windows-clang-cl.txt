@@ -1,0 +1,50 @@
+[binaries]
+c = 'clang-cl'
+cpp = 'clang-cl'
+c_ld = 'lld-link'
+cpp_ld = 'lld-link'
+ar = 'llvm-lib'
+strip = 'llvm-strip'
+windres = 'llvm-rc'
+
+[host_machine]
+system = 'windows'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'
+
+[properties]
+needs_exe_wrapper = true
+sys_root = '~/.xwin-cache/splat/'
+
+[built-in options]
+b_vscrt = 'from_buildtype'
+b_staticpic = false
+
+c_args = [
+  '/EHsc',
+  '/std:c++20',
+  '/DNOMINMAX',
+  '--target=x86_64-pc-windows-msvc',
+  '/D_WINSOCK_DEPRECATED_NO_WARNINGS',
+  '/D_CRT_SECURE_NO_WARNINGS',
+  '/D_CRT_SECURE_NO_DEPRECATE',
+  '/D_CRT_NONSTDC_NO_DEPRECATE',
+  '/D_CRT_DECLARE_NONSTDC_NAMES',
+  '/D_WINSOCK_API_',
+  '/imsvc~/.xwin-cache/splat/crt/include',
+  '/imsvc~/.xwin-cache/splat/sdk/include/ucrt',
+  '/imsvc~/.xwin-cache/splat/sdk/include/um',
+  '/imsvc~/.xwin-cache/splat/sdk/include/shared',
+  '-Wno-cpp',
+  '-Wno-narrowing',
+  '-Wno-c99-designator',
+  '-Wno-c23-extensions']
+
+cpp_args = c_args
+
+c_link_args = [
+  '/LIBPATH:~/.xwin-cache/splat/crt/lib/x86',
+  '/LIBPATH:~/.xwin-cache/splat/sdk/lib/ucrt/x86',
+  '/LIBPATH:~/.xwin-cache/splat/sdk/lib/um/x86',]
+cpp_link_args = c_link_args

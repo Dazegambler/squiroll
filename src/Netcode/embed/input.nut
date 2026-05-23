@@ -17,9 +17,6 @@ function CreateSystemInputDevice( device_id )
 		devmap.b3 = 30;//A
 		devmap.b4 = 31;//S
 		devmap.b5 = 32;//D
-		devmap.b6 = 41//::setting.binds.hide_ui;//'
-		devmap.b7 = 2//::setting.binds.step_frame;//1
-		devmap.b8 = 3//::setting.binds.step_toggle;//2
 		local device_tmp_local0 = ::manbow.InputSingle();
 		device_tmp_local0.SetDeviceAssign(devmap);
 		devmap.b0 = 28;
@@ -268,6 +265,17 @@ for( local i = -1; i < ::manbow.GetJoyNum(); i = ++i )
 	input_device_local.SetDeviceAssign(devmap);
 	::input_talk.Append(input_device_local);
 }
+
+//<--added-->
+//::input_src <- {};
+//
+//function AddSrc(key) {
+//    if (key in ::input_src)return ::input_src[key];
+//    local src = ::manbow.InputSingle();
+//    src.device = -1;
+//    ::input_src.push(src);
+//}
+//<---->
 
 local task = {};
 task.Update <- function ()

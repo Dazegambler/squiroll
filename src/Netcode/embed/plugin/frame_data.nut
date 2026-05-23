@@ -6,9 +6,9 @@ config = {
     sy = 0.75
     width = 720
     timer = 240
-    frame_step = false
 };
 
+local cfg = cfg;
 // Patches
 ::plugin.Patch("data/script/actor.nut",function() {
     local createplayer = CreatePlayer;
@@ -45,7 +45,7 @@ config = {
     			if (b) {
     				local task = ::battle.modifiers.frame_data.task;
     				if (task &&
-    					::plugin.cfg.frame_data.data.enabled &&
+    					cfg.data.enabled &&
     					::setting.frame_data.IsFrameActive(this) &&
     					!active
     				) {
@@ -360,12 +360,14 @@ class modifier extends modifier {
     team_id = null;
     team = null;
     parts = null;
+   
+    input = null;
 
     constructor(_team_id = 0) {
         team_id = _team_id;
         full = false;
         active = false;
-        timer = ::plugin.cfg.frame_data.data.timer;
+        timer = cfg.data.timer;
 
         parts = {};
         parts.frame_data <- frame_data();
@@ -373,6 +375,12 @@ class modifier extends modifier {
         parts.flag_attack <- flag_attack();
         parts.metadata <- metadata();
         parts.framebar <- framebar();
+    
+        input = ::manbow.InputSingle();
+        local devmap = ::manbow.DeviceMapping();
+        input.device = -1;
+        input.b0 = 41;
+        ::input_all.Append(input);
     }
 
     function Release() {foreach(key,_ in parts)delete parts[key];}
@@ -429,7 +437,7 @@ class modifier extends modifier {
     function IsNewMove() {
         current_data = NewData();
         Tick(current_data);
-        ::battle.modifiers.misc_inputs.task.frame_lock = ::plugin.cfg.frame_data.data.frame_stepping;
+        //::battle.modifiers.misc_inputs.task.frame_lock = ::plugin.cfg.frame_data.data.frame_stepping;
     }
 
     function IsPaused(data) {
@@ -468,6 +476,14 @@ class modifier extends modifier {
         parts.flag_attack.Clear();
         parts.metadata.Clear();
     }
+    
+    function PreFrame() {
+        if (input.b0 == 1) {
+            if (!(cfg.full = !cfg.full))::battle.gauge.Hide();
+            else ::battle.gauge.Show(0);
+        }
+        return true;
+    }
 
     function Update() {
         if (!::battle.team || !"current" in ::battle.team[team_id])return;
@@ -481,9 +497,9 @@ class modifier extends modifier {
             current_data = NewData();
         }
 
-        if(::plugin.cfg.frame_data.data.enabled){
+        if(cfg.data.enabled){
             if (current.motion >= 1000) {
-                timer = ::plugin.cfg.frame_data.data.timer;
+                timer = cfg.data.timer;
                 if (::setting.frame_data.hasData(current)){
                     if (!current.hitStopTime && !team.time_stop_count){
                         Tick(current_data);
@@ -494,7 +510,7 @@ class modifier extends modifier {
             }
         }
 
-        if (::plugin.cfg.frame_data.data.enabled) {
+        if (cfg.data.enabled) {
             parts.framebar.Render(current_data);
             if (full) {
                 foreach(module in parts)module.Render(current_data);

@@ -76,14 +76,12 @@ class Button extends Entry {
 };
 
 class Value extends Entry {
-    ptr = null;
     onclick = null;
 
-    constructor(idx,str,src,on_click) {
-        ptr = src;
+    constructor(idx,str,init,on_click) {
         onclick = on_click;
         base.constructor(idx,str);
-        local val = elem.val <- ::UI.Core.LiveText(ptr);
+        local val = elem.val <- ::UI.Core.Text(init);
         val.x = ::graphics.width - 320 - (val.width * val.sx);
         val.y = 200 + (idx * 42) - 34;
     }

@@ -27,7 +27,7 @@
             page.anime.highlight.Set(val.left,val.top,val.right,val.bottom);
             page.common_cursor = val.cursor;
             page.common_callback_ok = function () {
-               local ret = (v.cursor.val != 0);
+               local ret = (val.cursor.val != 0);
                ::discord.enabled = ret;
                ::setting.save("misc","discord_integration",ret.tostring());
                page.anime.highlight.Reset();

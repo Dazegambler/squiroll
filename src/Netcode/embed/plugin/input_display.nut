@@ -41,6 +41,11 @@ config = {
     }
 };
 
+local config = cfg;
+::plugin.Patch("squiroll/config/mod_config.nut",function() {
+    
+});
+
 class modifier extends modifier {
     display = class {
         player = null;

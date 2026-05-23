@@ -58,7 +58,7 @@ embed/plugin/core/manager.nut=squiroll/plugin/core/manager.nut=plugin
 embed/plugin/frame_data.nut=squiroll/plugin/frame_data.nut
 embed/plugin/input_display.nut=squiroll/plugin/input_display.nut
 embed/plugin/ping_display.nut=squiroll/plugin/ping_display.nut
-embed/plugin/misc_inputs.nut=squiroll/plugin/misc_inputs.nut
+embed/plugin/framerate_control.nut=squiroll/plugin/framerate_control.nut
 embed/plugin/rollback.nut=squiroll/plugin/rollback.nut
 
 # UI

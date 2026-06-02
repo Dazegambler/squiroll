@@ -184,6 +184,7 @@ function _SetupModifiers(param) {
 		::print(::format("Activating %s...\n",name));
 		if (modifier.async)::loop.AddTask(modifier.task);
 		else AddTask(modifier.task);
+        ::plugin.active_modifiers[name] <- modifier.task;
 	}
 }
 
@@ -210,6 +211,7 @@ function _ClearRPC() {
 }
 
 function _ClearModifiers() {
+    ::plugin.active_modifiers = {};
 	foreach(plugin in modifiers) {
 		if (!plugin.task)continue;
 		::loop.DeleteTask(plugin.task);

@@ -5,30 +5,45 @@ class CFG {
 	constructor (path,cfg) {
 		filepath = "plugin/config/"+path;
 		data = cfg;
-		try {Read();}catch (e){}
+		Read();
 		Write();
 	}
 
+    function tovalue(str,type) {
+        switch(type) {
+            case "float":
+            case "integer":
+            case "string":
+                return str["to"+type]();
+            case "bool":
+                return str.tolower() == "true";
+        }
+    }
+
 	function Read() {
-		local content = ::readfile(filepath);
+		local content = "";
+        try{content = ::readfile(filepath);}catch(e){return};
 		local lines = ::split(content,"\n");
 		local table = data;
-
 		foreach (line in lines) {
-			line = ::strip(line);
-			if (line.len() == 0 || line[0] == ';' || line[0] == "#") continue;
+			try {
+              line = ::strip(line);
+			  if (line.len() == 0 || line[0] == ';' || line[0] == "#") continue;
 
-			if (line[0] == '[' && line[line.len() - 1] == ']') {
-				table = data[(::strip(line.slice(1,line.len()-1)))];
-				continue;
-			}
+			  if (line[0] == '[' && line[line.len() - 1] == ']') {
+			  	table = data[(::strip(line.slice(1,line.len()-1)))];
+			  	continue;
+			  }
 
-			local eq = line.find("=");
-			if (!eq)continue;
-			local key = ::strip(line.slice(0,eq));
-			local str = ::strip(line.slice(eq+1));
-			local type = typeof table[key];
-            table[key] = str["to"+type]();
+			  local eq = line.find("=");
+			  if (!eq)continue;
+			  local key = ::strip(line.slice(0,eq));
+			  local str = ::strip(line.slice(eq+1));
+			  local type = typeof table[key];
+              table[key] = tovalue(str,type);
+            }catch(e) {
+                ::print(::format("Config Read Error @%s:%s\n->%s\n",filepath,line,e));
+            }
 		}
 	}
 

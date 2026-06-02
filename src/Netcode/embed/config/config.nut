@@ -11,7 +11,8 @@ this.item <- [
 	"replay_save_online",
 	"lang",
 	"misc",
-	null,
+	"credit",
+    null,
 	"exit"
 ];
 this.proc <- {};
@@ -328,6 +329,13 @@ this.proc.misc <- function ()
 		return;
 	}
 };
+proc.credit <- function () {
+    if (cursor_item.ok) {
+        Suspend();
+        ::menu.credits.Initialize();
+        return;
+    }
+}
 this.proc.exit <- function ()
 {
 	if (this.cursor_item.ok)

@@ -50,7 +50,9 @@ scene.append(mod_config);
 network_config <- {};
 ::manbow.CompileFile("squiroll/config/network_config.nut", network_config);
 scene.append(network_config);
-
+credits <- {};
+::manbow.CompileFile("squiroll/credits.nut",credits);
+scene.append(credits);
 
 pause_hack <- false;
 PauseInitializeOrig <- pause.Initialize;

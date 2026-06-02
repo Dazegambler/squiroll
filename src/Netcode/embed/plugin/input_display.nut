@@ -1,162 +1,108 @@
-//flag distribution:
-//0x1-A
-//0x2-B
-//0x4-C
-//0x8-E
-//0x10-D
-//0x20-X- 0x200-X+ 4 priority
-//0x40-Y+ 0x400-Y- 8 prioritY
 config = {
     p1 = {
         enabled = false
         x = 0
-        y = 520
+        y = 185
         sx = 0.6
         sy = 0.6
         red = 0.0
         green = 1.0
         blue = 0.0
         alpha = 1.0
-        offset = 30
         count = 13
         timer = 200
-        notation = "1,2,3,4, ,6,7,8,9,A,B,C,E,D,[B]"
-        frame_count = false
     }
     p2 = {
         enabled = false
-        x = 1320
-        y = 520
+        x = 1280
+        y = 185
         sx = 0.6
         sy = 0.6
         red = 0.0
         green = 1.0
         blue = 0.0
         alpha = 1.0
-        offset = 30
         count = 13
         timer = 200
-        notation = "1,2,3,4, ,6,7,8,9,A,B,C,E,D,[B]"
-        frame_count = false
     }
 };
 
-local config = cfg;
 ::plugin.Patch("squiroll/config/mod_config.nut",function() {
     
 });
 
+local display = class {
+    player = null;
+    data = null;
+    text = null;
+    config = null;
+
+    constructor(idx) {
+        player = idx;
+        data = [];
+        config = ::plugin.cfg.input_display.data["p"+(player+1)];
+        text = ::UI.Core.Text("");
+        text.ConnectRenderSlot(::graphics.slot.status,1);
+    }
+    
+    function poll() {
+        local team = ::battle.team[player];
+        local input = team.input;
+        local direction = 5 + (::math.clamp(input.x,-1,1) * team.current.direction) + (::math.clamp(input.y,-1,1) * 3 * -1);
+        local sum = 
+            ((input.b0 > 0).tointeger()) |//A
+            ((input.b1 > 0).tointeger() << 1) |//B
+            ((input.b2 > 0).tointeger() << 2) |//C
+            ((input.b3 > 0).tointeger() << 3) |//E
+            ((input.b4 > 0).tointeger() << 4) |//D
+            (1 << 4 + direction.tointeger());
+        return sum;
+    }
+
+    function Render() {
+        local str = "";
+        foreach (input in data) {
+            local dir = -1;
+            local c = 0;
+            while (dir < 0) {
+                if (input[0] & (1 << 5 + c))dir = c + 1;
+                c++;
+            }
+            local sub_str = [
+                ::format("[%d]",::math.min(input[1],99)),
+                ::format("%d",dir)
+            ];
+            
+            foreach (i,s in ["A","B","C","E","D"]) {
+                if (input[0] & (1 << i))sub_str[1] += s; 
+            }
+            
+            if (player)sub_str.reverse();
+            str += ::format("%s%s\\n\\n",sub_str[0],sub_str[1]); 
+        }
+        text.Set(str);
+        text.red = config.red;
+        text.green = config.green;
+        text.blue = config.blue;
+        text.alpha = config.alpha;
+        text.y = config.y;
+        text.sy = config.sy;
+        text.sx = ::math.fclamp(text.sx,0.1,config.sx);
+        text.x = config.x - ((text.sx * text.width) * player);
+    }
+
+    function Update() {
+        if (config.enabled) {
+            local new = poll();
+            if (!data.len() || new != data[0][0])data.insert(0,[new,0]);
+            else if (++data[0][1] > config.timer)data = [];
+            while(data.len() > config.count)data.pop();
+        }else data = [];
+        Render();
+    }
+};
+
 class modifier extends modifier {
-    display = class {
-        player = null;
-        data = null;
-        text = null;
-        config = null;
-        notation = null;
-
-        constructor(idx) {
-            player = idx;
-            data = [[0,0]];
-            text = [];
-            config = ::plugin.cfg.input_display.data["p"+(player+1)];
-            notation = ::split(config.notation,",");
-
-            for (local i = 0; i < config.count; ++i) {
-                local t = ::UI.Core.Text("");
-                t.x = config.x;
-                t.y = config.y - (i * config.offset);
-                t.sx = config.sx;
-                t.sy = config.sy;
-                t.red = config.red;
-                t.green = config.green;
-                t.blue = config.blue;
-                t.alpha = config.alpha;
-                t.ConnectRenderSlot(::graphics.slot.status,1);
-                text.append(t);
-            }
-        }
-
-        function getinputs(){
-            local inputs = 0;
-            local team = ::battle.team[player];
-            local input = team.input;
-            local x_axis = team.current.direction > 0 ? input.x : -input.x;
-            if (x_axis)inputs = inputs | (x_axis < 0 ? 0x20 : 0x200);
-            if (input.y)inputs = inputs | (input.y > 0 ? 0x400 : 0x40);
-
-            if(input.b0)inputs = inputs | 0x1;
-            if(input.b1)inputs = inputs | 0x2;
-            if(input.b2)inputs = inputs | 0x4;
-            if(input.b3)inputs = inputs | 0x8;
-            if(input.b4)inputs = inputs | 0x10;
-            return inputs;
-        }
-
-        function parse_directional(direction) {
-	    local str = notation[4];//5
-            if(direction) {
-                if(direction == 0x20)str = notation[3];//4
-                if(direction == 0x40)str = notation[7];//8
-                if(direction == 0x60)str = notation[6];//7
-                if(direction == 0x200)str = notation[5];//6
-                if(direction == 0x240)str = notation[8];//9
-                if(direction == 0x400)str = notation[1];//2
-                if(direction == 0x420)str = notation[0];//1
-                if(direction == 0x600)str = notation[2];//3
-            }
-            return str;
-        }
-
-        function parse_move(flag,duration) {
-            local str = "";
-            if(flag & 0x1)str += notation[9];//A
-            if(flag & 0x2)str += duration > 12 ? notation[14]/*[B]*/ : notation[10];//B
-            if(flag & 0x4)str += notation[11];//C
-            if(flag & 0x8)str += notation[12];//E
-            if(flag & 0x10)str += notation[13];//D
-            return str;
-        }
-
-        function Render() {
-            foreach (i,_ in text) {
-                local str = "";
-                if (data.len() > 1 && i < data.len()){
-                    local frames = "";
-                    local duration = ::math.clamp(data[i][1],0,99);
-                    if(config.frame_count)frames += ::format("[%s%d%s]", duration < 10 ? "0" : "", duration, duration == 99 ? "+" : "");
-                    local input_str = "";
-                    local flag = data[i][0];
-                    input_str += parse_directional(flag & 0x660);
-                    input_str += parse_move(flag & 0x1F,duration);
-                    local str_struct = ["%s","%s"];
-                    local str_args = [input_str,input_str];
-                    str_struct[player] = "%5s";
-                    str_args[player] = frames;
-                    str = ::format((str_struct[0]+str_struct[1]),str_args[0],str_args[1]);
-                }
-		        _.red = config.red;
-		        _.green = config.green;
-		        _.blue = config.blue;
-		        _.alpha = config.alpha;
-                _.Set(str);
-                _.x = config.x - ((_.sx*_.width) * player);
-            }
-        }
-
-        function Update () {
-            if (config.enabled) {
-                local inputs = getinputs();
-                local last = data[0][0];
-                if(last != inputs)data.insert(0,[inputs,0]);
-                else {
-                    if (++data[0][1] > config.timer)data = [[0,0]];
-                }
-                while(data.len() > config.list_max)data.pop();
-            }else data = [[0,0]];
-            Render();
-        }
-    };
-
     list = [null,null];
 
     constructor() {

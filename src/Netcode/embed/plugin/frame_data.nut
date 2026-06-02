@@ -1,14 +1,90 @@
 config = {
-    enabled = false
-    x = 270
-    y = 530
-    sx = 0.75
-    sy = 0.75
-    width = 720
-    timer = 240
+    general = {
+        enabled = false
+    }
+    bind_keyboard = {
+        toggle = 41
+    }
+    bind_controller = {
+        toggle = -1
+    }
 };
 
-local cfg = cfg;
+::plugin.Patch("squiroll/config/mod_config.nut",function() {
+    local cfg = ::plugin.cfg.frame_data;
+    page.extend([
+        ::UI.Menu.Page(
+            ::UI.Menu.Title("Frame data display"),
+            ::UI.Menu.Enum(
+                0,"enabled",
+                cfg.data.general.enabled.tointeger(),
+                function() {
+                    local page = ::menu.mod_config;
+                    ::menu.help.Set(page.help_item);
+                    page.Update = page.UpdateCommonItem;
+                    local v = elem.val;
+                    page.anime.highlight.Set(v.left,v.top,v.right,v.bottom);
+                    page.common_cursor = v.cursor;
+                    page.common_callback_ok = function() {
+                        cfg.Set((v.cursor.val != 0),"enabled","general");
+                        page.anime.highlight.Reset();
+                    };
+                    page.common_callback_cancel = function() {
+                        page.anime.highlight.Reset();
+                    };
+                }
+            ),
+            ::UI.Menu.Header(1,"Binds"),
+            ::UI.Menu.Value(
+                2,"toggle mode(keyboard)",cfg.data.bind_keyboard.toggle,
+                function() {
+                    local page = ::menu.mod_config;
+                    local text = elem.val;
+                    page.Update = function() {
+                        if (::manbow.GetKeyboardState() >= 0)return;
+                        if (::manbow.GetPadButtonState() >= 0)return;
+                        Update = function() {
+                            local id = ::plugin.Input.Poll();
+                            if (id >= 0) {
+                                ::sound.PlaySE("sys_ok");
+                                text.Set(id+"");
+                                if ("frame_data" in ::plugin.active_modifiers) {
+                                    ::plugin.active_modifiers.frame_data.input.Bind("keyboard","b0",id);
+                                }
+                                cfg.Set(id,"toggle","bind_keyboard");
+                                Update = UpdateMain;
+                            }
+                        }
+                    }
+                }
+            ),
+            ::UI.Menu.Value(
+                3,"toggle mode(controller)",cfg.data.bind_controller.toggle,
+                function() {
+                    local page = ::menu.mod_config;
+                    local text = elem.val;
+                    page.Update = function() {
+                        if (::manbow.GetKeyboardState() >= 0)return;
+                        if (::manbow.GetPadButtonState() >= 0)return;
+                        Update = function() {
+                            local id = ::plugin.Input.Poll();
+                            if (id >= 0) {
+                                ::sound.PlaySE("sys_ok");
+                                text.Set(id+"");
+                                if ("frame_data" in ::plugin.active_modifiers) {
+                                    ::plugin.active_modifiers.frame_data.input.Bind("controller","b0",id);
+                                }
+                                cfg.Set(id,"toggle","bind_keyboard");
+                                Update = UpdateMain;
+                            }
+                        }
+                    }
+                }
+            )
+        )
+    ]);
+});
+
 // Patches
 ::plugin.Patch("data/script/actor.nut",function() {
     local createplayer = CreatePlayer;
@@ -19,20 +95,16 @@ local cfg = cfg;
     	t.player_class = class extends t.player_class {
     		function SetMotion(motion, take) {
     			base.SetMotion(motion,take);
-    			local task = ::battle.modifiers.frame_data.task;
+                local task = ::battle.modifiers.frame_data.task;
     			if (task &&
     				task.team == team &&
-    				task.current_data
+    				task.data
     			) {
-    				if (task.current_data.motion != motion &&
-    					task.current_data.take >= keyTake
+    				if (task.data.motion != motion &&
+    					task.data.take >= keyTake
     				) {
-    					if (motion >= 1000) {
-    						task.IsNewMove();
-    					}else {
-    						task.current_data.motion = motion;
-    					}
-    				}
+    				    task.IsNewMove();
+    				}else task.data.motion = motion;
     			}
     		}
     	};
@@ -45,12 +117,12 @@ local cfg = cfg;
     			if (b) {
     				local task = ::battle.modifiers.frame_data.task;
     				if (task &&
-    					cfg.data.enabled &&
+    					::plugin.cfg.frame_data.data.general.enabled &&
     					::setting.frame_data.IsFrameActive(this) &&
     					!active
     				) {
     					task.active = active = true;
-    					task.current_data.metadata = ::setting.frame_data.GetMetadata(this);
+    					task.data.metadata = ::setting.frame_data.GetMetadata(this);
     				}
     			}
     			return b;
@@ -60,343 +132,217 @@ local cfg = cfg;
     }
 });
 
-// Main Class
-class display_module {
+local module = class {
+    function Render(data){}
+    function Clear(){}
+};
+
+local framedata_module = class extends module {
     text = null;
-    max_w = null;
     constructor() {
-        max_w = 1010;
-        text = ::UI.Core.Text("");
+        text = ::UI.Core.Text("",::font.system,990);
         text.sy = 0.75;
-        text.red = text.green = text.blue = text.alpha = 1;
         text.ConnectRenderSlot(::graphics.slot.info,1);
     }
-    function Render(data) {}
-    function Clear() {text.Set("");}
-}
+
+    function Render(data) {
+        //phase
+        local frames = "";
+        local types = ["startup","active","recovery"];
+        foreach (i,arr in data.frames) {
+            frames += types[i]+":";
+            if (!arr[0])frames += " - ";
+            else {
+                frames += ::format(" %2d ",arr[0]);
+                foreach (w,v in arr.slice(1)) {
+                    if (!(w&1))frames += ::format("> %2d ",v);
+                    else frames += ::format("> %2d not %s ",v,types[i]);
+                }
+            }
+        }
+        if (data.armor.len() &&  data.armor.top()[2] == data.frame_count) {
+            local armor = data.armor.top();
+            frames += ::format("[%2dA](%2dF)",armor[0],(armor[2]-armor[1]));
+        }
+        frames += "\\n";
+        //framestate
+        frames += "flagState:[";
+        if (data.flagState & 0x1) frames += "no input,"; // 1
+        if (data.flagState & 0x2) frames += "2,"; // 2
+        if (data.flagState & 0x4) frames += "4,"; // 4
+        if (data.flagState & 0x8) frames += "top,"; // 8
+        if (data.flagState & 0x10) frames += "can block,"; // 16
+        if (data.flagState & 0x20) frames += "special cancel,"; // 32
+        if (data.flagState & 0x40) frames += "64,"; // 64
+        if (data.flagState & 0x80) frames += "128,"; // 128
+        if (data.flagState & 0x100) frames += "can be counter hit,"; // 256
+        if (data.flagState & 0x200) frames += "can dial,"; // 512
+        if (data.flagState & 0x400) frames += "bullet cancel,"; // 1024
+        if (data.flagState & 0x800) frames += "block,"; // 2048
+        if (data.flagState & 0x1000) frames += "graze,"; // 4096
+        if (data.flagState & 0x2000) frames += "no grab,"; // 8192
+        if (data.flagState & 0x4000) frames += "dash cancel,"; // 16384
+        if (data.flagState & 0x8000) frames += "melee immune,"; // 32768
+        if (data.flagState & 0x10000) frames += "bullet immune,"; // 65536
+        if (data.flagState & 0x20000) frames += "131072,"; // 131072
+        if (data.flagState & 0x40000) frames += "262144,"; // 262144
+        if (data.flagState & 0x80000) frames += "counter on melee,"; // 524288
+        if (data.flagState & 0x100000) frames += "knock check,"; // 1048576
+        if (data.flagState & 0x200000) frames += "knock check,"; // 2097152
+        if (data.flagState & 0x400000) frames += "counter on bullet,"; // 4194304
+        if (data.flagState & 0x800000) frames += "8388608,"; // 8388608
+        if (data.flagState & 0x1000000) frames += "no landing,"; // 16777216
+        if (data.flagState & 0x2000000) frames += "33554432,"; // 33554432
+        if (data.flagState & 0x4000000) frames += "67108864,"; // 67108864
+        if (data.flagState & 0x8000000) frames += "134217728,"; // 134217728
+        if (data.flagState & 0x10000000) frames += "268435456,"; // 268435456
+        if (data.flagState & 0x20000000) frames += "536870912,"; // 536870912
+        if (data.flagState & 0x40000000) frames += "1073741824,"; // 1073741824
+        if (data.flagState & 0x80000000) frames += "invisible,"; // 2147483648
+        frames += "]\\n";
+        //flagattack
+        frames += "flagAttack:[";
+        if (data.flagAttack & 0x1) frames += "1,"; // 1
+        if (data.flagAttack & 0x2) frames += "can be blocked,"; // 2
+        if (data.flagAttack & 0x4) frames += "can be blocked,"; // 4
+        if (data.flagAttack & 0x8) frames += "8,"; // 8
+        if (data.flagAttack & 0x10) frames += "is grab,"; // 16
+        if (data.flagAttack & 0x20) frames += "32,"; // 32
+        if (data.flagAttack & 0x40) frames += "forced counter,"; // 64
+        if (data.flagAttack & 0x80) frames += "can counter,"; // 128
+        if (data.flagAttack & 0x100) frames += "forced min rate,"; // 256
+        if (data.flagAttack & 0x200) frames += "spellcard,"; // 512
+        if (data.flagAttack & 0x400) frames += "1024,"; // 1024
+        if (data.flagAttack & 0x800) frames += "melee?,"; // 2048
+        if (data.flagAttack & 0x1000) frames += "projectile?,"; // 4096
+        if (data.flagAttack & 0x2000) frames += "8192,"; // 8192
+        if (data.flagAttack & 0x4000) frames += "16384,"; // 16384
+        if (data.flagAttack & 0x8000) frames += "32768,"; // 32768
+        if (data.flagAttack & 0x10000) frames += "ungrazeable,"; // 65536
+        if (data.flagAttack & 0x20000) frames += "131072,"; // 131072
+        if (data.flagAttack & 0x40000) frames += "262144,"; // 262144
+        if (data.flagAttack & 0x80000) frames += "instant crush,"; // 524288
+        if (data.flagAttack & 0x100000) frames += "no KO,"; // 1048576
+        if (data.flagAttack & 0x200000) frames += "forced knock check/fixed juggle,"; // 2097152
+        if (data.flagAttack & 0x400000) frames += "forced cross up,"; // 4194304
+        if (data.flagAttack & 0x800000) frames += "8388608,"; // 8388608
+        if (data.flagAttack & 0x1000000) frames += "grazeable,"; // 16777216
+        if (data.flagAttack & 0x2000000) frames += "story mode flag,"; // 33554432
+        if (data.flagAttack & 0x4000000) frames += "67108864,"; // 67108864
+        if (data.flagAttack & 0x8000000) frames += "134217728,"; // 134217728
+        if (data.flagAttack & 0x10000000) frames += "268435456,"; // 268435456
+        if (data.flagAttack & 0x20000000) frames += "536870912,"; // 536870912
+        if (data.flagAttack & 0x40000000) frames += "1073741824,"; // 1073741824
+        if (data.flagAttack & 0x80000000) frames += "2147483648,"; // 2147483648
+        frames += "]\\n";
+        
+        text.Set(frames);
+        text.sx = ::math.fmax(text.sx,0.1);
+        text.x = text.y = 5;
+    }
+
+    function Clear(){text.Set("");}
+};
+
+local metadata_module = class extends module {
+    text = null;
+    constructor() {
+        text = ::UI.Core.Text("",::font.system,256);
+        text.ConnectRenderSlot(::graphics.slot.info,1);
+    }
+
+    function Render(data) {
+        local meta = "";
+        local d = data.metadata;
+        meta += ::format("damage:%d\\n",d[0]);
+        meta += ::format("hitStop(src,dealt):%d/%d\\n",d[1],d[2]);
+        meta += ::format("blockStun(src,dealt):%d/%d\\n",d[3],d[4]);
+        meta += ::format("rate(first/combo):%d/%d\\n",d[5],d[6]);
+        meta += ::format("stun:%d\\n",d[8]);
+        meta += ::format("chipDamage:%d\\n",d[10]);
+        meta += ::format("occult Drain:%d\\n",d[11]);
+        meta += ::format("SP Gain:%d\\n",d[12]);
+        meta += ::format("recovery:%d\\n",d[13]);
+        meta += ::format("stopVec(x/y):%d/%d\\n",d[15],d[16]);
+        meta += ::format("hitVec(x/y):%d/%d\\n",d[18],d[19]);
+        meta += ::format("atk(type/rank):%d/%d\\n",d[21],d[22]);
+
+        text.Set(meta);
+        text.sx = ::math.fmax(text.sx,0.1);
+        //text.sy = 720 / text.height;
+        text.x = 1011;
+        text.y = 5;
+    }
+
+    function Clear(){text.Set("");}
+};
+
+local graphics = class {
+    elem = null;
+    constructor(...) {
+        elem = [];
+        foreach (module in vargv)elem.append(module());
+    }
+
+    function Render(data) {
+        foreach (module in elem)module.Render(data);
+    }
+    function Clear() {
+        foreach (module in elem)module.Clear();
+    }
+};
 
 class modifier extends modifier {
-    frame_data = class extends display_module {
-        function Render(data) {
-            local frame = "";
-            local types = ["startup","active","recovery"];
-            foreach(i,arr in data.frames){
-                local t = types[i] + ":";
-                if (!arr[0]) {
-                    t += " - ";
-                } else {
-                    t += format(" %2d ", arr[0]);
-                    for (local w = 1; w < arr.len();++w){
-                        if (!(w&1)) {
-                            t += format("> %2d ",arr[w]);
-                        }else {
-                            t += format("> %2d not %s ",arr[w],types[i]);
-                        }
-                    }
-                }
-                frame += t;
-            }
-
-            if(data.armor.len() && data.armor.top()[2] == data.frame_count){
-                local armor = data.armor.top();
-                frame +=  format("[%2dA](%2dF)",armor[0],(armor[2]-armor[1]));
-            }
-
-            text.Set(frame);
-            text.sx = ::math.fclamp(max_w / text.width,0.1,0.75);
-            text.x = 5;
-            text.y = 5;
-        }
-    }
-
-    flag_state = class extends display_module {
-        function Render(data) {
-            local flags = "";
-            if (data.flag_state & 0x1) flags += "no input,"; // 1
-            if (data.flag_state & 0x2) flags += "2,"; // 2
-            if (data.flag_state & 0x4) flags += "4,"; // 4
-            if (data.flag_state & 0x8) flags += "top,"; // 8
-            if (data.flag_state & 0x10) flags += "can block,"; // 16
-            if (data.flag_state & 0x20) flags += "special cancel,"; // 32
-            if (data.flag_state & 0x40) flags += "64,"; // 64
-            if (data.flag_state & 0x80) flags += "128,"; // 128
-            if (data.flag_state & 0x100) flags += "can be counter hit,"; // 256
-            if (data.flag_state & 0x200) flags += "can dial,"; // 512
-            if (data.flag_state & 0x400) flags += "bullet cancel,"; // 1024
-            if (data.flag_state & 0x800) flags += "block,"; // 2048
-            if (data.flag_state & 0x1000) flags += "graze,"; // 4096
-            if (data.flag_state & 0x2000) flags += "no grab,"; // 8192
-            if (data.flag_state & 0x4000) flags += "dash cancel,"; // 16384
-            if (data.flag_state & 0x8000) flags += "melee immune,"; // 32768
-            if (data.flag_state & 0x10000) flags += "bullet immune,"; // 65536
-            if (data.flag_state & 0x20000) flags += "131072,"; // 131072
-            if (data.flag_state & 0x40000) flags += "262144,"; // 262144
-            if (data.flag_state & 0x80000) flags += "counter on melee,"; // 524288
-            if (data.flag_state & 0x100000) flags += "knock check,"; // 1048576
-            if (data.flag_state & 0x200000) flags += "knock check,"; // 2097152
-            if (data.flag_state & 0x400000) flags += "counter on bullet,"; // 4194304
-            if (data.flag_state & 0x800000) flags += "8388608,"; // 8388608
-            if (data.flag_state & 0x1000000) flags += "no landing,"; // 16777216
-            if (data.flag_state & 0x2000000) flags += "33554432,"; // 33554432
-            if (data.flag_state & 0x4000000) flags += "67108864,"; // 67108864
-            if (data.flag_state & 0x8000000) flags += "134217728,"; // 134217728
-            if (data.flag_state & 0x10000000) flags += "268435456,"; // 268435456
-            if (data.flag_state & 0x20000000) flags += "536870912,"; // 536870912
-            if (data.flag_state & 0x40000000) flags += "1073741824,"; // 1073741824
-            if (data.flag_state & 0x80000000) flags += "invisible,"; // 2147483648
-            if (flags != "") flags = flags.slice(0, -1); // Slice removes the trailing comma
-
-            text.Set(format("flagState:[%s]", flags));
-            text.sx = ::math.fclamp(max_w / text.width,0.1,0.75);
-            text.x = 5;
-            text.y = 5 + (text.height * text.sy);
-        }
-    }
-
-    flag_attack = class extends display_module {
-        function Render(data) {
-            local flags = "";
-            if (data.flag_attack & 0x1) flags += "1,"; // 1
-            if (data.flag_attack & 0x2) flags += "can be blocked,"; // 2
-            if (data.flag_attack & 0x4) flags += "can be blocked,"; // 4
-            if (data.flag_attack & 0x8) flags += "8,"; // 8
-            if (data.flag_attack & 0x10) flags += "is grab,"; // 16
-            if (data.flag_attack & 0x20) flags += "32,"; // 32
-            if (data.flag_attack & 0x40) flags += "forced counter,"; // 64
-            if (data.flag_attack & 0x80) flags += "can counter,"; // 128
-            if (data.flag_attack & 0x100) flags += "forced min rate,"; // 256
-            if (data.flag_attack & 0x200) flags += "spellcard,"; // 512
-            if (data.flag_attack & 0x400) flags += "1024,"; // 1024
-            if (data.flag_attack & 0x800) flags += "melee?,"; // 2048
-            if (data.flag_attack & 0x1000) flags += "projectile?,"; // 4096
-            if (data.flag_attack & 0x2000) flags += "8192,"; // 8192
-            if (data.flag_attack & 0x4000) flags += "16384,"; // 16384
-            if (data.flag_attack & 0x8000) flags += "32768,"; // 32768
-            if (data.flag_attack & 0x10000) flags += "ungrazeable,"; // 65536
-            if (data.flag_attack & 0x20000) flags += "131072,"; // 131072
-            if (data.flag_attack & 0x40000) flags += "262144,"; // 262144
-            if (data.flag_attack & 0x80000) flags += "instant crush,"; // 524288
-            if (data.flag_attack & 0x100000) flags += "no KO,"; // 1048576
-            if (data.flag_attack & 0x200000) flags += "forced knock check/fixed juggle,"; // 2097152
-            if (data.flag_attack & 0x400000) flags += "forced cross up,"; // 4194304
-            if (data.flag_attack & 0x800000) flags += "8388608,"; // 8388608
-            if (data.flag_attack & 0x1000000) flags += "grazeable,"; // 16777216
-            if (data.flag_attack & 0x2000000) flags += "story mode flag,"; // 33554432
-            if (data.flag_attack & 0x4000000) flags += "67108864,"; // 67108864
-            if (data.flag_attack & 0x8000000) flags += "134217728,"; // 134217728
-            if (data.flag_attack & 0x10000000) flags += "268435456,"; // 268435456
-            if (data.flag_attack & 0x20000000) flags += "536870912,"; // 536870912
-            if (data.flag_attack & 0x40000000) flags += "1073741824,"; // 1073741824
-            if (data.flag_attack & 0x80000000) flags += "2147483648,"; // 2147483648
-            if (flags != "")flags = flags.slice(0, -1); // Slice removes the trailing comma
-
-            text.Set(format("flagAttack:[%s]", flags));
-            text.sx = ::math.fclamp(max_w / text.width,0.1,0.75);
-            text.x = 5;
-            text.y = 5 + (text.height * text.sy) * 2;
-        }
-    }
-
-    metadata = class extends display_module {
-        constructor() {
-            text = [
-                null,//damage
-                null,//hitstop E/P
-                null,//guardstop E/P
-                null,//rate first/combo
-                null,//stun
-                null,//guardrealdamage
-                null,//slaveblockoccult
-                null,//gaugehit
-                null,//comborecovertime
-                null,//stopvec x/y
-                null,//hitvec x/y
-                null//atk type/rank
-            ];
-            max_w = 256;
-            foreach (i,_ in text) {
-                text[i] = ::UI.Core.Text("");
-                text[i].sy = 0.75;
-                text[i].red = text[i].green = text[i].blue = text[i].alpha = 1;
-                text[i].ConnectRenderSlot(::graphics.slot.info,1);
-            }
-        }
-
-        function Render(data) {
-            text[0].Set(format("damage: %d",data.metadata[0]));
-            text[1].Set(format("hitStop(src/dealt): %d/%d",data.metadata[1],data.metadata[2]));
-            text[2].Set(format("blockStun(src/dealt): %d/%d",data.metadata[3],data.metadata[4]));
-            text[3].Set(format("rate(first/combo): %d/%d",data.metadata[5],data.metadata[6]));
-            text[4].Set(format("stun: %d",data.metadata[8]));
-            text[5].Set(format("chipDamage: %d",data.metadata[10]));
-            text[6].Set(format("occult Drain: %d",data.metadata[11]));
-            text[7].Set(format("SP Gain: %d",data.metadata[12]));
-            text[8].Set(format("recover: %d",data.metadata[13]));
-            text[9].Set(format("stopvec(x/y): %d/%d",data.metadata[15],data.metadata[16]));
-            text[10].Set(format("hitvec(x/y): %d/%d",data.metadata[18],data.metadata[19]));
-            text[11].Set(format("atk(type/rank): %d/%d",data.metadata[21],data.metadata[22]));
-
-            foreach(i,txt in text){
-                txt.sx = ::math.fclamp(max_w / txt.width,0.1,0.75);
-                txt.x = 1011;
-                txt.y = 5 + ((txt.height * txt.sy) * i);
-            }
-        }
-
-        function Clear() {foreach (txt in text)txt.Set("");}
-    }
-
-    framebar = class extends display_module {
-        empty_str = null;
-        hit_str = null;
-        constructor() {
-            text = [
-                [
-                    null,//startup
-                    null,//active
-                    null,//recovery
-                    null//in-between
-                ],
-                [
-                    null,//dash
-                    null,//special
-                    null,//bullet
-                    null,//dash+special
-                    null,//dash+bullet
-                    null,//special+bullet
-                    null//all
-                ]
-            ];
-            max_w = ::plugin.cfg.frame_data.data.width;
-            empty_str = "@ ";
-            hit_str = "¡";
-
-            local colors = [
-                [1.0,0.0,0.0],
-                [0.0,1.0,0.0],
-                [0.0,0.0,1.0],
-                [0.5,0.5,0.5],
-                [1.0,0.0,1.0],
-                [0.0,1.0,1.0],
-                [1.0,1.0,1.0]
-            ];
-            foreach(i,texts in text) {
-                foreach(w,_ in texts) {
-                    local color = colors[w];
-                    texts[w] = ::UI.Core.Text("");
-                    texts[w].red = color[1 - i];
-                    texts[w].green = color[0 + i];
-                    texts[w].blue = color[2];
-                    texts[w].alpha = 1.0;
-                    texts[w].ConnectRenderSlot(::graphics.slot.info,i);
-                    if (w / 3)colors[w] = [1.0,1.0,0.0];
-                }
-            }
-        }
-
-        function Render(data) {
-            max_w = ::plugin.cfg.frame_data.data.width;
-            local max_sx = ::plugin.cfg.frame_data.data.sx;
-
-            local txt = [[" "," "," "," "],[" "," "," "," "," "," "," "]];
-
-            //cancel bar
-            foreach (i,cancel in data.cancels) {
-                local flag = cancel[0];
-                local str = ["",""];
-                local d = cancel[2] - cancel[1];
-                while (d-- >= 0) {
-                    str[0] += empty_str;
-                    str[1] += hit_str;
-                }
-                local type = -1;
-                if (flag) {
-                    type = 0;
-                    if (flag & 0x20)type += 1;//special
-                    if (flag & 0x400)type += 2;//bullet
-                    if ((flag & 0x4420) > 0x4000)type += 3;//dash
-                }
-                foreach(w,_ in txt[1]) {
-                    txt[1][w] += type == w ? str[1] : str[0];
-                }
-            }
-
-            // main bar
-            foreach(i, arr in data.frames) {
-                foreach(w,count in arr) {
-                    local str = ["",""];
-                    local c = count;
-                    while(c-- > 0) {
-                        str[1] += hit_str;
-                        str[0] += empty_str;
-                    }
-                    foreach(z,_ in txt[0]) {
-                        local tgt = (w&1) ? 3 : i;
-                        txt[0][z] += tgt != z ? str[0] : str[1];
-                    }
-                }
-            }
-
-            foreach(i,arr in text) {
-                foreach(w,_text in arr) {
-                    _text.Set(txt[i][w]);
-                    _text.sx = ::math.fclamp(max_w / _text.width,0.1,max_sx);
-                    _text.sy = ::plugin.cfg.frame_data.data.sy - ((::plugin.cfg.frame_data.data.sy / 2) * i)
-                    _text.y = ::plugin.cfg.frame_data.data.y;
-                    _text.x = ::plugin.cfg.frame_data.data.x;
-                }
-            }
-        }
-
-        function Clear() {
-            foreach(arr in text)foreach(text in arr)text.Set("");
-        }
-    }
-
-    current_data = null;
+    data = null;
     timer = null;
     full = null;
     active = null;
     team_id = null;
     team = null;
-    parts = null;
-   
+
+    gui = null;
+
     input = null;
 
+    cfg = null;
+
     constructor(_team_id = 0) {
+        cfg = ::plugin.cfg.frame_data;
         team_id = _team_id;
         full = false;
         active = false;
-        timer = cfg.data.timer;
+        timer = 240;
 
-        parts = {};
-        parts.frame_data <- frame_data();
-        parts.flag_state <- flag_state();
-        parts.flag_attack <- flag_attack();
-        parts.metadata <- metadata();
-        parts.framebar <- framebar();
-    
-        input = ::manbow.InputSingle();
-        local devmap = ::manbow.DeviceMapping();
-        input.device = -1;
-        input.b0 = 41;
-        ::input_all.Append(input);
+        gui = graphics(
+            framedata_module,
+            metadata_module
+        );
+
+        input = ::plugin.Input.InputManager({
+            keyboard = ::plugin.Input.InputDevice({
+                device = -1
+                b0 = cfg.data.bind_keyboard.toggle
+            })
+            controller = ::plugin.Input.InputDevice({
+                device = 0
+                b0 = cfg.data.bind_controller.toggle
+            })
+        });
     }
-
-    function Release() {foreach(key,_ in parts)delete parts[key];}
 
     function Tick(data) {
         local current = team.current;
+        //local framedata = current.GetKeyFrameData();
 
         data.frame_count++;
-        data.flag_state = current.flagState;
-        data.flag_attack = current.flagAttack;
-        if(::setting.frame_data.GetMetadata(current)[0])data.metadata = ::setting.frame_data.GetMetadata(current);
-
+        data.metadata = ::setting.frame_data.GetMetadata(current);
+        data.flagState = current.flagState;
+        data.flagAttack = current.flagAttack;
         //phase handling
         local i = 0;
         if (!active)active = ::setting.frame_data.IsFrameActive(current);
-        if (active){
+        
+        if (active) {
             i = 1;
             if (data.frames[2][0]){
                 data.frames[1].append(data.frames[2][0]);
@@ -421,8 +367,8 @@ class modifier extends modifier {
         }
 
         //cancel handling
-        if (data.flag_state) {
-            local cancels = data.flag_state & 0x4420;
+        if (data.flagState) {
+            local cancels = data.flagState & 0x4420;
             if (!data.cancels.len() ||
                 data.cancels.top()[0] != cancels ||
                 data.cancels.top()[2] != data.frame_count - 1
@@ -434,10 +380,10 @@ class modifier extends modifier {
         }
     }
 
+
     function IsNewMove() {
-        current_data = NewData();
-        Tick(current_data);
-        //::battle.modifiers.misc_inputs.task.frame_lock = ::plugin.cfg.frame_data.data.frame_stepping;
+        data = NewData();
+        Tick(data);
     }
 
     function IsPaused(data) {
@@ -460,26 +406,15 @@ class modifier extends modifier {
             frames = [[0],[0],[0]]
             cancels = []
             armor = []
-            metadata = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-            flag_state = 0
-            flag_attack = 0
+            metadata = team.current.GetKeyFrameData()
+            flagState = 0
+            flagAttack = 0
         };
-    }
-
-    function ClearAll() {
-        foreach(part in parts)part.Clear();
-    }
-
-    function ClearPartial() {
-        parts.frame_data.Clear();
-        parts.flag_state.Clear();
-        parts.flag_attack.Clear();
-        parts.metadata.Clear();
     }
     
     function PreFrame() {
         if (input.b0 == 1) {
-            if (!(cfg.full = !cfg.full))::battle.gauge.Hide();
+            if ((full = !full))::battle.gauge.Hide();
             else ::battle.gauge.Show(0);
         }
         return true;
@@ -493,37 +428,31 @@ class modifier extends modifier {
         }
         local current = team.current;
 
-        if (timer < 0 || !current_data){
-            current_data = NewData();
-        }
+        if (timer < 0 || !data)data = NewData();
 
-        if(cfg.data.enabled){
-            if (current.motion >= 1000) {
-                timer = cfg.data.timer;
-                if (::setting.frame_data.hasData(current)){
-                    if (!current.hitStopTime && !team.time_stop_count){
-                        Tick(current_data);
-                    }
+        if(cfg.data.general.enabled){
+            if (::setting.frame_data.hasData(current)){
+                timer = 240;
+                if (!current.hitStopTime && !team.time_stop_count){
+                    Tick(data);
                 }
             }else {
                 timer--;
             }
+            if (full)gui.Render(data);
+            else gui.Clear();
+        }else {
+            gui.Clear();
         }
 
-        if (cfg.data.enabled) {
-            parts.framebar.Render(current_data);
-            if (full) {
-                foreach(module in parts)module.Render(current_data);
-            }else {
-                ClearPartial();
-            }
-        }else {
-            ClearAll();
-            current_data = NewData();
-        }
         active = false;
     }
-	
+
+    function Release() {
+        gui = null;
+        input.Release();
+    }
+
 	function Enabled(param) {
 	    local enabled = (param.game_mode == 40);
 	    if (enabled) {
@@ -532,8 +461,7 @@ class modifier extends modifier {
 				local frame_task = modifiers.frame_data.task;
 				if (frame_task) {
 					frame_task.full = false;
-					frame_task.ClearAll();
-					frame_task.current_data = frame_task.NewData();
+					frame_task.data = frame_task.NewData();
 				}
 				practicerestart();
 			};

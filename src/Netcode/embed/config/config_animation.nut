@@ -1,3 +1,7 @@
+::plugin.PatchCSV("data/system/config/item.csv",function(table) {
+    table.misc <- ["squiroll"];
+    table.credit <- ["credits"];
+});
 this.anime_set <- ::actor.LoadAnimationData("data/system/config/config.pat");
 function Initialize()
 {
@@ -176,7 +180,6 @@ function Update()
 function UpdateLang()
 {
 	local item_table = ::menu.common.LoadItemTextArray("data/system/config/item.csv");
-	item_table.misc <- ["squiroll"];
 	::menu.common.UpdateItemString.call(this, item_table);
 
 	foreach( i, v in this.action.item )

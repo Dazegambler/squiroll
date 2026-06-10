@@ -82,6 +82,44 @@ function LoadPlugin(path,label) {
     AddModifier(table.modifier,label);
 }
 
+function CreatePage(plugin) {
+    Patch("squiroll/config/mod_config.nut",function() {
+        local config = ::plugin.cfg[plugin].data;
+        local elems = [::UI.Menu.Page(::UI.Menu.Title(plugin))];
+        local _page = elems.top();
+        local i = 0;
+        local function addElem(elem) {
+            _page.item.push(elem);
+            i = (i + 1) % 12;
+            if (!i) {
+                elems.push(::UI.Menu.Page(::UI.Menu.Title(plugin)));
+                _page = elems.top();
+            }
+        };
+        foreach (k,v in config) {
+            addElem(::UI.Menu.Header(i,k));
+            if (k.find("bind_")) {
+                local device = k.slice(4);
+                foreach (ke,va in v) {
+                    addElem(::UI.Menu.Config.Keybind(i,ke,plugin,device,ke,ke,this));
+                }
+            }else {
+                foreach (ke,va in v) {
+                    switch (typeof va) {
+                        case "bool":
+                            addElem(::UI.Menu.Config.Boolean(i,ke,plugin,k,ke,this));
+                            break;
+                        default:
+                            addElem(::UI.Menu.Config.Value(i,ke,plugin,k,ke,this));
+                            break;
+                    }
+                }
+            }
+        }
+        page.extend(elems);
+    });
+}
+
 Patch("data/system/component/menu_common.nut",function() {
 	local prev = LoadItemTextArray;
 	function LoadItemTextArray(filename) {

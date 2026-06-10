@@ -3,13 +3,9 @@ class Entry {
     elem = null;
     visible = null;
 
-    constructor(idx,str) {
+    constructor(elems) {
         visible = false;
-        elem = {
-            label = ::UI.Core.Text(str,::font.system,576)
-        };
-        elem.label.y = 200 + (idx * 42) - 34;
-        elem.label.x = 320;
+        elem = elems;
     }
 
     function OnClick() {}
@@ -36,88 +32,87 @@ class Entry {
 
 // STRUCTURE ELEMENTS
 class Title extends Entry {
-    constructor(str) {
-        elem = {
-            label = ::UI.Core.Text(str,::font.system,576)
-        };
-        elem.label.sx = 1.75;
-        elem.label.sy = 1.75;
-        elem.label.SetGradation(true);
-        elem.label.red2 = 1.0;
-        elem.label.green2 = 0.75;
-        elem.label.blue2 = 0.83;
-
-        elem.label.x = 640 - ((elem.label.width * elem.label.sx) / 2);
-        elem.label.y = 96 - (elem.label.height * elem.label.sy);
+    constructor(s) {
+        base.constructor({
+            label = ::UI.Core.Text({
+                str = s
+                max_length = 576
+                sx = 1.75
+                sy = 1.75
+                x = 640
+                y = 96
+            })
+        });
+        elem.label.x -= ((elem.label.width * elem.label.sx) / 2);
+        elem.label.y -= (elem.label.height * elem.label.sy);
     }
 };
 
 class Header extends Entry {
-    constructor(idx,str) {
-        elem = {
-            label = ::UI.Core.Text(str,::font.system,576)
-        };
-        elem.label.y = 200 + (idx * 42) - 34;
-        elem.label.x = 640 - ((elem.label.width * elem.label.sx) / 2);
+    constructor(idx,s) {
+        base.constructor({
+            label = ::UI.Core.Text({
+                str = s
+                max_length = 576
+                x = 640
+                y = 166 + (idx * 42)
+            })
+        });
+        elem.label.x -= ((elem.label.width * elem.label.sx) / 2);
     }
 };
 
 // LOGICAL ELEMENTS
-class Button extends Entry {
-    onclick = null;
-    constructor(idx,str,on_click) {
-        base.constructor(idx,str)
-        onclick = on_click;
-    }
-
-    function OnClick() {
-        onclick();
-    }
-};
-
 class Value extends Entry {
-    onclick = null;
-
-    constructor(idx,str,init,on_click) {
-        onclick = on_click;
-        base.constructor(idx,str);
-        local val = elem.val <- ::UI.Core.Text(init);
-        val.x = ::graphics.width - 320 - (val.width * val.sx);
-        val.y = 200 + (idx * 42) - 34;
-    }
-
-    function OnClick() {
-        onclick();
+    constructor(idx,s,v) {
+        base.constructor({
+            label = ::UI.Core.Text({
+                str = s
+                max_length = 576
+                x = 320
+                y = 166 + (idx * 42)
+            }),
+            val = ::UI.Core.Text({
+                str = v
+                x = ::graphics.width - 320
+                dx = @()(::graphics.width - 320 - (width * sx))
+                y = 166 + (idx * 42)
+            })
+        });
     }
 };
 
 class Enum extends Entry {
-    onclick = null;
-
-    constructor(idx,str,init,on_click,opts = ["disabled","enabled"]) {
-        base.constructor(idx,str);
-        onclick = on_click;
-        local val = elem.val <- ::UI.Core.Enum(idx,opts);
+    constructor(idx,s,v,opts) {
+        base.constructor({
+            label = ::UI.Core.Text({
+                str = s
+                max_length = 576
+                x = 320
+                y = 166 + (idx * 42)
+            }),
+            val = ::UI.Core.Enum({
+                values = opts
+                cursor = this.Cursor(1,opts.len(),::input_all)
+                x = ::graphics.width - 320
+                y = 166 + (idx * 42)
+                blue = 0
+            })
+        });
         local w = 0;
         local h = 0;
-        foreach (v in opts) {
-            val.Set(v);
-            if (val.width > w)w = val.width;
-            if (val.height > h)h = val.height;
+        foreach (str in opts) {
+            elem.val.Set(str);
+            if (elem.val.width > w)w = elem.val.width;
+            if (elem.val.height > h)h = elem.val.height;
         }
 
-        val.x = ::graphics.width - 320 - (w * val.sx);
-        val.y = 200 + (idx * 42) - 34;
-
-        val.left = val.x - 8;
-        val.right = val.x + w + 8;
-        val.top = val.y + 10;
-        val.bottom = val.top + h + 3;
-        val.cursor.val = init;
-    }
-
-    function OnClick() {
-        onclick();
+        elem.val.x -= (w * elem.val.sx);
+        elem.val.left = elem.val.x - 8;
+        elem.val.right = elem.val.x + w + 8;
+        elem.val.top = elem.val.y + 10;
+        elem.val.bottom = elem.val.top + h + 3;
+        elem.val.cursor.val = v;
     }
 };
 
@@ -249,3 +244,5 @@ function Create(...) {
     }
     page <- vargv;
 }
+Config <- {};
+::manbow.CompileFile("squiroll/UI/config.nut",Config);

@@ -1,29 +1,54 @@
-local function boolfield(idx,label,sqkey,key) {
-    return ::UI.Menu.Enum(idx,label,(::setting.network[sqkey]).tointeger(),function() {
-        local page = ::menu.network_config;
-        ::menu.help.Set(page.help_item);
-        page.Update = page.UpdateCommonItem;
-        local Enum = elem.val;
-        page.anime.highlight.Set(Enum.left,Enum.top,Enum.right,Enum.bottom);
-        page.common_cursor = Enum.cursor;
-        page.common_callback_ok = function() {
-            local ret = (Enum.cursor.val != 0);
-            ::setting.network[sqkey] = ret;
-            ::setting.save("network",key,ret.tostring());
-            page.anime.highlight.Reset();
-        };
-        page.common_callback_cancel = function(){
-            page.anime.highlight.Reset();
-        };
-    })
-}
+local nativeBoolean  = class extends ::UI.Menu.Enum {
+    parent = null;
+    table = null;
+    section = null;
+    key = null;
 
-::UI.Menu.Create.call(this,
+    constructor(idx,label,tab,sqke,sec,ke,pge) {
+        parent = pge;
+        table = tab;
+        section = sec;
+        key = ke;
+        base.constructor(
+            idx,
+            label,
+            table[sqke].tointeger(),
+            ["false","true"]
+        );
+    }
+
+    function OnClick() {
+        ::menu.help.Set(parent.help_item);
+        parent.Update = parent.UpdateCommonItem;
+        parent.anime.highlight.Set(
+            elem.val.left,
+            elem.val.top,
+            elem.val.right,
+            elem.val.bottom
+        );
+        parent.common_cursor = elem.val.cursor;
+        local e = elem;
+        local t = table;
+        local s = section;
+        local k = key;
+        parent.common_callback_ok = function () {
+            local ret = (e.val.cursor.val != 0);
+            t[k] = ret;
+            ::setting.save(s,k,ret.tostring());
+            anime.highlight.Reset();
+        };
+        parent.common_callback_cancel = function() {
+            anime.highlight.Reset();
+        };
+    }
+};
+
+::UI.Menu.Create.call(this
     ::UI.Menu.Page(
         ::UI.Menu.Title("Network"),
-        boolfield(1,"hide ip","hide_ip","hide_ip"),
-        boolfield(2,"share ip","share_watch_ip","share_watch_ip"),
-        boolfield(3,"hide names","hide_opponent_name","hide_name"),
-        boolfield(4,"hide profiles","hide_profile_pictures","hide_profile_pictures")
+        nativeBoolean(1,"hide ip",::setting.network,"hide_ip","network","hide_ip",this),
+        nativeBoolean(2,"share ip",::setting.network,"share_watch_ip","network","share_watch_ip",this),
+        nativeBoolean(3,"hide names",::setting.network,"hide_opponent_name","network","hide_name",this),
+        nativeBoolean(4,"hide profiles",::setting.network,"hide_profile_pictures","network","hide_profile_pictures",this)
     )
 );

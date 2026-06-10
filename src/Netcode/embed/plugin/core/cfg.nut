@@ -71,9 +71,15 @@ class CFG {
 		::writefile(filepath,buffer);
 	}
 
-	function Set(val,key,sec = null) {
-		if (!sec) data[key] = val;
-		else data[sec][key] = val;
-		Write();
+	function Set(val,key,sec) {
+		try {
+            local new = val;
+            if (typeof new != typeof data[sec][key])
+                new = val["to"+typeof data[sec][key]]();
+            data[sec][key] = new;
+		    Write();
+        }catch(e) {
+            ::print("error setting config:"+e+"\n");
+        }
 	}
 };

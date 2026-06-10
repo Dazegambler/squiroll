@@ -22,13 +22,17 @@ class Pointer {
 //tasofro's UI code is too barebones
 //so yes we're also reinventing it
 class Text extends ::manbow.String {
-	max_length = null;
+	str = "";
+    max_length = 288;
+    font = ::font.system;
+    dx = null;
+    dy = null;
 
-	constructor(str,font = ::font.system,max_len = 288) {
+	constructor(edit = {}) {
 		base.constructor();
-        max_length = max_len;
-		Initialize(font);
-		SetSpace(-5,0);
+		foreach(k,v in edit)this[k] = v;
+        Initialize(font);
+        SetSpace(-5,0);
 		SetOutline(true);
 		outline_threshold = 0.16;
 		outline_scale = 6.0;
@@ -37,18 +41,16 @@ class Text extends ::manbow.String {
 
 	function Set(val) {
 		base.Set(val);
-		sx = ::math.fmin(1,max_length / width);
+		str = val;
+        sx = ::math.fmin(1,max_length / width);
+        if(dx)x = dx();
+        if(dy)y = dy();
 	}
 };
 
 //pointer display
 class LiveText extends Text {
     ptr = null;
-    constructor(p) {
-        ptr = p;
-        base.constructor(ptr.Get());
-        blue = 0;
-    }
 
     function Set(val) {
         ptr.Set(val);
@@ -68,13 +70,6 @@ class Enum extends Text {
     right = 0;
     bottom = 0;
     top = 0;
-
-    constructor(idx,table) { 
-        values = table;
-        base.constructor(values[0]);
-        blue = 0;
-        cursor = this.Cursor(1, values.len(),::input_all);
-    }
 
     function Update() {
         Set(values[cursor.val]);

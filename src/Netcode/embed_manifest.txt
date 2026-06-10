@@ -65,4 +65,5 @@ embed/plugin/rollback.nut=squiroll/plugin/rollback.nut
 # UI
 embed/UI/core.nut=squiroll/UI/core.nut=UICore
 embed/UI/menu.nut=squiroll/UI/menu.nut=UIMenu
+embed/UI/config.nut=squiroll/UI/config.nut=UIConfig
 embed/UI/ui.nut=squiroll/UI/ui.nut=UI

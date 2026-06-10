@@ -28,9 +28,37 @@ config = {
 };
 
 ::plugin.Patch("squiroll/config/mod_config.nut",function() {
-    
+    page.extend([
+        ::UI.Menu.Page(
+            ::UI.Menu.Title("input display(P1)"),
+            ::UI.Menu.Config.Boolean(0,"enabled","input_display","p1","enabled",this),
+            ::UI.Menu.Config.Value(1,"x","input_display","p1","x",this),
+            ::UI.Menu.Config.Value(2,"y","input_display","p1","y",this),
+            ::UI.Menu.Config.Value(3,"scale(x)","input_display","p1","sx",this),
+            ::UI.Menu.Config.Value(4,"scale(y)","input_display","p1","sy",this),
+            ::UI.Menu.Config.Value(5,"red","input_display","p1","red",this),
+            ::UI.Menu.Config.Value(6,"green","input_display","p1","green",this),
+            ::UI.Menu.Config.Value(7,"blue","input_display","p1","blue",this),
+            ::UI.Menu.Config.Value(8,"alpha","input_display","p1","alpha",this),
+            ::UI.Menu.Config.Value(9,"count","input_display","p1","count",this),
+            ::UI.Menu.Config.Value(10,"timer","input_display","p1","timer",this)
+        ),
+        ::UI.Menu.Page(
+            ::UI.Menu.Title("input display(P2)"),
+            ::UI.Menu.Config.Boolean(0,"enabled","input_display","p2","enabled",this),
+            ::UI.Menu.Config.Value(1,"x","input_display","p2","x",this),
+            ::UI.Menu.Config.Value(2,"y","input_display","p2","y",this),
+            ::UI.Menu.Config.Value(3,"scale(x)","input_display","p2","sx",this),
+            ::UI.Menu.Config.Value(4,"scale(y)","input_display","p2","sy",this),
+            ::UI.Menu.Config.Value(5,"red","input_display","p2","red",this),
+            ::UI.Menu.Config.Value(6,"green","input_display","p2","green",this),
+            ::UI.Menu.Config.Value(7,"blue","input_display","p2","blue",this),
+            ::UI.Menu.Config.Value(8,"alpha","input_display","p2","alpha",this),
+            ::UI.Menu.Config.Value(9,"count","input_display","p2","count",this),
+            ::UI.Menu.Config.Value(10,"timer","input_display","p2","timer",this)
+        )
+    ]);
 });
-
 local display = class {
     player = null;
     data = null;
@@ -41,7 +69,7 @@ local display = class {
         player = idx;
         data = [];
         config = ::plugin.cfg.input_display.data["p"+(player+1)];
-        text = ::UI.Core.Text("");
+        text = ::UI.Core.Text();
         text.ConnectRenderSlot(::graphics.slot.status,1);
     }
     

@@ -3,84 +3,23 @@ config = {
         enabled = false
     }
     bind_keyboard = {
-        toggle = 41
+        device = -1
+        b0 = 41//toggle
     }
     bind_controller = {
-        toggle = -1
+        device = 0
+        b0 = -1//toggle
     }
 };
 
 ::plugin.Patch("squiroll/config/mod_config.nut",function() {
-    local cfg = ::plugin.cfg.frame_data;
     page.extend([
         ::UI.Menu.Page(
             ::UI.Menu.Title("Frame data display"),
-            ::UI.Menu.Enum(
-                0,"enabled",
-                cfg.data.general.enabled.tointeger(),
-                function() {
-                    local page = ::menu.mod_config;
-                    ::menu.help.Set(page.help_item);
-                    page.Update = page.UpdateCommonItem;
-                    local v = elem.val;
-                    page.anime.highlight.Set(v.left,v.top,v.right,v.bottom);
-                    page.common_cursor = v.cursor;
-                    page.common_callback_ok = function() {
-                        cfg.Set((v.cursor.val != 0),"enabled","general");
-                        page.anime.highlight.Reset();
-                    };
-                    page.common_callback_cancel = function() {
-                        page.anime.highlight.Reset();
-                    };
-                }
-            ),
+            ::UI.Menu.Config.Boolean(0,"enabled","frame_data","general","enabled",this),
             ::UI.Menu.Header(1,"Binds"),
-            ::UI.Menu.Value(
-                2,"toggle mode(keyboard)",cfg.data.bind_keyboard.toggle,
-                function() {
-                    local page = ::menu.mod_config;
-                    local text = elem.val;
-                    page.Update = function() {
-                        if (::manbow.GetKeyboardState() >= 0)return;
-                        if (::manbow.GetPadButtonState() >= 0)return;
-                        Update = function() {
-                            local id = ::plugin.Input.Poll();
-                            if (id >= 0) {
-                                ::sound.PlaySE("sys_ok");
-                                text.Set(id+"");
-                                if ("frame_data" in ::plugin.active_modifiers) {
-                                    ::plugin.active_modifiers.frame_data.input.Bind("keyboard","b0",id);
-                                }
-                                cfg.Set(id,"toggle","bind_keyboard");
-                                Update = UpdateMain;
-                            }
-                        }
-                    }
-                }
-            ),
-            ::UI.Menu.Value(
-                3,"toggle mode(controller)",cfg.data.bind_controller.toggle,
-                function() {
-                    local page = ::menu.mod_config;
-                    local text = elem.val;
-                    page.Update = function() {
-                        if (::manbow.GetKeyboardState() >= 0)return;
-                        if (::manbow.GetPadButtonState() >= 0)return;
-                        Update = function() {
-                            local id = ::plugin.Input.Poll();
-                            if (id >= 0) {
-                                ::sound.PlaySE("sys_ok");
-                                text.Set(id+"");
-                                if ("frame_data" in ::plugin.active_modifiers) {
-                                    ::plugin.active_modifiers.frame_data.input.Bind("controller","b0",id);
-                                }
-                                cfg.Set(id,"toggle","bind_keyboard");
-                                Update = UpdateMain;
-                            }
-                        }
-                    }
-                }
-            )
+            ::UI.Menu.Config.Keybind(2,"toggle(keyboard)","frame_data","keyboard","b0","b0",this),
+            ::UI.Menu.Config.Keybind(3,"toggle(controller)","frame_data","controller","b0","b0",this) 
         )
     ]);
 });
@@ -140,8 +79,12 @@ local module = class {
 local framedata_module = class extends module {
     text = null;
     constructor() {
-        text = ::UI.Core.Text("",::font.system,990);
-        text.sy = 0.75;
+        text = ::UI.Core.Text({
+            max_length = 990
+            sy = 0.75
+            x = 5
+            y = 5
+        });
         text.ConnectRenderSlot(::graphics.slot.info,1);
     }
 
@@ -238,7 +181,6 @@ local framedata_module = class extends module {
         
         text.Set(frames);
         text.sx = ::math.fmax(text.sx,0.1);
-        text.x = text.y = 5;
     }
 
     function Clear(){text.Set("");}
@@ -247,7 +189,11 @@ local framedata_module = class extends module {
 local metadata_module = class extends module {
     text = null;
     constructor() {
-        text = ::UI.Core.Text("",::font.system,256);
+        text = ::UI.Core.Text({
+            max_length = 256
+            x = 1011
+            y = 5
+        });
         text.ConnectRenderSlot(::graphics.slot.info,1);
     }
 
@@ -269,9 +215,6 @@ local metadata_module = class extends module {
 
         text.Set(meta);
         text.sx = ::math.fmax(text.sx,0.1);
-        //text.sy = 720 / text.height;
-        text.x = 1011;
-        text.y = 5;
     }
 
     function Clear(){text.Set("");}
@@ -317,16 +260,10 @@ class modifier extends modifier {
             framedata_module,
             metadata_module
         );
-
+        
         input = ::plugin.Input.InputManager({
-            keyboard = ::plugin.Input.InputDevice({
-                device = -1
-                b0 = cfg.data.bind_keyboard.toggle
-            })
-            controller = ::plugin.Input.InputDevice({
-                device = 0
-                b0 = cfg.data.bind_controller.toggle
-            })
+            keyboard = ::plugin.Input.InputDevice(cfg.data.bind_keyboard)
+            controller = ::plugin.Input.InputDevice(cfg.data.bind_controller)
         });
     }
 

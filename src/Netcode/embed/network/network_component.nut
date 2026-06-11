@@ -71,13 +71,10 @@ function Initialize() {
 	{
 		return 0;
 	};
-	blacklist = ::split(::setting.network.blacklist, ",");
-	foreach(name in blacklist)::print("in blacklist:" + name + "\n");
-	chunked_icon = null;
-	local_icon = ::manbow.Texture().GetBase64("profile.bmp", 32, 32);
 	chunked_icon = [];
+	local_icon = ::manbow.Texture().GetBase64("profile.bmp", 32, 32);
 	if (local_icon == "") return;
-	local div = 3;
+    local div = 3;
 	local chunk_size = local_icon.len() / div;
 	for (local i = 0; i < div; ++i) {
 		chunked_icon.append(local_icon.slice(0 + (chunk_size * i), chunk_size * (i + 1)));
@@ -139,13 +136,6 @@ function StartupServer(port,mode) {
 			reply.message = "version";
 			return false;
 		}
-		//user in blocklist
-		// foreach(name in blacklist) {
-		// 	if (request.name == name) {
-		// 		reply.message = "blocked";
-		// 		return false;
-		// 	}
-		// }
 		if ("is_watch" in request) {
 			if (id > 0) {
 				//spectator accepted
@@ -271,15 +261,7 @@ function StartupClient(addr,port,mode) {
 			return false;
 		}
 
-		//user blocked
-		// foreach(name in blacklist) {
-		// 	if (request.name == name) {
-		// 		reply.message = "blocked";
-		// 		return false;
-		// 	}
-		// }
-
-		reply.is_parent_vs <- ::network.is_parent_vs;
+	    reply.is_parent_vs <- ::network.is_parent_vs;
 		reply.is_watch <- true;
 		return true;
 	}

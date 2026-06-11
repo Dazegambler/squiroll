@@ -363,7 +363,8 @@ function UpdateMain()
 			break;
 
 		case 8://network settings
-			Suspend();
+			state = 1;
+            ::menu.help.Reset();
 			::menu.network_config.Initialize();
 			break;
 		case 9://player name
@@ -612,7 +613,8 @@ function UpdateMatch()
 	::menu.help.Set(help_cancel);
 
 	if (::network.received_request) {
-		timeout++;
+		if (::setting.network.auto_accept)::network.AcceptMatch();
+        timeout++;
 		::menu.help.Set(help_prompt);
 		if (::input_all.b0 == 1)::network.AcceptMatch();
 		if (::input_all.b1 == 1)::network.RejectMatch();
@@ -658,11 +660,12 @@ function UpdateMatch()
 
 	local st_host = ::LOBBY.GetMatchHost();
 
-	// local ar_host = ::split(st_host, ":");
-	// if (ar_host.len()) {
-	// 	ar_host[0] = "127.0.0.1";
-	// 	st_host = ar_host[0] + ":" + ar_host[1];
-	// }
+    //DEBUG CODE PLEASE COMMENT OUT FOR RELEASE
+	local ar_host = ::split(st_host, ":");
+	if (ar_host.len()) {
+		ar_host[0] = "127.0.0.1";
+		st_host = ar_host[0] + ":" + ar_host[1];
+	}
 
 	local st_userdata = ::LOBBY.GetMatchUserData();
 
@@ -686,28 +689,38 @@ function UpdateMatchWait()
 		if (cursor_item.val == 0) {
 			::lobby.dec_user_count();
 		}
-		::network.CancelRequest();
-		// ::LOBBY.SetLobbyUserState(::LOBBY.NO_OPERATION);
-		// ::network.Terminate();
-		// ::loop.End();
-		update = UpdateMain;
-		return;
-	}
-
-	if (timeout++ > 1800) {
-		::print("host is afk\n");
-		::LOBBY.SetLobbyUserState(lobby_user_state);
-		::network.HostAFK();
-		// ::network.Terminate();
-		timeout = 0;
-
-		if (lobby_user_state == ::LOBBY.WAIT_INCOMMING) {
-			::network.StartupServer(::config.network.hosting_port, 0);
+		if (::network.received_request) {
+            ::network.CancelRequest();
+	    }else {	
+            ::LOBBY.SetLobbyUserState(::LOBBY.NO_OPERATION);
+		    ::network.Terminate();
+		    ::loop.End();
 		}
-
-		update = UpdateMatch;
+        update = UpdateMain;
 		return;
 	}
+
+    if (::network.received_request) {
+	    if (timeout++ > 1800) {
+	    	::print("host is afk\n");
+	    	::LOBBY.SetLobbyUserState(lobby_user_state);
+	    	::network.HostAFK();
+	    	// ::network.Terminate();
+	    	timeout = 0;
+	    	//if (lobby_user_state == ::LOBBY.WAIT_INCOMMING) {
+	    	//	::network.StartupServer(::config.network.hosting_port, 0);
+	    	//}
+	    	update = UpdateMatch;
+	    }
+    }else {
+        if (timeout++ > 360) {
+            ::print("failed to connect\n");
+            ::LOBBY.SetLobbyUserState(lobby_user_state);
+            ::network.Terminate();
+            timeout = 0;
+            update = UpdateMatch;
+        }
+    }
 }
 
 function LobbyUpdate()

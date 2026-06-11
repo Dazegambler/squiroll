@@ -164,7 +164,7 @@ enum RoomType : uint8_t {
 static inline constexpr uint8_t NON_DEV_ROOM_COUNT = DEV_ROOM;
 
 #if LOBBY_BOT_INTEGRATION
-using room_mask_t = UBitIntType<(std::max)(std::bit_width((size_t)1 << (NON_DEV_ROOM_COUNT - 1)), (size_t)32)>;
+using room_mask_t = UBitIntType<(std::max)((size_t)std::bit_width((size_t)1 << (NON_DEV_ROOM_COUNT - 1)), (size_t)32)>;
 static inline constexpr room_mask_t ALL_ROOMS_MASK = ((room_mask_t)1 << NON_DEV_ROOM_COUNT) - 1;
 #endif
 

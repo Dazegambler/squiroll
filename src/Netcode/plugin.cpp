@@ -142,6 +142,7 @@ static inline void set_network_constants(HSQUIRRELVM v) {
     sq_setbool(v,_SC("hide_ip"), get_hide_ip_enabled());
     sq_setbool(v, _SC("share_watch_ip"), get_share_watch_ip_enabled());
     sq_setbool(v, _SC("hide_profile_pictures"), get_hide_profile_pictures_enabled());
+    sq_setbool(v, _SC("auto_accept"),get_auto_accept_enabled());
     //only add to config file if needed
     //sq_setbool(v, _SC("hide_lobby"), false);//more useful once we get custom lobbies
 }

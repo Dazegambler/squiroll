@@ -49,6 +49,14 @@ local nativeBoolean  = class extends ::UI.Menu.Enum {
         nativeBoolean(1,"hide ip",::setting.network,"hide_ip","network","hide_ip",this),
         nativeBoolean(2,"share ip",::setting.network,"share_watch_ip","network","share_watch_ip",this),
         nativeBoolean(3,"hide names",::setting.network,"hide_opponent_name","network","hide_name",this),
-        nativeBoolean(4,"hide profiles",::setting.network,"hide_profile_pictures","network","hide_profile_pictures",this)
+        nativeBoolean(4,"hide profiles",::setting.network,"hide_profile_pictures","network","hide_profile_pictures",this),
+        nativeBoolean(5,"auto accept",::setting.network,"auto_accept","network","auto_accept",this)
     )
 );
+
+local terminate = Terminate;
+function Terminate() {
+    ::menu.network.state = 0;
+    //::menu.network.is_suspend = false;
+    terminate();
+}

@@ -30,41 +30,42 @@ function InitializeWithUPnP()
 }
 
 function Update() {
-	if (::punch.ip_available()) {
+    local str = "";
+	switch (::LOBBY.GetLobbyUserState()) {
+        case 100:
+            str += "Waiting for match...";
+            break;
+        case 200:
+            str += "Looking for match...";
+            break;
+        case 102:
+        case 202:
+            str += "Match found,connecting...";
+            break;
+        default:
+            str += "Standby...";
+            break;
+    }
+    if (::punch.ip_available()) {
 		::menu.network.update_help_text = true;
 		if (::menu.network.display_ip_on_wait) {
-			local str = "";
-			switch (::LOBBY.GetLobbyUserState()) {
-				case 200:
-				case 100:
-					str = ::menu.network.item_table.wait_incomming[0];
-					break;
-				case 102:
-				case 202:
-					str = "Match Found,Connecting...";
-					break;
-				default:
-					str = ::menu.network.item_table.wait_incomming[0]+"("+::LOBBY.GetLobbyUserState()+")";
-			}
-			// local str = ::menu.network.item_table.wait_incomming[0];
 			if (!::setting.network.hide_ip) {
-				str = str + " " + ::punch.get_ip();
+				str += ::punch.get_ip();
 			}
-			obj[1].Set(str);
-			obj[1].x = 20 + -obj[1].width / 2;
 		}
 	}
-	if (::network.received_request) {
+
+    if (::network.received_request) {
 		local request = ::network.received_request;
 		local timeleft = 30 - (::menu.network.timeout / 60);
 		timeleft = ::math.clamp(timeleft, 0, 30);
-		local str = ::format("Found:%s#%dms(%d)", request.name, ::network.GetDelay(),timeleft);
-		obj[1].Set(str);
-		obj[1].x = 20 + -obj[1].width / 2;
-	}else {
-		obj[1].Set("Finding a Match...");
-		obj[1].x = 20 + -obj[1].width / 2;
+		str = ::format("Match Found!\\n%s#%dms(%d)", request.name, ::network.GetDelay(),timeleft);
 	}
+
+	obj[1].Set(str);
+	obj[1].x = 20 + -obj[1].width / 2;
+    obj[1].sx = ::math.fmin(1.0,obj[1].width / 256);
+
 	::menu.cursor.SetTarget(obj[1].x - 20 + ::graphics.width / 2, obj[1].y + 24 + ::graphics.height / 2, 0.69999999);
 	::menu.network.update();
 }

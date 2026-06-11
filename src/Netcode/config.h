@@ -57,6 +57,7 @@ bool get_hide_ip_enabled();
 bool get_share_watch_ip_enabled();
 bool get_hide_name_enabled();
 bool get_hide_profile_pictures_enabled();
+bool get_auto_accept_enabled();
 void set_ipv6_state(bool state);
 
 bool get_cache_rsa_enabled();

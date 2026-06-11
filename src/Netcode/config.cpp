@@ -82,6 +82,7 @@ CONFIG_BOL(NETWORK, HIDE_IP, "hide_ip", false);
 CONFIG_BOL(NETWORK, SHARE_WATCH_IP, "share_watch_ip", false);
 CONFIG_BOL(NETWORK, HIDE_NAME, "hide_name", false);
 CONFIG_BOL(NETWORK, HIDE_PROFILE_PICTURES, "hide_profile_pictures", false);
+CONFIG_BOL(NETWORK, AUTO_ACCEPT, "auto_accept",false);
 
 #define PERF_SECTION_NAME "performance"
 CONFIG_BOL(PERF, CACHE_RSA, "cache_rsa", true);
@@ -123,6 +124,7 @@ static inline constexpr const char
         CONFIG_DEFAULT(NETWORK, SHARE_WATCH_IP),
         CONFIG_DEFAULT(NETWORK, HIDE_NAME),
         CONFIG_DEFAULT(NETWORK, HIDE_PROFILE_PICTURES),
+        CONFIG_DEFAULT(NETWORK, AUTO_ACCEPT),
 
         CONFIG_DEFAULT(PERF, CACHE_RSA),
         CONFIG_DEFAULT(PERF, TIMER_LENIENCY),
@@ -407,6 +409,11 @@ bool get_hide_name_enabled() {
 static char NETWORK_HIDE_PROFILE_PICTURES_BUFFER[8]{ '\0' };
 bool get_hide_profile_pictures_enabled() {
     return GET_BOOL_CONFIG(NETWORK, HIDE_PROFILE_PICTURES);
+}
+
+static char NETWORK_AUTO_ACCEPT_BUFFER[8]{ '\0' };
+bool get_auto_accept_enabled() {
+    return GET_BOOL_CONFIG(NETWORK, AUTO_ACCEPT);
 }
 
 void set_ipv6_state(bool state) {

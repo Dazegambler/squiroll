@@ -1,6 +1,32 @@
+[constants]
+xwin_root = ~ / '.xwin-cache' / 'splat'
+msvc_target = 'i686-pc-windows-msvc'
+compiler_system_args = [
+  '--target=' + msvc_target,
+  '/imsvc' + xwin_root / 'crt' / 'include',
+  '/imsvc' + xwin_root / 'sdk' / 'include' / 'ucrt',
+  '/imsvc' + xwin_root / 'sdk' / 'include' / 'um',
+  '/imsvc' + xwin_root / 'sdk' / 'include' / 'shared']
+common_args = [
+  '/DNOMINMAX',
+  '/D_WINSOCK_DEPRECATED_NO_WARNINGS',
+  '/D_CRT_SECURE_NO_WARNINGS',
+  '/D_CRT_SECURE_NO_DEPRECATE',
+  '/D_CRT_NONSTDC_NO_DEPRECATE',
+  '/D_CRT_DECLARE_NONSTDC_NAMES',
+  '/D_WINSOCKAPI_',
+  '-Wno-cpp',
+  '-Wno-narrowing',
+  '-Wno-c99-designator',
+  '-Wno-c23-extensions']
+common_link_args = [
+  '/LIBPATH:' + xwin_root / 'crt' / 'lib' / 'x86',
+  '/LIBPATH:' + xwin_root / 'sdk' / 'lib' / 'ucrt' / 'x86',
+  '/LIBPATH:' + xwin_root / 'sdk' / 'lib' / 'um' / 'x86']
+
 [binaries]
-c = 'clang-cl'
-cpp = 'clang-cl'
+c = ['clang-cl'] + compiler_system_args
+cpp = ['clang-cl'] + compiler_system_args
 c_ld = 'lld-link'
 cpp_ld = 'lld-link'
 ar = 'llvm-lib'
@@ -9,42 +35,20 @@ windres = 'llvm-rc'
 
 [host_machine]
 system = 'windows'
-cpu_family = 'x86_64'
-cpu = 'x86_64'
+cpu_family = 'x86'
+cpu = 'i686'
 endian = 'little'
 
 [properties]
 needs_exe_wrapper = true
-sys_root = '~/.xwin-cache/splat/'
+sys_root = xwin_root
 
 [built-in options]
-b_vscrt = 'from_buildtype'
+b_vscrt = 'mt'
 b_staticpic = false
 
-c_args = [
-  '/EHsc',
-  '/std:c++20',
-  '/DNOMINMAX',
-  '--target=x86_64-pc-windows-msvc',
-  '/D_WINSOCK_DEPRECATED_NO_WARNINGS',
-  '/D_CRT_SECURE_NO_WARNINGS',
-  '/D_CRT_SECURE_NO_DEPRECATE',
-  '/D_CRT_NONSTDC_NO_DEPRECATE',
-  '/D_CRT_DECLARE_NONSTDC_NAMES',
-  '/D_WINSOCK_API_',
-  '/imsvc~/.xwin-cache/splat/crt/include',
-  '/imsvc~/.xwin-cache/splat/sdk/include/ucrt',
-  '/imsvc~/.xwin-cache/splat/sdk/include/um',
-  '/imsvc~/.xwin-cache/splat/sdk/include/shared',
-  '-Wno-cpp',
-  '-Wno-narrowing',
-  '-Wno-c99-designator',
-  '-Wno-c23-extensions']
+c_args = common_args
+cpp_args = common_args + ['/EHsc']
 
-cpp_args = c_args
-
-c_link_args = [
-  '/LIBPATH:~/.xwin-cache/splat/crt/lib/x86',
-  '/LIBPATH:~/.xwin-cache/splat/sdk/lib/ucrt/x86',
-  '/LIBPATH:~/.xwin-cache/splat/sdk/lib/um/x86',]
-cpp_link_args = c_link_args
+c_link_args = common_link_args
+cpp_link_args = common_link_args

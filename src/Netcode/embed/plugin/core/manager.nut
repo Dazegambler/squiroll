@@ -130,6 +130,31 @@ Patch("data/system/component/menu_common.nut",function() {
 		};
 		return table;
 	}
+
+    function LoadItemTextArrayA(filename) {
+        local item = [];
+        try item.extend(::manbow.LoadCSV(filename))
+        catch(e);
+        local item_table = {
+            lang0 = {}//jp
+            lang1 = {}//en
+        };
+        foreach (v in item) {
+            local label = v[0];
+            item_table.lang0[label] <- [];
+            item_table.lang1[label] <- [];
+            for (local i = 1; i < v.len(); ++i) {
+                if (v[i].len() == 0)break;
+                local lang = (i + 1) % 2;
+                item_table["lang"+lang][label].push(v[i]);
+            }
+        }
+        if (filename in ::plugin.patches_csv) {
+			local patch = ::plugin.patches_csv[filename];
+			patch(item_table);
+		};
+        return item_table;
+    }
 });
 
 // Built-in plugins, feel free to comment out if not wanted

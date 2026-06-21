@@ -13,15 +13,15 @@ config = {
 };
 
 ::plugin.Patch("squiroll/config/mod_config.nut",function() {
-    page.extend([
-        ::UI.Menu.Page(
-            ::UI.Menu.Title("Frame data display"),
-            ::UI.Menu.Config.Boolean(0,"enabled","frame_data","general","enabled",this),
-            ::UI.Menu.Header(1,"Binds"),
-            ::UI.Menu.Config.Keybind(2,"toggle(keyboard)","frame_data","keyboard","b0","b0",this),
-            ::UI.Menu.Config.Keybind(3,"toggle(controller)","frame_data","controller","b0","b0",this) 
-        )
-    ]);
+    //page.extend([
+    //    ::UI.Menu.Page(
+    //        ::UI.Menu.Title("Frame data display"),
+    //        ::UI.Menu.Config.Boolean(0,"enabled","frame_data","general","enabled",this),
+    //        ::UI.Menu.Header(1,"Binds"),
+    //        ::UI.Menu.Config.Keybind(2,"toggle(keyboard)","frame_data","keyboard","b0","b0",this),
+    //        ::UI.Menu.Config.Keybind(3,"toggle(controller)","frame_data","controller","b0","b0",this) 
+    //    )
+    //]);
 });
 
 // Patches

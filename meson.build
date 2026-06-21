@@ -71,7 +71,7 @@ netcode_src = files([
   'src/Netcode/log.cpp',
   'src/Netcode/discord.cpp',
   'src/Netcode/plugin.cpp',
-]) + embed_includes
+])
 
 shared_library(
   'Netcode',

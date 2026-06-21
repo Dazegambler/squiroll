@@ -22,11 +22,11 @@ using namespace std::literals::string_view_literals;
 // No other C++ changes needed.
 
 // Auto-generated embed declarations (arrays with #embed directives)
-#include "embed_declarations.inc"
+#include "../../build/embed_declarations.h"
 
 // Auto-generated embed map entries
 static const std::unordered_map<std::string_view, const EmbedData> embeds = {
-#include "embed_map.inc"
+#include "../../build/embed_map.h"
 };
 
 EmbedData get_embed_data(const char* name) {

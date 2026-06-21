@@ -20,6 +20,7 @@ embed/battle/battle_team.nut=data/script/battle/battle_team.nut
 embed/battle/battle_vs_player.nut=data/script/battle/battle_vs_player.nut
 
 # Network
+embed/network/netplay.nut=squiroll/network/netplay.nut
 embed/network/network.nut=data/system/network/network.nut
 embed/network/network_component.nut=data/system/component/network.nut
 embed/network/network_animation.nut=data/system/network/network_animation.nut
@@ -40,6 +41,7 @@ embed/character/tenshi_shot.nut=data/actor/tenshi_shot.nut
 embed/character/kokoro.nut=data/actor/kokoro.nut
 
 # Misc
+embed/base.nut=data/script/base.nut=aocf_base
 embed/version.nut=data/script/version.nut
 embed/title.nut=data/system/title/title.nut
 embed/character_select_animation.nut=data/system/select/script/character_select_animation.nut
@@ -64,6 +66,11 @@ embed/plugin/rollback.nut=squiroll/plugin/rollback.nut
 
 # UI
 embed/UI/core.nut=squiroll/UI/core.nut=UICore
+embed/UI/menu/struct.nut=squiroll/UI/menu/struct.nut=UIStruct
+embed/UI/menu/value.nut=squiroll/UI/menu/value.nut=UIValue
+embed/UI/menu/enum.nut=squiroll/UI/menu/enum.nut=UIEnum
+embed/UI/menu/button.nut=squiroll/UI/menu/button.nut=UIButton
+embed/UI/menu/config.nut=squiroll/UI/menu/config.nut=UIConfig
+embed/UI/menu/network.nut=squiroll/UI/menu/network.nut=UINetwork
 embed/UI/menu.nut=squiroll/UI/menu.nut=UIMenu
-embed/UI/config.nut=squiroll/UI/config.nut=UIConfig
 embed/UI/ui.nut=squiroll/UI/ui.nut=UI

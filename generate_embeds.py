@@ -6,8 +6,8 @@ import sys
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MANIFEST_FILE = os.path.join(SCRIPT_DIR, "src", "Netcode", "embed_manifest.txt")
-DECL_FILE = os.path.join(SCRIPT_DIR, "src", "Netcode", "embed_declarations.inc")
-MAP_FILE = os.path.join(SCRIPT_DIR, "src", "Netcode", "embed_map.inc")
+DECL_FILE = os.path.join(SCRIPT_DIR, "build", "embed_declarations.h")
+MAP_FILE = os.path.join(SCRIPT_DIR, "build", "embed_map.h")
 
 
 def parse_manifest(path):

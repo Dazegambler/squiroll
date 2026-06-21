@@ -1,62 +1,43 @@
-local nativeBoolean  = class extends ::UI.Menu.Enum {
-    parent = null;
-    table = null;
-    section = null;
-    key = null;
-
-    constructor(idx,label,tab,sqke,sec,ke,pge) {
-        parent = pge;
-        table = tab;
-        section = sec;
-        key = ke;
-        base.constructor(
-            idx,
-            label,
-            table[sqke].tointeger(),
-            ["false","true"]
-        );
+local item_table = {
+    lang0 = {
+        hide_ip = "Hide ip address(jp)"
+        share_ip = "Share ip address(jp)"
+        hide_name = "Hide names(jp)"
+        hide_pfp = "Hide profiles(jp)"
+        auto_accept = "Skip request(jp)"
     }
-
-    function OnClick() {
-        ::menu.help.Set(parent.help_item);
-        parent.Update = parent.UpdateCommonItem;
-        parent.anime.highlight.Set(
-            elem.val.left,
-            elem.val.top,
-            elem.val.right,
-            elem.val.bottom
-        );
-        parent.common_cursor = elem.val.cursor;
-        local e = elem;
-        local t = table;
-        local s = section;
-        local k = key;
-        parent.common_callback_ok = function () {
-            local ret = (e.val.cursor.val != 0);
-            t[k] = ret;
-            ::setting.save(s,k,ret.tostring());
-            anime.highlight.Reset();
-        };
-        parent.common_callback_cancel = function() {
-            anime.highlight.Reset();
-        };
+    lang1 = {
+        hide_ip = "Hide ip address"
+        share_ip = "Share ip address"
+        hide_name = "Hide names"
+        hide_pfp = "Hide profiles"
+        auto_accept = "Skip request"
     }
 };
 
-::UI.Menu.Create.call(this
+local ptr = @(i,k)::UI.Menu.Config.SquirollPTR(::setting.network,i,"network",k);
+local ptr = {
+    hide_ip = ptr("hide_ip","hide_ip")
+    share_ip = ptr("share_watch_ip","share_watch_ip")
+    hide_name = ptr("hide_opponent_name","hide_name")
+    hide_pfp = ptr("hide_profile_pictures","hide_profile_pictures")
+    auto_accept = ptr("auto_accept","auto_accept")
+}
+local boolean = @(i)::UI.Menu.Enum.Boolean(item_table,i,ptr[i]);
+
+::UI.Menu.Create.call(this,
     ::UI.Menu.Page(
-        ::UI.Menu.Title("Network"),
-        nativeBoolean(1,"hide ip",::setting.network,"hide_ip","network","hide_ip",this),
-        nativeBoolean(2,"share ip",::setting.network,"share_watch_ip","network","share_watch_ip",this),
-        nativeBoolean(3,"hide names",::setting.network,"hide_opponent_name","network","hide_name",this),
-        nativeBoolean(4,"hide profiles",::setting.network,"hide_profile_pictures","network","hide_profile_pictures",this),
-        nativeBoolean(5,"auto accept",::setting.network,"auto_accept","network","auto_accept",this)
+        ::UI.Menu.Struct.Title("Network"),
+        boolean("hide_ip"),
+        boolean("share_ip"),
+        boolean("hide_name"),
+        boolean("hide_pfp"),
+        boolean("auto_accept")
     )
 );
 
 local terminate = Terminate;
 function Terminate() {
     ::menu.network.state = 0;
-    //::menu.network.is_suspend = false;
     terminate();
 }

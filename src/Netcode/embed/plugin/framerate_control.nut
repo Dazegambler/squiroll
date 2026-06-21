@@ -44,26 +44,26 @@ config = {
 
 
 ::plugin.Patch("squiroll/config/mod_config.nut",function() {
-    page.extend([
-        ::UI.Menu.Page(
-            ::UI.Menu.Title("Framerate controls(keyboard)"),
-            ::UI.Menu.Config.Keybind(0,"step","framerate_control","keyboard","b0","b0",this),
-            ::UI.Menu.Config.Keybind(1,"none","framerate_control","keyboard","b1","b1",this),
-            ::UI.Menu.Config.Keybind(2,"half","framerate_control","keyboard","b2","b2",this),
-            ::UI.Menu.Config.Keybind(3,"third","framerate_control","keyboard","b3","b3",this),
-            ::UI.Menu.Config.Keybind(4,"quarter","framerate_control","keyboard","b4","b4",this),
-            ::UI.Menu.Config.Keybind(5,"manual","framerate_control","keyboard","b5","b5",this)
-        ),
-        ::UI.Menu.Page(
-            ::UI.Menu.Title("Framerate controls(controller)"),
-            ::UI.Menu.Config.Keybind(0,"step","framerate_control","controller","b0","b0",this),
-            ::UI.Menu.Config.Keybind(1,"none","framerate_control","controller","b1","b1",this),
-            ::UI.Menu.Config.Keybind(2,"half","framerate_control","controller","b2","b2",this),
-            ::UI.Menu.Config.Keybind(3,"third","framerate_control","controller","b3","b3",this),
-            ::UI.Menu.Config.Keybind(4,"quarter","framerate_control","controller","b4","b4",this),
-            ::UI.Menu.Config.Keybind(5,"manual","framerate_control","controller","b5","b5",this)
-        )
-    ]);
+    //page.extend([
+    //    ::UI.Menu.Page(
+    //        ::UI.Menu.Title("Framerate controls(keyboard)"),
+    //        ::UI.Menu.Config.Keybind(0,"step","framerate_control","keyboard","b0","b0",this),
+    //        ::UI.Menu.Config.Keybind(1,"none","framerate_control","keyboard","b1","b1",this),
+    //        ::UI.Menu.Config.Keybind(2,"half","framerate_control","keyboard","b2","b2",this),
+    //        ::UI.Menu.Config.Keybind(3,"third","framerate_control","keyboard","b3","b3",this),
+    //        ::UI.Menu.Config.Keybind(4,"quarter","framerate_control","keyboard","b4","b4",this),
+    //        ::UI.Menu.Config.Keybind(5,"manual","framerate_control","keyboard","b5","b5",this)
+    //    ),
+    //    ::UI.Menu.Page(
+    //        ::UI.Menu.Title("Framerate controls(controller)"),
+    //        ::UI.Menu.Config.Keybind(0,"step","framerate_control","controller","b0","b0",this),
+    //        ::UI.Menu.Config.Keybind(1,"none","framerate_control","controller","b1","b1",this),
+    //        ::UI.Menu.Config.Keybind(2,"half","framerate_control","controller","b2","b2",this),
+    //        ::UI.Menu.Config.Keybind(3,"third","framerate_control","controller","b3","b3",this),
+    //        ::UI.Menu.Config.Keybind(4,"quarter","framerate_control","controller","b4","b4",this),
+    //        ::UI.Menu.Config.Keybind(5,"manual","framerate_control","controller","b5","b5",this)
+    //    )
+    //]);
 });
 
 class modifier extends modifier {

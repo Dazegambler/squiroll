@@ -1,29 +1,20 @@
 //squirrel lacks pointers so we make our own
 //use only with tables,classes and instances
 //you can prob use it with arrays but expect jank
-class Pointer {
-	src = null;
-	key = null;
-
-	constructor(s,k) {
-		src = s;
-		key = k;
-	}
-
-	function Get() {
-		return src[key];
-	}
-
-	function Set(val) {
-		return src[key] <- val;
-	}
+::PTR <- class {
+    get = null;
+    set = null;
+    constructor(r,i) {
+        get = @()r[k];
+        set = @(v)r[k]=v;
+    }
 };
 
 //tasofro's UI code is too barebones
 //so yes we're also reinventing it
 class Text extends ::manbow.String {
 	str = "";
-    max_length = 288;
+    max_length = 576;
     font = ::font.system;
     dx = null;
     dy = null;
@@ -53,11 +44,11 @@ class LiveText extends Text {
     ptr = null;
 
     function Set(val) {
-        ptr.Set(val);
+        ptr.set(val);
     }
 
     function Update() {
-        base.Set(ptr.Get());
+        base.Set(ptr.get());
         base.Update();
     }
 };
@@ -74,5 +65,39 @@ class Enum extends Text {
     function Update() {
         Set(values[cursor.val]);
         base.Update();
+    }
+};
+
+class LiveEnum extends Enum {
+    ptr = null;
+
+    function Set(val) {
+        ptr.set(val);
+    }
+
+    function Update() {
+        base.Set(ptr.get());
+        base.Update();
+    }
+};
+
+//i've gone insane so now i'm remaking
+//every menu i have to mess with
+//hardcoded menus are annoying to edit
+class Sprite extends ::manbow.Sprite {
+    texture = null;
+    left = 0;
+    top = 0;
+    width = 0;
+    height = 0;
+    constructor(edit = {}) {
+        base.constructor();
+		foreach(k,v in edit)this[k] = v;
+        Initialize(texture,left,top,width,height);
+    }
+
+    function FromBase64(base64) {
+        texture.CreateFromBase64(base64,width,height);
+        Initialize(texture,left,top,width,height);
     }
 };

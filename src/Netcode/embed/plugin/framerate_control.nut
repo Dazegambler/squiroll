@@ -70,16 +70,14 @@ class modifier extends modifier {
 	cfg = null;
     input = null;
     text = null;
-    mode = null;
-    i = null;
+    mode = 0;
+    i = 0;
 
     constructor() {
         cfg = ::plugin.cfg.framerate_control;
-        text = ::UI.Core.Text("");
+        text = ::UI.Core.Text();
         text.ConnectRenderSlot(::graphics.slot.front,0);
 
-        i = 0;
-        
         input = ::plugin.Input.InputManager({
             keyboard = ::plugin.Input.InputDevice(cfg.data.bind_keyboard)
             controller = ::plugin.Input.InputDevice(cfg.data.bind_controller)
@@ -93,14 +91,18 @@ class modifier extends modifier {
         if(input.b3 == 1)mode = 3;//1/3
         if(input.b4 == 1)mode = 4;//1/4
 
-        i = (i + 1) % mode; 
-        
+        if (mode > 0) {
+            i = (i + 1) % mode;
+        } else {
+            i = 1; // normal speed: always process frame
+        }
+
         local b0 = input.b0;
         if (b0 && (!(b0 % 10) || b0 == 1)) {
             ::sound.PlaySE("sys_ok");
 			i = mode;
-		} 
-		
+		}
+
         text.Set(mode > 1 ? ::format("1/%s",mode+"") : "");
 
         return !!i;

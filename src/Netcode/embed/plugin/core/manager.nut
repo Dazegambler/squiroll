@@ -159,8 +159,10 @@ Patch("data/system/component/menu_common.nut",function() {
 
 // Built-in plugins, feel free to comment out if not wanted
 LoadNativePlugin("squiroll/plugin/frame_data.nut","frame_data");
+LoadNativePlugin("squiroll/plugin/frame_bar.nut","frame_bar");
 LoadNativePlugin("squiroll/plugin/input_display.nut","input_display");
 LoadNativePlugin("squiroll/plugin/framerate_control.nut","framerate_control");
+LoadNativePlugin("squiroll/plugin/oki_dummy.nut","oki_dummy");
 LoadNativePlugin("squiroll/plugin/ping_display.nut","ping_display");
 
 ::mkdir("plugin");

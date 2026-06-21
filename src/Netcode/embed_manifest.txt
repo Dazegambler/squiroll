@@ -59,10 +59,12 @@ embed/plugin/core/input.nut=squiroll/plugin/core/input.nut
 embed/plugin/core/cfg.nut=squiroll/plugin/core/cfg.nut=pluginCFG
 embed/plugin/core/manager.nut=squiroll/plugin/core/manager.nut=plugin
 embed/plugin/frame_data.nut=squiroll/plugin/frame_data.nut
+embed/plugin/frame_bar.nut=squiroll/plugin/frame_bar.nut
 embed/plugin/input_display.nut=squiroll/plugin/input_display.nut
 embed/plugin/ping_display.nut=squiroll/plugin/ping_display.nut
 embed/plugin/framerate_control.nut=squiroll/plugin/framerate_control.nut
 embed/plugin/rollback.nut=squiroll/plugin/rollback.nut
+embed/plugin/oki_dummy.nut=squiroll/plugin/oki_dummy.nut
 
 # UI
 embed/UI/core.nut=squiroll/UI/core.nut=UICore

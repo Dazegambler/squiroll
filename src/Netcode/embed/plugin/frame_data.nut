@@ -32,10 +32,16 @@ config = {
     	local t = createplayer.acall(vargv);
     	
     	t.player_class = class extends t.player_class {
-    		function SetMotion(motion, take) {
+            tid = -1;
+            function SetMotion(motion, take) {
     			base.SetMotion(motion,take);
                 local task = ::battle.modifiers.frame_data.task;
-    			if (task &&
+    			if (!task || !task.data)return;
+
+                if (tid < 0) {
+                    
+                }
+                if (task &&
     				task.team == team &&
     				task.data
     			) {
@@ -79,7 +85,7 @@ local module = class {
 local framedata_module = class extends module {
     text = null;
     constructor() {
-        text = ::UI.Core.Text({
+        text = ::UI.Text({
             max_length = 990
             sy = 0.75
             x = 5
@@ -189,7 +195,7 @@ local framedata_module = class extends module {
 local metadata_module = class extends module {
     text = null;
     constructor() {
-        text = ::UI.Core.Text({
+        text = ::UI.Text({
             max_length = 256
             x = 1011
             y = 5
@@ -395,10 +401,12 @@ class modifier extends modifier {
 	    if (enabled) {
 	        local practicerestart = PracticeRestart;
 			function PracticeRestart() {
-				local frame_task = modifiers.frame_data.task;
-				if (frame_task) {
-					frame_task.full = false;
-					frame_task.data = frame_task.NewData();
+				local task = modifiers.frame_data.task;
+				if (task) {
+					task.full = false;
+				    task.data = [null, null];
+                    task.active = [false,false];
+                    task.tracked_last_frame = [false,false];
 				}
 				practicerestart();
 			};

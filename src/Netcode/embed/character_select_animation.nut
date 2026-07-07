@@ -203,11 +203,6 @@ function Initialize()
 			}else {
 				v.icon.Initialize(::menu.cursor.texture, 160, i * 32, 32, 32);
 			}
-			// if (!::setting.network.hide_profile_pictures && ::network.icon[i] != null && custom_icon.CreateFromBase64(::network.icon[i], 32, 32)) {
-			// 	v.icon.Initialize(custom_icon, 0, 0, 32, 32);
-			// } else {
-			// 	v.icon.Initialize(::menu.cursor.texture, 160, i * 32, 32, 32);
-			// }
 			v.icon.ConnectRenderSlot(::graphics.slot.ui, 40000);
 			v.icon.x = i == 0 ? 16 : 1280 - 16 - 32;
 			v.icon.y = 36;
@@ -224,43 +219,6 @@ function Initialize()
 				}
 			};
 			this.data.push(v);
-		}
-		if (::network.allow_watch && (!::network.is_parent_vs || !::network.hide_host_ip)){
-			local ip_manager = {};
-			ip_manager.Apply <- function (text_func) {
-				if (!::setting.network.hide_ip) {
-					this.text <- ::font.CreateSystemStringSmall("Watch IP: " + text_func());
-					this.text.x = 5;
-					this.text.y = 1;
-					this.text.sx = this.text.sy = 1.2;
-					this.text.ConnectRenderSlot(::graphics.slot.front,-1);
-				}
-				help_is_swapped = true;
-				local temp = ::menu.character_select.help_network;
-				::menu.character_select.help_network = ::menu.character_select.help_network_copy;
-				::menu.character_select.help_network_copy = temp;
-			};
-			if (!::network.is_parent_vs) {
-				ip_manager.Update <- function () {
-					if (::menu.network.update_help_text || ::punch.ip_available()) {
-						this.Apply(::punch.get_ip);
-						this.Update = function () {
-							if (::input_all.b2 == 1) {
-								::punch.copy_ip_to_clipboard();
-							}
-						};
-					}
-				};
-			}
-			else {
-				ip_manager.Apply(@() ::network.host_ip);
-				ip_manager.Update <- function () {
-					if (::input_all.b2 == 1) {
-						::manbow.SetClipboardString(::network.host_ip);
-					}
-				};
-			}
-			this.data.push(ip_manager);
 		}
 	}
 }

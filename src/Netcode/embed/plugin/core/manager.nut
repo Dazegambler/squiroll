@@ -82,44 +82,6 @@ function LoadPlugin(path,label) {
     AddModifier(table.modifier,label);
 }
 
-function CreatePage(plugin) {
-    Patch("squiroll/config/mod_config.nut",function() {
-        local config = ::plugin.cfg[plugin].data;
-        local elems = [::UI.Menu.Page(::UI.Menu.Title(plugin))];
-        local _page = elems.top();
-        local i = 0;
-        local function addElem(elem) {
-            _page.item.push(elem);
-            i = (i + 1) % 12;
-            if (!i) {
-                elems.push(::UI.Menu.Page(::UI.Menu.Title(plugin)));
-                _page = elems.top();
-            }
-        };
-        foreach (k,v in config) {
-            addElem(::UI.Menu.Header(i,k));
-            if (k.find("bind_")) {
-                local device = k.slice(4);
-                foreach (ke,va in v) {
-                    addElem(::UI.Menu.Config.Keybind(i,ke,plugin,device,ke,ke,this));
-                }
-            }else {
-                foreach (ke,va in v) {
-                    switch (typeof va) {
-                        case "bool":
-                            addElem(::UI.Menu.Config.Boolean(i,ke,plugin,k,ke,this));
-                            break;
-                        default:
-                            addElem(::UI.Menu.Config.Value(i,ke,plugin,k,ke,this));
-                            break;
-                    }
-                }
-            }
-        }
-        page.extend(elems);
-    });
-}
-
 Patch("data/system/component/menu_common.nut",function() {
 	local prev = LoadItemTextArray;
 	function LoadItemTextArray(filename) {
@@ -131,23 +93,30 @@ Patch("data/system/component/menu_common.nut",function() {
 		return table;
 	}
 
-    function LoadItemTextArrayA(filename) {
+    function LoadItemTextArrayUI(filename) {
         local item = [];
         try item.extend(::manbow.LoadCSV(filename))
         catch(e);
         local item_table = {
+            current = @()(this["lang"+::config.lang])
             lang0 = {}//jp
             lang1 = {}//en
         };
         foreach (v in item) {
             local label = v[0];
+            
+            //local str = v[0]+"[";
+            
             item_table.lang0[label] <- [];
             item_table.lang1[label] <- [];
             for (local i = 1; i < v.len(); ++i) {
+                //str += v[i]+",";
                 if (v[i].len() == 0)break;
                 local lang = (i + 1) % 2;
                 item_table["lang"+lang][label].push(v[i]);
             }
+            //str += "]\n";
+            //::print(str);
         }
         if (filename in ::plugin.patches_csv) {
 			local patch = ::plugin.patches_csv[filename];
@@ -158,7 +127,7 @@ Patch("data/system/component/menu_common.nut",function() {
 });
 
 // Built-in plugins, feel free to comment out if not wanted
-LoadNativePlugin("squiroll/plugin/frame_data.nut","frame_data");
+//LoadNativePlugin("squiroll/plugin/frame_data.nut","frame_data");
 LoadNativePlugin("squiroll/plugin/frame_bar.nut","frame_bar");
 LoadNativePlugin("squiroll/plugin/input_display.nut","input_display");
 LoadNativePlugin("squiroll/plugin/framerate_control.nut","framerate_control");

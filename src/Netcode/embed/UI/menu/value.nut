@@ -1,48 +1,53 @@
 class String extends ::UI.Menu.Struct.Variable {
     diag_str = "";
-    constructor (it, s, p, diag) {
-        base.constructor(it,s,p);
-        diag_str = diag;
+    constructor (it, s, p, dg_str) {
+        base.constructor(it, s, p);
+        diag_str = dg_str;
     }
-
+    
     function OnClick() {
+        if (lock)return;
         local txt = elem.val;
+        local p = ptr;
         ::Dialog(2,diag_str,function(ret) {
             if (ret) {
+                p.set(ret);
                 txt.Set(ret);
             }
-        },"");
+            txt = null;
+            p = null;
+        },p.get()+"");
     }
 };
-class Float extends ::UI.Menu.Struct.Variable {
-    diag_str = "";
-    constructor (it, s, p, diag) {
-        base.constructor(it,s,p);
-        diag_str = diag;
-    }
 
+class Float extends String {
     function OnClick() {
+        if (lock)return;
         local txt = elem.val;
+        local p = ptr;
         ::Dialog(2,diag_str,function(ret) {
             if (ret) {
-                txt.Set(ret.tofloat());
+                p.set(ret.tofloat());
+                txt.Set(ret);
             }
-        },"");
+            txt = null;
+            p = null;
+        },p.get()+"");
     }
 };
-class Integer extends ::UI.Menu.Struct.Variable {
-    diag_str = "";
-    constructor (it, s, p, diag) {
-        base.constructor(it,s,p);
-        diag_str = diag;
-    }
 
-    function OnClick() {
+class Integer extends String {
+     function OnClick() {
+        if (lock)return;
         local txt = elem.val;
+        local p = ptr;
         ::Dialog(2,diag_str,function(ret) {
             if (ret) {
-                txt.Set(ret.tointeger());
+                p.set(ret.tointeger());
+                txt.Set(ret);
             }
-        },"");
+            txt = null;
+            p = null;
+        },p.get()+"");
     }
 };

@@ -17,7 +17,6 @@
 //     "back(tag)" tech options — zero vulnerability gap.
 //   - Action configured via practice menu page "Oki Dummy":
 //     ::config.practice.oki_dir (1-9) + oki_btn (0-7: A,B,C,D,P,AB,BC,CP; 8=None)
-
 config = {
     enabled = true
     delay_frames = 0     // 0 = earliest possible frame after recovery

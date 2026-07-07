@@ -75,7 +75,7 @@ class modifier extends modifier {
 
     constructor() {
         cfg = ::plugin.cfg.framerate_control;
-        text = ::UI.Core.Text();
+        text = ::UI.Text();
         text.ConnectRenderSlot(::graphics.slot.front,0);
 
         input = ::plugin.Input.InputManager({

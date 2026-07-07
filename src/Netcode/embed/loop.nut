@@ -117,7 +117,6 @@ function Move( env )
 function Update()
 {
 	::input_all.Update();
-
 	if (this.pause_count > 0)
 	{
 		this.pause_count--;
@@ -164,10 +163,15 @@ function Update()
 		//::rollback.postframe();
 	}
 
-	foreach( v in this.task_async )
-	{
-		v.Update();
-	}
+    local now = ::manbow.timeGetTime();
+    local i = 0;
+	foreach(v in this.task_async) {
+        v.Update();
+	    local n = ::manbow.timeGetTime();
+        //::print(::format("task %d took %d ms\n", i,n - now));
+        i++;
+        now = n;
+    }
 }
 
 function Pause( count )

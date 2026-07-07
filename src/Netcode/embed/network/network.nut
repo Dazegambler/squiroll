@@ -81,7 +81,6 @@ item <- [
 	"client",
 	"watch",
 	null,
-	"setting"
 	"player_name",
 	"port",
 	"upnp",

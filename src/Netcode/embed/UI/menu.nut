@@ -1,4 +1,4 @@
-left <- 320;
+left <- 300;
 right <- ::graphics.width - left;
 center <- ::graphics.width / 2;
 item_y <- 166;
@@ -8,25 +8,24 @@ width <- 548;
 
 // CORE ELEMENTS
 class Entry {
-    item_table = {};
     visible = false;
+    lock = false;
     idx = 0;
     target = null;
     elem = null;
+    item_table = null;
 
     constructor(it) {
-        foreach (lang,t in it) {
-            foreach (k,v in t) {
-                item_table[lang][k] <- v;
-            }
-        }
+        item_table = it;
     }
 
     function OnClick() {}
+    function Enable() {}
+    function Disable() {}
     function Initialize() {}
 
     function Release() {
-        foreach (e in elem)e.Release();
+        foreach (e in elem)if("Release" in e)e.Release();
         elem = null;
     }
 
@@ -50,8 +49,28 @@ class Entry {
     }
 };
 
+class Mutex {
+    entries = null;
+    constructor(...) {
+        entries = vargv;
+    }
+
+    function Lock() {
+        foreach (entry in entries) {
+            entry.Disable();
+        }
+    }
+
+    function Unlock() {
+        foreach (entry in entries) {
+            entry.Enable();
+        }
+    }
+}
+
 class Page {
     visible = false;
+    state = 0;
     x = 0;
     y = 0;
     item = [];
@@ -61,6 +80,10 @@ class Page {
         uiBase = UIBase();
         uiBase.target = this;
         item = vargv;
+    }
+
+    function Release() {
+        foreach (e in item)e.Release();
     }
 
     function Initialize() {
@@ -113,10 +136,8 @@ function Create(...) {
         }
 
         function Terminate() {
+            foreach(p in action.page)p.Release();
             ::loop.DeleteTask(this);
-            pager = null;
-            highlight = null;
-            foreach(page in action.page)page.DisconnectRenderSlot();
         }
     };
     anime.action <- this.weakref();
@@ -131,19 +152,18 @@ function Create(...) {
         
         ::menu.cursor.Activate();
         ::menu.back.Activate();
-        ::menu.help.Set(help);
         Update <- UpdateMain;
         BeginAnime();
         ::loop.Begin(this);
     }
 
     function Terminate() {
-        EndAnime();
-        delete cursor_page;
-        delete cursor_index;
-        ::menu.back.Deactivate(true);
-        ::menu.cursor.Deactivate();
         ::menu.help.Reset();
+        ::menu.back.Deactivate();
+        ::menu.cursor.Deactivate();
+        anime.pager.Deactivate(-1);
+        EndAnimeDelayed();
+        Update = null;
     }
 
     function UpdateCommonItem() {
@@ -177,6 +197,17 @@ function Create(...) {
             ::loop.End();
         }
     }
+    
+    function Add(...) {
+        page.extend(vargv);
+        foreach (p in page) {
+            foreach (i,e in p.item) {
+                e.target = this;
+                e.idx = i - 1;
+            }
+        }
+    }
+
     page <- vargv;
     foreach (p in page) {
         foreach (i,e in p.item) {
@@ -197,5 +228,3 @@ Button <- {};
 //MENU TYPES
 Config <- {};
 ::manbow.CompileFile("squiroll/UI/menu/config.nut",Config);
-Network <- {};
-::manbow.CompileFile("squiroll/UI/menu/network.nut",Network);

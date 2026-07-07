@@ -64,12 +64,11 @@ config = {
 // Base class for display elements
 class display_module {
     text = null;
-    max_w = null;
     constructor() {
-        max_w = 1010;
-        text = ::UI.Core.Text();
-        text.sy = 0.75;
-        text.red = text.green = text.blue = text.alpha = 1;
+        text = ::UI.Text({
+            sy = 0.75
+            max_length = 1010
+        });
         text.ConnectRenderSlot(::graphics.slot.info,1);
     }
     function Render(data) {}
@@ -104,12 +103,12 @@ class modifier extends modifier {
             tex = ::manbow.Texture();
             tex.Load("data/actor/status/texture/gauge.png");
 
-            label = ::UI.Core.Text();
+            label = ::UI.Text();
             label.sy = 0.75;
             label.red = label.green = label.blue = label.alpha = 1;
             label.ConnectRenderSlot(::graphics.slot.info, 2);
 
-            adv_label = ::UI.Core.Text();
+            adv_label = ::UI.Text();
             adv_label.sy = 0.75;
             adv_label.ConnectRenderSlot(::graphics.slot.info, 2);
 
@@ -130,7 +129,7 @@ class modifier extends modifier {
 
             count_labels = [];
             for (local i = 0; i < 10; i++) {
-                local t = ::UI.Core.Text();
+                local t = ::UI.Text();
                 t.sy = 0.5;
                 t.sx = 0.5;
                 t.red = 1; t.green = 1; t.blue = 1; t.alpha = 0.9;

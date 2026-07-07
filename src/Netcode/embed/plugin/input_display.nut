@@ -69,7 +69,7 @@ local display = class {
         player = idx;
         data = [];
         config = ::plugin.cfg.input_display.data["p"+(player+1)];
-        text = ::UI.Core.Text();
+        text = ::UI.Text();
         text.ConnectRenderSlot(::graphics.slot.status,1);
     }
     

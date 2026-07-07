@@ -63,10 +63,10 @@ if (!this.CheckDirectoryExisted("macro"))
 ::manbow.CompileFile("data/script/sound.nut", ::sound);
 ::graphics <- {};
 ::manbow.CompileFile("data/script/graphics.nut", ::graphics);
-::netplay <- {};
-::manbow.CompileFile("squiroll/network/netplay.nut",::netplay);
 ::network <- {};
 ::manbow.CompileFile("data/system/component/network.nut", ::network);
+::netplay <- {};
+::manbow.CompileFile("squiroll/network/netplay.nut",::netplay);
 ::font <- {};
 ::manbow.CompileFile("data/script/font.nut", this.font);
 ::effect <- {};

@@ -82,6 +82,240 @@ local module = class {
     function Clear(){}
 };
 
+local pip = class {
+    main = null;
+    cancel = null;
+    inv = null;
+    label = null;
+    
+    x = 0;
+    y = 0;
+    width = 0;
+    height = 0;
+    cx = 0;
+    cy = 0;
+   
+    cancels = [
+        [0,0,0,0],//0,none
+        [1,0,0,0.9],//1,D
+        [0,1,0,0.9],//2,C
+        [1,1,0,0.9],//3,DC
+        [0,0,1,0.9],//4,B
+        [1,0,1,0.9],//5,DB
+        [0,1,1,0.9],//6,CB
+        [1,1,1,0.9]//7,DCB
+    ];
+    invuls = [
+        [0,0,0,0],//0,none
+        [0.75,0.75,0.85,0.9],//1,graze
+        [1,0.85,0.3,0.9],//2,grab
+        null,
+        [0.5,1,0.3,0.9],//4,bullet
+        null,null,null,
+        [1,0.4,0.6,0.9]//8,melee
+        null,null,null,null
+    ]
+    states = [
+        [0.35,0.35,0.35,0.5],//0,empty
+        [0.35,0.35,0.35,0.4],//1,padding
+        [0.12,0.12,0.12,0.15],//2,timeline
+        [1,1,1,0.85]//3,normal
+    ];
+    state = 0;
+    color = null;
+
+    constructor (tex) {
+        main = ::UI.Sprite({
+            texture = tex
+            left = 264
+            top = 360
+            width = 16
+            height = 16
+            filter = 1
+            alpha = 0
+        });
+        main.ConnectRenderSlot(::graphics.slot.info, 1);
+        cancel = ::UI.Sprite({
+            texture = tex
+            left = 264
+            top = 360
+            width = 16
+            height = 16
+            filter = 1
+            alpha = 0
+        });
+        cancel.ConnectRenderSlot(::graphics.slot.info, 1);
+        inv = ::UI.Sprite({
+            texture = tex
+            left = 264
+            top = 360
+            width = 16
+            height = 16
+            filter = 1
+            alpha = 0
+        });
+        inv.ConnectRenderSlot(::graphics.slot.info, 1);
+        label = ::UI.Text({
+            sy = 0.5
+            sx = 0.5
+            alpha = 0.9
+        });
+        label.ConnectRenderSlot(::graphics.slot.info, 2);
+    }
+
+    function SetLayout(x, y, w, h, tex_size) {
+        this.x = x;
+        this.y = y;
+        width = w;
+        height = h;
+        cx = x + (w * 0.5);
+        cy = y + (h * 0.5);
+    
+        main.x = x;
+        main.y = y;
+        main.sx = w / tex_size;
+        main.sy = h / tex_size;
+
+        cancel.x = x;
+        cancel.y = y;
+        cancel.sx = (w * 0.5) / tex_size;
+        cancel.sy = (w * 0.5) / tex_size;
+    
+        inv.x = x + (w * 0.5);
+        inv.y = y;
+        inv.sx = (w * 0.5) / tex_size;
+        inv.sy = (h * 0.5) / tex_size;
+
+
+        label.y = cy - ((label.height * label.sy ) * 0.5);
+    }
+
+    function SetColor(color) {
+        this.color = color;
+        main.red = color[0];
+        main.green = color[1];
+        main.blue = color[2];
+        main.alpha = color[3];
+    }
+
+    function SetState(state,ghost = false) {
+        this.state = state;
+        SetColor(states[state]);
+        switch (state) {
+            case 3:
+                SetColor([color[0],color[1],color[2],states[state][3]]);
+                break;
+            default:
+                SetColor(states[state]);
+                break;
+        }
+        if (ghost) {
+            SetColor([
+                color[0]*0.45,
+                color[1]*0.45,
+                color[2]*0.45,
+                0.6
+            ]);
+        }
+    }
+
+    function Reset() {
+        SetState(0);
+        SetCancel(0);
+        SetInvul(0);
+        label.Set("");
+    }
+    
+    function SetCancel(cancel) {
+        local col = cancels[cancel];
+        cancel.red = col[0];
+        cancel.green = col[1];
+        cancel.blue = col[2];
+        cancel.alpha = col[3];
+    }
+
+    function SetInvul(invul) {
+        local col = invuls[invul] == null ? [1,1,1,0.9] : invuls[invul];
+        inv.red = col[0];
+        inv.green = col[1];
+        inv.blue = col[2];
+        inv.alpha = col[3];
+    }
+
+    function SetCount(count) {
+        label.Set(count+"");
+        label.x = cx - ((label.width * label.sx) * 0.5);
+    }
+};
+
+local framebar_module = class extends module {
+    POOL_SIZE = 60;
+    PIP_W = 12;
+    GAP = 1;
+    TEX_SIZE = 16;
+    BAR_H = 22;
+    BAR_X = 280;
+    BAR_Y = 555;
+
+    pips = null;
+    id = 0;
+
+    bg_bar = null;
+    constructor(idx) {
+        id = idx;
+
+        local tex = ::manbow.Texture();
+        tex.Load("data/actor/status/texture/gauge.png");
+       
+        bg_bar = ::UI.Sprite({
+            texture = tex
+            left = 264
+            top = 360
+            width = 16
+            height = 16
+            filter = 1
+            alpha = 0
+        });
+        bg_bar.ConnectRenderSlot(::graphics.slot.info, 0);
+        pips = [];
+        for (local i = 0; i < POOL_SIZE; ++i) {
+            pips.push(framebar_pip(tex));
+        }
+        UpdateLayout();
+    }
+
+    function UpdateLayout() {
+        local bar_y = BAR_Y + 32 + (id * 26);
+        local pip_y = bar_y + 1;
+        
+        local pip_w = PIP_W - GAP;
+        local pip_h = BAR_H - 2;
+
+        bg_bar.x = BAR_X;
+        bg_bar.y = bar_y;
+        bg_bar.sx = (POOL_SIZE * PIP_W) / TEX_SIZE;
+        bg_bar.sy = BAR_H / TEX_SIZE;
+        bg_bar.red = bg_bar.green = bg_bar.blue = 0;
+        bg_bar.alpha = 0.9;
+
+        local x = BAR_X + (GAP * 0.5);
+        foreach (i,pip in pips) {
+            pip.SetLayout(x,pip_y,pip_w,pip_h,TEX_SIZE);
+            x += PIP_W;
+        }
+    }
+
+    function Render(data) {
+        local prefix = (id+1)+"P";
+        foreach (p in pips)p.Clear();
+
+    }
+
+    function Clear() {
+        
+    }
+};
+
 local framedata_module = class extends module {
     text = null;
     constructor() {

@@ -1,12 +1,14 @@
+
+
 ::UI.Menu.Create.call(this,
     ::UI.Menu.Page(
-        //::UI.Menu.Title("Special thanks to"),
-        //::UI.Menu.Value(0,"zero318","khangaroo"),
-        //::UI.Menu.Value(1,"hagb","shoxla"),
-        //::UI.Menu.Value(2,"SonofGod1998","dec"),
-        //::UI.Menu.Value(3,"Takuneru","cabadmdp"),
-        //::UI.Menu.Value(4,"armonte","-tom-"),
-        //::UI.Menu.Value(5,"fearnagae","JustAPenguin"),
-        //::UI.Menu.Header(6,"and to all who helped test the early releases")
+        //::UI.Menu.Struct.Title({},"Special thanks to"),
+        //::UI.Menu.Struct.Value({},"zero318","khangaroo"),
+        //::UI.Menu.Struct.Value({},"hagb","shoxla"),
+        //::UI.Menu.Struct.Value({},"SonofGod1998","dec"),
+        //::UI.Menu.Struct.Value({},"Takuneru","cabadmdp"),
+        //::UI.Menu.Struct.Value({},"armonte","-tom-"),
+        //::UI.Menu.Struct.Value({},"fearnagae","JustAPenguin"),
+        //::UI.Menu.Struct.Header("and to all who helped test the early releases")
     )
 );

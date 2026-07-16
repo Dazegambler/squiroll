@@ -293,6 +293,7 @@ class modifier extends modifier {
             local ph_half = (BAR_H - 2) / 2.0 / TEX_SIZE;
             local pw_q = (PIP_W - GAP) / 2.0 / TEX_SIZE;
             local half_w = (PIP_W - GAP) / 2.0;
+            
             local c_start = 0;
             local c_end = visual_end;
             if (visual_end > pool_size) {
@@ -336,10 +337,10 @@ class modifier extends modifier {
                     is.sx = pw_q;
                     is.sy = ph_half;
                     local nt = 0;
-                    if (inv_flag & 0x1000) nt++;
-                    if (inv_flag & 0x2000) nt++;
-                    if (inv_flag & 0x8000) nt++;
-                    if (inv_flag & 0x10000) nt++;
+                    if (inv_flag & 0x1000) nt++;//graze
+                    if (inv_flag & 0x2000) nt++;//grab
+                    if (inv_flag & 0x8000) nt++;//melee
+                    if (inv_flag & 0x10000) nt++;//bullet
                     if (nt >= 2) { is.red = 1.0; is.green = 1.0; is.blue = 1.0; }
                     else if (inv_flag & 0x8000) { is.red = 1.0; is.green = 0.4; is.blue = 0.6; }
                     else if (inv_flag & 0x10000) { is.red = 0.5; is.green = 1.0; is.blue = 0.3; }

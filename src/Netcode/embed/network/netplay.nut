@@ -116,8 +116,17 @@ function IsHostAfk() {
     ::network.HostAFK();
     ::LOBBY.Connect("","","",::config.network.lobby_name,::config.network.lobby_name);
     ::LOBBY.SetLobbyUserState(::LOBBY.MATCHING);
+    update = UpdateMatch;
     timeout = 0;
     return true;
+}
+
+function MatchCancelled() {
+    ::LOBBY.Connect("","","",::config.network.lobby_name,::config.network.lobby_name);
+    user_state = ::LOBBY.WAIT_INCOMMING;
+    ::LOBBY.SetLobbyUserState(user_state);
+    ::network.StartupServer(::config.network.hosting_port, 0);
+    update = UpdateMatch;
 }
 
 function GetHost(str) {

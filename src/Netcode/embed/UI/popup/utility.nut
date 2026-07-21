@@ -1,5 +1,5 @@
 Notification <- {
-    Left =  class extends ::UI.Popup.Core {
+    Left =  class extends ::UI.Popup.Async {
         constructor(init) {
             base.constructor(
                 ::graphics.width * 0.18
@@ -10,7 +10,7 @@ Notification <- {
             );
         }
     }
-    Top =  class extends ::UI.Popup.Core {
+    Top =  class extends ::UI.Popup.Async {
         constructor(init) {
             base.constructor(
                 ::graphics.width / 2
@@ -21,7 +21,7 @@ Notification <- {
             );
         }
     }
-    Right =  class extends ::UI.Popup.Core {
+    Right =  class extends ::UI.Popup.Async {
         constructor(init) {
             base.constructor(
                 ::graphics.width * 0.82
@@ -34,7 +34,7 @@ Notification <- {
     }
 };
 
-class Dialog extends ::UI.Popup.Core {
+class Dialog extends ::UI.Popup.Async {
     constructor(init) {
         base.constructor(
             ::graphics.width / 2

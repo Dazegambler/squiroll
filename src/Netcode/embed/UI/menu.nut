@@ -192,6 +192,7 @@ function Create(...) {
         if (cursor_index.ok){
             local p = page[cursor_page.val];
             local item = p.item[cursor_index.val];
+            ::sound.PlaySE("sys_ok");
             item.OnClick();
         }else if (cursor_index.cancel){
             ::loop.End();

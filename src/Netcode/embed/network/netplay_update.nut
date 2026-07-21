@@ -10,7 +10,7 @@ function Check() {
 }
 
 function Update() {
-    Check();
+    if(user_state == ::LOBBY.NO_OPERATION)Check();
     if(update)update();
 }
 
@@ -49,6 +49,7 @@ function UpdateMatch() {
     local host = FoundMatch();
     if (host) {
         ::LOBBY.SetLobbyUserState(::LOBBY.NO_OPERATION);
+        ::print("match found\n");
         ::network.Terminate();
         local port = ::LOBBY.GetMatchUserData();
         local target = GetHost(host);
@@ -73,8 +74,9 @@ function UpdateMatchFound() {
     if (::network.received_request) {
         if (IsHostAfk())update = UpdateMatch;
     }else {
-        if (timeout++ > 360) {
+        if (!::network.inst && timeout++ > 360) {
             ::LOBBY.SetLobbyUserState(user_state);
+            ::print("match connection fail\n");
             ::network.Terminate();
             timeout = 0;
             update = UpdateMatch;

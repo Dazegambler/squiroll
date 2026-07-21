@@ -1,88 +1,237 @@
 lobby_prefix <- "th155_";
 lobby_version_sig <- GetVersionSignature();
 lobby_name <- "Free";
+
 inst <- null;
 inst_connect <- null;
 return_code <- -1;
 client_num <- 0;
+
 is_client <- false;
 is_parent_vs <- false;
-allow_watch <- false;
+is_disconnect <- false;
 is_watch <- false;
+
+allow_watch <- false;
 hide_host_ip <- true;
 host_ip <- "";
-is_disconnect <- false;
 use_lobby <- false;
 upnp_port <- 0;
+
 local_device_id <- 0;
 input_local <- null;
 rand_seed <- 0;
-server_profile <- null;
-client_profile <- null;
-history <- [];
-history_load_count <- 0;
-hidden_char <- 0;
-use_matching <- false;
-numbattle <- 1;
-frame_score <- 0;
-frame_count <- 0;
-player_name <- [
-	"",
-	""
-];
-color_num <- [
-	8,
-	8
-];
-icon <- [
-	null,
-	null
-];
+
+player_name <- ["",""];
+color_num <- [8,8];
+icon <- [null,null];
 local_icon <- "";
-received_request <- null;
-ready <- false;
 
-function Initialize() {
-    ready = false;
-	inst = null;
-	inst_connect = null;
-	return_code = -1;
-	input_local = null;
-	is_client = false;
-	is_parent_vs = false;
-	is_watch = false;
-	hide_host_ip = true;
-	host_ip = "";
-	allow_watch = false;
-	is_disconnect = false;
-	client_num = 0;
-	received_request = null;
-	icon = ["",""];
-	func_get_delay <- @()0;
-	
-    local_icon = ::manbow.Texture().GetBase64("profile.bmp", 32, 32);
-    chunked_icon <- [];
-    local div = 3;
-    local chunk_size = local_icon.len() / div;
-    for (local i = 0; i < div; ++i) {
-        chunked_icon.push(local_icon.slice(0 + (chunk_size * i), chunk_size * (i + 1)));
+received_request <- null;//N
+ready <- false;//N
+
+class Server extends ::manbow.NetworkServer() {
+    constructor(port, mode) {
+        if (::config.network.upnp) {
+            upnp_port = port;
+            try local ret = ::UPnP.AddPort(port, port, "UDP")
+            catch(e);
+        }else upnp_port = 0;
+        ::network.Initialize();
+        base.constructor();
+        ::network.client_num = 2;
+        ::network.inst_connect = this;
+        Init(port,client_num);
+        if (mode & 1 && ::LOBBY.GetNetworkState() == 2)::punch.init_wait();
     }
-}
 
-function Terminate() {
-	::menu.network.timeout = 0;
-	received_request = null;
-	if (upnp_port > 0) {
-		try ::UPnP.DeletePort(upnp_port, "UDP")
-		catch(_e);
-		upnp_port = 0;
-	}
+    function HandleRequest(id,request) {
+        if (request.version != ::GetVersion())
+            return {success = false, message = "version"};
+        if (::network.inst)
+            return {success = false, message = ""};
+        if (request.is_watch) {
+            if (id == 0)
+                return {success = false, message = ::config.network.allow_watch ? "ready" : "watch"};
+            if (!::network.allow_watch)
+                return {success = false, message = "watch"};
+            return {success = true, message = ""};
+        }
+        if (id > 0)
+            return {success = false, message = "busy"};
+        return {success = true, message = ""}; 
+    }
+    
+    function ConnectRequest(id,context,request,reply) {
+        local req = HandleRequest(id,request);
+        reply.message <- req.message;
+        reply.name <- "";
+        reply.is_parent_vs <- request.is_watch;
+        reply.is_watch <- request.is_watch;
+        if (req.success && !request.is_watch) {
+            ::LOBBY.Close();
+            ::network.inst = ::network.inst_connect;
+            ::network.func_get_delay = @()::network.inst.GetChildDelay(0);
+            ::sound.PlaySE(120);
+            reply.name = ::config.network.player_name;
+            ::network.received_request = {
+                name = request.name
+                color = request.color
+                allow_watch = request.allow_watch
+            };
+        }
+        return req.success;
+    }
 
-	inst = null;
-	inst_connect = null;
-	is_disconnect = true;
-}
+    function DisconnectChild(id) {
+        if(id==0)::network.Disconnect(); 
+    }
 
+    function ReceiveFromChild(id,table) {
+        try {
+            switch(table.message) {
+                case "profile":
+                    ::print("p2 profile chunk\n");
+                    ::network.icon[1] += table.icon_chunk;
+                    break;
+                case "nvm":
+                    ::network.Terminate();
+                    ::netplay.MatchCancelled();
+                    break;
+                case "afk":
+                    ::network.Terminate();
+                    ::netplay.update = ::netplay.UpdateMain;
+                    ::loop.End();
+                    break;
+            }
+        }catch(e);
+    }
+};
+
+class Client extends ::manbow.NetworkClient {
+    constructor(addr, port, mode) {
+        ::network.Initialize();
+        base.constructor();
+        ::network.client_num = 3;
+        if (mode & 2 && ::LOBBY.GetNetworkState() == 2)::punch.init_connect(addr, port);
+        
+        if (!Init(0,client_num)) {
+            ::network.inst = null;
+            this = null;
+        }
+        
+        local connect_param = {
+            version = ::GetVersion()
+            allow_watch = ::config.network.allow_watch
+            is_watch = mode & 1
+            battle_num = 1
+            name = ::config.network.player_name.len() > 16 ? "P2" : ::config.network.player_name
+            color = ::savedata.GetColorNum()
+        };
+        ::network.host_ip = addr+":"+port;
+        ::network.inst_connect = this;
+        Connect(addr,port,connect_param);
+    }
+
+    function ConnectRequest(id,context,request,reply) {
+        reply.message = "";
+        if (request.version != ::GetVersion()) {
+            reply.message = "version";
+            retun false;
+        }
+    
+        if (!request.is_watch) {
+            reply.message = "busy";
+            return false;
+        }
+    
+        if (!::network.allow_watch) {
+            reply.message = "watch";
+            return false;
+        }
+        reply.is_parent_vs <- ::network.is_parent_vs;
+        reply.is_watch <- true;
+        return true;
+    }
+
+    function ConnectComplete(id, context, reply) {
+        ::LOBBY.Close();
+        if (::network.inst)return;
+        if (reply.is_watch) {
+            ::network.allow_watch = true;
+            ::network.is_parent_vs = reply.is_parent_vs;
+            ::network.is_watch = true;
+            ::network.inst = ::network.inst_connect;
+            ::sound.PlaySE(120);
+            ::loop.Fade(function () {
+                ::discord.rpc_set_details("Spectating");
+                ::menu.network.Terminate();
+                ::menu.watch.Initialize();
+            });
+            return;
+        }
+        ::network.inst = ::network.inst_connect;
+        ::network.func_get_delay = @()::network.inst.GetParentDelay();
+        ::network.received_request = {name = reply.name};
+    }
+
+    function ConnectReject(context,table) {
+        switch (table.message) {
+            case "busy":
+                ::network.return_code = 1;
+                break;
+            case "version":
+                ::network.return_code = 2;
+                break;
+            case "watch":
+                ::network.return_code = 3;
+                break;
+            case "ready":
+                ::network.return_code = 4;
+                break;
+            case "blocked":
+                ::network.return_code = 5;
+                break;
+        }
+    }
+
+    function DisconnectParent() {
+        if (::network.is_parent_vs) {
+            local t = {message = "end_vs"};
+            for (local i = 0; i < ::network.client_num; ++i)
+                ::network.inst.SendToChild(i,t);
+            ::network.Disconnect();
+            return;
+        }
+        if (::network.is_watch && ::network.inst)::network.inst.Reconnect();
+    }
+
+    function ReceiveFromParent(table) {
+        try {
+            switch(table.message) {
+                case "end_vs":
+                    for (local i = 0; i < ::network.client_num; ++i)
+                        ::network.inst.SendToChild(i, table);
+                    ::network.Disconnect();
+                    break;
+                case "profile":
+                    ::print("p1 profile image chunk\n");
+                    ::network.icon[0] += table.icon_chunk;
+                    break;
+                case "yes":
+                    ::network.BeginMatch(table);
+                    break;
+                case "no":
+                    ::network.Terminate();
+                    ::netplay.update = ::netplay.UpdateMatch;
+                    ::LOBBY.Connect("","","",::config.network.lobby_name,::config.network.lobby_name);
+                    ::netplay.user_state = ::LOBBY.MATCHING;
+                    ::LOBBY.SetLobbyUserState(::netplay.user_state);
+                    break;
+            }
+        }catch(e);
+    }
+};
 
 function StartupServer(port,mode) {
 	if (::config.network.upnp) {
@@ -95,10 +244,6 @@ function StartupServer(port,mode) {
 	local mb_server = ::manbow.NetworkServer();
 	mb_server.ConnectRequest = function (id,context,request,reply) {
 		reply.message <- "";
-		//||||||||||||||||||||||||||||
-		//||Match Rejection Handling||
-		//||||||||||||||||||||||||||||
-
 		//version mismatch
 		if (!("version" in request) || request.version != GetVersion()) {
 			reply.message = "version";
@@ -135,9 +280,6 @@ function StartupServer(port,mode) {
 		//match singleton check
 		if (inst) return false;
 
-		//||||||||||||||||||||||||
-		//||Match Request Prompt||
-		//||||||||||||||||||||||||
 		if (::LOBBY.GetNetworkState() != ::LOBBY.CLOSED)::LOBBY.Close();
 		inst = inst_connect;
 		func_get_delay = @()::network.inst.GetChildDelay(0);
@@ -165,15 +307,16 @@ function StartupServer(port,mode) {
 						break;
 					case "nvm":
 						Terminate();
-						::menu.network.update = ::menu.network.UpdateMatch;
-						::LOBBY.Connect("","","",::config.network.lobby_name,::config.network.lobby_name);
-						::menu.network.lobby_user_state = ::LOBBY.WAIT_INCOMMING;
-						::LOBBY.SetLobbyUserState(::menu.network.lobby_user_state);
-						::network.StartupServer(::config.network.hosting_port, 0);
+						::netplay.MatchCancelled();
+                        //::netplay.update = ::netplay.UpdateMatch;
+						//::LOBBY.Connect("","","",::config.network.lobby_name,::config.network.lobby_name);
+						//::netplay.lobby_user_state = ::LOBBY.WAIT_INCOMMING;
+						//::LOBBY.SetLobbyUserState(::netplay.lobby_user_state);
+						//::network.StartupServer(::config.network.hosting_port, 0);
 						break;
 					case "afk":
 						Terminate();
-						::menu.network.update = ::menu.network.UpdateMain;
+						::netplay.update = ::netplay.UpdateMain;
 						::loop.End();
 						break;
 				}
@@ -203,11 +346,7 @@ function StartupClient(addr,port,mode) {
 	mb_client.ConnectRequest = function (id,context,request,reply) {
 		reply.message = "";
 
-		//||||||||||||||||||||||||||||
-		//||Match Rejection Handling||
-		//||||||||||||||||||||||||||||
-
-		//mismatched versions
+	    //mismatched versions
 		if (!("version" in request) && request.version != ::GetVersion()) {
 			reply.message = "version";
 			return false;
@@ -242,7 +381,7 @@ function StartupClient(addr,port,mode) {
 			::sound.PlaySE(120);
 			::loop.Fade(function () {
 				::discord.rpc_set_details("Spectating");
-				::menu.network.Suspend();
+				::menu.network.Terminate();
 				::menu.watch.Initialize();
 			});
 			return;
@@ -303,10 +442,10 @@ function StartupClient(addr,port,mode) {
 						break;
 					case "no":
 						Terminate();
-						::menu.network.update = ::menu.network.UpdateMatch;
+						::netplay.update = ::netplay.UpdateMatch;
 						::LOBBY.Connect("","","",::config.network.lobby_name,::config.network.lobby_name);
-						::menu.network.lobby_user_state = ::LOBBY.MATCHING;
-						::LOBBY.SetLobbyUserState(::menu.network.lobby_user_state);
+						::netplay.user_state = ::LOBBY.MATCHING;
+						::LOBBY.SetLobbyUserState(::netplay.user_state);
 						// ::loop.End();
 						break;
 				}
@@ -329,6 +468,48 @@ function StartupClient(addr,port,mode) {
 	return mb_client.Connect(addr, port, connect_param);
 }
 
+function Initialize() {
+    ready = false;
+	inst = null;
+	inst_connect = null;
+	return_code = -1;
+	input_local = null;
+	is_client = false;
+	is_parent_vs = false;
+	is_watch = false;
+	hide_host_ip = true;
+	host_ip = "";
+	allow_watch = false;
+	is_disconnect = false;
+	client_num = 0;
+	received_request = null;
+	icon = ["",""];
+	func_get_delay <- @()0;
+	
+    local_icon = ::manbow.Texture().GetBase64("profile.bmp", 32, 32);
+    chunked_icon <- [];
+    local div = 3;
+    local chunk_size = local_icon.len() / div;
+    for (local i = 0; i < div; ++i) {
+        chunked_icon.push(local_icon.slice(0 + (chunk_size * i), chunk_size * (i + 1)));
+    }
+}
+
+function Terminate() {
+	::print("::network.Terminate\n");
+    ::netplay.timeout = 0;
+	received_request = null;
+	if (upnp_port > 0) {
+		try ::UPnP.DeletePort(upnp_port, "UDP")
+		catch(_e);
+		upnp_port = 0;
+	}
+    
+	inst = null;
+	inst_connect = null;
+	is_disconnect = true;
+}
+
 function Disconnect( scene = true ) {
 	if (is_disconnect || !IsActive())return;
 	is_disconnect = true;
@@ -337,7 +518,7 @@ function Disconnect( scene = true ) {
 		::loop.Fade(function () {
 			if (::network.IsActive()) {
 				::network.Terminate();
-				::loop.End(::menu.network);
+				//::loop.End(::netplay);
 			}
 		});
 	}else::network.Terminate();
@@ -372,7 +553,7 @@ function BeginMatch(table) {
 		    });
         }
 		::discord.rpc_set_details("VS Online");
-		::menu.network.Suspend();
+		::menu.network.Terminate();
 		::menu.character_select.Initialize(1);
 	});
 }
@@ -381,8 +562,8 @@ function CancelRequest() {
 	inst.SendToParent({message = "nvm"});
 	Terminate();
 	::LOBBY.Connect("","","",::config.network.lobby_name,::config.network.lobby_name);
-	::menu.network.lobby_user_state = ::LOBBY.NO_OPERATION;
-	::LOBBY.SetLobbyUserState(::menu.network.lobby_user_state);
+	::netplay.user_state = ::LOBBY.NO_OPERATION;
+	::LOBBY.SetLobbyUserState(::netplay.user_state);
 	::loop.End();
 }
 
@@ -419,7 +600,7 @@ function AcceptMatch() {
 		    });
         }
         ::discord.rpc_set_details("VS online");
-		::menu.network.Suspend();
+		::menu.network.Terminate();
 		::menu.character_select.Initialize(1);
 	})
 }
@@ -428,8 +609,8 @@ function RejectMatch() {
 	::network.inst.SendToChild(0, {message = "no"});
 	Terminate();
 	::LOBBY.Connect("", "", "", ::config.network.lobby_name, ::config.network.lobby_name);
-	::menu.network.lobby_user_state = ::LOBBY.WAIT_INCOMMING;
-	::LOBBY.SetLobbyUserState(::menu.network.lobby_user_state);
+	::netplay.user_state = ::LOBBY.WAIT_INCOMMING;
+	::LOBBY.SetLobbyUserState(::netplay.user_state);
 	StartupServer(::config.network.hosting_port, 0);
 }
 

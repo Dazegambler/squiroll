@@ -22,14 +22,13 @@ function Matchmaking() {
         }
         local req = ::network.received_request;
         if (req) {
+            str = data.item_table.match_found[0];
+            obj.text.Set(str);
             ::UI.Popup.Utility.Dialog(::UI.Network.Dialog.Prompt);
             return;
         }
         
         obj.text.Set(str);
-        
-        if (::menu.network.page[0].item[0].elem)::menu.network.Update();
-        ::netplay.Update();
     };
 
     if (::config.network.upnp) {
@@ -100,17 +99,18 @@ function Prompt() {
         dy = @()(-height / 2 - 8)
     });
     Update = function() {
-        local req = ::network.received_request;
         local timeleft = 30 - (::netplay.timeout / 60);
-        if (!timeleft)::loop.End();
+        if (!timeleft) {
+            ::loop.End();
+            return;
+        }
+        local req = ::network.received_request;
         local str = ::format("%s \\n%s#%dms(%d)"
             data.item_table.match_found[0]
             ,req.name
             ,::network.GetDelay()
             ,timeleft
         );
-
         obj.text.Set(str);
-        ::netplay.Update();
     }
 }

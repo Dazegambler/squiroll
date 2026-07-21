@@ -1,4 +1,4 @@
-class Full extends ::UI.Popup.Core {
+class Full extends ::UI.Popup.Sync {
     constructor(init) {
         base.constructor(
             ::graphics.width / 2

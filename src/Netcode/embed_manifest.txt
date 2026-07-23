@@ -20,6 +20,7 @@ embed/battle/battle_team.nut=data/script/battle/battle_team.nut
 embed/battle/battle_vs_player.nut=data/script/battle/battle_vs_player.nut
 
 # Network
+embed/network/netplay_core.nut=squiroll/network/netplay_core.nut
 embed/network/netplay_update.nut=squiroll/network/netplay_update.nut
 embed/network/netplay.nut=squiroll/network/netplay.nut
 embed/network/network.nut=data/system/network/network.nut

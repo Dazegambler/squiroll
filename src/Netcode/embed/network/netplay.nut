@@ -1,26 +1,11 @@
-timeout <- 0;
-upnp_timeout <- 0;
-retry_count <- 0;
-user_state <- 0;
-interval <- 10000;
-time_stamp <- ::manbow.timeGetTime() - interval + 1000; 
+//room_name <- ["Free","Novice","Veteran","EU","NA","SA","Asia","Dev"];
+//help_prompt <- ["B1","ok",null,"B2","cancel"];
+//help_cancel <- ["B2","cancel"];
 
-::libact.LoadPlugin("data/plugin/se_lobby.dll");
-::libact.LoadPlugin("data/plugin/se_upnp.dll");
-
-::LOBBY.SetMaxNickLength(32);
-::LOBBY.SetPrefix(::network.lobby_prefix);
-::LOBBY.SetExternalPort(::config.network.hosting_port);
-::LOBBY.SetVersionSig(::network.lobby_version_sig);
-::LOBBY.SetStrikeFactor(1, 1000);
-
-room_name <- ["Free","Novice","Veteran","EU","NA","SA","Asia","Dev"];
-if (::config.network.lobby_name == "")::config.network.lobby_name = room_name[0];
-
-help_prompt <- ["B1","ok",null,"B2","cancel"];
-help_cancel <- ["B2","cancel"];
-
+::manbow.CompileFile("squiroll/network/netplay_core.nut",this);
 ::manbow.CompileFile("squiroll/network/netplay_update.nut",this);
+
+Init();
 
 function WaitInLobby() {
     if (::LOBBY.GetNetworkState() != 2){

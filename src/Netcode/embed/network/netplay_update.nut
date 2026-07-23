@@ -20,7 +20,6 @@ function UpdateIdle() {
 
 function UpdatePrompt() {
     timeout++;
-    ::menu.help.Set(help_prompt);
     if (::setting.network.auto_accept || ::input_all.b0 == 1)::network.AcceptMatch();
     if (::input_all.b1 == 1) {
         ::network.RejectMatch();
@@ -29,7 +28,6 @@ function UpdatePrompt() {
 }
 
 function UpdateMatch() {
-    ::menu.help.Set(help_cancel);
     if (::network.received_request) {
         update = UpdatePrompt;
         return;
@@ -59,7 +57,6 @@ function UpdateMatch() {
 }
 
 function UpdateMatchFound() {
-    ::menu.help.Set(help_cancel);
     if (::input_all.b1 == 1) {
         if (user_state == 102)::lobby.dec_user_count();
         if (::network.received_request)::network.CancelRequest();

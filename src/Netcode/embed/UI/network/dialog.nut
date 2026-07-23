@@ -8,6 +8,11 @@ function Matchmaking() {
         dy = @()(-height / 2 - 8)
     });
     Update = function() {
+        if (::network.received_request) {
+            ::loop.DeleteTask(this);
+            this = null;
+            return;
+        }
         local str = "";
         switch (::LOBBY.GetLobbyUserState()) {
             case 100:
@@ -100,8 +105,9 @@ function Prompt() {
     });
     Update = function() {
         local timeleft = 30 - (::netplay.timeout / 60);
-        if (!timeleft) {
-            ::loop.End();
+        if (!timeleft || !::network.received_request) {
+            ::loop.DeleteTask(this);
+            this = null;
             return;
         }
         local req = ::network.received_request;

@@ -41,6 +41,21 @@ class Sync {
             }
         }(this));
     }
+
+    function Terminate() {
+        task.Set(function(t) {
+            local mat = ::manbow.Matrix();
+            for (local i = 6.0; i > 0; --i) {
+                mat.SetScaling(i/5,i/5,1);
+                mat.Translate(-2000/i,-2000/i,0);
+                foreach (o in obj) {
+                    o.alpha = i / 6;
+                    o.SetWorldTransform(mat);
+                }
+                yield true;
+            }
+        }(this));
+    }
 }
 
 class Async extends Sync {

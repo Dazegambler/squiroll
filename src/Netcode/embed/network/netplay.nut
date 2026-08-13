@@ -1,6 +1,6 @@
-//room_name <- ["Free","Novice","Veteran","EU","NA","SA","Asia","Dev"];
-//help_prompt <- ["B1","ok",null,"B2","cancel"];
-//help_cancel <- ["B2","cancel"];
+room_name <- ["Free","Novice","Veteran","EU","NA","SA","Asia","Dev"];
+help_prompt <- ["B1","ok",null,"B2","cancel"];
+help_cancel <- ["B2","cancel"];
 
 ::manbow.CompileFile("squiroll/network/netplay_core.nut",this);
 ::manbow.CompileFile("squiroll/network/netplay_update.nut",this);
@@ -8,40 +8,37 @@
 Init();
 
 function WaitInLobby() {
-    if (::LOBBY.GetNetworkState() != 2){
-        ::print("Lobby is offline\n");
-        return false;
-    }
-    ::LOBBY.SetExternalPort(::config.network.hosting_port);
-    ::LOBBY.SetUserData("" + ::config.network.hosting_port);
-    upnp_timeout = 0;
-    if (!::config.network.upnp)::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING);
-    user_state  = ::LOBBY.WAIT_INCOMMING;
-    ::network.use_lobby = true;
-    ::network.StartupServer(::config.network.hosting_port,0);
-    ::lobby.inc_user_count();
+    //if (::LOBBY.GetNetworkState() != 2){
+    //    ::print("Lobby is offline\n");
+    //    return false;
+    //}
+    //::LOBBY.SetExternalPort(::config.network.hosting_port);
+    //::LOBBY.SetUserData("" + ::config.network.hosting_port);
+    //upnp_timeout = 0;
+    //if (!::config.network.upnp)::LOBBY.SetLobbyUserState(::LOBBY.WAIT_INCOMMING);
+    //user_state  = ::LOBBY.WAIT_INCOMMING;
+    //::network.use_lobby = true;
+    //::network.StartupServer(::config.network.hosting_port,0);
+    //::lobby.inc_user_count();
+    local srv = Server();
+    if (!srv.Open(::config.network.hosting_port,0,true))return false;
     update = UpdateMatch;
     return true;
 }
 
 function SearchInLobby() {
-    if (::LOBBY.GetNetworkState() != 2) {
-        ::print("Lobby is offline\n");
-        return false;
-    }
-    ::LOBBY.SetExternalPort(::config.network.hosting_port);
-    ::LOBBY.SetUserData("" + ::config.network.hosting_port);
-    user_state = ::LOBBY.MATCHING;
-    ::LOBBY.SetLobbyUserState(user_state);
+    //if (::LOBBY.GetNetworkState() != 2) {
+    //    ::print("Lobby is offline\n");
+    //    return false;
+    //}
+    //::LOBBY.SetExternalPort(::config.network.hosting_port);
+    //::LOBBY.SetUserData("" + ::config.network.hosting_port);
+    //user_state = ::LOBBY.MATCHING;
+    //::LOBBY.SetLobbyUserState(user_state);
+    local srv = Client();
+    if(!srv.JoinLobby())return false;
     update = UpdateMatch;
     return true;
-}
-
-function WaitInPractice() {
-    
-}
-
-function SearchInPractice() {
 }
 
 function HaltInLobby() {
@@ -50,6 +47,18 @@ function HaltInLobby() {
     ::network.Terminate();
     //::loop.End();
     update = UpdateIdle;
+}
+
+function BeginMatchmaking(lobby,host = true) {
+    SetLobby(lobby);
+    update = function() {
+        if (timeout++ > 360) HaltInLobby();
+        if (::LOBBY.GetNetworkState() != 2)return;
+        timeout = 0;
+        if (host)WaitInLobby();
+        else SearchInLobby();
+        ::UI.Popup.Utility.Notification.Top(::UI.Network.Dialog.Matchmaking);
+    }
 }
 
 function SetLobby(idx) {

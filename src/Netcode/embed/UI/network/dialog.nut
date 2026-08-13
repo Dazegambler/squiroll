@@ -8,9 +8,9 @@ function Matchmaking() {
         dy = @()(-height / 2 - 8)
     });
     Update = function() {
-        if (::network.received_request) {
+        if (::network.ready) { 
+            Terminate();
             ::loop.DeleteTask(this);
-            this = null;
             return;
         }
         local str = "";
@@ -25,7 +25,7 @@ function Matchmaking() {
                 str += "Standby...";
                 break;
         }
-        local req = ::network.received_request;
+        local req = ::network.request;
         if (req) {
             str = data.item_table.match_found[0];
             obj.text.Set(str);
@@ -105,12 +105,12 @@ function Prompt() {
     });
     Update = function() {
         local timeleft = 30 - (::netplay.timeout / 60);
-        if (!timeleft || !::network.received_request) {
+        if (!timeleft || ::network.ready) {
+            Terminate();
             ::loop.DeleteTask(this);
-            this = null;
             return;
         }
-        local req = ::network.received_request;
+        local req = ::network.request;
         local str = ::format("%s \\n%s#%dms(%d)"
             data.item_table.match_found[0]
             ,req.name

@@ -28,7 +28,7 @@ function UpdatePrompt() {
 }
 
 function UpdateMatch() {
-    if (::network.received_request) {
+    if (::network.request) {
         update = UpdatePrompt;
         return;
     }
@@ -59,7 +59,7 @@ function UpdateMatch() {
 function UpdateMatchFound() {
     if (::input_all.b1 == 1) {
         if (user_state == 102)::lobby.dec_user_count();
-        if (::network.received_request)::network.CancelRequest();
+        if (::network.request)::network.CancelRequest();
         else {
             ::LOBBY.SetLobbyUserState(::LOBBY.NO_OPERATION);
             ::network.Terminate();
@@ -68,7 +68,7 @@ function UpdateMatchFound() {
         update = UpdateIdle;
         return;
     }
-    if (::network.received_request) {
+    if (::network.request) {
         if (IsHostAfk())update = UpdateMatch;
     }else {
         if (!::network.inst && timeout++ > 360) {
@@ -82,5 +82,5 @@ function UpdateMatchFound() {
 }
 
 function UpdateWaitServer() {
-    if (::network.received_request)::network.AcceptMatch();
+    if (::network.request)::network.AcceptMatch();
 }

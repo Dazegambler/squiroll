@@ -23,7 +23,8 @@ add(
     ,"hide_name",["Hide names(jp)","false","true"],["Hide names","false","true"]
     ,"hide_pfp",["Hide profiles(jp)","false","true"],["Hide profiles","false","true"]
     ,"auto_accept",["Skip request(jp)","false","true"],["Skip request","false","true"]
-    
+    ,"cancel_match",["Cancel standby(jp)"],["Cancel standby"]
+
     ,"match_found",["Match found!(jp)"],["Match found!"]
 );
 
@@ -38,7 +39,7 @@ local Ptr = @(i)::UI.Config.VanillaPTR(::config.network,i);
     ::UI.Menu.Page(
         ::UI.Menu.Struct.TitleSprite(title,800,416,64,224)
         ,::UI.Network.Buttons.Status(item_table,"lobby_state")
-        ,::UI.Network.Buttons.Change(item_table,"lobby_select")
+        //,::UI.Network.Buttons.Change(item_table,"lobby_select")
         ,::UI.Network.Buttons.Open(item_table,"lobby_incomming")
         ,::UI.Network.Buttons.Search(item_table,"lobby_match")
         ,::UI.Network.Buttons.Host(item_table,"server")
@@ -58,28 +59,28 @@ local Ptr = @(i)::UI.Config.VanillaPTR(::config.network,i);
     )
 );
 
-mutex <- {
-    matchmaking = ::UI.Menu.Mutex(
-        page[0].item[2]
-        ,page[0].item[3]
-        ,page[0].item[4]
-        ,page[0].item[5]
-        ,page[0].item[6]
-        ,page[0].item[7]
-        ,page[0].item[8]
-        ,page[0].item[9]
-        ,page[0].item[10]
-        ,page[1].item[1]
-        ,page[1].item[2]
-        ,page[1].item[3]
-        ,page[1].item[4]
-        ,page[1].item[5]
-    )
-}
+//mutex <- {
+//    matchmaking = ::UI.Menu.Mutex(
+//        page[0].item[2]
+//        ,page[0].item[3]
+//        ,page[0].item[4]
+//        ,page[0].item[5]
+//        ,page[0].item[6]
+//        ,page[0].item[7]
+//        ,page[0].item[8]
+//        ,page[0].item[9]
+//        //,page[0].item[10]
+//        ,page[1].item[1]
+//        ,page[1].item[2]
+//        ,page[1].item[3]
+//        ,page[1].item[4]
+//        ,page[1].item[5]
+//    )
+//}
 
-local u = UpdateMain;
-function UpdateMain() {
-    if (::LOBBY.GetLobbyUserState() == ::LOBBY.NO_OPERATION)mutex.matchmaking.Unlock();
-    else mutex.matchmaking.Lock();
-    u();
-}
+//local u = UpdateMain;
+//function UpdateMain() {
+//    if (::LOBBY.GetLobbyUserState() == ::LOBBY.NO_OPERATION)mutex.matchmaking.Unlock();
+//    else mutex.matchmaking.Lock();
+//    u();
+//}

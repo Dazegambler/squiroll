@@ -113,6 +113,7 @@ function Create(...) {
     common_cursor <- null;
     common_callback_ok <- null;
     common_callback_cancel <- null;
+    is_suspend <- false;
 
     anime <- {
         function Initialize() {
@@ -164,6 +165,30 @@ function Create(...) {
         anime.pager.Deactivate(-1);
         EndAnimeDelayed();
         Update = null;
+    }
+
+    function Suspend() {
+        ::loop.End(this);
+        is_suspend = true;
+        ::menu.help.Reset();
+        ::menu.cursor.Deactivate();
+        ::menu.back.Deactivate(true);
+        ::effect.Clear();
+        EndAnime();
+    }
+
+    function Resume() {
+        if (!is_suspend)return;
+
+        is_suspend = false;
+        ::sound.PlayBGM(::savedata.GetTitleBGMID());
+        if (::network.return_code == 0)::dialog(0, ::menu.common.GetMessageText("disconnect"));
+
+        ::network.Terminate();
+        Update = UpdateMain;
+        ::menu.cursor.Activate();
+        ::menu.back.Activate();
+        BeginAnime();
     }
 
     function UpdateCommonItem() {

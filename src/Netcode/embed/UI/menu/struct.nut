@@ -14,27 +14,22 @@ class Label extends ::UI.Menu.Entry {
                 y = ::UI.Menu.item_y + (idx * ::UI.Menu.spacing)
             })
         };
-        if (lock) {
-            elem.label.red *= 0.5;
-            elem.label.green *= 0.5;
-            elem.label.blue *= 0.5;
-        }
     }
 
     function Enable() {
         if (!lock)return;
         lock = false;
-        elem.label.red *= 2;
-        elem.label.green *= 2;
-        elem.label.blue *= 2;
+        elem.label.red = 1;
+        elem.label.green = 1;
+        elem.label.blue = 1;
     }
 
     function Disable() {
         if (lock)return;
         lock = true;
-        elem.label.red *= 0.5;
-        elem.label.green *= 0.5;
-        elem.label.blue *= 0.5;
+        elem.label.red = 0.5;
+        elem.label.green = 0.5;
+        elem.label.blue = 0.5;
     }
 }
 
@@ -55,27 +50,22 @@ class Value extends ::UI.Menu.Entry {
                 blue = 0
             })
         };
-        if (lock) {
-            elem.val.red *= 0.5;
-            elem.val.green *= 0.5;
-            elem.val.blue *= 0.5;
-        } 
     }
 
     function Enable() {
         if (!lock)return;
         lock = false;
-        elem.val.red *= 2;
-        elem.val.green *= 2;
-        elem.val.blue *= 2;
+        elem.val.red = 1;
+        elem.val.green = 1;
+        elem.val.blue = 0;
     }
 
     function Disable() {
         if (lock)return;
         lock = true;
-        elem.val.red *= 0.5;
-        elem.val.green *= 0.5;
-        elem.val.blue *= 0.5;
+        elem.val.red = 0.5;
+        elem.val.green = 0.5;
+        elem.val.blue = 0;
     }
 }
 
@@ -104,33 +94,28 @@ class Variable extends ::UI.Menu.Entry {
                 blue = 0
             })
         };
-        if (lock) {
-            foreach(e in elem) {
-                e.red *= 0.5; 
-                e.green *= 0.5;
-                e.blue *= 0.5; 
-            }
-        }
     }
 
     function Enable() {
         if (!lock)return;
         lock = false;
-        foreach(e in elem) {
-            e.red *= 2;
-            e.green *= 2;
-            e.blue *= 2;
-        }
+        elem.label.red = 1
+        elem.label.green = 1
+        elem.label.blue = 1
+        elem.val.red = 1
+        elem.val.green = 1
+        elem.val.blue = 0
     }
 
     function Disable() {
         if (lock)return;
         lock = true;
-        foreach(e in elem) {
-            e.red *= 0.5; 
-            e.green *= 0.5;
-            e.blue *= 0.5; 
-        }
+        elem.label.red = 0.5
+        elem.label.green = 0.5
+        elem.label.blue = 0.5
+        elem.val.red = 0.5
+        elem.val.green = 0.5
+        elem.val.blue = 0
     }
 }
 
@@ -174,34 +159,28 @@ class Enum extends ::UI.Menu.Entry {
         elem.val.top = elem.val.y + 10;
         elem.val.bottom = elem.val.top + h + 3;
         elem.val.cursor.val = ptr.get().tointeger();
-    
-        if (lock) {
-            foreach(e in elem) {
-                e.red *= 0.5; 
-                e.blue *= 0.5; 
-                e.green *= 0.5;
-            }
-        }
     }
 
     function Enable() {
         if (!lock)return;
         lock = false;
-        foreach(e in elem) {
-            e.red *= 2;
-            e.blue *= 2;
-            e.green *= 2;
-        }
+        elem.label.red = 1
+        elem.label.green = 1
+        elem.label.blue = 1
+        elem.val.red = 1
+        elem.val.green = 1
+        elem.val.blue = 0
     }
 
     function Disable() {
         if (lock)return;
         lock = true;
-        foreach(e in elem) {
-            e.red *= 0.5; 
-            e.blue *= 0.5; 
-            e.green *= 0.5;
-        }
+        elem.label.red = 0.5
+        elem.label.green = 0.5
+        elem.label.blue = 0.5
+        elem.val.red = 0.5
+        elem.val.green = 0.5
+        elem.val.blue = 0
     }
 };
 
@@ -237,27 +216,22 @@ class Sprite extends ::UI.Menu.Entry {
                 width = wth
             })
         };
-        if (lock) {
-            elem.label.red *= 0.5;
-            elem.label.green *= 0.5;
-            elem.label.blue *= 0.5;
-        }
     }
 
     function Enable() {
         if (!lock)return;
         lock = false;
-        elem.label.red *= 2;
-        elem.label.green *= 2;
-        elem.label.blue *= 2;
+        elem.label.red = 1;
+        elem.label.green = 1;
+        elem.label.blue = 1;
     }
 
     function Disable() {
         if (lock)return;
         lock = true;
-        elem.label.red *= 0.5;
-        elem.label.green *= 0.5;
-        elem.label.blue *= 0.5;
+        elem.label.red = 0.5;
+        elem.label.green = 0.5;
+        elem.label.blue = 0;
     }
 };
 
@@ -310,26 +284,21 @@ class Header extends ::UI.Menu.Entry {
             })
         };
         elem.label.x -= ((elem.label.width * elem.label.sx) / 2);
-        if (lock) {
-            elem.label.red *= 0.5;
-            elem.label.green *= 0.5;
-            elem.label.blue *= 0.5;
-        }
     }
 
     function Enable() {
         if (!lock)return;
         lock = false;
-        elem.label.red *= 2;
-        elem.label.green *= 2;
-        elem.label.blue *= 2;
+        elem.label.red = 1;
+        elem.label.green = 1;
+        elem.label.blue = 1;
     }
 
     function Disable() {
         if (lock)return;
         lock = true;
-        elem.label.red *= 0.5;
-        elem.label.green *= 0.5;
-        elem.label.blue *= 0.5;
+        elem.label.red = 0.5;
+        elem.label.green = 0.5;
+        elem.label.blue = 0.5;
     }
 };
